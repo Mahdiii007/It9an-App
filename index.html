@@ -7,119 +7,245 @@
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap" rel="stylesheet">
     
     <style>
-        /* --- RESET & LAYOUT FIX --- */
+        /* --- MODERN ISLAMIC THEME --- */
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         
-        :root { --primary: #145934; --gold: #c5a059; --bg: #fdfbf7; --text: #2c3e50; --red: #d32f2f; }
+        :root { 
+            --primary: #0f4c3a;     /* Tiefes Smaragdgrün */
+            --primary-light: #1a6b54; 
+            --gold: #d4af37;        /* Mattes Gold */
+            --gold-light: #f3e5ab;
+            --bg: #f9f7f2;          /* Creme / Pergament */
+            --surface: #ffffff;     /* Reines Weiß */
+            --text: #2d3436;        /* Dunkelgrau statt Schwarz */
+            --red: #c0392b;         /* Edles Rot */
+            --shadow: 0 4px 20px rgba(15, 76, 58, 0.08);
+        }
         
         body { 
             margin: 0; padding: 0; 
             background-color: var(--bg); 
             font-family: 'Amiri', serif; 
             color: var(--text); 
-            padding-bottom: 150px; 
-            width: 100%; 
-            overflow-x: hidden; 
+            padding-bottom: 160px; /* Platz für Footer */
+            width: 100%; overflow-x: hidden; 
         }
 
-        /* LOGIN */
-        #login-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--primary); z-index: 5000; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-        .pin-input { font-size: 24px; padding: 10px; text-align: center; width: 140px; border-radius: 8px; border: 2px solid var(--gold); }
+        /* --- LOGIN SCREEN --- */
+        #login-screen { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: linear-gradient(135deg, var(--primary) 0%, #052b20 100%);
+            z-index: 5000; display: flex; flex-direction: column; justify-content: center; align-items: center; 
+        }
+        .login-card {
+            background: rgba(255,255,255,0.1); backdrop-filter: blur(10px);
+            padding: 30px; border-radius: 20px; border: 1px solid var(--gold);
+            text-align: center;
+        }
+        .pin-input { 
+            font-size: 24px; padding: 10px; text-align: center; width: 160px; 
+            border-radius: 10px; border: 2px solid var(--gold); 
+            background: var(--surface); color: var(--primary); outline: none;
+        }
+        .login-btn {
+            margin-top: 20px; padding: 10px 40px; font-weight: bold; font-size: 18px; 
+            border: none; border-radius: 30px; 
+            background: var(--gold); color: var(--primary); cursor: pointer;
+            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4);
+        }
 
-        /* HEADER */
+        /* --- HEADER (Der neue Look) --- */
         .header { 
             position: sticky; top: 0; z-index: 1000; 
-            background: var(--primary); color: var(--gold); 
-            padding: 10px; text-align: center; 
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2); 
+            background: linear-gradient(to left, var(--primary), var(--primary-light));
+            padding: 10px 15px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15); 
             display: flex; justify-content: space-between; align-items: center; 
-            width: 100%;
+            height: 70px;
+            border-bottom: 2px solid var(--gold);
         }
-        .header-btn { background: none; border: 1px solid var(--gold); color: var(--gold); padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 14px; font-family: 'Amiri'; }
-
-        /* MENÜ */
-        .menu-grid { 
-            display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; padding: 15px; 
-            max-width: 100%; margin: 0 auto; 
-        }
-        .menu-item { background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); cursor: pointer; transition: transform 0.1s; }
-        .menu-item:active { transform: scale(0.98); }
-        .menu-item img { width: 100%; height: auto; display: block; }
-        .menu-title { text-align: center; padding: 8px; font-size: 16px; font-weight: bold; color: var(--primary); }
-
-        /* PLAYER VIEW */
-        #player-view { display: none; padding: 10px; width: 100%; max-width: 600px; margin: 0 auto; }
         
-        /* NAVIGATION CONTAINER */
+        .header-btn { 
+            background: rgba(255,255,255,0.1); 
+            border: 1px solid var(--gold); color: var(--gold-light); 
+            padding: 6px 12px; border-radius: 8px; cursor: pointer; 
+            font-size: 14px; font-family: 'Amiri'; white-space: nowrap; 
+            transition: 0.2s;
+        }
+        .header-btn:active { background: var(--gold); color: var(--primary); }
+        
+        /* TITEL BADGE (Lösung für rote Schrift) */
+        #pageTitle {
+            background: var(--surface);
+            padding: 5px 15px;
+            border-radius: 20px; /* Pillen-Form */
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            height: 45px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            border: 1px solid var(--gold);
+        }
+        #pageTitle img {
+            height: 28px; width: auto; display: block;
+            /* Da das Bild weißen Hintergrund hat, passt es perfekt in die weiße Badge */
+        }
+        #pageTitle span {
+            font-size: 14px; color: var(--primary); font-weight: bold;
+            border-right: 1px solid #eee; padding-right: 8px;
+        }
+
+        /* --- MENÜ --- */
+        .menu-grid { 
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; 
+            padding: 20px; max-width: 100%; margin: 0 auto; 
+        }
+        .menu-item { 
+            background: var(--surface); border-radius: 15px; 
+            overflow: hidden; cursor: pointer; 
+            box-shadow: var(--shadow); border: 1px solid transparent;
+            transition: transform 0.1s, border-color 0.2s;
+        }
+        .menu-item:active { transform: scale(0.97); }
+        .menu-item img { width: 100%; height: auto; display: block; padding: 10px; }
+        
+        /* --- PLAYER --- */
+        #player-view { display: none; padding: 15px; width: 100%; max-width: 600px; margin: 0 auto; }
+        
+        .quran-frame {
+            background: var(--surface);
+            padding: 5px;
+            border-radius: 15px;
+            border: 1px solid var(--gold);
+            box-shadow: var(--shadow);
+            margin-bottom: 20px;
+        }
         .player-container { 
             display: flex; align-items: center; justify-content: space-between; 
-            gap: 10px; margin-bottom: 15px; width: 100%; 
+            gap: 10px; width: 100%; 
         }
         .quran-image { 
-            flex-grow: 1; width: 100%; max-height: 50vh; 
-            object-fit: contain; border-radius: 8px; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1); border: 1px solid #ddd; 
-            background: white;
+            width: 100%; max-height: 50vh; 
+            object-fit: contain; object-position: center;
+            border-radius: 10px; display: block;
         }
+
+        /* Navigation Buttons */
         .nav-btn { 
-            width: 50px; height: 80px; 
-            background: var(--primary); color: white; 
-            border: 2px solid var(--gold); 
-            border-radius: 8px; font-size: 28px; cursor: pointer; 
+            width: 45px; height: 60px; flex-shrink: 0;
+            background: var(--bg); color: var(--primary); 
+            border: 1px solid var(--primary);
+            border-radius: 10px; font-size: 24px; cursor: pointer; 
             display: flex; align-items: center; justify-content: center; 
-            transition: 0.1s;
-            flex-shrink: 0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
         }
-        .nav-btn:active { background: var(--gold); transform: scale(0.95); }
-        .nav-btn.hidden { visibility: hidden; pointer-events: none; }
+        .nav-btn:active { background: var(--primary); color: white; }
+        .nav-btn.hidden { opacity: 0; pointer-events: none; }
 
-        /* SETTINGS */
-        .settings-box { background: #fff; padding: 10px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #ccc; display: flex; justify-content: space-around; align-items: center; }
-        input[type="number"] { width: 50px; text-align: center; padding: 5px; border: 1px solid var(--primary); border-radius: 5px; font-size: 16px; }
-        input[type="checkbox"] { transform: scale(1.5); }
+        /* SETTINGS (Leiste) */
+        .settings-box { 
+            background: var(--primary-light); color: white;
+            padding: 10px; border-radius: 12px; margin-bottom: 20px; 
+            display: flex; justify-content: space-around; align-items: center; 
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.1);
+        }
+        .setting-group { text-align: center; }
+        .setting-label { font-size: 12px; color: var(--gold-light); margin-bottom: 2px; }
+        input[type="number"] { 
+            width: 50px; text-align: center; padding: 4px; border: none; 
+            border-radius: 5px; font-size: 16px; font-weight: bold; color: var(--primary); 
+        }
+        input[type="checkbox"] { transform: scale(1.4); accent-color: var(--gold); }
 
-        /* FEED */
-        .status-bar { text-align: center; font-size: 16px; font-weight: bold; color: var(--primary); margin: 10px 0; padding: 8px; background: #e8f5e9; border-radius: 5px; }
-        .view-counter { font-size: 12px; color: #888; text-align: center; margin-top: 5px; }
-        .feed-container { margin-bottom: 20px; min-height: 50px; }
-        .feed-msg { background: white; padding: 12px; border-radius: 10px; margin-bottom: 15px; border: 1px solid #eee; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .teacher-msg { background: #fff9c4; border: 2px solid var(--gold); }
-        .reply-box { margin-top: 10px; padding: 8px; background: rgba(255,255,255,0.7); border-radius: 5px; border-right: 3px solid var(--gold); margin-right: 10px; }
-        .reply-header { font-size: 11px; font-weight: bold; color: var(--primary); margin-bottom: 3px; display: flex; align-items: center; gap: 5px; }
-        .msg-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
-        .like-btn { cursor: pointer; display: flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 15px; font-size: 12px; border: 1px solid #eee; background: white; }
-        .like-btn.liked { color: #e91e63; background: #fce4ec; border-color: #fce4ec; }
-        .reply-btn { cursor: pointer; background: none; border: 1px solid var(--primary); color: var(--primary); padding: 4px 10px; border-radius: 5px; font-size: 12px; font-weight: bold; }
+        /* --- FEED --- */
+        .status-bar { 
+            text-align: center; font-size: 16px; font-weight: bold; color: var(--primary); 
+            margin: 15px 0; padding: 10px; background: rgba(20, 89, 52, 0.1); 
+            border-radius: 8px; border: 1px dashed var(--primary);
+        }
+        .view-counter { font-size: 12px; color: #888; text-align: center; margin-top: 5px; font-family: sans-serif; }
+        
+        .feed-msg { 
+            background: var(--surface); padding: 15px; border-radius: 12px; 
+            margin-bottom: 15px; border-right: 4px solid #ddd; 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03); 
+        }
+        /* Lehrer Nachricht (Gold Style) */
+        .teacher-msg { 
+            background: #fffcf2; /* Sehr helles Gold */
+            border: 1px solid var(--gold);
+            border-right: 4px solid var(--gold); 
+        }
+        .teacher-badge { background: var(--gold); color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-left: 5px; }
 
-        /* RECORDING UI */
-        #recording-ui { display: none; position: fixed; bottom: 100px; left: 0; width: 100%; background: rgba(255,255,255,0.98); border-top: 3px solid var(--red); padding: 15px 0; z-index: 1500; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 -5px 25px rgba(0,0,0,0.15); }
-        .rec-timer { font-size: 32px; font-weight: bold; color: var(--red); font-family: monospace; }
-        .rec-status-text { font-size: 14px; color: #555; animation: blink 1.5s infinite; margin-top: 5px; }
-        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .reply-box { margin-top: 10px; padding: 10px; background: #f4f4f4; border-radius: 8px; border-right: 3px solid var(--primary); }
+        .reply-header { font-size: 12px; font-weight: bold; color: var(--primary); margin-bottom: 5px; display: flex; align-items: center; gap: 5px; }
+        
+        .msg-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding-top: 5px; border-top: 1px solid #eee; }
+        .like-btn { cursor: pointer; display: flex; align-items: center; gap: 5px; padding: 4px 12px; border-radius: 20px; font-size: 13px; background: #f9f9f9; border: 1px solid #eee; transition: 0.2s;}
+        .like-btn.liked { color: #e91e63; background: #fce4ec; border-color: #f8bbd0; }
+        .reply-btn { cursor: pointer; background: none; border: 1px solid var(--primary); color: var(--primary); padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; }
 
-        /* REVIEW MODAL */
-        #review-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 6000; justify-content: center; align-items: center; }
-        .review-box { background: white; padding: 25px; border-radius: 15px; width: 85%; max-width: 320px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.4); }
+        /* --- RECORDING & POPUPS --- */
+        #recording-ui { 
+            display: none; position: fixed; bottom: 110px; left: 50%; transform: translateX(-50%); 
+            width: 90%; max-width: 350px;
+            background: rgba(255,255,255,0.95); backdrop-filter: blur(5px);
+            border: 2px solid var(--red); border-radius: 20px;
+            padding: 15px; z-index: 1500; 
+            flex-direction: column; align-items: center; justify-content: center; 
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2); 
+        }
+        .rec-timer { font-size: 36px; font-weight: bold; color: var(--text); font-family: monospace; }
+        .rec-status-text { font-size: 14px; color: var(--red); animation: blink 1.5s infinite; margin-top: 5px; font-weight: bold; }
+        
+        #review-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(3px); z-index: 6000; justify-content: center; align-items: center; }
+        .review-box { background: white; padding: 25px; border-radius: 20px; width: 85%; max-width: 320px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.3); border: 2px solid var(--primary); }
         .review-title { font-size: 20px; font-weight: bold; margin-bottom: 20px; color: var(--primary); }
-        .review-btns { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; }
-        .r-btn { padding: 12px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; font-family: 'Amiri'; }
+        .review-btns { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
+        .r-btn { padding: 12px; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; font-family: 'Amiri'; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         .btn-send { background: var(--primary); color: white; }
         .btn-retry { background: var(--gold); color: white; }
-        .btn-cancel { background: #eee; color: #555; }
+        .btn-cancel { background: #f1f2f6; color: #555; }
 
-        /* FOOTER */
-        .footer { position: fixed; bottom: 0; left: 0; width: 100%; background: white; border-top: 2px solid var(--gold); padding: 15px 0; z-index: 2000; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 -5px 20px rgba(0,0,0,0.1); }
-        .controls { display: flex; justify-content: space-around; align-items: center; direction: ltr; }
-        .btn { width: 70px; height: 70px; border-radius: 50%; border: none; font-size: 30px; color: white; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.2); cursor: pointer; transition: 0.2s; }
-        .btn-play { background: var(--primary); border: 2px solid var(--gold); }
-        .btn-rec { background: var(--red); border: 2px solid white; }
-        .btn-rec.recording { animation: pulse 1s infinite; }
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+        /* --- FOOTER --- */
+        .footer { 
+            position: fixed; bottom: 0; left: 0; width: 100%; 
+            background: var(--surface); 
+            border-top: 1px solid #eee;
+            border-radius: 20px 20px 0 0;
+            padding: 15px 0 25px 0; z-index: 2000; 
+            display: flex; flex-direction: column; gap: 10px; 
+            box-shadow: 0 -5px 30px rgba(0,0,0,0.05); 
+        }
+        .controls { display: flex; justify-content: center; align-items: center; gap: 40px; direction: ltr; }
+        
+        .btn { 
+            width: 60px; height: 60px; border-radius: 50%; border: none; 
+            font-size: 24px; color: white; display: flex; align-items: center; justify-content: center; 
+            cursor: pointer; transition: transform 0.2s; 
+        }
+        .btn:active { transform: scale(0.9); }
+        
+        .btn-play { 
+            background: var(--primary); 
+            border: 3px solid var(--gold-light); 
+            width: 55px; height: 55px; 
+        }
+        .btn-rec { 
+            background: var(--red); 
+            border: 4px solid #fff; 
+            box-shadow: 0 4px 15px rgba(192, 57, 43, 0.4);
+            width: 75px; height: 75px; font-size: 30px;
+            margin-bottom: 10px; /* Steht etwas hervor */
+        }
+        .btn-rec.recording { animation: pulse 1s infinite; background: white; color: var(--red); border: 2px solid var(--red); }
+        
+        @keyframes pulse { 0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(192, 57, 43, 0.7); } 70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(192, 57, 43, 0); } 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(192, 57, 43, 0); } }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
     </style>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, query, where, orderBy, onSnapshot, serverTimestamp, doc, setDoc, updateDoc, increment, arrayUnion } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, query, where, orderBy, onSnapshot, serverTimestamp, doc, setDoc, updateDoc, increment, arrayUnion, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
         const firebaseConfig = {
@@ -137,20 +263,24 @@
         window.where = where; window.orderBy = orderBy; window.onSnapshot = onSnapshot; 
         window.serverTimestamp = serverTimestamp; window.ref = ref; 
         window.uploadBytes = uploadBytes; window.getDownloadURL = getDownloadURL;
-        window.doc = doc; window.setDoc = setDoc; window.updateDoc = updateDoc; window.increment = increment; window.arrayUnion = arrayUnion;
+        window.doc = doc; window.setDoc = setDoc; window.updateDoc = updateDoc; window.increment = increment; window.arrayUnion = arrayUnion; window.deleteDoc = deleteDoc;
     </script>
 </head>
 <body>
 
     <div id="login-screen">
-        <h2 style="color:var(--gold); margin-bottom:20px;">بوابة الإتقان</h2>
-        <input type="password" id="pinInput" class="pin-input" placeholder="****">
-        <button onclick="checkPin()" style="margin-top:20px; padding:10px 40px; font-weight:bold; font-size:18px; border:none; border-radius:8px; background:var(--gold); color:var(--primary);">دخول</button>
+        <div class="login-card">
+            <h2 style="color:var(--gold); margin:0 0 20px 0; font-size: 28px;">بوابة الإتقان</h2>
+            <input type="password" id="pinInput" class="pin-input" placeholder="****">
+            <br>
+            <button onclick="checkPin()" class="login-btn">دخول</button>
+        </div>
     </div>
 
     <div class="header">
         <button class="header-btn" onclick="goToMenu()">☰ القائمة</button>
-        <span id="pageTitle" style="font-size:18px;">الدروس</span>
+        <div id="pageTitle">
+            </div>
         <div style="width:60px;"></div> 
     </div>
 
@@ -158,20 +288,22 @@
 
     <div id="player-view">
         <div class="settings-box">
-            <div class="setting-group"><div style="font-size:12px; color:#888;">تكرار</div><input type="number" id="globalRepeats" value="3" min="1"></div>
-            <div class="setting-group"><div style="font-size:12px; color:#888;">وقفة</div><input type="checkbox" id="globalGap" checked></div>
+            <div class="setting-group"><div class="setting-label">تكرار</div><input type="number" id="globalRepeats" value="3" min="1"></div>
+            <div class="setting-group"><div class="setting-label">وقفة</div><input type="checkbox" id="globalGap" checked></div>
         </div>
 
-        <div class="player-container">
-            <button id="btnPrev" class="nav-btn" onclick="prevVers()">❯</button>
-            <img id="currentImg" class="quran-image" src="" alt="Vers Bild" onerror="this.src='placeholder.png'">
-            <button id="btnNext" class="nav-btn" onclick="nextVers()">❮</button>
+        <div class="quran-frame">
+            <div class="player-container">
+                <button id="btnPrev" class="nav-btn" onclick="prevVers()">❯</button>
+                <img id="currentImg" class="quran-image" src="" alt="Vers Bild" onerror="this.src='placeholder.png'">
+                <button id="btnNext" class="nav-btn" onclick="nextVers()">❮</button>
+            </div>
         </div>
         
         <div id="statusDisplay" class="status-bar">جاهز للتلاوة</div>
         <div class="view-counter">👁️ <span id="viewCount">0</span> مشاهدة</div>
 
-        <h4 style="text-align:center; color:#ccc; margin-top:20px; border-bottom:1px solid #eee;">المشاركات</h4>
+        <h4 style="text-align:center; color:var(--primary); margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:10px;">مشاركات الطلاب</h4>
         <div id="community-feed" class="feed-container">جاري التحميل...</div>
     </div>
 
@@ -194,8 +326,9 @@
 
     <div class="footer">
         <div class="controls">
-            <button id="recBtn" class="btn btn-rec" onclick="toggleRecord()">🎤</button>
             <button id="playBtn" class="btn btn-play" onclick="toggleSmartLoop()">▶</button>
+            <button id="recBtn" class="btn btn-rec" onclick="toggleRecord()">🎤</button>
+            <div style="width:55px;"></div>
         </div>
     </div>
     
@@ -203,20 +336,18 @@
 
     <script>
         const SECRET_PIN = "1234";
+
         const KURS_DATEN = [
-            { id: 1, titel: "الدرس 1", verse: 8 }, 
-            { id: 2, titel: "الدرس 2", verse: 15 },
-            { id: 3, titel: "الدرس 3", verse: 9 },
+            { id: 1, verse: 8 }, 
+            { id: 2, verse: 15 },
+            { id: 3, verse: 9 },
         ];
 
         let currentLessonIdx = null, currentGlobalFileId = null, currentLocalVers = null;
         let unsubscribeFeed = null, unsubscribeViews = null;
         let isPlaying = false, repeatsLeft = 0, timer = null;
-        let mediaRecorder, chunks = [];
-        let recInterval = null, recSeconds = 0;
-        let currentBlob = null;
-        let replyTargetId = null; 
-        let maxRecDuration = 0;
+        let mediaRecorder, chunks = [], recInterval = null, recSeconds = 0;
+        let currentBlob = null, replyTargetId = null, maxRecDuration = 0;
 
         function checkPin() {
             if(document.getElementById('pinInput').value === SECRET_PIN) {
@@ -226,10 +357,13 @@
 
         function renderMenu() {
             const grid = document.getElementById('menu-view'); grid.innerHTML = ""; showView('menu-view');
-            document.getElementById('pageTitle').innerText = "قائمة الدروس";
+            // Hier auch ein Bild als Titel im Header für das Menü? 
+            // Wir nutzen einfach Text, da es kein "Menu.png" gibt
+            document.getElementById('pageTitle').innerHTML = "<span>قائمة الدروس</span>"; 
+            
             KURS_DATEN.forEach((lek, index) => {
                 let div = document.createElement('div'); div.className = 'menu-item';
-                div.innerHTML = `<img src="assets/T${lek.id}.png" onerror="this.style.display='none'"><div class="menu-title">${lek.titel}</div>`;
+                div.innerHTML = `<img src="assets/T${lek.id}.png" onerror="this.style.display='none'">`;
                 div.onclick = () => startLesson(index); grid.appendChild(div);
             });
         }
@@ -240,17 +374,12 @@
             playVers(startId, 1);
         }
 
-        // --- MANUELLE NAVIGATION MIT LOOP (WICHTIG) ---
         window.nextVers = function() {
             const currentLesson = KURS_DATEN[currentLessonIdx];
-            
             if(currentLocalVers < currentLesson.verse) {
-                // Normal weiter
                 playVers(currentGlobalFileId + 1, currentLocalVers + 1);
             } else {
-                // ENDE DER LEKTION -> LOOP ZUM ANFANG
-                let startGlobalId = 1; 
-                for(let i=0; i<currentLessonIdx; i++) startGlobalId += KURS_DATEN[i].verse;
+                let startGlobalId = 1; for(let i=0; i<currentLessonIdx; i++) startGlobalId += KURS_DATEN[i].verse;
                 playVers(startGlobalId, 1);
             }
         }
@@ -263,16 +392,20 @@
             currentGlobalFileId = globalId; currentLocalVers = localVersNum;
             showView('player-view');
             
-            document.getElementById('pageTitle').innerText = `الدرس ${currentLessonIdx+1} - المقطع ${localVersNum}`;
+            // TITEL UPDATE: Bild + Vers Text in der weißen Plakette
+            const lessonId = KURS_DATEN[currentLessonIdx].id;
+            const titleImg = `assets/T${lessonId}.png`;
             
-            // Buttons Steuerung
+            document.getElementById('pageTitle').innerHTML = `
+                <span>${localVersNum}</span>
+                <img src="${titleImg}" alt="Lesson Title">
+            `;
+            
             const btnPrev = document.getElementById('btnPrev');
-            if(localVersNum === 1) btnPrev.classList.add('hidden');
-            else btnPrev.classList.remove('hidden');
+            if(localVersNum === 1) btnPrev.classList.add('hidden'); else btnPrev.classList.remove('hidden');
 
             document.getElementById('currentImg').src = `assets/${globalId}.png`;
-            const audio = document.getElementById('mainAudio'); 
-            audio.src = `assets/${globalId}.mp3`;
+            const audio = document.getElementById('mainAudio'); audio.src = `assets/${globalId}.mp3`;
             
             if(isPlaying && !isAuto) stopLoop();
             
@@ -296,7 +429,7 @@
             
             unsubscribeFeed = window.onSnapshot(q, (snap) => {
                 div.innerHTML = "";
-                if(snap.empty) { div.innerHTML = "<div style='text-align:center; color:#ccc;'>لا توجد مشاركات</div>"; return; }
+                if(snap.empty) { div.innerHTML = "<div style='text-align:center; color:#999; font-size:14px; padding:20px;'>لا توجد مشاركات حتى الآن</div>"; return; }
                 
                 let posts = [];
                 snap.forEach(doc => { posts.push({ id: doc.id, ...doc.data() }); });
@@ -311,12 +444,16 @@
                             repliesHtml += `<div class="reply-box"><div class="reply-header">🎓 ${r.name}</div><audio controls src="${r.audioUrl}" style="width:100%"></audio></div>`;
                         });
                     }
-                    let teacherBadge = isT ? "🎓 " : "";
+                    let teacherBadge = isT ? "<span class='teacher-badge'>معلم</span>" : "";
                     
                     div.innerHTML += `
-                    <div class="feed-msg ${isT?'teacher-msg':''}">
-                        <div style="font-weight:bold; color:var(--primary); font-size:14px; margin-bottom:5px;">${teacherBadge}${d.name}</div>
-                        <audio controls src="${d.audioUrl}" style="width:100%;"></audio>
+                    <div class="feed-msg ${isT?'teacher-msg':''}" id="post-${d.id}">
+                        <div style="font-weight:bold; color:var(--primary); font-size:14px; margin-bottom:8px; display:flex; align-items:center;">
+                            ${d.name} ${teacherBadge}
+                        </div>
+                        <audio controls src="${d.audioUrl}" style="width:100%; height:35px;" 
+                               onerror="this.closest('.feed-msg').remove()">
+                        </audio>
                         ${repliesHtml}
                         <div class="msg-footer">
                             <button class="reply-btn" onclick="startReply('${d.id}')">↩️ الرد</button>
@@ -354,12 +491,12 @@
                     mediaRecorder.onstop = () => {
                         currentBlob = new Blob(chunks, { type: 'audio/mp3' });
                         showReviewModal();
-                        btn.classList.remove('recording'); btn.innerText = "🎤"; 
+                        btn.classList.remove('recording'); 
                         clearInterval(recInterval); ui.style.display = 'none';
                     };
 
                     mediaRecorder.start(); 
-                    btn.classList.add('recording'); btn.innerText = "⏹"; 
+                    btn.classList.add('recording'); 
                     ui.style.display = 'flex'; 
                     recSeconds = 0; document.getElementById('recTimer').innerText = "00:00";
                     recInterval = setInterval(() => { 
@@ -427,30 +564,22 @@
                 if(!isPlaying) return;
                 if(document.getElementById('globalGap').checked) {
                     document.getElementById('statusDisplay').innerText = "تكرار الطالب...";
-                    timer = setTimeout(() => { checkNextStep(); }, audio.duration * 1500);
+                    timer = setTimeout(() => { checkNextStep(); }, audio.duration * 1250);
                 } else { checkNextStep(); }
             }
         }
         
         function checkNextStep() {
             repeatsLeft--;
-            if(repeatsLeft > 0) { 
-                playCycle(); 
-            } else {
+            if(repeatsLeft > 0) { playCycle(); } 
+            else {
                  const currentLesson = KURS_DATEN[currentLessonIdx];
-                 let nextGlobalId, nextLocalVers;
-
                  if(currentLocalVers < currentLesson.verse) {
-                    nextGlobalId = currentGlobalFileId + 1;
-                    nextLocalVers = currentLocalVers + 1;
+                    playVers(currentGlobalFileId + 1, currentLocalVers + 1, true);
                  } else {
-                    let startGlobalId = 1;
-                    for(let i=0; i<currentLessonIdx; i++) startGlobalId += KURS_DATEN[i].verse;
-                    nextGlobalId = startGlobalId;
-                    nextLocalVers = 1;
+                    let startGlobalId = 1; for(let i=0; i<currentLessonIdx; i++) startGlobalId += KURS_DATEN[i].verse;
+                    playVers(startGlobalId, 1, true);
                  }
-
-                 playVers(nextGlobalId, nextLocalVers, true);
                  setTimeout(() => { if(isPlaying) { repeatsLeft = parseInt(document.getElementById('globalRepeats').value); playCycle(); } }, 1000);
             }
         }
