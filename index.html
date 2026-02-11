@@ -60,31 +60,30 @@
             background: linear-gradient(to left, var(--primary), var(--primary-light));
             padding: 10px 15px; 
             box-shadow: 0 4px 15px rgba(0,0,0,0.15); 
-            display: flex; justify-content: space-between; align-items: center; 
+            display: flex; justify-content: center; /* Zentriert den Titel */
+            align-items: center; 
             height: 70px;
             border-bottom: 2px solid var(--gold);
         }
         
-        .header-btn { 
-            background: rgba(255,255,255,0.1); 
-            border: 1px solid var(--gold); color: var(--gold-light); 
-            padding: 6px 12px; border-radius: 8px; cursor: pointer; 
-            font-size: 14px; font-family: 'Amiri'; white-space: nowrap; 
-        }
-        
+        /* Der Titel ist jetzt der Button zum Menü */
         #pageTitle {
             background: var(--surface);
-            padding: 5px 15px;
-            border-radius: 20px; 
-            display: flex; align-items: center; justify-content: center; gap: 8px;
+            padding: 5px 20px;
+            border-radius: 25px; 
+            display: flex; align-items: center; justify-content: center; gap: 10px;
             height: 45px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            border: 1px solid var(--gold);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            border: 2px solid var(--gold);
+            cursor: pointer; /* Zeigt, dass es klickbar ist */
+            transition: transform 0.1s;
         }
+        #pageTitle:active { transform: scale(0.95); background: var(--gold-light); }
+
         #pageTitle img { height: 28px; width: auto; display: block; }
         #pageTitle span {
-            font-size: 14px; color: var(--primary); font-weight: bold;
-            border-right: 1px solid #eee; padding-right: 8px;
+            font-size: 16px; color: var(--primary); font-weight: bold;
+            border-right: 2px solid var(--gold-light); padding-right: 10px;
         }
 
         /* --- MENÜ --- */
@@ -99,41 +98,37 @@
         }
         .menu-item img { width: 100%; height: auto; display: block; padding: 10px; }
         
-        /* --- PLAYER (FIX: ZENTRIERUNG) --- */
+        /* --- PLAYER --- */
         #player-view { display: none; padding: 15px; width: 100%; max-width: 600px; margin: 0 auto; }
         
         .quran-frame {
             background: var(--surface);
-            padding: 10px; /* Etwas mehr Padding */
+            padding: 10px; 
             border-radius: 15px;
-            border: 2px solid var(--gold-light); /* Doppelrahmen Effekt */
+            border: 2px solid var(--gold-light);
             outline: 1px solid var(--gold);
             outline-offset: -5px;
             box-shadow: var(--shadow);
             margin-bottom: 20px;
-            position: relative; /* Wichtig für Buttons */
+            position: relative; 
             min-height: 250px;
             display: flex; align-items: center; justify-content: center;
         }
 
-        /* Container für Bild und Buttons */
         .player-container { 
             width: 100%; 
-            display: flex; 
-            justify-content: center; /* Bild immer mittig */
-            align-items: center; 
+            display: flex; justify-content: center; align-items: center; 
             position: relative;
         }
         
         .quran-image { 
-            max-width: 85%; /* Platz für Buttons lassen */
+            max-width: 85%; 
             max-height: 50vh; 
             object-fit: contain; 
             border-radius: 5px; 
             display: block;
         }
 
-        /* Schwebende Buttons (Absolute Positionierung für perfekte Mitte) */
         .nav-btn { 
             position: absolute;
             top: 50%;
@@ -146,10 +141,8 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
             z-index: 10;
         }
-        /* RTL: Rechts ist "Zurück/Start" (Pfeil nach Rechts), Links ist "Weiter" (Pfeil nach Links) */
         #btnPrev { right: -5px; } 
         #btnNext { left: -5px; }
-
         .nav-btn.hidden { opacity: 0; pointer-events: none; }
 
         /* SETTINGS */
@@ -171,9 +164,7 @@
         .feed-msg { background: var(--surface); padding: 15px; border-radius: 12px; margin-bottom: 15px; border-right: 4px solid #ddd; box-shadow: 0 2px 8px rgba(0,0,0,0.03); }
         .teacher-msg { background: #fffcf2; border: 1px solid var(--gold); border-right: 4px solid var(--gold); }
         .teacher-badge { background: var(--gold); color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-left: 5px; }
-
-        .reply-box { margin-top: 10px; padding: 10px; background: #f4f4f4; border-radius: 8px; border-right: 3px solid var(--primary); }
-        .reply-header { font-size: 12px; font-weight: bold; color: var(--primary); margin-bottom: 5px; display: flex; align-items: center; gap: 5px; }
+        
         .msg-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding-top: 5px; border-top: 1px solid #eee; }
         .like-btn { cursor: pointer; display: flex; align-items: center; gap: 5px; padding: 4px 12px; border-radius: 20px; font-size: 13px; background: #f9f9f9; border: 1px solid #eee; }
         .like-btn.liked { color: #e91e63; background: #fce4ec; border-color: #f8bbd0; }
@@ -199,19 +190,41 @@
             background: var(--surface); 
             border-top: 1px solid #eee;
             border-radius: 20px 20px 0 0;
-            padding: 15px 0 25px 0; z-index: 2000; 
-            display: flex; flex-direction: column; gap: 10px; 
+            padding: 20px 0 30px 0; z-index: 2000; 
             box-shadow: 0 -5px 30px rgba(0,0,0,0.05); 
         }
-        .controls { display: flex; justify-content: center; align-items: center; gap: 40px; direction: ltr; }
         
-        .btn { width: 60px; height: 60px; border-radius: 50%; border: none; font-size: 24px; color: white; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s; }
+        /* Buttons Symmetrisch */
+        .controls { display: flex; justify-content: center; align-items: center; gap: 50px; direction: ltr; }
+        
+        .btn { 
+            width: 70px; height: 70px; /* Beide exakt gleich groß */
+            border-radius: 50%; border: none; 
+            font-size: 28px; color: white; 
+            display: flex; align-items: center; justify-content: center; 
+            cursor: pointer; transition: transform 0.2s; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
         .btn:active { transform: scale(0.9); }
         
-        .btn-play { background: var(--primary); border: 3px solid var(--gold-light); width: 55px; height: 55px; }
-        .btn-rec { background: var(--red); border: 4px solid #fff; box-shadow: 0 4px 15px rgba(192, 57, 43, 0.4); width: 75px; height: 75px; font-size: 30px; margin-bottom: 10px; }
+        /* Play Button (Rechts in LTR, also eigentlich links in RTL Code... aber wir nutzen direction: ltr für Controls) */
+        /* Wir wollen: Record (Links) -- Play (Rechts) oder andersrum? */
+        /* User sagte: Play Button rechts. Da direction:ltr ist, ist rechts -> rechts. */
+        
+        .btn-rec { 
+            background: var(--red); 
+            border: 4px solid #fff; 
+            box-shadow: 0 4px 15px rgba(192, 57, 43, 0.3);
+        }
         .btn-rec.recording { animation: pulse 1s infinite; background: white; color: var(--red); border: 2px solid var(--red); }
-        @keyframes pulse { 0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(192, 57, 43, 0.7); } 70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(192, 57, 43, 0); } 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(192, 57, 43, 0); } }
+        
+        .btn-play { 
+            background: var(--primary); 
+            border: 4px solid #fff; 
+            box-shadow: 0 4px 15px rgba(15, 76, 58, 0.3);
+        }
+        
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
     </style>
 
     <script type="module">
@@ -249,9 +262,8 @@
     </div>
 
     <div class="header">
-        <button class="header-btn" onclick="goToMenu()">☰ القائمة</button>
-        <div id="pageTitle"></div>
-        <div style="width:60px;"></div> 
+        <div id="pageTitle" onclick="goToMenu()">
+            </div>
     </div>
 
     <div id="menu-view" class="menu-grid"></div>
@@ -287,16 +299,15 @@
             <div class="review-title">مراجعة التسجيل</div>
             <audio id="reviewAudio" controls style="width:100%; margin: 10px 0;"></audio>
             <div class="review-btns">
-                <button class="r-btn btn-send" onclick="confirmSend()">✅ إرسال (Senden)</button>
-                <button class="r-btn btn-retry" onclick="retryRecord()">🔄 إعادة (Neu)</button>
-                <button class="r-btn btn-cancel" onclick="cancelRecord()">❌ إلغاء (Abbruch)</button>
+                <button class="r-btn btn-send" onclick="confirmSend()">✅ إرسال</button>
+                <button class="r-btn btn-retry" onclick="retryRecord()">🔄 إعادة</button>
+                <button class="r-btn btn-cancel" onclick="cancelRecord()">❌ إلغاء</button>
             </div>
         </div>
     </div>
 
     <div class="footer">
         <div class="controls">
-            <div style="width:55px;"></div>
             <button id="recBtn" class="btn btn-rec" onclick="toggleRecord()">🎤</button>
             <button id="playBtn" class="btn btn-play" onclick="toggleSmartLoop()">▶</button>
         </div>
@@ -326,7 +337,10 @@
 
         function renderMenu() {
             const grid = document.getElementById('menu-view'); grid.innerHTML = ""; showView('menu-view');
+            // Menü Titel (Klickbar aber hier schon im Menü)
             document.getElementById('pageTitle').innerHTML = "<span>قائمة الدروس</span>"; 
+            document.getElementById('pageTitle').onclick = null; // Im Menü keine Funktion
+
             KURS_DATEN.forEach((lek, index) => {
                 let div = document.createElement('div'); div.className = 'menu-item';
                 div.innerHTML = `<img src="assets/T${lek.id}.png" onerror="this.style.display='none'">`;
@@ -358,10 +372,13 @@
             currentGlobalFileId = globalId; currentLocalVers = localVersNum;
             showView('player-view');
             
+            // Header Titel Setup (mit Klick-Funktion)
             const lessonId = KURS_DATEN[currentLessonIdx].id;
             const titleImg = `assets/T${lessonId}.png`;
-            document.getElementById('pageTitle').innerHTML = `<span>${localVersNum}</span><img src="${titleImg}" alt="Lesson Title">`;
-            
+            const pgTitle = document.getElementById('pageTitle');
+            pgTitle.innerHTML = `<span>${localVersNum}</span><img src="${titleImg}" alt="Lesson Title">`;
+            pgTitle.onclick = window.goToMenu; // Hier aktivieren
+
             const btnPrev = document.getElementById('btnPrev');
             if(localVersNum === 1) btnPrev.classList.add('hidden'); else btnPrev.classList.remove('hidden');
 
@@ -546,8 +563,13 @@
         }
         
         function stopLoop() { isPlaying = false; clearTimeout(timer); document.getElementById('mainAudio').pause(); document.getElementById('mainAudio').currentTime = 0; document.getElementById('playBtn').innerText = "▶"; }
-        window.goToMenu = function() { showView('menu-view'); } 
-        window.goToCurrentVerse = function() { if(currentGlobalFileId) showView('player-view'); }
+        
+        window.goToMenu = function() { 
+            stopLoop(); // Audio Stoppen
+            stopRecordingAndReview(); // Aufnahme stoppen
+            showView('menu-view'); 
+        } 
+        
         function showView(id) { document.getElementById('menu-view').style.display = 'none'; document.getElementById('player-view').style.display = 'none'; document.getElementById(id).style.display = (id === 'menu-view') ? 'grid' : 'block'; }
         window.likePost = async (id) => { if(localStorage.getItem('liked_'+id)) return; await window.updateDoc(window.doc(window.db, "posts", id), { likes: window.increment(1) }); localStorage.setItem('liked_'+id, 'true'); }
     </script>
