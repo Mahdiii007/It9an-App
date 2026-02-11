@@ -11,137 +11,106 @@
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         
         :root { 
-            --primary: #0f4c3a;     /* Tiefes Smaragdgrün */
-            --primary-light: #1a6b54; 
-            --gold: #d4af37;        /* Mattes Gold */
-            --gold-light: #f3e5ab;
-            --bg: #f9f7f2;          /* Creme / Pergament */
-            --surface: #ffffff;     /* Reines Weiß */
-            --text: #2d3436;        
-            --red: #c0392b;         
+            --primary: #0f4c3a; --primary-light: #1a6b54; 
+            --gold: #d4af37; --gold-light: #f3e5ab;
+            --bg: #f9f7f2; --surface: #ffffff; 
+            --text: #2d3436; --red: #c0392b;         
             --shadow: 0 4px 20px rgba(15, 76, 58, 0.08);
         }
         
         body { 
-            margin: 0; padding: 0; 
-            background-color: var(--bg); 
-            font-family: 'Amiri', serif; 
-            color: var(--text); 
-            padding-bottom: 160px; 
-            width: 100%; overflow-x: hidden; 
+            margin: 0; padding: 0; background-color: var(--bg); 
+            font-family: 'Amiri', serif; color: var(--text); 
+            padding-bottom: 160px; width: 100%; overflow-x: hidden; 
         }
 
-        /* --- LOGIN SCREEN --- */
+        /* --- LOGIN --- */
         #login-screen { 
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
             background: linear-gradient(135deg, var(--primary) 0%, #052b20 100%);
             z-index: 5000; display: flex; flex-direction: column; justify-content: center; align-items: center; 
         }
         .login-card {
-            background: rgba(255,255,255,0.95); 
-            padding: 30px; border-radius: 20px; border: 2px solid var(--gold);
+            background: rgba(255,255,255,0.95); padding: 30px; 
+            border-radius: 20px; border: 2px solid var(--gold);
             text-align: center; width: 90%; max-width: 350px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.3);
         }
         .login-title { color: var(--primary); margin: 0 0 20px 0; font-size: 24px; font-weight: bold; }
-        
         .login-input, .login-select { 
             font-size: 16px; padding: 12px; text-align: right; width: 100%; 
             border-radius: 10px; border: 1px solid #ddd; 
-            background: var(--surface); color: var(--text); outline: none;
-            margin-bottom: 10px; font-family: 'Amiri';
+            background: var(--surface); outline: none; margin-bottom: 10px; font-family: 'Amiri';
         }
-        .login-select { cursor: pointer; }
-        
         .login-btn {
             margin-top: 10px; padding: 12px 40px; font-weight: bold; font-size: 18px; 
             border: none; border-radius: 30px; width: 100%;
             background: var(--gold); color: var(--primary); cursor: pointer;
-            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3); transition: 0.2s;
+            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
         }
-        .login-btn:active { transform: scale(0.98); }
 
         /* --- HEADER --- */
         .header { 
             position: sticky; top: 0; z-index: 1000; 
             background: linear-gradient(to left, var(--primary), var(--primary-light));
-            padding: 10px 15px; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.15); 
-            display: flex; justify-content: center; 
-            align-items: center; 
-            height: 70px;
-            border-bottom: 2px solid var(--gold);
+            padding: 10px 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); 
+            display: flex; justify-content: center; align-items: center; 
+            height: 70px; border-bottom: 2px solid var(--gold);
         }
-        
         #pageTitle {
-            background: var(--surface);
-            padding: 5px 20px;
-            border-radius: 25px; 
+            background: var(--surface); padding: 5px 20px; border-radius: 25px; 
             display: flex; align-items: center; justify-content: center; gap: 10px;
-            height: 45px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-            border: 2px solid var(--gold);
+            height: 45px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); border: 2px solid var(--gold);
             cursor: pointer; transition: transform 0.1s;
         }
         #pageTitle:active { transform: scale(0.95); background: var(--gold-light); }
         #pageTitle img { height: 28px; width: auto; display: block; }
-        #pageTitle span {
-            font-size: 16px; color: var(--primary); font-weight: bold;
-            border-right: 2px solid var(--gold-light); padding-right: 10px;
-        }
+        #pageTitle span { font-size: 16px; color: var(--primary); font-weight: bold; border-right: 2px solid var(--gold-light); padding-right: 10px; }
 
         /* --- MENÜ --- */
-        .menu-grid { 
-            display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; 
-            padding: 20px; max-width: 100%; margin: 0 auto; 
-        }
-        .menu-item { 
-            background: var(--surface); border-radius: 15px; 
-            overflow: hidden; cursor: pointer; 
-            box-shadow: var(--shadow); border: 1px solid transparent;
-        }
+        .menu-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; padding: 20px; max-width: 100%; margin: 0 auto; }
+        .menu-item { background: var(--surface); border-radius: 15px; overflow: hidden; cursor: pointer; box-shadow: var(--shadow); }
         .menu-item img { width: 100%; height: auto; display: block; padding: 10px; }
         
         /* --- PLAYER --- */
         #player-view { display: none; padding: 15px; width: 100%; max-width: 600px; margin: 0 auto; }
         
         .quran-frame {
-            background: var(--surface);
-            padding: 10px; border-radius: 15px;
+            background: var(--surface); padding: 10px; border-radius: 15px;
             border: 2px solid var(--gold-light); outline: 1px solid var(--gold); outline-offset: -5px;
-            box-shadow: var(--shadow); margin-bottom: 20px;
-            position: relative; min-height: 250px;
-            display: flex; align-items: center; justify-content: center;
+            box-shadow: var(--shadow); margin-bottom: 20px; position: relative; 
+            min-height: 250px; display: flex; align-items: center; justify-content: center;
         }
         .player-container { width: 100%; display: flex; justify-content: center; align-items: center; position: relative; }
         .quran-image { max-width: 85%; max-height: 50vh; object-fit: contain; border-radius: 5px; display: block; }
 
         .nav-btn { 
-            position: absolute; top: 50%; transform: translateY(-50%);
-            width: 40px; height: 60px; 
+            position: absolute; top: 50%; transform: translateY(-50%); width: 40px; height: 60px; 
             background: var(--bg); color: var(--primary); border: 1px solid var(--gold);
             border-radius: 8px; font-size: 24px; cursor: pointer; 
-            display: flex; align-items: center; justify-content: center; 
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1); z-index: 10;
+            display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); z-index: 10;
         }
         #btnPrev { right: -5px; } #btnNext { left: -5px; }
         .nav-btn.hidden { opacity: 0; pointer-events: none; }
 
         /* SETTINGS */
         .settings-box { 
-            background: var(--primary-light); color: white;
-            padding: 10px; border-radius: 12px; margin-bottom: 20px; 
-            display: flex; justify-content: space-around; align-items: center; 
-            box-shadow: inset 0 0 10px rgba(0,0,0,0.1);
+            background: var(--primary-light); color: white; padding: 10px; 
+            border-radius: 12px; margin-bottom: 20px; display: flex; justify-content: space-around; 
+            align-items: center; box-shadow: inset 0 0 10px rgba(0,0,0,0.1);
         }
-        .setting-group { text-align: center; }
-        .setting-label { font-size: 12px; color: var(--gold-light); margin-bottom: 2px; }
+        .setting-label { font-size: 12px; color: var(--gold-light); margin-bottom: 2px; text-align:center; }
         input[type="number"] { width: 50px; text-align: center; padding: 4px; border: none; border-radius: 5px; }
         input[type="checkbox"] { transform: scale(1.4); accent-color: var(--gold); }
 
-        /* FEED */
-        .status-bar { text-align: center; font-size: 16px; font-weight: bold; color: var(--primary); margin: 15px 0; padding: 10px; background: rgba(20, 89, 52, 0.1); border-radius: 8px; border: 1px dashed var(--primary); }
-        .view-counter { font-size: 12px; color: #888; text-align: center; margin-top: 5px; }
+        /* FEED & STATS */
+        .status-bar { 
+            text-align: center; font-size: 16px; font-weight: bold; color: var(--primary); 
+            margin: 15px 0; padding: 10px; background: rgba(20, 89, 52, 0.1); 
+            border-radius: 8px; border: 1px dashed var(--primary);
+        }
+        .view-counter { font-size: 13px; color: #666; text-align: center; margin-top: 5px; cursor: pointer; padding: 5px; }
+        .view-counter:active { background: rgba(0,0,0,0.05); border-radius: 5px; }
         
         .feed-msg { background: var(--surface); padding: 15px; border-radius: 12px; margin-bottom: 15px; border-right: 4px solid #ddd; box-shadow: 0 2px 8px rgba(0,0,0,0.03); }
         .teacher-msg { background: #fffcf2; border: 1px solid var(--gold); border-right: 4px solid var(--gold); }
@@ -149,14 +118,16 @@
         
         .msg-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding-top: 5px; border-top: 1px solid #eee; }
         .like-btn { cursor: pointer; display: flex; align-items: center; gap: 5px; padding: 4px 12px; border-radius: 20px; font-size: 14px; background: #f9f9f9; border: 1px solid #eee; }
-        .like-btn.liked { color: var(--primary); background: #e8f5e9; border-color: var(--primary); }
+        .like-btn.liked { color: var(--primary); background: #e8f5e9; border-color: var(--primary); font-weight: bold; }
+        .like-btn.disabled { opacity: 0.5; cursor: not-allowed; filter: grayscale(1); }
         .reply-btn { cursor: pointer; background: none; border: 1px solid var(--primary); color: var(--primary); padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; }
 
         /* RECORDING UI */
         #recording-ui { display: none; position: fixed; bottom: 110px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 350px; background: rgba(255,255,255,0.95); backdrop-filter: blur(5px); border: 2px solid var(--red); border-radius: 20px; padding: 15px; z-index: 1500; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
-        .rec-timer { font-size: 36px; font-weight: bold; color: var(--text); font-family: monospace; }
+        .rec-timer { font-size: 36px; font-weight: bold; color: var(--text); font-family: monospace; margin-bottom: 10px; }
         .rec-status-text { font-size: 14px; color: var(--red); animation: blink 1.5s infinite; margin-top: 5px; font-weight: bold; }
-        
+        .stop-ui-btn { background: var(--red); color: white; border: none; padding: 8px 25px; border-radius: 20px; font-size: 14px; font-weight: bold; cursor: pointer; font-family: 'Amiri'; }
+
         #review-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(3px); z-index: 6000; justify-content: center; align-items: center; }
         .review-box { background: white; padding: 25px; border-radius: 20px; width: 85%; max-width: 320px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.3); border: 2px solid var(--primary); }
         .review-title { font-size: 20px; font-weight: bold; margin-bottom: 20px; color: var(--primary); }
@@ -167,45 +138,19 @@
         .btn-cancel { background: #f1f2f6; color: #555; }
 
         /* FOOTER */
-        .footer { 
-            position: fixed; bottom: 0; left: 0; width: 100%; 
-            background: var(--surface); 
-            border-top: 1px solid #eee;
-            border-radius: 20px 20px 0 0;
-            padding: 20px 0 30px 0; z-index: 2000; 
-            box-shadow: 0 -5px 30px rgba(0,0,0,0.05); 
-        }
-        
+        .footer { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--surface); border-top: 1px solid #eee; border-radius: 20px 20px 0 0; padding: 20px 0 30px 0; z-index: 2000; box-shadow: 0 -5px 30px rgba(0,0,0,0.05); }
         .controls { display: flex; justify-content: center; align-items: center; gap: 50px; direction: ltr; }
-        
-        .btn { 
-            width: 70px; height: 70px; 
-            border-radius: 50%; border: none; 
-            font-size: 28px; color: white; 
-            display: flex; align-items: center; justify-content: center; 
-            cursor: pointer; transition: transform 0.2s; 
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-        }
+        .btn { width: 70px; height: 70px; border-radius: 50%; border: none; font-size: 28px; color: white; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
         .btn:active { transform: scale(0.9); }
-        
-        /* Record Button (Nur für Schüler sichtbar) */
-        .btn-rec { 
-            background: var(--red); border: 4px solid #fff; 
-            box-shadow: 0 4px 15px rgba(192, 57, 43, 0.3);
-        }
+        .btn-rec { background: var(--red); border: 4px solid #fff; box-shadow: 0 4px 15px rgba(192, 57, 43, 0.3); }
         .btn-rec.recording { animation: pulse 1s infinite; background: white; color: var(--red); border: 2px solid var(--red); }
-        
-        .btn-play { 
-            background: var(--primary); border: 4px solid #fff; 
-            box-shadow: 0 4px 15px rgba(15, 76, 58, 0.3);
-        }
-        
+        .btn-play { background: var(--primary); border: 4px solid #fff; box-shadow: 0 4px 15px rgba(15, 76, 58, 0.3); }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
     </style>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, query, where, orderBy, onSnapshot, serverTimestamp, doc, setDoc, updateDoc, increment, arrayUnion, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, query, where, orderBy, onSnapshot, serverTimestamp, doc, setDoc, updateDoc, increment, arrayUnion, arrayRemove, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
         const firebaseConfig = {
@@ -223,7 +168,7 @@
         window.where = where; window.orderBy = orderBy; window.onSnapshot = onSnapshot; 
         window.serverTimestamp = serverTimestamp; window.ref = ref; 
         window.uploadBytes = uploadBytes; window.getDownloadURL = getDownloadURL;
-        window.doc = doc; window.setDoc = setDoc; window.updateDoc = updateDoc; window.increment = increment; window.arrayUnion = arrayUnion; window.deleteDoc = deleteDoc;
+        window.doc = doc; window.setDoc = setDoc; window.updateDoc = updateDoc; window.increment = increment; window.arrayUnion = arrayUnion; window.arrayRemove = arrayRemove; window.deleteDoc = deleteDoc;
     </script>
 </head>
 <body>
@@ -231,7 +176,7 @@
     <div id="login-screen">
         <div class="login-card">
             <div class="login-title">بوابة الإتقان</div>
-            <input type="text" id="firstName" class="login-input" placeholder="الاسم الأول">
+            <input type="text" id="firstName" class="login-input" placeholder="الاسم">
             <input type="text" id="lastName" class="login-input" placeholder="اللقب">
             <select id="userRole" class="login-input login-select">
                 <option value="student">طالب</option>
@@ -243,8 +188,7 @@
     </div>
 
     <div class="header">
-        <div id="pageTitle" onclick="goToMenu()">
-            </div>
+        <div id="pageTitle" onclick="goToMenu()"></div>
     </div>
 
     <div id="menu-view" class="menu-grid"></div>
@@ -264,7 +208,7 @@
         </div>
         
         <div id="statusDisplay" class="status-bar">جاهز للتلاوة</div>
-        <div class="view-counter">👁️ <span id="viewCount">0</span> مشاهدة</div>
+        <div class="view-counter" onclick="showViewers()">👁️ <span id="viewCount">0</span> مشاهدة</div>
 
         <h4 style="text-align:center; color:var(--primary); margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:10px;">مشاركات الطلاب</h4>
         <div id="community-feed" class="feed-container">جاري التحميل...</div>
@@ -272,6 +216,7 @@
 
     <div id="recording-ui">
         <div id="recTimer" class="rec-timer">00:00</div>
+        <button class="stop-ui-btn" onclick="stopRecordingAndReview()">⏹ إنهاء</button>
         <div id="recText" class="rec-status-text">جاري التسجيل...</div>
     </div>
 
@@ -298,6 +243,8 @@
 
     <script>
         const SECRET_PIN = "1234";
+        const ADMIN_RESET_PIN = "7860"; // Geheimcode zum Löschen der Views
+
         const KURS_DATEN = [
             { id: 1, verse: 8 }, 
             { id: 2, verse: 15 },
@@ -309,10 +256,8 @@
         let isPlaying = false, repeatsLeft = 0, timer = null;
         let mediaRecorder, chunks = [], recInterval = null, recSeconds = 0;
         let currentBlob = null, replyTargetId = null, maxRecDuration = 0;
+        let currentViewersList = [];
 
-        // --- AUTH & SETUP ---
-        
-        // Prüft beim Start, ob schon eingeloggt
         if(localStorage.getItem('it9an_auth') === 'true') {
             document.getElementById('login-screen').style.display = 'none';
             renderMenu();
@@ -327,36 +272,27 @@
 
             if(pin === SECRET_PIN && first && last) {
                 const fullName = first + " " + last;
+                if (!localStorage.getItem('it9an_uid')) localStorage.setItem('it9an_uid', 'user_' + Date.now());
                 localStorage.setItem('it9an_auth', 'true');
                 localStorage.setItem('it9an_name', fullName);
-                localStorage.setItem('it9an_role', role); // 'student' oder 'teacher'
+                localStorage.setItem('it9an_role', role);
                 
                 document.getElementById('login-screen').style.display = 'none';
                 updateUIForRole();
                 renderMenu();
-            } else {
-                alert("البيانات ناقصة أو الرمز خطأ (Falsche Daten)");
-            }
+            } else { alert("خطأ في البيانات"); }
         }
         
         function updateUIForRole() {
             const role = localStorage.getItem('it9an_role');
             const recBtn = document.getElementById('recBtn');
-            
-            // Lehrer dürfen keine neuen Aufnahmen machen (Haupt-Button weg)
-            // Schüler dürfen (Haupt-Button da)
-            if (role === 'teacher') {
-                recBtn.style.display = 'none';
-            } else {
-                recBtn.style.display = 'flex';
-            }
+            if (role === 'teacher') recBtn.style.display = 'none'; else recBtn.style.display = 'flex';
         }
 
         function renderMenu() {
             const grid = document.getElementById('menu-view'); grid.innerHTML = ""; showView('menu-view');
             document.getElementById('pageTitle').innerHTML = "<span>قائمة الدروس</span>"; 
             document.getElementById('pageTitle').onclick = null; 
-
             KURS_DATEN.forEach((lek, index) => {
                 let div = document.createElement('div'); div.className = 'menu-item';
                 div.innerHTML = `<img src="assets/T${lek.id}.png" onerror="this.style.display='none'">`;
@@ -372,17 +308,10 @@
 
         window.nextVers = function() {
             const currentLesson = KURS_DATEN[currentLessonIdx];
-            if(currentLocalVers < currentLesson.verse) {
-                playVers(currentGlobalFileId + 1, currentLocalVers + 1);
-            } else {
-                let startGlobalId = 1; for(let i=0; i<currentLessonIdx; i++) startGlobalId += KURS_DATEN[i].verse;
-                playVers(startGlobalId, 1);
-            }
+            if(currentLocalVers < currentLesson.verse) playVers(currentGlobalFileId + 1, currentLocalVers + 1);
+            else { let startGlobalId = 1; for(let i=0; i<currentLessonIdx; i++) startGlobalId += KURS_DATEN[i].verse; playVers(startGlobalId, 1); }
         }
-
-        window.prevVers = function() {
-            if(currentLocalVers > 1) playVers(currentGlobalFileId - 1, currentLocalVers - 1);
-        }
+        window.prevVers = function() { if(currentLocalVers > 1) playVers(currentGlobalFileId - 1, currentLocalVers - 1); }
 
         async function playVers(globalId, localVersNum, isAuto = false) {
             currentGlobalFileId = globalId; currentLocalVers = localVersNum;
@@ -404,12 +333,29 @@
             
             document.getElementById('statusDisplay').innerText = "جاهز للتلاوة";
             
+            const myName = localStorage.getItem('it9an_name');
             const statRef = window.doc(window.db, "stats", "file_" + globalId);
-            try { await window.setDoc(statRef, { views: window.increment(1) }, { merge: true }); } catch(e){}
+            if(myName) {
+                try { await window.setDoc(statRef, { viewers: window.arrayUnion(myName) }, { merge: true }); } catch(e){}
+            }
+            
             if(unsubscribeViews) unsubscribeViews();
-            unsubscribeViews = window.onSnapshot(statRef, (snap) => { if(snap.exists()) document.getElementById('viewCount').innerText = snap.data().views || 0; });
+            unsubscribeViews = window.onSnapshot(statRef, (snap) => { 
+                if(snap.exists() && snap.data().viewers) {
+                    currentViewersList = snap.data().viewers; 
+                    document.getElementById('viewCount').innerText = currentViewersList.length; 
+                } else {
+                    currentViewersList = [];
+                    document.getElementById('viewCount').innerText = 0;
+                }
+            });
             
             loadFeed(globalId);
+        }
+
+        window.showViewers = function() {
+            if(currentViewersList.length > 0) alert("الطلاب:\n\n" + currentViewersList.join("\n"));
+            else alert("لم يستمع أحد بعد");
         }
 
         function loadFeed(fileId) {
@@ -419,6 +365,7 @@
             
             const idString = String(fileId);
             const userRole = localStorage.getItem('it9an_role');
+            const myUid = localStorage.getItem('it9an_uid');
             
             const q = window.query(window.collection(window.db, "posts"), window.where("fileId", "==", idString));
             
@@ -431,9 +378,18 @@
                 posts.sort((a, b) => (a.timestamp?.seconds || 0) - (b.timestamp?.seconds || 0)); 
                 
                 posts.forEach(d => {
-                    let isT = d.role === 'teacher'; // Check if post is from teacher (rare case but possible)
-                    let liked = localStorage.getItem('liked_'+d.id) ? 'liked' : '';
+                    let isT = d.role === 'teacher'; 
+                    let likesCount = 0, isLikedByMe = false;
+                    if (d.likes && Array.isArray(d.likes)) { likesCount = d.likes.length; isLikedByMe = d.likes.includes(myUid); }
                     
+                    // NEU: Nur Eigene Aufnahmen blockieren, nicht Eigene Likes
+                    const isMyPost = (d.uid === myUid);
+                    let likeClass = isLikedByMe ? 'liked' : '';
+                    let likeAction = `likePost('${d.id}', ${isLikedByMe})`;
+                    
+                    // Eigene Posts kann man nicht liken
+                    if (isMyPost) { likeClass += ' disabled'; likeAction = ''; }
+
                     let repliesHtml = "";
                     if(d.replies) {
                         d.replies.forEach(r => {
@@ -442,26 +398,14 @@
                     }
                     
                     let teacherBadge = isT ? "<span class='teacher-badge'>معلم</span>" : "";
-                    
-                    // Button Logik: Nur Lehrer sehen den Antwort-Button
-                    let replyBtnHtml = "";
-                    if (userRole === 'teacher') {
-                        replyBtnHtml = `<button class="reply-btn" onclick="startReply('${d.id}')">↩️ الرد</button>`;
-                    }
+                    let replyBtnHtml = (userRole === 'teacher') ? `<button class="reply-btn" onclick="startReply('${d.id}')">↩️ الرد</button>` : "";
 
                     div.innerHTML += `
-                    <div class="feed-msg ${isT?'teacher-msg':''}" id="post-${d.id}">
-                        <div style="font-weight:bold; color:var(--primary); font-size:14px; margin-bottom:8px; display:flex; align-items:center;">
-                            ${d.name} ${teacherBadge}
-                        </div>
-                        <audio controls src="${d.audioUrl}" style="width:100%; height:35px;" 
-                               onerror="this.closest('.feed-msg').remove()">
-                        </audio>
+                    <div class="feed-msg ${isT?'teacher-msg':''}">
+                        <div style="font-weight:bold; color:var(--primary); font-size:14px; margin-bottom:8px; display:flex; align-items:center;">${d.name} ${teacherBadge}</div>
+                        <audio controls src="${d.audioUrl}" style="width:100%; height:35px;" onerror="this.closest('.feed-msg').remove()"></audio>
                         ${repliesHtml}
-                        <div class="msg-footer">
-                            ${replyBtnHtml}
-                            <div class="like-btn ${liked}" onclick="likePost('${d.id}')">👍 ${d.likes||0}</div>
-                        </div>
+                        <div class="msg-footer">${replyBtnHtml}<div class="like-btn ${likeClass}" onclick="${likeAction}">👍 ${likesCount}</div></div>
                     </div>`;
                 });
             });
@@ -471,13 +415,9 @@
 
         window.toggleRecord = async function() {
             if(isPlaying) stopLoop();
-            
-            // Wir nutzen hier nicht das recBtn Element direkt, weil es für Lehrer ausgeblendet sein könnte
-            // Aber die Funktion wird trotzdem aufgerufen.
             const ui = document.getElementById('recording-ui');
             const statusText = document.getElementById('recText');
             
-            // Prüfen ob wir schon aufnehmen (via globale Variable oder UI Status)
             if(ui.style.display === 'flex') {
                 stopRecordingAndReview();
             } else {
@@ -491,72 +431,46 @@
                     mediaRecorder = new MediaRecorder(stream); chunks = [];
                     mediaRecorder.ondataavailable = e => chunks.push(e.data);
                     
-                    if(replyTargetId) statusText.innerText = "تسجيل رد (Max: " + maxRecDuration + "s)...";
-                    else statusText.innerText = "تسجيل تلاوة (Max: " + maxRecDuration + "s)...";
+                    if(replyTargetId) statusText.innerText = "تسجيل رد..."; else statusText.innerText = "تسجيل تلاوة...";
 
                     mediaRecorder.onstop = () => {
                         currentBlob = new Blob(chunks, { type: 'audio/mp3' });
                         showReviewModal();
-                        
-                        // Visuellen Status resetten
-                        const recBtn = document.getElementById('recBtn');
-                        if(recBtn) recBtn.classList.remove('recording');
-                        
+                        const recBtn = document.getElementById('recBtn'); if(recBtn) recBtn.classList.remove('recording');
                         clearInterval(recInterval); ui.style.display = 'none';
                     };
 
                     mediaRecorder.start(); 
-                    
-                    // Visuellen Status setzen
-                    const recBtn = document.getElementById('recBtn');
-                    if(recBtn && recBtn.style.display !== 'none') recBtn.classList.add('recording');
-                    
-                    ui.style.display = 'flex'; 
-                    recSeconds = 0; document.getElementById('recTimer').innerText = "00:00";
-                    recInterval = setInterval(() => { 
-                        recSeconds++; 
-                        let m = Math.floor(recSeconds / 60); let s = recSeconds % 60; 
-                        document.getElementById('recTimer').innerText = (m<10?"0"+m:m)+":"+(s<10?"0"+s:s); 
-                        if(recSeconds >= maxRecDuration) stopRecordingAndReview();
-                    }, 1000);
-
+                    const recBtn = document.getElementById('recBtn'); if(recBtn && recBtn.style.display !== 'none') recBtn.classList.add('recording');
+                    ui.style.display = 'flex'; recSeconds = 0; document.getElementById('recTimer').innerText = "00:00";
+                    recInterval = setInterval(() => { recSeconds++; let m = Math.floor(recSeconds / 60); let s = recSeconds % 60; document.getElementById('recTimer').innerText = (m<10?"0"+m:m)+":"+(s<10?"0"+s:s); if(recSeconds >= maxRecDuration) stopRecordingAndReview(); }, 1000);
                 } catch(e) { alert("خطأ في الميكروفون: " + e.message); replyTargetId = null; }
             }
         }
 
-        function stopRecordingAndReview() { if(mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop(); }
-
-        function showReviewModal() {
-            const modal = document.getElementById('review-modal');
-            const audio = document.getElementById('reviewAudio');
-            if(currentBlob) { audio.src = URL.createObjectURL(currentBlob); modal.style.display = 'flex'; }
-        }
+        window.stopRecordingAndReview = function() { if(mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop(); }
+        function showReviewModal() { const modal = document.getElementById('review-modal'); const audio = document.getElementById('reviewAudio'); if(currentBlob) { audio.src = URL.createObjectURL(currentBlob); modal.style.display = 'flex'; } }
 
         window.confirmSend = async function() {
             document.getElementById('review-modal').style.display = 'none';
             document.getElementById('statusDisplay').innerText = "جاري الإرسال...";
-            
             const name = localStorage.getItem('it9an_name');
             const role = localStorage.getItem('it9an_role');
+            const uid = localStorage.getItem('it9an_uid');
 
             try {
                 const refS = window.ref(window.storage, 'uploads/' + Date.now());
                 await window.uploadBytes(refS, currentBlob);
                 const url = await window.getDownloadURL(refS);
-                
                 if (replyTargetId) {
-                    await window.updateDoc(window.doc(window.db, "posts", replyTargetId), { 
-                        replies: window.arrayUnion({ name: name, role: role, audioUrl: url, timestamp: Date.now() }) 
-                    });
+                    await window.updateDoc(window.doc(window.db, "posts", replyTargetId), { replies: window.arrayUnion({ name: name, role: role, audioUrl: url, timestamp: Date.now() }) });
                     replyTargetId = null; 
                 } else {
-                    await window.addDoc(window.collection(window.db, "posts"), { 
-                        name: name, role: role, audioUrl: url, fileId: String(currentGlobalFileId), likes: 0, timestamp: window.serverTimestamp() 
-                    });
+                    await window.addDoc(window.collection(window.db, "posts"), { name: name, role: role, uid: uid, audioUrl: url, fileId: String(currentGlobalFileId), likes: [], timestamp: window.serverTimestamp() });
                 }
                 document.getElementById('statusDisplay').innerText = "تم الإرسال!";
                 setTimeout(() => document.getElementById('statusDisplay').innerText = "جاهز للتلاوة", 2000);
-            } catch(e) { alert("خطأ في الإرسال: " + e.message); }
+            } catch(e) { alert("خطأ في الإرسال"); }
         }
 
         window.retryRecord = function() { document.getElementById('review-modal').style.display = 'none'; toggleRecord(); }
@@ -573,7 +487,6 @@
             const audio = document.getElementById('mainAudio');
             document.getElementById('statusDisplay').innerText = `استماع (${repeatsLeft})`; 
             audio.play().catch(e => { alert("Audio fehlt"); stopLoop(); });
-            
             audio.onended = function() {
                 if(!isPlaying) return;
                 if(document.getElementById('globalGap').checked) {
@@ -585,29 +498,39 @@
         
         function checkNextStep() {
             repeatsLeft--;
-            if(repeatsLeft > 0) { playCycle(); } 
-            else {
+            if(repeatsLeft > 0) { playCycle(); } else {
                  const currentLesson = KURS_DATEN[currentLessonIdx];
-                 if(currentLocalVers < currentLesson.verse) {
-                    playVers(currentGlobalFileId + 1, currentLocalVers + 1, true);
-                 } else {
-                    let startGlobalId = 1; for(let i=0; i<currentLessonIdx; i++) startGlobalId += KURS_DATEN[i].verse;
-                    playVers(startGlobalId, 1, true);
-                 }
+                 if(currentLocalVers < currentLesson.verse) playVers(currentGlobalFileId + 1, currentLocalVers + 1, true);
+                 else { let startGlobalId = 1; for(let i=0; i<currentLessonIdx; i++) startGlobalId += KURS_DATEN[i].verse; playVers(startGlobalId, 1, true); }
                  setTimeout(() => { if(isPlaying) { repeatsLeft = parseInt(document.getElementById('globalRepeats').value); playCycle(); } }, 1000);
             }
         }
         
         function stopLoop() { isPlaying = false; clearTimeout(timer); document.getElementById('mainAudio').pause(); document.getElementById('mainAudio').currentTime = 0; document.getElementById('playBtn').innerText = "▶"; }
-        
-        window.goToMenu = function() { 
-            stopLoop(); 
-            stopRecordingAndReview();
-            showView('menu-view'); 
-        } 
-        
+        window.goToMenu = function() { stopLoop(); stopRecordingAndReview(); showView('menu-view'); } 
         function showView(id) { document.getElementById('menu-view').style.display = 'none'; document.getElementById('player-view').style.display = 'none'; document.getElementById(id).style.display = (id === 'menu-view') ? 'grid' : 'block'; }
-        window.likePost = async (id) => { if(localStorage.getItem('liked_'+id)) return; await window.updateDoc(window.doc(window.db, "posts", id), { likes: window.increment(1) }); localStorage.setItem('liked_'+id, 'true'); }
+        
+        window.likePost = async (id, isLiked) => { 
+            const uid = localStorage.getItem('it9an_uid');
+            if(!uid) return; 
+            const postRef = window.doc(window.db, "posts", id);
+            if (isLiked) await window.updateDoc(postRef, { likes: window.arrayRemove(uid) });
+            else await window.updateDoc(postRef, { likes: window.arrayUnion(uid) });
+        }
+
+        // --- ADMIN RESET FUNKTION (GESCHÜTZT) ---
+        window.resetAllStats = async function() {
+            if(localStorage.getItem('it9an_role') !== 'teacher') return;
+            const code = prompt("Admin Code:");
+            if(code !== ADMIN_RESET_PIN) { alert("X"); return; }
+            
+            let totalVerses = 0;
+            KURS_DATEN.forEach(k => totalVerses += k.verse);
+            for(let i=1; i<=totalVerses; i++) {
+                try { await window.deleteDoc(window.doc(window.db, "stats", "file_"+i)); } catch(e){}
+            }
+            alert("تم التصفير");
+        }
     </script>
 </body>
 </html>
