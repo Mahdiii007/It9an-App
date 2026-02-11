@@ -38,21 +38,28 @@
             z-index: 5000; display: flex; flex-direction: column; justify-content: center; align-items: center; 
         }
         .login-card {
-            background: rgba(255,255,255,0.1); backdrop-filter: blur(10px);
-            padding: 30px; border-radius: 20px; border: 1px solid var(--gold);
-            text-align: center;
+            background: rgba(255,255,255,0.95); 
+            padding: 30px; border-radius: 20px; border: 2px solid var(--gold);
+            text-align: center; width: 90%; max-width: 350px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
         }
-        .pin-input { 
-            font-size: 24px; padding: 10px; text-align: center; width: 160px; 
-            border-radius: 10px; border: 2px solid var(--gold); 
-            background: var(--surface); color: var(--primary); outline: none;
+        .login-title { color: var(--primary); margin: 0 0 20px 0; font-size: 24px; font-weight: bold; }
+        
+        .login-input, .login-select { 
+            font-size: 16px; padding: 12px; text-align: right; width: 100%; 
+            border-radius: 10px; border: 1px solid #ddd; 
+            background: var(--surface); color: var(--text); outline: none;
+            margin-bottom: 10px; font-family: 'Amiri';
         }
+        .login-select { cursor: pointer; }
+        
         .login-btn {
-            margin-top: 20px; padding: 10px 40px; font-weight: bold; font-size: 18px; 
-            border: none; border-radius: 30px; 
+            margin-top: 10px; padding: 12px 40px; font-weight: bold; font-size: 18px; 
+            border: none; border-radius: 30px; width: 100%;
             background: var(--gold); color: var(--primary); cursor: pointer;
-            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4);
+            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3); transition: 0.2s;
         }
+        .login-btn:active { transform: scale(0.98); }
 
         /* --- HEADER --- */
         .header { 
@@ -60,13 +67,12 @@
             background: linear-gradient(to left, var(--primary), var(--primary-light));
             padding: 10px 15px; 
             box-shadow: 0 4px 15px rgba(0,0,0,0.15); 
-            display: flex; justify-content: center; /* Zentriert den Titel */
+            display: flex; justify-content: center; 
             align-items: center; 
             height: 70px;
             border-bottom: 2px solid var(--gold);
         }
         
-        /* Der Titel ist jetzt der Button zum Menü */
         #pageTitle {
             background: var(--surface);
             padding: 5px 20px;
@@ -75,11 +81,9 @@
             height: 45px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.2);
             border: 2px solid var(--gold);
-            cursor: pointer; /* Zeigt, dass es klickbar ist */
-            transition: transform 0.1s;
+            cursor: pointer; transition: transform 0.1s;
         }
         #pageTitle:active { transform: scale(0.95); background: var(--gold-light); }
-
         #pageTitle img { height: 28px; width: auto; display: block; }
         #pageTitle span {
             font-size: 16px; color: var(--primary); font-weight: bold;
@@ -103,46 +107,24 @@
         
         .quran-frame {
             background: var(--surface);
-            padding: 10px; 
-            border-radius: 15px;
-            border: 2px solid var(--gold-light);
-            outline: 1px solid var(--gold);
-            outline-offset: -5px;
-            box-shadow: var(--shadow);
-            margin-bottom: 20px;
-            position: relative; 
-            min-height: 250px;
+            padding: 10px; border-radius: 15px;
+            border: 2px solid var(--gold-light); outline: 1px solid var(--gold); outline-offset: -5px;
+            box-shadow: var(--shadow); margin-bottom: 20px;
+            position: relative; min-height: 250px;
             display: flex; align-items: center; justify-content: center;
         }
-
-        .player-container { 
-            width: 100%; 
-            display: flex; justify-content: center; align-items: center; 
-            position: relative;
-        }
-        
-        .quran-image { 
-            max-width: 85%; 
-            max-height: 50vh; 
-            object-fit: contain; 
-            border-radius: 5px; 
-            display: block;
-        }
+        .player-container { width: 100%; display: flex; justify-content: center; align-items: center; position: relative; }
+        .quran-image { max-width: 85%; max-height: 50vh; object-fit: contain; border-radius: 5px; display: block; }
 
         .nav-btn { 
-            position: absolute;
-            top: 50%;
-            transform: translateY(-50%);
+            position: absolute; top: 50%; transform: translateY(-50%);
             width: 40px; height: 60px; 
-            background: var(--bg); color: var(--primary); 
-            border: 1px solid var(--gold);
+            background: var(--bg); color: var(--primary); border: 1px solid var(--gold);
             border-radius: 8px; font-size: 24px; cursor: pointer; 
             display: flex; align-items: center; justify-content: center; 
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            z-index: 10;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); z-index: 10;
         }
-        #btnPrev { right: -5px; } 
-        #btnNext { left: -5px; }
+        #btnPrev { right: -5px; } #btnNext { left: -5px; }
         .nav-btn.hidden { opacity: 0; pointer-events: none; }
 
         /* SETTINGS */
@@ -166,8 +148,8 @@
         .teacher-badge { background: var(--gold); color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-left: 5px; }
         
         .msg-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding-top: 5px; border-top: 1px solid #eee; }
-        .like-btn { cursor: pointer; display: flex; align-items: center; gap: 5px; padding: 4px 12px; border-radius: 20px; font-size: 13px; background: #f9f9f9; border: 1px solid #eee; }
-        .like-btn.liked { color: #e91e63; background: #fce4ec; border-color: #f8bbd0; }
+        .like-btn { cursor: pointer; display: flex; align-items: center; gap: 5px; padding: 4px 12px; border-radius: 20px; font-size: 14px; background: #f9f9f9; border: 1px solid #eee; }
+        .like-btn.liked { color: var(--primary); background: #e8f5e9; border-color: var(--primary); }
         .reply-btn { cursor: pointer; background: none; border: 1px solid var(--primary); color: var(--primary); padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; }
 
         /* RECORDING UI */
@@ -194,11 +176,10 @@
             box-shadow: 0 -5px 30px rgba(0,0,0,0.05); 
         }
         
-        /* Buttons Symmetrisch */
         .controls { display: flex; justify-content: center; align-items: center; gap: 50px; direction: ltr; }
         
         .btn { 
-            width: 70px; height: 70px; /* Beide exakt gleich groß */
+            width: 70px; height: 70px; 
             border-radius: 50%; border: none; 
             font-size: 28px; color: white; 
             display: flex; align-items: center; justify-content: center; 
@@ -207,20 +188,15 @@
         }
         .btn:active { transform: scale(0.9); }
         
-        /* Play Button (Rechts in LTR, also eigentlich links in RTL Code... aber wir nutzen direction: ltr für Controls) */
-        /* Wir wollen: Record (Links) -- Play (Rechts) oder andersrum? */
-        /* User sagte: Play Button rechts. Da direction:ltr ist, ist rechts -> rechts. */
-        
+        /* Record Button (Nur für Schüler sichtbar) */
         .btn-rec { 
-            background: var(--red); 
-            border: 4px solid #fff; 
+            background: var(--red); border: 4px solid #fff; 
             box-shadow: 0 4px 15px rgba(192, 57, 43, 0.3);
         }
         .btn-rec.recording { animation: pulse 1s infinite; background: white; color: var(--red); border: 2px solid var(--red); }
         
         .btn-play { 
-            background: var(--primary); 
-            border: 4px solid #fff; 
+            background: var(--primary); border: 4px solid #fff; 
             box-shadow: 0 4px 15px rgba(15, 76, 58, 0.3);
         }
         
@@ -254,10 +230,15 @@
 
     <div id="login-screen">
         <div class="login-card">
-            <h2 style="color:var(--gold); margin:0 0 20px 0; font-size: 28px;">بوابة الإتقان</h2>
-            <input type="password" id="pinInput" class="pin-input" placeholder="****">
-            <br>
-            <button onclick="checkPin()" class="login-btn">دخول</button>
+            <div class="login-title">بوابة الإتقان</div>
+            <input type="text" id="firstName" class="login-input" placeholder="الاسم الأول">
+            <input type="text" id="lastName" class="login-input" placeholder="اللقب">
+            <select id="userRole" class="login-input login-select">
+                <option value="student">طالب</option>
+                <option value="teacher">معلم</option>
+            </select>
+            <input type="password" id="pinInput" class="login-input" placeholder="كلمة المرور">
+            <button onclick="checkLogin()" class="login-btn">دخول</button>
         </div>
     </div>
 
@@ -329,17 +310,52 @@
         let mediaRecorder, chunks = [], recInterval = null, recSeconds = 0;
         let currentBlob = null, replyTargetId = null, maxRecDuration = 0;
 
-        function checkPin() {
-            if(document.getElementById('pinInput').value === SECRET_PIN) {
-                document.getElementById('login-screen').style.display = 'none'; renderMenu();
-            } else alert("الرمز خطأ");
+        // --- AUTH & SETUP ---
+        
+        // Prüft beim Start, ob schon eingeloggt
+        if(localStorage.getItem('it9an_auth') === 'true') {
+            document.getElementById('login-screen').style.display = 'none';
+            renderMenu();
+            updateUIForRole();
+        }
+
+        function checkLogin() {
+            const pin = document.getElementById('pinInput').value;
+            const first = document.getElementById('firstName').value.trim();
+            const last = document.getElementById('lastName').value.trim();
+            const role = document.getElementById('userRole').value;
+
+            if(pin === SECRET_PIN && first && last) {
+                const fullName = first + " " + last;
+                localStorage.setItem('it9an_auth', 'true');
+                localStorage.setItem('it9an_name', fullName);
+                localStorage.setItem('it9an_role', role); // 'student' oder 'teacher'
+                
+                document.getElementById('login-screen').style.display = 'none';
+                updateUIForRole();
+                renderMenu();
+            } else {
+                alert("البيانات ناقصة أو الرمز خطأ (Falsche Daten)");
+            }
+        }
+        
+        function updateUIForRole() {
+            const role = localStorage.getItem('it9an_role');
+            const recBtn = document.getElementById('recBtn');
+            
+            // Lehrer dürfen keine neuen Aufnahmen machen (Haupt-Button weg)
+            // Schüler dürfen (Haupt-Button da)
+            if (role === 'teacher') {
+                recBtn.style.display = 'none';
+            } else {
+                recBtn.style.display = 'flex';
+            }
         }
 
         function renderMenu() {
             const grid = document.getElementById('menu-view'); grid.innerHTML = ""; showView('menu-view');
-            // Menü Titel (Klickbar aber hier schon im Menü)
             document.getElementById('pageTitle').innerHTML = "<span>قائمة الدروس</span>"; 
-            document.getElementById('pageTitle').onclick = null; // Im Menü keine Funktion
+            document.getElementById('pageTitle').onclick = null; 
 
             KURS_DATEN.forEach((lek, index) => {
                 let div = document.createElement('div'); div.className = 'menu-item';
@@ -372,12 +388,11 @@
             currentGlobalFileId = globalId; currentLocalVers = localVersNum;
             showView('player-view');
             
-            // Header Titel Setup (mit Klick-Funktion)
             const lessonId = KURS_DATEN[currentLessonIdx].id;
             const titleImg = `assets/T${lessonId}.png`;
             const pgTitle = document.getElementById('pageTitle');
             pgTitle.innerHTML = `<span>${localVersNum}</span><img src="${titleImg}" alt="Lesson Title">`;
-            pgTitle.onclick = window.goToMenu; // Hier aktivieren
+            pgTitle.onclick = window.goToMenu; 
 
             const btnPrev = document.getElementById('btnPrev');
             if(localVersNum === 1) btnPrev.classList.add('hidden'); else btnPrev.classList.remove('hidden');
@@ -403,6 +418,8 @@
             if(unsubscribeFeed) unsubscribeFeed();
             
             const idString = String(fileId);
+            const userRole = localStorage.getItem('it9an_role');
+            
             const q = window.query(window.collection(window.db, "posts"), window.where("fileId", "==", idString));
             
             unsubscribeFeed = window.onSnapshot(q, (snap) => {
@@ -414,16 +431,24 @@
                 posts.sort((a, b) => (a.timestamp?.seconds || 0) - (b.timestamp?.seconds || 0)); 
                 
                 posts.forEach(d => {
-                    let isT = d.name.includes("Mahdi") || d.name.includes("المهدي");
+                    let isT = d.role === 'teacher'; // Check if post is from teacher (rare case but possible)
                     let liked = localStorage.getItem('liked_'+d.id) ? 'liked' : '';
+                    
                     let repliesHtml = "";
                     if(d.replies) {
                         d.replies.forEach(r => {
                             repliesHtml += `<div class="reply-box"><div class="reply-header">🎓 ${r.name}</div><audio controls src="${r.audioUrl}" style="width:100%"></audio></div>`;
                         });
                     }
+                    
                     let teacherBadge = isT ? "<span class='teacher-badge'>معلم</span>" : "";
                     
+                    // Button Logik: Nur Lehrer sehen den Antwort-Button
+                    let replyBtnHtml = "";
+                    if (userRole === 'teacher') {
+                        replyBtnHtml = `<button class="reply-btn" onclick="startReply('${d.id}')">↩️ الرد</button>`;
+                    }
+
                     div.innerHTML += `
                     <div class="feed-msg ${isT?'teacher-msg':''}" id="post-${d.id}">
                         <div style="font-weight:bold; color:var(--primary); font-size:14px; margin-bottom:8px; display:flex; align-items:center;">
@@ -434,8 +459,8 @@
                         </audio>
                         ${repliesHtml}
                         <div class="msg-footer">
-                            <button class="reply-btn" onclick="startReply('${d.id}')">↩️ الرد</button>
-                            <div class="like-btn ${liked}" onclick="likePost('${d.id}')">❤️ ${d.likes||0}</div>
+                            ${replyBtnHtml}
+                            <div class="like-btn ${liked}" onclick="likePost('${d.id}')">👍 ${d.likes||0}</div>
                         </div>
                     </div>`;
                 });
@@ -446,11 +471,14 @@
 
         window.toggleRecord = async function() {
             if(isPlaying) stopLoop();
-            const btn = document.getElementById('recBtn');
+            
+            // Wir nutzen hier nicht das recBtn Element direkt, weil es für Lehrer ausgeblendet sein könnte
+            // Aber die Funktion wird trotzdem aufgerufen.
             const ui = document.getElementById('recording-ui');
             const statusText = document.getElementById('recText');
             
-            if(btn.classList.contains('recording')) {
+            // Prüfen ob wir schon aufnehmen (via globale Variable oder UI Status)
+            if(ui.style.display === 'flex') {
                 stopRecordingAndReview();
             } else {
                 try {
@@ -469,12 +497,20 @@
                     mediaRecorder.onstop = () => {
                         currentBlob = new Blob(chunks, { type: 'audio/mp3' });
                         showReviewModal();
-                        btn.classList.remove('recording'); 
+                        
+                        // Visuellen Status resetten
+                        const recBtn = document.getElementById('recBtn');
+                        if(recBtn) recBtn.classList.remove('recording');
+                        
                         clearInterval(recInterval); ui.style.display = 'none';
                     };
 
                     mediaRecorder.start(); 
-                    btn.classList.add('recording'); 
+                    
+                    // Visuellen Status setzen
+                    const recBtn = document.getElementById('recBtn');
+                    if(recBtn && recBtn.style.display !== 'none') recBtn.classList.add('recording');
+                    
                     ui.style.display = 'flex'; 
                     recSeconds = 0; document.getElementById('recTimer').innerText = "00:00";
                     recInterval = setInterval(() => { 
@@ -500,8 +536,8 @@
             document.getElementById('review-modal').style.display = 'none';
             document.getElementById('statusDisplay').innerText = "جاري الإرسال...";
             
-            let name = localStorage.getItem('it9an_name');
-            if(!name) { name = prompt("الاسم الكريم؟"); if(name) localStorage.setItem('it9an_name', name); else name = "طالب"; }
+            const name = localStorage.getItem('it9an_name');
+            const role = localStorage.getItem('it9an_role');
 
             try {
                 const refS = window.ref(window.storage, 'uploads/' + Date.now());
@@ -510,12 +546,12 @@
                 
                 if (replyTargetId) {
                     await window.updateDoc(window.doc(window.db, "posts", replyTargetId), { 
-                        replies: window.arrayUnion({ name: name, audioUrl: url, timestamp: Date.now() }) 
+                        replies: window.arrayUnion({ name: name, role: role, audioUrl: url, timestamp: Date.now() }) 
                     });
                     replyTargetId = null; 
                 } else {
                     await window.addDoc(window.collection(window.db, "posts"), { 
-                        name: name, audioUrl: url, fileId: String(currentGlobalFileId), likes: 0, timestamp: window.serverTimestamp() 
+                        name: name, role: role, audioUrl: url, fileId: String(currentGlobalFileId), likes: 0, timestamp: window.serverTimestamp() 
                     });
                 }
                 document.getElementById('statusDisplay').innerText = "تم الإرسال!";
@@ -565,8 +601,8 @@
         function stopLoop() { isPlaying = false; clearTimeout(timer); document.getElementById('mainAudio').pause(); document.getElementById('mainAudio').currentTime = 0; document.getElementById('playBtn').innerText = "▶"; }
         
         window.goToMenu = function() { 
-            stopLoop(); // Audio Stoppen
-            stopRecordingAndReview(); // Aufnahme stoppen
+            stopLoop(); 
+            stopRecordingAndReview();
             showView('menu-view'); 
         } 
         
