@@ -7,32 +7,71 @@
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap" rel="stylesheet">
     
     <style>
-        /* --- DESIGN --- */
+        /* --- RESET & LAYOUT FIX --- */
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
         :root { --primary: #145934; --gold: #c5a059; --bg: #fdfbf7; --text: #2c3e50; --red: #d32f2f; }
         
-        body { margin: 0; padding: 0; background-color: var(--bg); font-family: 'Amiri', serif; color: var(--text); padding-bottom: 140px; -webkit-overflow-scrolling: touch; }
+        body { 
+            margin: 0; padding: 0; 
+            background-color: var(--bg); 
+            font-family: 'Amiri', serif; 
+            color: var(--text); 
+            padding-bottom: 150px; 
+            width: 100%; 
+            overflow-x: hidden; 
+        }
 
         /* LOGIN */
         #login-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--primary); z-index: 5000; display: flex; flex-direction: column; justify-content: center; align-items: center; }
         .pin-input { font-size: 24px; padding: 10px; text-align: center; width: 140px; border-radius: 8px; border: 2px solid var(--gold); }
 
         /* HEADER */
-        .header { position: sticky; top: 0; z-index: 1000; background: var(--primary); color: var(--gold); padding: 10px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.3); display: flex; justify-content: space-between; align-items: center; }
+        .header { 
+            position: sticky; top: 0; z-index: 1000; 
+            background: var(--primary); color: var(--gold); 
+            padding: 10px; text-align: center; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2); 
+            display: flex; justify-content: space-between; align-items: center; 
+            width: 100%;
+        }
         .header-btn { background: none; border: 1px solid var(--gold); color: var(--gold); padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 14px; font-family: 'Amiri'; }
 
         /* MENÜ */
-        .menu-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; padding: 15px; }
+        .menu-grid { 
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; padding: 15px; 
+            max-width: 100%; margin: 0 auto; 
+        }
         .menu-item { background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); cursor: pointer; transition: transform 0.1s; }
         .menu-item:active { transform: scale(0.98); }
         .menu-item img { width: 100%; height: auto; display: block; }
-        .menu-title { text-align: center; padding: 5px; font-size: 16px; font-weight: bold; color: var(--primary); }
+        .menu-title { text-align: center; padding: 8px; font-size: 16px; font-weight: bold; color: var(--primary); }
 
-        /* PLAYER */
-        #player-view { display: none; padding: 10px; max-width: 600px; margin: 0 auto; }
-        .player-container { display: flex; align-items: center; justify-content: space-between; gap: 2px; margin-bottom: 10px; width: 100%; }
-        .quran-image { flex-grow: 1; width: 100%; max-height: 60vh; object-fit: contain; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border: 1px solid #ddd; }
-        .nav-arrow { flex-shrink: 0; width: 40px; height: 60px; background: rgba(20, 89, 52, 0.1); color: var(--primary); border: none; border-radius: 5px; font-size: 24px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-        .nav-arrow:active { background: var(--gold); color: white; }
+        /* PLAYER VIEW */
+        #player-view { display: none; padding: 10px; width: 100%; max-width: 600px; margin: 0 auto; }
+        
+        /* NAVIGATION CONTAINER */
+        .player-container { 
+            display: flex; align-items: center; justify-content: space-between; 
+            gap: 10px; margin-bottom: 15px; width: 100%; 
+        }
+        .quran-image { 
+            flex-grow: 1; width: 100%; max-height: 50vh; 
+            object-fit: contain; border-radius: 8px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1); border: 1px solid #ddd; 
+            background: white;
+        }
+        .nav-btn { 
+            width: 50px; height: 80px; 
+            background: var(--primary); color: white; 
+            border: 2px solid var(--gold); 
+            border-radius: 8px; font-size: 28px; cursor: pointer; 
+            display: flex; align-items: center; justify-content: center; 
+            transition: 0.1s;
+            flex-shrink: 0;
+        }
+        .nav-btn:active { background: var(--gold); transform: scale(0.95); }
+        .nav-btn.hidden { visibility: hidden; pointer-events: none; }
 
         /* SETTINGS */
         .settings-box { background: #fff; padding: 10px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #ccc; display: flex; justify-content: space-around; align-items: center; }
@@ -40,36 +79,42 @@
         input[type="checkbox"] { transform: scale(1.5); }
 
         /* FEED */
-        .status-bar { text-align: center; font-size: 18px; font-weight: bold; color: var(--primary); margin: 10px 0; padding: 8px; background: #e8f5e9; border-radius: 5px; }
+        .status-bar { text-align: center; font-size: 16px; font-weight: bold; color: var(--primary); margin: 10px 0; padding: 8px; background: #e8f5e9; border-radius: 5px; }
         .view-counter { font-size: 12px; color: #888; text-align: center; margin-top: 5px; }
-        .feed-container { margin-bottom: 100px; min-height: 50px; }
-        .feed-msg { background: white; padding: 10px; border-radius: 8px; margin-bottom: 15px; border-right: 4px solid #ccc; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-        .teacher-msg { background: #f1f8e9; border-right-color: var(--primary); }
-        .reply-box { margin-top: 10px; padding: 8px; background: #fafafa; border-radius: 5px; border-right: 3px solid var(--gold); margin-right: 10px; }
+        .feed-container { margin-bottom: 20px; min-height: 50px; }
+        .feed-msg { background: white; padding: 12px; border-radius: 10px; margin-bottom: 15px; border: 1px solid #eee; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .teacher-msg { background: #fff9c4; border: 2px solid var(--gold); }
+        .reply-box { margin-top: 10px; padding: 8px; background: rgba(255,255,255,0.7); border-radius: 5px; border-right: 3px solid var(--gold); margin-right: 10px; }
         .reply-header { font-size: 11px; font-weight: bold; color: var(--primary); margin-bottom: 3px; display: flex; align-items: center; gap: 5px; }
         .msg-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
-        .like-btn { cursor: pointer; display: flex; align-items: center; gap: 5px; padding: 2px 8px; border-radius: 10px; font-size: 12px; border: 1px solid #eee; }
+        .like-btn { cursor: pointer; display: flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 15px; font-size: 12px; border: 1px solid #eee; background: white; }
         .like-btn.liked { color: #e91e63; background: #fce4ec; border-color: #fce4ec; }
-        .reply-btn { cursor: pointer; background: none; border: 1px solid var(--primary); color: var(--primary); padding: 2px 8px; border-radius: 5px; font-size: 12px; }
+        .reply-btn { cursor: pointer; background: none; border: 1px solid var(--primary); color: var(--primary); padding: 4px 10px; border-radius: 5px; font-size: 12px; font-weight: bold; }
 
         /* RECORDING UI */
-        #recording-ui { display: none; position: fixed; bottom: 85px; left: 0; width: 100%; background: rgba(255,255,255,0.98); border-top: 2px solid var(--red); padding: 15px 0; z-index: 1500; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 -5px 20px rgba(0,0,0,0.1); }
-        .rec-timer { font-size: 32px; font-weight: bold; color: var(--red); font-family: monospace; margin: 5px 0; }
-        .rec-status-text { font-size: 14px; color: #555; animation: blink 1.5s infinite; }
-        .wave-box { display: flex; gap: 4px; height: 20px; align-items: center; margin-bottom: 5px; }
-        .wave-bar { width: 4px; background: var(--red); border-radius: 2px; animation: wave 1s infinite; }
-        .wave-bar:nth-child(1) { height: 10px; animation-delay: 0.0s; } .wave-bar:nth-child(2) { height: 15px; animation-delay: 0.1s; } .wave-bar:nth-child(3) { height: 20px; animation-delay: 0.2s; } .wave-bar:nth-child(4) { height: 15px; animation-delay: 0.3s; } .wave-bar:nth-child(5) { height: 10px; animation-delay: 0.4s; }
-        @keyframes wave { 0%, 100% { height: 5px; opacity: 0.5; } 50% { height: 25px; opacity: 1; } }
+        #recording-ui { display: none; position: fixed; bottom: 100px; left: 0; width: 100%; background: rgba(255,255,255,0.98); border-top: 3px solid var(--red); padding: 15px 0; z-index: 1500; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 -5px 25px rgba(0,0,0,0.15); }
+        .rec-timer { font-size: 32px; font-weight: bold; color: var(--red); font-family: monospace; }
+        .rec-status-text { font-size: 14px; color: #555; animation: blink 1.5s infinite; margin-top: 5px; }
         @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
 
+        /* REVIEW MODAL */
+        #review-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 6000; justify-content: center; align-items: center; }
+        .review-box { background: white; padding: 25px; border-radius: 15px; width: 85%; max-width: 320px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.4); }
+        .review-title { font-size: 20px; font-weight: bold; margin-bottom: 20px; color: var(--primary); }
+        .review-btns { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; }
+        .r-btn { padding: 12px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; font-family: 'Amiri'; }
+        .btn-send { background: var(--primary); color: white; }
+        .btn-retry { background: var(--gold); color: white; }
+        .btn-cancel { background: #eee; color: #555; }
+
         /* FOOTER */
-        .footer { position: fixed; bottom: 0; left: 0; width: 100%; background: white; border-top: 2px solid var(--gold); padding: 10px 0; z-index: 2000; display: flex; flex-direction: column; gap: 10px; }
-        .now-playing-bar { background: var(--primary); color: white; padding: 10px; text-align: center; font-size: 14px; cursor: pointer; display: none; font-weight: bold; }
+        .footer { position: fixed; bottom: 0; left: 0; width: 100%; background: white; border-top: 2px solid var(--gold); padding: 15px 0; z-index: 2000; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 -5px 20px rgba(0,0,0,0.1); }
         .controls { display: flex; justify-content: space-around; align-items: center; direction: ltr; }
-        .btn { width: 60px; height: 60px; border-radius: 50%; border: none; font-size: 28px; color: white; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.2); cursor: pointer; transition: 0.2s; }
+        .btn { width: 70px; height: 70px; border-radius: 50%; border: none; font-size: 30px; color: white; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.2); cursor: pointer; transition: 0.2s; }
         .btn-play { background: var(--primary); border: 2px solid var(--gold); }
         .btn-rec { background: var(--red); border: 2px solid white; }
-        .btn-rec.recording { border-radius: 15px; transform: scale(0.9); box-shadow: 0 0 15px var(--red); }
+        .btn-rec.recording { animation: pulse 1s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
     </style>
 
     <script type="module">
@@ -118,9 +163,9 @@
         </div>
 
         <div class="player-container">
-            <button class="nav-arrow" onclick="prevVers()">❯</button>
+            <button id="btnPrev" class="nav-btn" onclick="prevVers()">❯</button>
             <img id="currentImg" class="quran-image" src="" alt="Vers Bild" onerror="this.src='placeholder.png'">
-            <button class="nav-arrow" onclick="nextVers()">❮</button>
+            <button id="btnNext" class="nav-btn" onclick="nextVers()">❮</button>
         </div>
         
         <div id="statusDisplay" class="status-bar">جاهز للتلاوة</div>
@@ -131,18 +176,29 @@
     </div>
 
     <div id="recording-ui">
-        <div class="wave-box"><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div></div>
         <div id="recTimer" class="rec-timer">00:00</div>
         <div id="recText" class="rec-status-text">جاري التسجيل...</div>
     </div>
 
+    <div id="review-modal">
+        <div class="review-box">
+            <div class="review-title">مراجعة التسجيل</div>
+            <audio id="reviewAudio" controls style="width:100%; margin: 10px 0;"></audio>
+            <div class="review-btns">
+                <button class="r-btn btn-send" onclick="confirmSend()">✅ إرسال (Senden)</button>
+                <button class="r-btn btn-retry" onclick="retryRecord()">🔄 إعادة (Neu)</button>
+                <button class="r-btn btn-cancel" onclick="cancelRecord()">❌ إلغاء (Abbruch)</button>
+            </div>
+        </div>
+    </div>
+
     <div class="footer">
-        <div id="nowPlayingBar" class="now-playing-bar" onclick="goToCurrentVerse()">🔊 العودة للمقطع الحالي</div>
         <div class="controls">
             <button id="recBtn" class="btn btn-rec" onclick="toggleRecord()">🎤</button>
             <button id="playBtn" class="btn btn-play" onclick="toggleSmartLoop()">▶</button>
         </div>
     </div>
+    
     <audio id="mainAudio"></audio>
 
     <script>
@@ -156,8 +212,11 @@
         let currentLessonIdx = null, currentGlobalFileId = null, currentLocalVers = null;
         let unsubscribeFeed = null, unsubscribeViews = null;
         let isPlaying = false, repeatsLeft = 0, timer = null;
-        let mediaRecorder, chunks = [], recInterval = null, recSeconds = 0;
+        let mediaRecorder, chunks = [];
+        let recInterval = null, recSeconds = 0;
+        let currentBlob = null;
         let replyTargetId = null; 
+        let maxRecDuration = 0;
 
         function checkPin() {
             if(document.getElementById('pinInput').value === SECRET_PIN) {
@@ -181,21 +240,39 @@
             playVers(startId, 1);
         }
 
+        // --- MANUELLE NAVIGATION MIT LOOP (WICHTIG) ---
         window.nextVers = function() {
-            if(currentLocalVers < KURS_DATEN[currentLessonIdx].verse) playVers(currentGlobalFileId + 1, currentLocalVers + 1);
-            else alert("انتهى الدرس");
+            const currentLesson = KURS_DATEN[currentLessonIdx];
+            
+            if(currentLocalVers < currentLesson.verse) {
+                // Normal weiter
+                playVers(currentGlobalFileId + 1, currentLocalVers + 1);
+            } else {
+                // ENDE DER LEKTION -> LOOP ZUM ANFANG
+                let startGlobalId = 1; 
+                for(let i=0; i<currentLessonIdx; i++) startGlobalId += KURS_DATEN[i].verse;
+                playVers(startGlobalId, 1);
+            }
         }
+
         window.prevVers = function() {
             if(currentLocalVers > 1) playVers(currentGlobalFileId - 1, currentLocalVers - 1);
-            else alert("بداية الدرس");
         }
 
         async function playVers(globalId, localVersNum, isAuto = false) {
             currentGlobalFileId = globalId; currentLocalVers = localVersNum;
             showView('player-view');
-            document.getElementById('pageTitle').innerText = `الدرس ${currentLessonIdx+1} - المقطع ${globalId}`;
+            
+            document.getElementById('pageTitle').innerText = `الدرس ${currentLessonIdx+1} - المقطع ${localVersNum}`;
+            
+            // Buttons Steuerung
+            const btnPrev = document.getElementById('btnPrev');
+            if(localVersNum === 1) btnPrev.classList.add('hidden');
+            else btnPrev.classList.remove('hidden');
+
             document.getElementById('currentImg').src = `assets/${globalId}.png`;
-            const audio = document.getElementById('mainAudio'); audio.src = `assets/${globalId}.mp3`;
+            const audio = document.getElementById('mainAudio'); 
+            audio.src = `assets/${globalId}.mp3`;
             
             if(isPlaying && !isAuto) stopLoop();
             
@@ -234,10 +311,12 @@
                             repliesHtml += `<div class="reply-box"><div class="reply-header">🎓 ${r.name}</div><audio controls src="${r.audioUrl}" style="width:100%"></audio></div>`;
                         });
                     }
+                    let teacherBadge = isT ? "🎓 " : "";
+                    
                     div.innerHTML += `
                     <div class="feed-msg ${isT?'teacher-msg':''}">
-                        <div style="font-weight:bold; color:${isT?'var(--primary)':'#d32f2f'}; font-size:12px;">${d.name}</div>
-                        <audio controls src="${d.audioUrl}" style="width:100%; margin-top:5px;"></audio>
+                        <div style="font-weight:bold; color:var(--primary); font-size:14px; margin-bottom:5px;">${teacherBadge}${d.name}</div>
+                        <audio controls src="${d.audioUrl}" style="width:100%;"></audio>
                         ${repliesHtml}
                         <div class="msg-footer">
                             <button class="reply-btn" onclick="startReply('${d.id}')">↩️ الرد</button>
@@ -248,12 +327,7 @@
             });
         }
 
-        window.startReply = function(postId) {
-            replyTargetId = postId;
-            let name = localStorage.getItem('it9an_name');
-            if(!name) { name = prompt("الاسم الكريم؟"); if(name) localStorage.setItem('it9an_name', name); else return; }
-            toggleRecord();
-        }
+        window.startReply = function(postId) { replyTargetId = postId; toggleRecord(); }
 
         window.toggleRecord = async function() {
             if(isPlaying) stopLoop();
@@ -262,48 +336,80 @@
             const statusText = document.getElementById('recText');
             
             if(btn.classList.contains('recording')) {
-                if(mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
-                btn.classList.remove('recording'); btn.innerText = "🎤"; 
-                clearInterval(recInterval); ui.style.display = 'none'; 
+                stopRecordingAndReview();
             } else {
                 try {
+                    const mainAud = document.getElementById('mainAudio');
+                    let dur = mainAud.duration;
+                    if(!dur || isNaN(dur)) dur = 15; 
+                    maxRecDuration = Math.ceil(dur * 2);
+
                     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                     mediaRecorder = new MediaRecorder(stream); chunks = [];
                     mediaRecorder.ondataavailable = e => chunks.push(e.data);
                     
-                    if(replyTargetId) statusText.innerText = "جاري تسجيل الرد...";
-                    else statusText.innerText = "جاري تسجيل التلاوة...";
+                    if(replyTargetId) statusText.innerText = "تسجيل رد (Max: " + maxRecDuration + "s)...";
+                    else statusText.innerText = "تسجيل تلاوة (Max: " + maxRecDuration + "s)...";
 
-                    mediaRecorder.onstop = async () => {
-                        // FIX: Namen auch hier abfragen, falls noch nicht gesetzt!
-                        let name = localStorage.getItem('it9an_name');
-                        if(!name) {
-                            name = prompt("الاسم الكريم؟");
-                            if(name) localStorage.setItem('it9an_name', name);
-                            else name = "طالب"; // Fallback, falls abgebrochen wird
-                        }
-
-                        document.getElementById('statusDisplay').innerText = "جاري الإرسال...";
-                        const blob = new Blob(chunks, { type: 'audio/mp3' });
-                        const refS = window.ref(window.storage, 'uploads/' + Date.now());
-                        await window.uploadBytes(refS, blob);
-                        const url = await window.getDownloadURL(refS);
-                        
-                        if (replyTargetId) {
-                            await window.updateDoc(window.doc(window.db, "posts", replyTargetId), { replies: window.arrayUnion({ name: name, audioUrl: url, timestamp: Date.now() }) });
-                            replyTargetId = null; 
-                        } else {
-                            await window.addDoc(window.collection(window.db, "posts"), { name: name, audioUrl: url, fileId: String(currentGlobalFileId), likes: 0, timestamp: window.serverTimestamp() });
-                        }
-                        document.getElementById('statusDisplay').innerText = "تم الإرسال!";
-                        setTimeout(() => document.getElementById('statusDisplay').innerText = "جاهز للتلاوة", 2000);
+                    mediaRecorder.onstop = () => {
+                        currentBlob = new Blob(chunks, { type: 'audio/mp3' });
+                        showReviewModal();
+                        btn.classList.remove('recording'); btn.innerText = "🎤"; 
+                        clearInterval(recInterval); ui.style.display = 'none';
                     };
-                    mediaRecorder.start(); btn.classList.add('recording'); btn.innerText = "⏹"; 
-                    ui.style.display = 'flex'; recSeconds = 0; document.getElementById('recTimer').innerText = "00:00";
-                    recInterval = setInterval(() => { recSeconds++; let m = Math.floor(recSeconds / 60); let s = recSeconds % 60; document.getElementById('recTimer').innerText = (m<10?"0"+m:m)+":"+(s<10?"0"+s:s); }, 1000);
-                } catch(e) { alert("خطأ: " + e.message); replyTargetId = null; }
+
+                    mediaRecorder.start(); 
+                    btn.classList.add('recording'); btn.innerText = "⏹"; 
+                    ui.style.display = 'flex'; 
+                    recSeconds = 0; document.getElementById('recTimer').innerText = "00:00";
+                    recInterval = setInterval(() => { 
+                        recSeconds++; 
+                        let m = Math.floor(recSeconds / 60); let s = recSeconds % 60; 
+                        document.getElementById('recTimer').innerText = (m<10?"0"+m:m)+":"+(s<10?"0"+s:s); 
+                        if(recSeconds >= maxRecDuration) stopRecordingAndReview();
+                    }, 1000);
+
+                } catch(e) { alert("خطأ في الميكروفون: " + e.message); replyTargetId = null; }
             }
         }
+
+        function stopRecordingAndReview() { if(mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop(); }
+
+        function showReviewModal() {
+            const modal = document.getElementById('review-modal');
+            const audio = document.getElementById('reviewAudio');
+            if(currentBlob) { audio.src = URL.createObjectURL(currentBlob); modal.style.display = 'flex'; }
+        }
+
+        window.confirmSend = async function() {
+            document.getElementById('review-modal').style.display = 'none';
+            document.getElementById('statusDisplay').innerText = "جاري الإرسال...";
+            
+            let name = localStorage.getItem('it9an_name');
+            if(!name) { name = prompt("الاسم الكريم؟"); if(name) localStorage.setItem('it9an_name', name); else name = "طالب"; }
+
+            try {
+                const refS = window.ref(window.storage, 'uploads/' + Date.now());
+                await window.uploadBytes(refS, currentBlob);
+                const url = await window.getDownloadURL(refS);
+                
+                if (replyTargetId) {
+                    await window.updateDoc(window.doc(window.db, "posts", replyTargetId), { 
+                        replies: window.arrayUnion({ name: name, audioUrl: url, timestamp: Date.now() }) 
+                    });
+                    replyTargetId = null; 
+                } else {
+                    await window.addDoc(window.collection(window.db, "posts"), { 
+                        name: name, audioUrl: url, fileId: String(currentGlobalFileId), likes: 0, timestamp: window.serverTimestamp() 
+                    });
+                }
+                document.getElementById('statusDisplay').innerText = "تم الإرسال!";
+                setTimeout(() => document.getElementById('statusDisplay').innerText = "جاهز للتلاوة", 2000);
+            } catch(e) { alert("خطأ في الإرسال: " + e.message); }
+        }
+
+        window.retryRecord = function() { document.getElementById('review-modal').style.display = 'none'; toggleRecord(); }
+        window.cancelRecord = function() { document.getElementById('review-modal').style.display = 'none'; currentBlob = null; replyTargetId = null; }
 
         window.toggleSmartLoop = function() {
             if(isPlaying) { stopLoop(); return; }
@@ -321,7 +427,6 @@
                 if(!isPlaying) return;
                 if(document.getElementById('globalGap').checked) {
                     document.getElementById('statusDisplay').innerText = "تكرار الطالب...";
-                    // FIX: Pause ist jetzt 1,5x so lang wie das Audio (x 1500)
                     timer = setTimeout(() => { checkNextStep(); }, audio.duration * 1500);
                 } else { checkNextStep(); }
             }
@@ -346,19 +451,13 @@
                  }
 
                  playVers(nextGlobalId, nextLocalVers, true);
-                 
-                 setTimeout(() => { 
-                    if(isPlaying) { 
-                        repeatsLeft = parseInt(document.getElementById('globalRepeats').value); 
-                        playCycle(); 
-                    } 
-                 }, 1000);
+                 setTimeout(() => { if(isPlaying) { repeatsLeft = parseInt(document.getElementById('globalRepeats').value); playCycle(); } }, 1000);
             }
         }
         
         function stopLoop() { isPlaying = false; clearTimeout(timer); document.getElementById('mainAudio').pause(); document.getElementById('mainAudio').currentTime = 0; document.getElementById('playBtn').innerText = "▶"; }
-        window.goToMenu = function() { showView('menu-view'); if(currentGlobalFileId) document.getElementById('nowPlayingBar').style.display = 'block'; }
-        window.goToCurrentVerse = function() { if(currentGlobalFileId) { showView('player-view'); document.getElementById('nowPlayingBar').style.display = 'none'; } }
+        window.goToMenu = function() { showView('menu-view'); } 
+        window.goToCurrentVerse = function() { if(currentGlobalFileId) showView('player-view'); }
         function showView(id) { document.getElementById('menu-view').style.display = 'none'; document.getElementById('player-view').style.display = 'none'; document.getElementById(id).style.display = (id === 'menu-view') ? 'grid' : 'block'; }
         window.likePost = async (id) => { if(localStorage.getItem('liked_'+id)) return; await window.updateDoc(window.doc(window.db, "posts", id), { likes: window.increment(1) }); localStorage.setItem('liked_'+id, 'true'); }
     </script>
