@@ -17,8 +17,8 @@
             --gold-light: #f3e5ab;
             --bg: #f9f7f2;          /* Creme / Pergament */
             --surface: #ffffff;     /* Reines Weiß */
-            --text: #2d3436;        /* Dunkelgrau statt Schwarz */
-            --red: #c0392b;         /* Edles Rot */
+            --text: #2d3436;        
+            --red: #c0392b;         
             --shadow: 0 4px 20px rgba(15, 76, 58, 0.08);
         }
         
@@ -27,7 +27,7 @@
             background-color: var(--bg); 
             font-family: 'Amiri', serif; 
             color: var(--text); 
-            padding-bottom: 160px; /* Platz für Footer */
+            padding-bottom: 160px; 
             width: 100%; overflow-x: hidden; 
         }
 
@@ -54,7 +54,7 @@
             box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4);
         }
 
-        /* --- HEADER (Der neue Look) --- */
+        /* --- HEADER --- */
         .header { 
             position: sticky; top: 0; z-index: 1000; 
             background: linear-gradient(to left, var(--primary), var(--primary-light));
@@ -70,24 +70,18 @@
             border: 1px solid var(--gold); color: var(--gold-light); 
             padding: 6px 12px; border-radius: 8px; cursor: pointer; 
             font-size: 14px; font-family: 'Amiri'; white-space: nowrap; 
-            transition: 0.2s;
         }
-        .header-btn:active { background: var(--gold); color: var(--primary); }
         
-        /* TITEL BADGE (Lösung für rote Schrift) */
         #pageTitle {
             background: var(--surface);
             padding: 5px 15px;
-            border-radius: 20px; /* Pillen-Form */
+            border-radius: 20px; 
             display: flex; align-items: center; justify-content: center; gap: 8px;
             height: 45px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
             border: 1px solid var(--gold);
         }
-        #pageTitle img {
-            height: 28px; width: auto; display: block;
-            /* Da das Bild weißen Hintergrund hat, passt es perfekt in die weiße Badge */
-        }
+        #pageTitle img { height: 28px; width: auto; display: block; }
         #pageTitle span {
             font-size: 14px; color: var(--primary); font-weight: bold;
             border-right: 1px solid #eee; padding-right: 8px;
@@ -102,45 +96,63 @@
             background: var(--surface); border-radius: 15px; 
             overflow: hidden; cursor: pointer; 
             box-shadow: var(--shadow); border: 1px solid transparent;
-            transition: transform 0.1s, border-color 0.2s;
         }
-        .menu-item:active { transform: scale(0.97); }
         .menu-item img { width: 100%; height: auto; display: block; padding: 10px; }
         
-        /* --- PLAYER --- */
+        /* --- PLAYER (FIX: ZENTRIERUNG) --- */
         #player-view { display: none; padding: 15px; width: 100%; max-width: 600px; margin: 0 auto; }
         
         .quran-frame {
             background: var(--surface);
-            padding: 5px;
+            padding: 10px; /* Etwas mehr Padding */
             border-radius: 15px;
-            border: 1px solid var(--gold);
+            border: 2px solid var(--gold-light); /* Doppelrahmen Effekt */
+            outline: 1px solid var(--gold);
+            outline-offset: -5px;
             box-shadow: var(--shadow);
             margin-bottom: 20px;
-        }
-        .player-container { 
-            display: flex; align-items: center; justify-content: space-between; 
-            gap: 10px; width: 100%; 
-        }
-        .quran-image { 
-            width: 100%; max-height: 50vh; 
-            object-fit: contain; object-position: center;
-            border-radius: 10px; display: block;
+            position: relative; /* Wichtig für Buttons */
+            min-height: 250px;
+            display: flex; align-items: center; justify-content: center;
         }
 
-        /* Navigation Buttons */
-        .nav-btn { 
-            width: 45px; height: 60px; flex-shrink: 0;
-            background: var(--bg); color: var(--primary); 
-            border: 1px solid var(--primary);
-            border-radius: 10px; font-size: 24px; cursor: pointer; 
-            display: flex; align-items: center; justify-content: center; 
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        /* Container für Bild und Buttons */
+        .player-container { 
+            width: 100%; 
+            display: flex; 
+            justify-content: center; /* Bild immer mittig */
+            align-items: center; 
+            position: relative;
         }
-        .nav-btn:active { background: var(--primary); color: white; }
+        
+        .quran-image { 
+            max-width: 85%; /* Platz für Buttons lassen */
+            max-height: 50vh; 
+            object-fit: contain; 
+            border-radius: 5px; 
+            display: block;
+        }
+
+        /* Schwebende Buttons (Absolute Positionierung für perfekte Mitte) */
+        .nav-btn { 
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 40px; height: 60px; 
+            background: var(--bg); color: var(--primary); 
+            border: 1px solid var(--gold);
+            border-radius: 8px; font-size: 24px; cursor: pointer; 
+            display: flex; align-items: center; justify-content: center; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            z-index: 10;
+        }
+        /* RTL: Rechts ist "Zurück/Start" (Pfeil nach Rechts), Links ist "Weiter" (Pfeil nach Links) */
+        #btnPrev { right: -5px; } 
+        #btnNext { left: -5px; }
+
         .nav-btn.hidden { opacity: 0; pointer-events: none; }
 
-        /* SETTINGS (Leiste) */
+        /* SETTINGS */
         .settings-box { 
             background: var(--primary-light); color: white;
             padding: 10px; border-radius: 12px; margin-bottom: 20px; 
@@ -149,51 +161,26 @@
         }
         .setting-group { text-align: center; }
         .setting-label { font-size: 12px; color: var(--gold-light); margin-bottom: 2px; }
-        input[type="number"] { 
-            width: 50px; text-align: center; padding: 4px; border: none; 
-            border-radius: 5px; font-size: 16px; font-weight: bold; color: var(--primary); 
-        }
+        input[type="number"] { width: 50px; text-align: center; padding: 4px; border: none; border-radius: 5px; }
         input[type="checkbox"] { transform: scale(1.4); accent-color: var(--gold); }
 
-        /* --- FEED --- */
-        .status-bar { 
-            text-align: center; font-size: 16px; font-weight: bold; color: var(--primary); 
-            margin: 15px 0; padding: 10px; background: rgba(20, 89, 52, 0.1); 
-            border-radius: 8px; border: 1px dashed var(--primary);
-        }
-        .view-counter { font-size: 12px; color: #888; text-align: center; margin-top: 5px; font-family: sans-serif; }
+        /* FEED */
+        .status-bar { text-align: center; font-size: 16px; font-weight: bold; color: var(--primary); margin: 15px 0; padding: 10px; background: rgba(20, 89, 52, 0.1); border-radius: 8px; border: 1px dashed var(--primary); }
+        .view-counter { font-size: 12px; color: #888; text-align: center; margin-top: 5px; }
         
-        .feed-msg { 
-            background: var(--surface); padding: 15px; border-radius: 12px; 
-            margin-bottom: 15px; border-right: 4px solid #ddd; 
-            box-shadow: 0 2px 8px rgba(0,0,0,0.03); 
-        }
-        /* Lehrer Nachricht (Gold Style) */
-        .teacher-msg { 
-            background: #fffcf2; /* Sehr helles Gold */
-            border: 1px solid var(--gold);
-            border-right: 4px solid var(--gold); 
-        }
+        .feed-msg { background: var(--surface); padding: 15px; border-radius: 12px; margin-bottom: 15px; border-right: 4px solid #ddd; box-shadow: 0 2px 8px rgba(0,0,0,0.03); }
+        .teacher-msg { background: #fffcf2; border: 1px solid var(--gold); border-right: 4px solid var(--gold); }
         .teacher-badge { background: var(--gold); color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-left: 5px; }
 
         .reply-box { margin-top: 10px; padding: 10px; background: #f4f4f4; border-radius: 8px; border-right: 3px solid var(--primary); }
         .reply-header { font-size: 12px; font-weight: bold; color: var(--primary); margin-bottom: 5px; display: flex; align-items: center; gap: 5px; }
-        
         .msg-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding-top: 5px; border-top: 1px solid #eee; }
-        .like-btn { cursor: pointer; display: flex; align-items: center; gap: 5px; padding: 4px 12px; border-radius: 20px; font-size: 13px; background: #f9f9f9; border: 1px solid #eee; transition: 0.2s;}
+        .like-btn { cursor: pointer; display: flex; align-items: center; gap: 5px; padding: 4px 12px; border-radius: 20px; font-size: 13px; background: #f9f9f9; border: 1px solid #eee; }
         .like-btn.liked { color: #e91e63; background: #fce4ec; border-color: #f8bbd0; }
         .reply-btn { cursor: pointer; background: none; border: 1px solid var(--primary); color: var(--primary); padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; }
 
-        /* --- RECORDING & POPUPS --- */
-        #recording-ui { 
-            display: none; position: fixed; bottom: 110px; left: 50%; transform: translateX(-50%); 
-            width: 90%; max-width: 350px;
-            background: rgba(255,255,255,0.95); backdrop-filter: blur(5px);
-            border: 2px solid var(--red); border-radius: 20px;
-            padding: 15px; z-index: 1500; 
-            flex-direction: column; align-items: center; justify-content: center; 
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2); 
-        }
+        /* RECORDING UI */
+        #recording-ui { display: none; position: fixed; bottom: 110px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 350px; background: rgba(255,255,255,0.95); backdrop-filter: blur(5px); border: 2px solid var(--red); border-radius: 20px; padding: 15px; z-index: 1500; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
         .rec-timer { font-size: 36px; font-weight: bold; color: var(--text); font-family: monospace; }
         .rec-status-text { font-size: 14px; color: var(--red); animation: blink 1.5s infinite; margin-top: 5px; font-weight: bold; }
         
@@ -201,12 +188,12 @@
         .review-box { background: white; padding: 25px; border-radius: 20px; width: 85%; max-width: 320px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.3); border: 2px solid var(--primary); }
         .review-title { font-size: 20px; font-weight: bold; margin-bottom: 20px; color: var(--primary); }
         .review-btns { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
-        .r-btn { padding: 12px; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; font-family: 'Amiri'; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .r-btn { padding: 12px; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; font-family: 'Amiri'; }
         .btn-send { background: var(--primary); color: white; }
         .btn-retry { background: var(--gold); color: white; }
         .btn-cancel { background: #f1f2f6; color: #555; }
 
-        /* --- FOOTER --- */
+        /* FOOTER */
         .footer { 
             position: fixed; bottom: 0; left: 0; width: 100%; 
             background: var(--surface); 
@@ -218,29 +205,13 @@
         }
         .controls { display: flex; justify-content: center; align-items: center; gap: 40px; direction: ltr; }
         
-        .btn { 
-            width: 60px; height: 60px; border-radius: 50%; border: none; 
-            font-size: 24px; color: white; display: flex; align-items: center; justify-content: center; 
-            cursor: pointer; transition: transform 0.2s; 
-        }
+        .btn { width: 60px; height: 60px; border-radius: 50%; border: none; font-size: 24px; color: white; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s; }
         .btn:active { transform: scale(0.9); }
         
-        .btn-play { 
-            background: var(--primary); 
-            border: 3px solid var(--gold-light); 
-            width: 55px; height: 55px; 
-        }
-        .btn-rec { 
-            background: var(--red); 
-            border: 4px solid #fff; 
-            box-shadow: 0 4px 15px rgba(192, 57, 43, 0.4);
-            width: 75px; height: 75px; font-size: 30px;
-            margin-bottom: 10px; /* Steht etwas hervor */
-        }
+        .btn-play { background: var(--primary); border: 3px solid var(--gold-light); width: 55px; height: 55px; }
+        .btn-rec { background: var(--red); border: 4px solid #fff; box-shadow: 0 4px 15px rgba(192, 57, 43, 0.4); width: 75px; height: 75px; font-size: 30px; margin-bottom: 10px; }
         .btn-rec.recording { animation: pulse 1s infinite; background: white; color: var(--red); border: 2px solid var(--red); }
-        
         @keyframes pulse { 0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(192, 57, 43, 0.7); } 70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(192, 57, 43, 0); } 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(192, 57, 43, 0); } }
-        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
     </style>
 
     <script type="module">
@@ -279,8 +250,7 @@
 
     <div class="header">
         <button class="header-btn" onclick="goToMenu()">☰ القائمة</button>
-        <div id="pageTitle">
-            </div>
+        <div id="pageTitle"></div>
         <div style="width:60px;"></div> 
     </div>
 
@@ -326,9 +296,9 @@
 
     <div class="footer">
         <div class="controls">
-            <button id="playBtn" class="btn btn-play" onclick="toggleSmartLoop()">▶</button>
-            <button id="recBtn" class="btn btn-rec" onclick="toggleRecord()">🎤</button>
             <div style="width:55px;"></div>
+            <button id="recBtn" class="btn btn-rec" onclick="toggleRecord()">🎤</button>
+            <button id="playBtn" class="btn btn-play" onclick="toggleSmartLoop()">▶</button>
         </div>
     </div>
     
@@ -336,7 +306,6 @@
 
     <script>
         const SECRET_PIN = "1234";
-
         const KURS_DATEN = [
             { id: 1, verse: 8 }, 
             { id: 2, verse: 15 },
@@ -357,10 +326,7 @@
 
         function renderMenu() {
             const grid = document.getElementById('menu-view'); grid.innerHTML = ""; showView('menu-view');
-            // Hier auch ein Bild als Titel im Header für das Menü? 
-            // Wir nutzen einfach Text, da es kein "Menu.png" gibt
             document.getElementById('pageTitle').innerHTML = "<span>قائمة الدروس</span>"; 
-            
             KURS_DATEN.forEach((lek, index) => {
                 let div = document.createElement('div'); div.className = 'menu-item';
                 div.innerHTML = `<img src="assets/T${lek.id}.png" onerror="this.style.display='none'">`;
@@ -392,14 +358,9 @@
             currentGlobalFileId = globalId; currentLocalVers = localVersNum;
             showView('player-view');
             
-            // TITEL UPDATE: Bild + Vers Text in der weißen Plakette
             const lessonId = KURS_DATEN[currentLessonIdx].id;
             const titleImg = `assets/T${lessonId}.png`;
-            
-            document.getElementById('pageTitle').innerHTML = `
-                <span>${localVersNum}</span>
-                <img src="${titleImg}" alt="Lesson Title">
-            `;
+            document.getElementById('pageTitle').innerHTML = `<span>${localVersNum}</span><img src="${titleImg}" alt="Lesson Title">`;
             
             const btnPrev = document.getElementById('btnPrev');
             if(localVersNum === 1) btnPrev.classList.add('hidden'); else btnPrev.classList.remove('hidden');
