@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>مقرأة الإتقان</title>
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* --- DESIGN --- */
+        :root { --primary: #145934; --gold: #c5a059; --bg: #fdfbf7; --text: #2c3e50; --red: #d32f2f; }
+        
+        body { margin: 0; padding: 0; background-color: var(--bg); font-family: 'Amiri', serif; color: var(--text); padding-bottom: 140px; -webkit-overflow-scrolling: touch; }
+
+        /* LOGIN */
+        #login-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--primary); z-index: 5000; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        .pin-input { font-size: 24px; padding: 10px; text-align: center; width: 140px; border-radius: 8px; border: 2px solid var(--gold); }
+
+        /* HEADER */
+        .header { position: sticky; top: 0; z-index: 1000; background: var(--primary); color: var(--gold); padding: 10px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.3); display: flex; justify-content: space-between; align-items: center; }
+        .header-btn { background: none; border: 1px solid var(--gold); color: var(--gold); padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 14px; font-family: 'Amiri'; }
+
+        /* MENÜ */
+        .menu-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; padding: 15px; }
+        .menu-item { background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); cursor: pointer; transition: transform 0.1s; }
+        .menu-item:active { transform: scale(0.98); }
+        .menu-item img { width: 100%; height: auto; display: block; }
+        .menu-title { text-align: center; padding: 5px; font-size: 16px; font-weight: bold; color: var(--primary); }
+
+        /* PLAYER */
+        #player-view { display: none; padding: 10px; max-width: 600px; margin: 0 auto; }
+        .player-container { display: flex; align-items: center; justify-content: space-between; gap: 2px; margin-bottom: 10px; width: 100%; }
+        .quran-image { flex-grow: 1; width: 100%; max-height: 60vh; object-fit: contain; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border: 1px solid #ddd; }
+        .nav-arrow { flex-shrink: 0; width: 40px; height: 60px; background: rgba(20, 89, 52, 0.1); color: var(--primary); border: none; border-radius: 5px; font-size: 24px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .nav-arrow:active { background: var(--gold); color: white; }
+
+        /* SETTINGS */
+        .settings-box { background: #fff; padding: 10px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #ccc; display: flex; justify-content: space-around; align-items: center; }
+        input[type="number"] { width: 50px; text-align: center; padding: 5px; border: 1px solid var(--primary); border-radius: 5px; font-size: 16px; }
+        input[type="checkbox"] { transform: scale(1.5); }
+
+        /* FEED */
+        .status-bar { text-align: center; font-size: 18px; font-weight: bold; color: var(--primary); margin: 10px 0; padding: 8px; background: #e8f5e9; border-radius: 5px; }
+        .view-counter { font-size: 12px; color: #888; text-align: center; margin-top: 5px; }
+        .feed-container { margin-bottom: 100px; min-height: 50px; }
+        .feed-msg { background: white; padding: 10px; border-radius: 8px; margin-bottom: 15px; border-right: 4px solid #ccc; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .teacher-msg { background: #f1f8e9; border-right-color: var(--primary); }
+        .reply-box { margin-top: 10px; padding: 8px; background: #fafafa; border-radius: 5px; border-right: 3px solid var(--gold); margin-right: 10px; }
+        .reply-header { font-size: 11px; font-weight: bold; color: var(--primary); margin-bottom: 3px; display: flex; align-items: center; gap: 5px; }
+        .msg-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
+        .like-btn { cursor: pointer; display: flex; align-items: center; gap: 5px; padding: 2px 8px; border-radius: 10px; font-size: 12px; border: 1px solid #eee; }
+        .like-btn.liked { color: #e91e63; background: #fce4ec; border-color: #fce4ec; }
+        .reply-btn { cursor: pointer; background: none; border: 1px solid var(--primary); color: var(--primary); padding: 2px 8px; border-radius: 5px; font-size: 12px; }
+
+        /* RECORDING UI */
+        #recording-ui { display: none; position: fixed; bottom: 85px; left: 0; width: 100%; background: rgba(255,255,255,0.98); border-top: 2px solid var(--red); padding: 15px 0; z-index: 1500; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 -5px 20px rgba(0,0,0,0.1); }
+        .rec-timer { font-size: 32px; font-weight: bold; color: var(--red); font-family: monospace; margin: 5px 0; }
+        .rec-status-text { font-size: 14px; color: #555; animation: blink 1.5s infinite; }
+        .wave-box { display: flex; gap: 4px; height: 20px; align-items: center; margin-bottom: 5px; }
+        .wave-bar { width: 4px; background: var(--red); border-radius: 2px; animation: wave 1s infinite; }
+        .wave-bar:nth-child(1) { height: 10px; animation-delay: 0.0s; } .wave-bar:nth-child(2) { height: 15px; animation-delay: 0.1s; } .wave-bar:nth-child(3) { height: 20px; animation-delay: 0.2s; } .wave-bar:nth-child(4) { height: 15px; animation-delay: 0.3s; } .wave-bar:nth-child(5) { height: 10px; animation-delay: 0.4s; }
+        @keyframes wave { 0%, 100% { height: 5px; opacity: 0.5; } 50% { height: 25px; opacity: 1; } }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+        /* FOOTER */
+        .footer { position: fixed; bottom: 0; left: 0; width: 100%; background: white; border-top: 2px solid var(--gold); padding: 10px 0; z-index: 2000; display: flex; flex-direction: column; gap: 10px; }
+        .now-playing-bar { background: var(--primary); color: white; padding: 10px; text-align: center; font-size: 14px; cursor: pointer; display: none; font-weight: bold; }
+        .controls { display: flex; justify-content: space-around; align-items: center; direction: ltr; }
+        .btn { width: 60px; height: 60px; border-radius: 50%; border: none; font-size: 28px; color: white; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.2); cursor: pointer; transition: 0.2s; }
+        .btn-play { background: var(--primary); border: 2px solid var(--gold); }
+        .btn-rec { background: var(--red); border: 2px solid white; }
+        .btn-rec.recording { border-radius: 15px; transform: scale(0.9); box-shadow: 0 0 15px var(--red); }
+    </style>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, query, where, orderBy, onSnapshot, serverTimestamp, doc, setDoc, updateDoc, increment, arrayUnion } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDoZLFvGknKztMIFAtS2-AgX6DYw4fssUA",
+            authDomain: "it9an-neu.firebaseapp.com",
+            projectId: "it9an-neu",
+            storageBucket: "it9an-neu.firebasestorage.app", 
+            messagingSenderId: "196595640613",
+            appId: "1:196595640613:web:9ae92c60190363d0e292cc"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        window.db = getFirestore(app); window.storage = getStorage(app);
+        window.collection = collection; window.addDoc = addDoc; window.query = query; 
+        window.where = where; window.orderBy = orderBy; window.onSnapshot = onSnapshot; 
+        window.serverTimestamp = serverTimestamp; window.ref = ref; 
+        window.uploadBytes = uploadBytes; window.getDownloadURL = getDownloadURL;
+        window.doc = doc; window.setDoc = setDoc; window.updateDoc = updateDoc; window.increment = increment; window.arrayUnion = arrayUnion;
+    </script>
+</head>
+<body>
+
+    <div id="login-screen">
+        <h2 style="color:var(--gold); margin-bottom:20px;">بوابة الإتقان</h2>
+        <input type="password" id="pinInput" class="pin-input" placeholder="****">
+        <button onclick="checkPin()" style="margin-top:20px; padding:10px 40px; font-weight:bold; font-size:18px; border:none; border-radius:8px; background:var(--gold); color:var(--primary);">دخول</button>
+    </div>
+
+    <div class="header">
+        <button class="header-btn" onclick="goToMenu()">☰ القائمة</button>
+        <span id="pageTitle" style="font-size:18px;">الدروس</span>
+        <div style="width:60px;"></div> 
+    </div>
+
+    <div id="menu-view" class="menu-grid"></div>
+
+    <div id="player-view">
+        <div class="settings-box">
+            <div class="setting-group"><div style="font-size:12px; color:#888;">تكرار</div><input type="number" id="globalRepeats" value="3" min="1"></div>
+            <div class="setting-group"><div style="font-size:12px; color:#888;">وقفة</div><input type="checkbox" id="globalGap" checked></div>
+        </div>
+
+        <div class="player-container">
+            <button class="nav-arrow" onclick="prevVers()">❯</button>
+            <img id="currentImg" class="quran-image" src="" alt="Vers Bild" onerror="this.src='placeholder.png'">
+            <button class="nav-arrow" onclick="nextVers()">❮</button>
+        </div>
+        
+        <div id="statusDisplay" class="status-bar">جاهز للتلاوة</div>
+        <div class="view-counter">👁️ <span id="viewCount">0</span> مشاهدة</div>
+
+        <h4 style="text-align:center; color:#ccc; margin-top:20px; border-bottom:1px solid #eee;">المشاركات</h4>
+        <div id="community-feed" class="feed-container">جاري التحميل...</div>
+    </div>
+
+    <div id="recording-ui">
+        <div class="wave-box"><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div></div>
+        <div id="recTimer" class="rec-timer">00:00</div>
+        <div id="recText" class="rec-status-text">جاري التسجيل...</div>
+    </div>
+
+    <div class="footer">
+        <div id="nowPlayingBar" class="now-playing-bar" onclick="goToCurrentVerse()">🔊 العودة للمقطع الحالي</div>
+        <div class="controls">
+            <button id="recBtn" class="btn btn-rec" onclick="toggleRecord()">🎤</button>
+            <button id="playBtn" class="btn btn-play" onclick="toggleSmartLoop()">▶</button>
+        </div>
+    </div>
+    <audio id="mainAudio"></audio>
+
+    <script>
+        const SECRET_PIN = "1234";
+        const KURS_DATEN = [
+            { id: 1, titel: "الدرس 1", verse: 8 }, 
+            { id: 2, titel: "الدرس 2", verse: 15 },
+            { id: 3, titel: "الدرس 3", verse: 9 },
+        ];
+
+        let currentLessonIdx = null, currentGlobalFileId = null, currentLocalVers = null;
+        let unsubscribeFeed = null, unsubscribeViews = null;
+        let isPlaying = false, repeatsLeft = 0, timer = null;
+        let mediaRecorder, chunks = [], recInterval = null, recSeconds = 0;
+        let replyTargetId = null; 
+
+        function checkPin() {
+            if(document.getElementById('pinInput').value === SECRET_PIN) {
+                document.getElementById('login-screen').style.display = 'none'; renderMenu();
+            } else alert("الرمز خطأ");
+        }
+
+        function renderMenu() {
+            const grid = document.getElementById('menu-view'); grid.innerHTML = ""; showView('menu-view');
+            document.getElementById('pageTitle').innerText = "قائمة الدروس";
+            KURS_DATEN.forEach((lek, index) => {
+                let div = document.createElement('div'); div.className = 'menu-item';
+                div.innerHTML = `<img src="assets/T${lek.id}.png" onerror="this.style.display='none'"><div class="menu-title">${lek.titel}</div>`;
+                div.onclick = () => startLesson(index); grid.appendChild(div);
+            });
+        }
+
+        function startLesson(index) {
+            currentLessonIdx = index;
+            let startId = 1; for(let i=0; i<index; i++) startId += KURS_DATEN[i].verse;
+            playVers(startId, 1);
+        }
+
+        window.nextVers = function() {
+            if(currentLocalVers < KURS_DATEN[currentLessonIdx].verse) playVers(currentGlobalFileId + 1, currentLocalVers + 1);
+            else alert("انتهى الدرس");
+        }
+        window.prevVers = function() {
+            if(currentLocalVers > 1) playVers(currentGlobalFileId - 1, currentLocalVers - 1);
+            else alert("بداية الدرس");
+        }
+
+        async function playVers(globalId, localVersNum, isAuto = false) {
+            currentGlobalFileId = globalId; currentLocalVers = localVersNum;
+            showView('player-view');
+            document.getElementById('pageTitle').innerText = `الدرس ${currentLessonIdx+1} - المقطع ${globalId}`;
+            document.getElementById('currentImg').src = `assets/${globalId}.png`;
+            const audio = document.getElementById('mainAudio'); audio.src = `assets/${globalId}.mp3`;
+            
+            if(isPlaying && !isAuto) stopLoop();
+            
+            document.getElementById('statusDisplay').innerText = "جاهز للتلاوة";
+            
+            const statRef = window.doc(window.db, "stats", "file_" + globalId);
+            try { await window.setDoc(statRef, { views: window.increment(1) }, { merge: true }); } catch(e){}
+            if(unsubscribeViews) unsubscribeViews();
+            unsubscribeViews = window.onSnapshot(statRef, (snap) => { if(snap.exists()) document.getElementById('viewCount').innerText = snap.data().views || 0; });
+            
+            loadFeed(globalId);
+        }
+
+        function loadFeed(fileId) {
+            const div = document.getElementById('community-feed');
+            div.innerHTML = "<div style='text-align:center; color:#ccc; padding:10px;'>...</div>";
+            if(unsubscribeFeed) unsubscribeFeed();
+            
+            const idString = String(fileId);
+            const q = window.query(window.collection(window.db, "posts"), window.where("fileId", "==", idString));
+            
+            unsubscribeFeed = window.onSnapshot(q, (snap) => {
+                div.innerHTML = "";
+                if(snap.empty) { div.innerHTML = "<div style='text-align:center; color:#ccc;'>لا توجد مشاركات</div>"; return; }
+                
+                let posts = [];
+                snap.forEach(doc => { posts.push({ id: doc.id, ...doc.data() }); });
+                posts.sort((a, b) => (a.timestamp?.seconds || 0) - (b.timestamp?.seconds || 0)); 
+                
+                posts.forEach(d => {
+                    let isT = d.name.includes("Mahdi") || d.name.includes("المهدي");
+                    let liked = localStorage.getItem('liked_'+d.id) ? 'liked' : '';
+                    let repliesHtml = "";
+                    if(d.replies) {
+                        d.replies.forEach(r => {
+                            repliesHtml += `<div class="reply-box"><div class="reply-header">🎓 ${r.name}</div><audio controls src="${r.audioUrl}" style="width:100%"></audio></div>`;
+                        });
+                    }
+                    div.innerHTML += `
+                    <div class="feed-msg ${isT?'teacher-msg':''}">
+                        <div style="font-weight:bold; color:${isT?'var(--primary)':'#d32f2f'}; font-size:12px;">${d.name}</div>
+                        <audio controls src="${d.audioUrl}" style="width:100%; margin-top:5px;"></audio>
+                        ${repliesHtml}
+                        <div class="msg-footer">
+                            <button class="reply-btn" onclick="startReply('${d.id}')">↩️ الرد</button>
+                            <div class="like-btn ${liked}" onclick="likePost('${d.id}')">❤️ ${d.likes||0}</div>
+                        </div>
+                    </div>`;
+                });
+            });
+        }
+
+        window.startReply = function(postId) {
+            replyTargetId = postId;
+            let name = localStorage.getItem('it9an_name');
+            if(!name) { name = prompt("الاسم الكريم؟"); if(name) localStorage.setItem('it9an_name', name); else return; }
+            toggleRecord();
+        }
+
+        window.toggleRecord = async function() {
+            if(isPlaying) stopLoop();
+            const btn = document.getElementById('recBtn');
+            const ui = document.getElementById('recording-ui');
+            const statusText = document.getElementById('recText');
+            
+            if(btn.classList.contains('recording')) {
+                if(mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+                btn.classList.remove('recording'); btn.innerText = "🎤"; 
+                clearInterval(recInterval); ui.style.display = 'none'; 
+            } else {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(stream); chunks = [];
+                    mediaRecorder.ondataavailable = e => chunks.push(e.data);
+                    
+                    if(replyTargetId) statusText.innerText = "جاري تسجيل الرد...";
+                    else statusText.innerText = "جاري تسجيل التلاوة...";
+
+                    mediaRecorder.onstop = async () => {
+                        // FIX: Namen auch hier abfragen, falls noch nicht gesetzt!
+                        let name = localStorage.getItem('it9an_name');
+                        if(!name) {
+                            name = prompt("الاسم الكريم؟");
+                            if(name) localStorage.setItem('it9an_name', name);
+                            else name = "طالب"; // Fallback, falls abgebrochen wird
+                        }
+
+                        document.getElementById('statusDisplay').innerText = "جاري الإرسال...";
+                        const blob = new Blob(chunks, { type: 'audio/mp3' });
+                        const refS = window.ref(window.storage, 'uploads/' + Date.now());
+                        await window.uploadBytes(refS, blob);
+                        const url = await window.getDownloadURL(refS);
+                        
+                        if (replyTargetId) {
+                            await window.updateDoc(window.doc(window.db, "posts", replyTargetId), { replies: window.arrayUnion({ name: name, audioUrl: url, timestamp: Date.now() }) });
+                            replyTargetId = null; 
+                        } else {
+                            await window.addDoc(window.collection(window.db, "posts"), { name: name, audioUrl: url, fileId: String(currentGlobalFileId), likes: 0, timestamp: window.serverTimestamp() });
+                        }
+                        document.getElementById('statusDisplay').innerText = "تم الإرسال!";
+                        setTimeout(() => document.getElementById('statusDisplay').innerText = "جاهز للتلاوة", 2000);
+                    };
+                    mediaRecorder.start(); btn.classList.add('recording'); btn.innerText = "⏹"; 
+                    ui.style.display = 'flex'; recSeconds = 0; document.getElementById('recTimer').innerText = "00:00";
+                    recInterval = setInterval(() => { recSeconds++; let m = Math.floor(recSeconds / 60); let s = recSeconds % 60; document.getElementById('recTimer').innerText = (m<10?"0"+m:m)+":"+(s<10?"0"+s:s); }, 1000);
+                } catch(e) { alert("خطأ: " + e.message); replyTargetId = null; }
+            }
+        }
+
+        window.toggleSmartLoop = function() {
+            if(isPlaying) { stopLoop(); return; }
+            isPlaying = true; repeatsLeft = parseInt(document.getElementById('globalRepeats').value);
+            document.getElementById('playBtn').innerText = "⏸"; playCycle();
+        }
+        
+        function playCycle() {
+            if(!isPlaying) return;
+            const audio = document.getElementById('mainAudio');
+            document.getElementById('statusDisplay').innerText = `استماع (${repeatsLeft})`; 
+            audio.play().catch(e => { alert("Audio fehlt"); stopLoop(); });
+            
+            audio.onended = function() {
+                if(!isPlaying) return;
+                if(document.getElementById('globalGap').checked) {
+                    document.getElementById('statusDisplay').innerText = "تكرار الطالب...";
+                    // FIX: Pause ist jetzt 1,5x so lang wie das Audio (x 1500)
+                    timer = setTimeout(() => { checkNextStep(); }, audio.duration * 1500);
+                } else { checkNextStep(); }
+            }
+        }
+        
+        function checkNextStep() {
+            repeatsLeft--;
+            if(repeatsLeft > 0) { 
+                playCycle(); 
+            } else {
+                 const currentLesson = KURS_DATEN[currentLessonIdx];
+                 let nextGlobalId, nextLocalVers;
+
+                 if(currentLocalVers < currentLesson.verse) {
+                    nextGlobalId = currentGlobalFileId + 1;
+                    nextLocalVers = currentLocalVers + 1;
+                 } else {
+                    let startGlobalId = 1;
+                    for(let i=0; i<currentLessonIdx; i++) startGlobalId += KURS_DATEN[i].verse;
+                    nextGlobalId = startGlobalId;
+                    nextLocalVers = 1;
+                 }
+
+                 playVers(nextGlobalId, nextLocalVers, true);
+                 
+                 setTimeout(() => { 
+                    if(isPlaying) { 
+                        repeatsLeft = parseInt(document.getElementById('globalRepeats').value); 
+                        playCycle(); 
+                    } 
+                 }, 1000);
+            }
+        }
+        
+        function stopLoop() { isPlaying = false; clearTimeout(timer); document.getElementById('mainAudio').pause(); document.getElementById('mainAudio').currentTime = 0; document.getElementById('playBtn').innerText = "▶"; }
+        window.goToMenu = function() { showView('menu-view'); if(currentGlobalFileId) document.getElementById('nowPlayingBar').style.display = 'block'; }
+        window.goToCurrentVerse = function() { if(currentGlobalFileId) { showView('player-view'); document.getElementById('nowPlayingBar').style.display = 'none'; } }
+        function showView(id) { document.getElementById('menu-view').style.display = 'none'; document.getElementById('player-view').style.display = 'none'; document.getElementById(id).style.display = (id === 'menu-view') ? 'grid' : 'block'; }
+        window.likePost = async (id) => { if(localStorage.getItem('liked_'+id)) return; await window.updateDoc(window.doc(window.db, "posts", id), { likes: window.increment(1) }); localStorage.setItem('liked_'+id, 'true'); }
+    </script>
+</body>
+</html>
