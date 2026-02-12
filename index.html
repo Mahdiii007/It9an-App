@@ -84,7 +84,7 @@
             background: var(--surface); padding: 10px; border-radius: 15px;
             border: 2px solid var(--gold-light); outline: 1px solid var(--gold); outline-offset: -5px;
             box-shadow: var(--shadow); margin-bottom: 20px; 
-            min-height: 200px; 
+            height: auto; 
         }
         .player-container { width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
         .quran-image { flex-grow: 1; max-width: calc(100% - 90px); max-height: 45vh; object-fit: contain; border-radius: 5px; display: block; }
@@ -315,10 +315,8 @@
             return (m<10?"0"+m:m)+":"+(s<10?"0"+s:s);
         }
 
-        if(localStorage.getItem('it9an_auth') === 'true') {
-            document.getElementById('login-screen').style.display = 'none';
-            renderMenu(); updateUIForRole();
-        }
+        // HINWEIS: Automatischer Login bei Seitenaktualisierung entfernt (auf Wunsch).
+        // Login wird bei jedem Neuladen verlangt.
 
         function checkLogin() {
             const pin = document.getElementById('pinInput').value;
@@ -333,7 +331,6 @@
             if(isPinValid && first && last) {
                 const fullName = first + " " + last;
                 if (!localStorage.getItem('it9an_uid')) localStorage.setItem('it9an_uid', 'user_' + Date.now());
-                localStorage.setItem('it9an_auth', 'true');
                 localStorage.setItem('it9an_name', fullName);
                 localStorage.setItem('it9an_role', role);
                 
@@ -444,7 +441,6 @@
                 posts.forEach(d => {
                     let isT = d.role === 'teacher'; 
                     
-                    // --- MAIN POST LIKE LOGIC ---
                     let mainLikesCount = 0, mainIsLikedByMe = false;
                     let mainLikerNames = [];
                     
@@ -466,7 +462,6 @@
                         mainCursor = 'not-allowed'; 
                     }
 
-                    // --- REPLIES LOGIC ---
                     let repliesHtml = "";
                     if(d.replies) {
                         d.replies.forEach(r => {
@@ -543,24 +538,13 @@
                     if(!dur || isNaN(dur)) dur = 15; 
                     maxRecDuration = Math.ceil(dur * 2);
 
-                    // TAJWID AUDIO QUALITY FIX (Kein Noise Cancellation für klaren Ton)
-                    const audioConstraints = {
-                        echoCancellation: false,
-                        noiseSuppression: false,
-                        autoGainControl: false,
-                        sampleRate: 48000,
-                        channelCount: 1
-                    };
+                    const audioConstraints = { echoCancellation: false, noiseSuppression: false, autoGainControl: false, sampleRate: 48000, channelCount: 1 };
                     const stream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints });
                     
                     let options = { audioBitsPerSecond: 128000 };
-                    if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
-                        options.mimeType = 'audio/webm;codecs=opus';
-                    } else if (MediaRecorder.isTypeSupported('audio/mp4;codecs=mp4a.40.2')) {
-                        options.mimeType = 'audio/mp4;codecs=mp4a.40.2';
-                    } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
-                        options.mimeType = 'audio/mp4';
-                    }
+                    if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) { options.mimeType = 'audio/webm;codecs=opus'; } 
+                    else if (MediaRecorder.isTypeSupported('audio/mp4;codecs=mp4a.40.2')) { options.mimeType = 'audio/mp4;codecs=mp4a.40.2'; } 
+                    else if (MediaRecorder.isTypeSupported('audio/mp4')) { options.mimeType = 'audio/mp4'; }
 
                     mediaRecorder = new MediaRecorder(stream, options);
                     chunks = [];
@@ -679,7 +663,6 @@
         window.goToMenu = function() { stopLoop(); stopRecordingAndReview(); showView('menu-view'); renderMenu(); } 
         function showView(id) { document.getElementById('menu-view').style.display = 'none'; document.getElementById('player-view').style.display = 'none'; document.getElementById(id).style.display = (id === 'menu-view') ? 'grid' : 'block'; }
         
-        // --- SMART LIKES ---
         window.likePost = async (id) => { 
             const uid = localStorage.getItem('it9an_uid');
             const myName = localStorage.getItem('it9an_name');
@@ -690,14 +673,9 @@
             if (docSnap.exists()) {
                 let post = docSnap.data();
                 let likes = post.likes || [];
-                
                 let isLiked = likes.some(l => (typeof l === 'object' ? l.uid === uid : l === uid));
-                
-                if (isLiked) {
-                    likes = likes.filter(l => (typeof l === 'object' ? l.uid !== uid : l !== uid));
-                } else {
-                    likes.push({ uid: uid, name: myName });
-                }
+                if (isLiked) { likes = likes.filter(l => (typeof l === 'object' ? l.uid !== uid : l !== uid)); } 
+                else { likes.push({ uid: uid, name: myName }); }
                 await window.updateDoc(postRef, { likes: likes });
             }
         }
@@ -717,12 +695,8 @@
                     if (r.timestamp === replyTimestamp) {
                         if (!r.likes) r.likes = [];
                         let isLiked = r.likes.some(l => (typeof l === 'object' ? l.uid === uid : l === uid));
-                        
-                        if (isLiked) {
-                            r.likes = r.likes.filter(l => (typeof l === 'object' ? l.uid !== uid : l !== uid));
-                        } else {
-                            r.likes.push({ uid: uid, name: myName });
-                        }
+                        if (isLiked) { r.likes = r.likes.filter(l => (typeof l === 'object' ? l.uid !== uid : l !== uid)); } 
+                        else { r.likes.push({ uid: uid, name: myName }); }
                     }
                     return r;
                 });
