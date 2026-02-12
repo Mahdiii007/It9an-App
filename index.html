@@ -118,16 +118,11 @@
         
         .msg-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding-top: 10px; border-top: 1px solid #eee; }
         
-        /* Like Button Design */
         .like-btn { display: flex; align-items: center; border-radius: 20px; font-size: 14px; background: #f9f9f9; border: 1px solid #eee; overflow: hidden; }
         .like-btn.liked { color: var(--primary); background: #e8f5e9; border-color: var(--primary); font-weight: bold; }
-        
-        /* Daumen Button */
+        .like-btn.disabled { opacity: 0.5; filter: grayscale(1); }
         .like-action { padding: 6px 10px; cursor: pointer; }
-        /* Wenn gesperrt (eigener Post): ausgegraut & nicht klickbar */
         .like-action.locked { cursor: not-allowed; opacity: 0.3; filter: grayscale(1); }
-        
-        /* Zähler Button */
         .like-count { padding: 6px 12px; border-right: 1px solid #ddd; cursor: pointer; background: rgba(0,0,0,0.03); }
         .like-count:active { background: rgba(0,0,0,0.1); }
 
@@ -319,23 +314,35 @@
             return (m<10?"0"+m:m)+":"+(s<10?"0"+s:s);
         }
 
-        // HINWEIS: Kein Auto-Login. Man muss sich jedes Mal neu anmelden.
-
+        // LOGIN FUNKTION MIT STRENGER VALIDIERUNG
         function checkLogin() {
             const pin = document.getElementById('pinInput').value;
             const first = document.getElementById('firstName').value.trim();
             const last = document.getElementById('lastName').value.trim();
             const role = document.getElementById('userRole').value;
 
+            // Strict Validation:
+            // 1. Min Länge 2
+            // 2. Entweder rein Lateinisch (mit Leerzeichen) ODER rein Arabisch (mit Leerzeichen). Kein Mix.
+            const latinRegex = /^[a-zA-Z\s]+$/;
+            const arabicRegex = /^[\u0600-\u06FF\s]+$/;
+
+            const isFirstValid = (first.length >= 2) && (latinRegex.test(first) || arabicRegex.test(first));
+            const isLastValid = (last.length >= 2) && (latinRegex.test(last) || arabicRegex.test(last));
+
+            if (!isFirstValid || !isLastValid) {
+                // Generische Fehlermeldung (keine Tipps)
+                alert("بيانات الدخول غير صحيحة"); 
+                return;
+            }
+
             let isPinValid = false;
             if (role === 'student' && pin === STUDENT_PIN) isPinValid = true;
             if (role === 'teacher' && pin === TEACHER_PIN) isPinValid = true;
 
-            if(isPinValid && first && last) {
+            if(isPinValid) {
                 const fullName = first + " " + last;
-                
-                // WICHTIG: Erstelle ID basierend auf Namen + Rolle, damit man auf dem gleichen Gerät wechseln kann.
-                // Entfernt Leerzeichen und encodiert für Sicherheit
+                // Unique ID based on Name + Role (allows switching users on same device)
                 const uniqueID = 'user_' + btoa(unescape(encodeURIComponent(fullName + '_' + role))).replace(/=/g, ''); 
                 
                 localStorage.setItem('it9an_uid', uniqueID);
@@ -345,7 +352,9 @@
                 
                 document.getElementById('login-screen').style.display = 'none';
                 updateUIForRole(); renderMenu();
-            } else { alert("البيانات غير مكتملة أو كلمة المرور خاطئة"); }
+            } else { 
+                alert("بيانات الدخول غير صحيحة"); 
+            }
         }
         
         function updateUIForRole() {
@@ -465,7 +474,6 @@
                     let mainCursor = 'pointer';
                     let mainLockedClass = '';
                     
-                    // Wenn eigener Post: Daumen sperren, aber Zähler bleibt klickbar
                     if (isMyMainPost) { 
                         mainLikeAction = ''; 
                         mainLockedClass = 'locked'; 
@@ -486,7 +494,8 @@
                             const isMyReply = (r.uid === myUid);
                             let rLikeClass = rIsLikedByMe ? 'liked' : '';
                             let rLikeAction = `likeReply('${d.id}', ${r.timestamp})`;
-                            let rLockedClass = '';
+                            let rCursor = 'pointer';
+                            let rNamesStr = rLikerNames.join('|||');
 
                             if (isMyReply) { 
                                 rLikeAction = ''; 
@@ -501,7 +510,7 @@
                                     <div></div>
                                     <div class="like-btn ${rLikeClass}">
                                         <div class="like-action ${rLockedClass}" onclick="${rLikeAction}">👍</div>
-                                        <div class="like-count" onclick="showLikeNames(event, '${rLikerNames.join('|||')}')">${rLikesCount}</div>
+                                        <div class="like-count" onclick="showLikeNames(event, '${rNamesStr}')">${rLikesCount}</div>
                                     </div>
                                 </div>
                             </div>`;
@@ -544,6 +553,7 @@
                     if(!dur || isNaN(dur)) dur = 15; 
                     maxRecDuration = Math.ceil(dur * 2);
 
+                    // High Quality Audio Setup (No Noise Cancellation)
                     const audioConstraints = { echoCancellation: false, noiseSuppression: false, autoGainControl: false, sampleRate: 48000, channelCount: 1 };
                     const stream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints });
                     
@@ -680,14 +690,9 @@
             if (docSnap.exists()) {
                 let post = docSnap.data();
                 let likes = post.likes || [];
-                
                 let isLiked = likes.some(l => (typeof l === 'object' ? l.uid === uid : l === uid));
-                
-                if (isLiked) {
-                    likes = likes.filter(l => (typeof l === 'object' ? l.uid !== uid : l !== uid));
-                } else {
-                    likes.push({ uid: uid, name: myName });
-                }
+                if (isLiked) { likes = likes.filter(l => (typeof l === 'object' ? l.uid !== uid : l !== uid)); } 
+                else { likes.push({ uid: uid, name: myName }); }
                 await window.updateDoc(postRef, { likes: likes });
             }
         }
@@ -707,12 +712,8 @@
                     if (r.timestamp === replyTimestamp) {
                         if (!r.likes) r.likes = [];
                         let isLiked = r.likes.some(l => (typeof l === 'object' ? l.uid === uid : l === uid));
-                        
-                        if (isLiked) {
-                            r.likes = r.likes.filter(l => (typeof l === 'object' ? l.uid !== uid : l !== uid));
-                        } else {
-                            r.likes.push({ uid: uid, name: myName });
-                        }
+                        if (isLiked) { r.likes = r.likes.filter(l => (typeof l === 'object' ? l.uid !== uid : l !== uid)); } 
+                        else { r.likes.push({ uid: uid, name: myName }); }
                     }
                     return r;
                 });
