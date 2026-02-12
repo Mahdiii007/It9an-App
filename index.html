@@ -133,7 +133,7 @@
 
         /* LOAD MORE BUTTON */
         .load-more-btn {
-            display: block; width: 100%; padding: 10px; text-align: center;
+            display: block; width: 100%; padding: 12px; text-align: center;
             background: #f0f0f0; color: #555; border: none; border-radius: 8px;
             font-family: 'Amiri'; font-weight: bold; cursor: pointer; margin-top: 20px;
         }
@@ -285,7 +285,8 @@
     <script>
         const STUDENT_PIN = "1234";
         const TEACHER_PIN = "7777";
-        const ADMIN_RESET_PIN = "7860";
+        const ADMIN_PIN = "1879"; // Admin PIN für schnellen Login
+        const ADMIN_RESET_PIN = "7860"; // Für Reset Funktion
 
         const KURS_DATEN = [
             { id: 1, verse: 8 }, 
@@ -300,11 +301,10 @@
         let currentBlob = null, replyTargetId = null, maxRecDuration = 0;
         let currentViewersList = [];
         
-        // PAGINATION SETTINGS
-        let feedLimit = 10; // Start with 10
+        let feedLimit = 10;
         let allLoadedPosts = [];
 
-        // --- AUDIO PROGRESS BAR ---
+        // --- AUDIO ---
         const audioEl = document.getElementById('mainAudio');
         const pBar = document.getElementById('progressBar');
         const cTime = document.getElementById('currentTime');
@@ -318,18 +318,32 @@
         pBar.addEventListener('input', () => { audioEl.currentTime = pBar.value; });
         function formatTime(sec) { if(isNaN(sec)) return "00:00"; let m = Math.floor(sec / 60); let s = Math.floor(sec % 60); return (m<10?"0"+m:m)+":"+(s<10?"0"+s:s); }
 
-        // FORCE LOGIN ON RELOAD
+        // --- LOGIN ---
         if(localStorage.getItem('it9an_auth') === 'true') { 
             localStorage.removeItem('it9an_auth'); 
         }
 
         function checkLogin() {
             const pin = document.getElementById('pinInput').value;
+            
+            // ADMIN LOGIN SHORTCUT
+            if (pin === ADMIN_PIN) {
+                // Admin Login: Name 'Admin', Role 'teacher', Hidden from views
+                localStorage.setItem('it9an_uid', 'admin_super');
+                localStorage.setItem('it9an_auth', 'true');
+                localStorage.setItem('it9an_name', 'المسؤول');
+                localStorage.setItem('it9an_role', 'teacher');
+                localStorage.setItem('it9an_hidden', 'true'); // Flag to hide from views
+                document.getElementById('login-screen').style.display = 'none';
+                updateUIForRole(); renderMenu();
+                return;
+            }
+
+            // NORMAL LOGIN
             const first = document.getElementById('firstName').value.trim();
             const last = document.getElementById('lastName').value.trim();
             const role = document.getElementById('userRole').value;
 
-            // Strict Validation
             const latinRegex = /^[a-zA-Z\s]+$/;
             const arabicRegex = /^[\u0600-\u06FF\s]+$/;
             const isFirstValid = (first.length >= 2) && (latinRegex.test(first) || arabicRegex.test(first));
@@ -343,13 +357,15 @@
 
             if(isPinValid) {
                 const fullName = first + " " + last;
-                // FIX: Deterministic ID without Date.now() ensures consistent identity
+                // Deterministic UID based on Name + Role (prevents ghost identities on same device)
                 const uniqueID = 'user_' + btoa(unescape(encodeURIComponent(fullName + '_' + role))).replace(/=/g, ''); 
                 
                 localStorage.setItem('it9an_uid', uniqueID);
                 localStorage.setItem('it9an_auth', 'true');
                 localStorage.setItem('it9an_name', fullName);
                 localStorage.setItem('it9an_role', role);
+                localStorage.removeItem('it9an_hidden'); // Normal users are visible
+                
                 document.getElementById('login-screen').style.display = 'none';
                 updateUIForRole(); renderMenu();
             } else { alert("بيانات الدخول غير صحيحة"); }
@@ -391,8 +407,7 @@
             document.getElementById('appFooter').style.display = 'flex';
             
             const lessonId = KURS_DATEN[currentLessonIdx].id;
-            const pgTitle = document.getElementById('pageTitle');
-            pgTitle.innerHTML = `<img src="assets/T${lessonId}.png" alt="Lesson Title"><span class="title-text-maktaa">المقطع ${localVersNum}</span>`;
+            document.getElementById('pageTitle').innerHTML = `<img src="assets/T${lessonId}.png" alt="Lesson Title"><span class="title-text-maktaa">المقطع ${localVersNum}</span>`;
 
             const btnPrev = document.getElementById('btnPrev');
             if(localVersNum === 1) btnPrev.classList.add('hidden'); else btnPrev.classList.remove('hidden');
@@ -403,9 +418,14 @@
             if(isPlaying && !isAuto) stopLoop();
             document.getElementById('statusDisplay').innerText = "جاهز للتلاوة";
             
+            // Stats Logic (Admin Hidden Check)
             const myName = localStorage.getItem('it9an_name');
+            const isHidden = localStorage.getItem('it9an_hidden') === 'true';
             const statRef = window.doc(window.db, "stats", "file_" + globalId);
-            if(myName) { try { await window.setDoc(statRef, { viewers: window.arrayUnion(myName) }, { merge: true }); } catch(e){} }
+            
+            if(myName && !isHidden) { 
+                try { await window.setDoc(statRef, { viewers: window.arrayUnion(myName) }, { merge: true }); } catch(e){} 
+            }
             
             if(unsubscribeViews) unsubscribeViews();
             unsubscribeViews = window.onSnapshot(statRef, (snap) => { 
@@ -417,7 +437,6 @@
                 }
             });
             
-            // RESET FEED LIMIT ON NEW VERSE
             feedLimit = 10;
             loadFeed(globalId);
         }
@@ -433,7 +452,7 @@
             const names = namesStr.split('|||'); alert("قائمة الإعجابات:\n\n" + names.join("\n"));
         }
 
-        // --- OPTIMIZED FEED WITH PAGINATION ---
+        // --- FEED & SCROLL FIX ---
         function loadFeed(fileId) {
             const div = document.getElementById('community-feed');
             div.innerHTML = "<div style='text-align:center; color:#ccc; padding:10px;'>...</div>";
@@ -445,14 +464,19 @@
             const q = window.query(window.collection(window.db, "posts"), window.where("fileId", "==", idString));
             
             unsubscribeFeed = window.onSnapshot(q, (snap) => {
+                // SCROLL POSITION MERKEN
+                const scrollY = window.scrollY;
+
                 if(snap.empty) { div.innerHTML = "<div style='text-align:center; color:#999; font-size:14px; padding:20px;'>لا توجد مشاركات حتى الآن</div>"; return; }
                 
                 allLoadedPosts = [];
                 snap.forEach(doc => { allLoadedPosts.push({ id: doc.id, ...doc.data() }); });
-                // Newest First (Desc)
-                allLoadedPosts.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0)); 
+                allLoadedPosts.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0)); // Newest first
                 
                 renderPosts(div, userRole, myUid);
+                
+                // SCROLL POSITION WIEDERHERSTELLEN
+                window.scrollTo(0, scrollY);
             });
         }
 
@@ -468,15 +492,12 @@
                     mainIsLikedByMe = d.likes.some(l => (typeof l === 'object' ? l.uid === myUid : l === myUid)); 
                     mainLikerNames = d.likes.map(l => typeof l === 'object' ? (l.name || 'مستخدم') : 'مستخدم');
                 }
-                
                 const isMyMainPost = (d.uid === myUid);
-                // Fix: Allow liking if old post has no UID, but block if it matches mine
                 let mainLikeClass = mainIsLikedByMe ? 'liked' : '';
                 let mainLikeAction = `likePost('${d.id}')`;
                 let mainCursor = 'pointer';
                 let mainLockedClass = '';
-                
-                if (d.uid && isMyMainPost) { mainLikeAction = ''; mainLockedClass = 'locked'; mainCursor = 'not-allowed'; mainLikeClass += ' disabled'; }
+                if (isMyMainPost) { mainLikeAction = ''; mainLockedClass = 'locked'; mainCursor = 'not-allowed'; mainLikeClass += ' disabled'; }
 
                 let repliesHtml = "";
                 if(d.replies) {
@@ -493,8 +514,7 @@
                         let rCursor = 'pointer';
                         let rNamesStr = rLikerNames.join('|||');
                         let rLockedClass = '';
-
-                        if (r.uid && isMyReply) { rLikeAction = ''; rLockedClass = 'locked'; rCursor = 'not-allowed'; rLikeClass += ' disabled'; }
+                        if (isMyReply) { rLikeAction = ''; rLockedClass = 'locked'; rCursor = 'not-allowed'; rLikeClass += ' disabled'; }
 
                         repliesHtml += `
                         <div class="reply-box">
@@ -531,7 +551,6 @@
             if (allLoadedPosts.length > feedLimit) {
                 htmlContent += `<button class="load-more-btn" onclick="loadMorePosts()">▼ عرض المزيد</button>`;
             }
-            
             container.innerHTML = htmlContent;
         }
 
@@ -540,7 +559,10 @@
             const div = document.getElementById('community-feed');
             const userRole = localStorage.getItem('it9an_role');
             const myUid = localStorage.getItem('it9an_uid');
+            // Save scroll not needed here as we append, but good practice
+            const scrollY = window.scrollY;
             renderPosts(div, userRole, myUid);
+            window.scrollTo(0, scrollY);
         }
 
         window.startReply = function(postId) { replyTargetId = postId; toggleRecord(); }
@@ -555,14 +577,12 @@
             } else {
                 try {
                     let dur = audioEl.duration; if(!dur || isNaN(dur)) dur = 15; maxRecDuration = Math.ceil(dur * 2);
-
                     const audioConstraints = { echoCancellation: false, noiseSuppression: false, autoGainControl: false, sampleRate: 48000, channelCount: 1 };
                     const stream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints });
                     
                     let options = { audioBitsPerSecond: 128000 };
-                    if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) { options.mimeType = 'audio/webm;codecs=opus'; } 
-                    else if (MediaRecorder.isTypeSupported('audio/mp4;codecs=mp4a.40.2')) { options.mimeType = 'audio/mp4;codecs=mp4a.40.2'; } 
-                    else if (MediaRecorder.isTypeSupported('audio/mp4')) { options.mimeType = 'audio/mp4'; }
+                    if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) options.mimeType = 'audio/webm;codecs=opus';
+                    else if (MediaRecorder.isTypeSupported('audio/mp4')) options.mimeType = 'audio/mp4';
 
                     mediaRecorder = new MediaRecorder(stream, options);
                     chunks = [];
@@ -598,10 +618,7 @@
             const uid = localStorage.getItem('it9an_uid');
 
             try {
-                let ext = 'webm';
-                if (currentBlob.type.includes('mp4')) ext = 'mp4';
-                else if (currentBlob.type.includes('ogg')) ext = 'ogg';
-
+                let ext = 'webm'; if (currentBlob.type.includes('mp4')) ext = 'mp4';
                 const refS = window.ref(window.storage, `uploads/${Date.now()}_${uid}.${ext}`);
                 await window.uploadBytes(refS, currentBlob);
                 const url = await window.getDownloadURL(refS);
