@@ -21,8 +21,7 @@
         body { 
             margin: 0; padding: 0; background-color: var(--bg); 
             font-family: 'Amiri', serif; color: var(--text); 
-            padding-bottom: 250px; 
-            width: 100%; overflow-x: hidden; 
+            padding-bottom: 250px; width: 100%; overflow-x: hidden; 
         }
 
         /* --- LOGIN --- */
@@ -113,6 +112,7 @@
         .view-counter { font-size: 13px; color: #666; text-align: center; margin-top: 5px; cursor: pointer; padding: 5px; }
         .view-counter:active { background: rgba(0,0,0,0.05); border-radius: 5px; }
         
+        .feed-container { min-height: 100px; } /* Verhindert Kollaps */
         .feed-msg { background: var(--surface); padding: 15px; border-radius: 12px; margin-bottom: 15px; border-right: 4px solid #ddd; box-shadow: 0 2px 8px rgba(0,0,0,0.03); }
         .teacher-msg { background: #fffcf2; border: 1px solid var(--gold); border-right: 4px solid var(--gold); }
         .teacher-badge { background: var(--gold); color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-left: 5px; }
@@ -315,7 +315,8 @@
             return (m<10?"0"+m:m)+":"+(s<10?"0"+s:s);
         }
 
-        // FORCE LOGIN ON RELOAD
+        // --- LOGIN LOGIC (MIT FIX FÜR IDENTITÄT) ---
+        // Löscht alte Authentifizierung, damit Login immer kommt
         if(localStorage.getItem('it9an_auth') === 'true') { 
             localStorage.removeItem('it9an_auth'); 
         }
@@ -326,7 +327,7 @@
             const last = document.getElementById('lastName').value.trim();
             const role = document.getElementById('userRole').value;
 
-            // Strict Validation
+            // Validierung: Mind. 2 Zeichen, entweder nur Latein oder nur Arabisch
             const latinRegex = /^[a-zA-Z\s]+$/;
             const arabicRegex = /^[\u0600-\u06FF\s]+$/;
             const isFirstValid = (first.length >= 2) && (latinRegex.test(first) || arabicRegex.test(first));
@@ -340,10 +341,18 @@
 
             if(isPinValid) {
                 const fullName = first + " " + last;
-                if (!localStorage.getItem('it9an_uid')) localStorage.setItem('it9an_uid', 'user_' + Date.now());
+                
+                // --- FIX: DETERMINISTISCHE UID ---
+                // Erzeugt eine eindeutige ID aus Name+Rolle. 
+                // So ist "Ahmed Student" immer derselbe User, egal wann er sich einloggt.
+                // Das verhindert, dass man als neuer User die alten IDs "erbt".
+                const uniqueID = 'user_' + btoa(unescape(encodeURIComponent(fullName + '_' + role))).replace(/=/g, ''); 
+                
+                localStorage.setItem('it9an_uid', uniqueID);
                 localStorage.setItem('it9an_auth', 'true');
                 localStorage.setItem('it9an_name', fullName);
                 localStorage.setItem('it9an_role', role);
+                
                 document.getElementById('login-screen').style.display = 'none';
                 updateUIForRole(); renderMenu();
             } else { alert("بيانات الدخول غير صحيحة"); }
@@ -424,6 +433,7 @@
             const names = namesStr.split('|||'); alert("قائمة الإعجابات:\n\n" + names.join("\n"));
         }
 
+        // --- FEED OPTIMIERUNG (Rendering Fix) ---
         function loadFeed(fileId) {
             const div = document.getElementById('community-feed');
             div.innerHTML = "<div style='text-align:center; color:#ccc; padding:10px;'>...</div>";
@@ -435,17 +445,20 @@
             const q = window.query(window.collection(window.db, "posts"), window.where("fileId", "==", idString));
             
             unsubscribeFeed = window.onSnapshot(q, (snap) => {
-                div.innerHTML = "";
-                if(snap.empty) { div.innerHTML = "<div style='text-align:center; color:#999; font-size:14px; padding:20px;'>لا توجد مشاركات حتى الآن</div>"; return; }
+                // Erst alles in eine Variable bauen, dann EINMAL ins DOM schreiben
+                // Das verhindert Flackern und Abstürze bei vielen Elementen.
+                let htmlContent = "";
+                
+                if(snap.empty) { 
+                    div.innerHTML = "<div style='text-align:center; color:#999; font-size:14px; padding:20px;'>لا توجد مشاركات حتى الآن</div>"; 
+                    return; 
+                }
                 
                 let posts = [];
                 snap.forEach(doc => { posts.push({ id: doc.id, ...doc.data() }); });
                 posts.sort((a, b) => (a.timestamp?.seconds || 0) - (b.timestamp?.seconds || 0)); 
                 
-                // LIMITIERUNG DER ANZEIGE AUF DIE LETZTEN 50 BEITRÄGE (PERFORMANCE)
-                if(posts.length > 50) {
-                    posts = posts.slice(posts.length - 50);
-                }
+                if(posts.length > 50) posts = posts.slice(posts.length - 50); // Limit auf 50
 
                 posts.forEach(d => {
                     let isT = d.role === 'teacher'; 
@@ -495,12 +508,10 @@
                     let teacherBadge = isT ? "<span class='teacher-badge'>معلم</span>" : "";
                     let replyBtnHtml = (userRole === 'teacher') ? `<button class="reply-btn" onclick="startReply('${d.id}')">↩️ الرد</button>` : "<div></div>";
 
-                    div.innerHTML += `
+                    htmlContent += `
                     <div class="feed-msg ${isT?'teacher-msg':''}">
                         <div style="font-weight:bold; color:var(--primary); font-size:14px; margin-bottom:8px; display:flex; align-items:center;">${d.name} ${teacherBadge}</div>
-                        
                         <audio controls src="${d.audioUrl}" preload="none" style="width:100%; height:35px;"></audio>
-                        
                         <div class="msg-footer">
                             ${replyBtnHtml}
                             <div class="like-btn ${mainLikeClass}">
@@ -511,6 +522,8 @@
                         ${repliesHtml ? `<div style="margin-top:10px;">${repliesHtml}</div>` : ''}
                     </div>`;
                 });
+                
+                div.innerHTML = htmlContent; // Nur einmaliges Update des DOM
             });
         }
 
