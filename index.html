@@ -21,7 +21,8 @@
         body { 
             margin: 0; padding: 0; background-color: var(--bg); 
             font-family: 'Amiri', serif; color: var(--text); 
-            padding-bottom: 140px; width: 100%; overflow-x: hidden; 
+            padding-bottom: 250px; /* Genug Platz für Mobile Footer */
+            width: 100%; overflow-x: hidden; 
         }
 
         /* --- LOGIN --- */
@@ -118,6 +119,7 @@
         
         .msg-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding-top: 10px; border-top: 1px solid #eee; }
         
+        /* Like Button Design */
         .like-btn { display: flex; align-items: center; border-radius: 20px; font-size: 14px; background: #f9f9f9; border: 1px solid #eee; overflow: hidden; }
         .like-btn.liked { color: var(--primary); background: #e8f5e9; border-color: var(--primary); font-weight: bold; }
         .like-btn.disabled { opacity: 0.5; filter: grayscale(1); }
@@ -150,7 +152,7 @@
         .footer { 
             position: fixed; bottom: 0; left: 0; width: 100%; background: var(--surface); 
             border-top: 1px solid #eee; border-radius: 20px 20px 0 0; 
-            padding: 10px 0 15px 0; z-index: 2000; box-shadow: 0 -5px 30px rgba(0,0,0,0.05); 
+            padding: 10px 0 20px 0; z-index: 2000; box-shadow: 0 -5px 30px rgba(0,0,0,0.05); 
             display: none; flex-direction: column;
         }
         
@@ -314,27 +316,24 @@
             return (m<10?"0"+m:m)+":"+(s<10?"0"+s:s);
         }
 
-        // LOGIN FUNKTION MIT STRENGER VALIDIERUNG
+        // FORCE LOGIN ON RELOAD
+        if(localStorage.getItem('it9an_auth') === 'true') { 
+            localStorage.removeItem('it9an_auth'); 
+        }
+
         function checkLogin() {
             const pin = document.getElementById('pinInput').value;
             const first = document.getElementById('firstName').value.trim();
             const last = document.getElementById('lastName').value.trim();
             const role = document.getElementById('userRole').value;
 
-            // Strict Validation:
-            // 1. Min Länge 2
-            // 2. Entweder rein Lateinisch (mit Leerzeichen) ODER rein Arabisch (mit Leerzeichen). Kein Mix.
+            // Strict Validation
             const latinRegex = /^[a-zA-Z\s]+$/;
             const arabicRegex = /^[\u0600-\u06FF\s]+$/;
-
             const isFirstValid = (first.length >= 2) && (latinRegex.test(first) || arabicRegex.test(first));
             const isLastValid = (last.length >= 2) && (latinRegex.test(last) || arabicRegex.test(last));
 
-            if (!isFirstValid || !isLastValid) {
-                // Generische Fehlermeldung (keine Tipps)
-                alert("بيانات الدخول غير صحيحة"); 
-                return;
-            }
+            if (!isFirstValid || !isLastValid) { alert("بيانات الدخول غير صحيحة"); return; }
 
             let isPinValid = false;
             if (role === 'student' && pin === STUDENT_PIN) isPinValid = true;
@@ -342,19 +341,13 @@
 
             if(isPinValid) {
                 const fullName = first + " " + last;
-                // Unique ID based on Name + Role (allows switching users on same device)
-                const uniqueID = 'user_' + btoa(unescape(encodeURIComponent(fullName + '_' + role))).replace(/=/g, ''); 
-                
-                localStorage.setItem('it9an_uid', uniqueID);
+                if (!localStorage.getItem('it9an_uid')) localStorage.setItem('it9an_uid', 'user_' + Date.now());
                 localStorage.setItem('it9an_auth', 'true');
                 localStorage.setItem('it9an_name', fullName);
                 localStorage.setItem('it9an_role', role);
-                
                 document.getElementById('login-screen').style.display = 'none';
                 updateUIForRole(); renderMenu();
-            } else { 
-                alert("بيانات الدخول غير صحيحة"); 
-            }
+            } else { alert("بيانات الدخول غير صحيحة"); }
         }
         
         function updateUIForRole() {
@@ -367,7 +360,6 @@
             const grid = document.getElementById('menu-view'); grid.innerHTML = ""; showView('menu-view');
             document.getElementById('pageTitle').innerHTML = "<span style='border:none; padding:0; font-size:18px;'>القائمة الرئيسية</span>"; 
             document.getElementById('appFooter').style.display = 'none';
-
             KURS_DATEN.forEach((lek, index) => {
                 let div = document.createElement('div'); div.className = 'menu-item';
                 div.innerHTML = `<div class="menu-item-title">الدرس ${index + 1}</div><img src="assets/T${lek.id}.png" onerror="this.style.display='none'">`;
@@ -429,12 +421,8 @@
 
         window.showLikeNames = function(event, namesStr) {
             event.stopPropagation();
-            if(!namesStr || namesStr.trim() === '') {
-                alert("لا توجد إعجابات بعد");
-                return;
-            }
-            const names = namesStr.split('|||');
-            alert("قائمة الإعجابات:\n\n" + names.join("\n"));
+            if(!namesStr || namesStr.trim() === '') { alert("لا توجد إعجابات بعد"); return; }
+            const names = namesStr.split('|||'); alert("قائمة الإعجابات:\n\n" + names.join("\n"));
         }
 
         function loadFeed(fileId) {
@@ -445,7 +433,6 @@
             const idString = String(fileId);
             const userRole = localStorage.getItem('it9an_role');
             const myUid = localStorage.getItem('it9an_uid');
-            
             const q = window.query(window.collection(window.db, "posts"), window.where("fileId", "==", idString));
             
             unsubscribeFeed = window.onSnapshot(q, (snap) => {
@@ -458,49 +445,34 @@
                 
                 posts.forEach(d => {
                     let isT = d.role === 'teacher'; 
-                    
-                    // MAIN POST LIKES
-                    let mainLikesCount = 0, mainIsLikedByMe = false;
-                    let mainLikerNames = [];
+                    let mainLikesCount = 0, mainIsLikedByMe = false, mainLikerNames = [];
                     if (d.likes && Array.isArray(d.likes)) { 
                         mainLikesCount = d.likes.length; 
                         mainIsLikedByMe = d.likes.some(l => (typeof l === 'object' ? l.uid === myUid : l === myUid)); 
                         mainLikerNames = d.likes.map(l => typeof l === 'object' ? (l.name || 'مستخدم') : 'مستخدم');
                     }
-                    
                     const isMyMainPost = (d.uid === myUid);
                     let mainLikeClass = mainIsLikedByMe ? 'liked' : '';
                     let mainLikeAction = `likePost('${d.id}')`;
                     let mainCursor = 'pointer';
                     let mainLockedClass = '';
-                    
-                    if (isMyMainPost) { 
-                        mainLikeAction = ''; 
-                        mainLockedClass = 'locked'; 
-                    }
+                    if (isMyMainPost) { mainLikeAction = ''; mainLockedClass = 'locked'; mainCursor = 'not-allowed'; }
 
-                    // REPLIES
                     let repliesHtml = "";
                     if(d.replies) {
                         d.replies.forEach(r => {
-                            let rLikesCount = 0, rIsLikedByMe = false;
-                            let rLikerNames = [];
+                            let rLikesCount = 0, rIsLikedByMe = false, rLikerNames = [];
                             if (r.likes && Array.isArray(r.likes)) { 
                                 rLikesCount = r.likes.length; 
                                 rIsLikedByMe = r.likes.some(l => (typeof l === 'object' ? l.uid === myUid : l === myUid)); 
                                 rLikerNames = r.likes.map(l => typeof l === 'object' ? (l.name || 'مستخدم') : 'مستخدم');
                             }
-                            
                             const isMyReply = (r.uid === myUid);
                             let rLikeClass = rIsLikedByMe ? 'liked' : '';
                             let rLikeAction = `likeReply('${d.id}', ${r.timestamp})`;
                             let rCursor = 'pointer';
                             let rNamesStr = rLikerNames.join('|||');
-
-                            if (isMyReply) { 
-                                rLikeAction = ''; 
-                                rLockedClass = 'locked'; 
-                            }
+                            if (isMyReply) { rLikeAction = ''; rLockedClass = 'locked'; rCursor = 'not-allowed'; }
 
                             repliesHtml += `
                             <div class="reply-box">
@@ -509,14 +481,13 @@
                                 <div class="msg-footer" style="margin-top:5px; border:none; padding-top:0;">
                                     <div></div>
                                     <div class="like-btn ${rLikeClass}">
-                                        <div class="like-action ${rLockedClass}" onclick="${rLikeAction}">👍</div>
+                                        <div class="like-action ${rLockedClass}" onclick="${rLikeAction}" style="cursor:${rCursor}">👍</div>
                                         <div class="like-count" onclick="showLikeNames(event, '${rNamesStr}')">${rLikesCount}</div>
                                     </div>
                                 </div>
                             </div>`;
                         });
                     }
-                    
                     let teacherBadge = isT ? "<span class='teacher-badge'>معلم</span>" : "";
                     let replyBtnHtml = (userRole === 'teacher') ? `<button class="reply-btn" onclick="startReply('${d.id}')">↩️ الرد</button>` : "<div></div>";
 
@@ -524,11 +495,10 @@
                     <div class="feed-msg ${isT?'teacher-msg':''}">
                         <div style="font-weight:bold; color:var(--primary); font-size:14px; margin-bottom:8px; display:flex; align-items:center;">${d.name} ${teacherBadge}</div>
                         <audio controls src="${d.audioUrl}" style="width:100%; height:35px;" onerror="this.closest('.feed-msg').remove()"></audio>
-                        
                         <div class="msg-footer">
                             ${replyBtnHtml}
                             <div class="like-btn ${mainLikeClass}">
-                                <div class="like-action ${mainLockedClass}" onclick="${mainLikeAction}">👍</div>
+                                <div class="like-action ${mainLockedClass}" onclick="${mainLikeAction}" style="cursor:${mainCursor}">👍</div>
                                 <div class="like-count" onclick="showLikeNames(event, '${mainLikerNames.join('|||')}')">${mainLikesCount}</div>
                             </div>
                         </div>
@@ -549,11 +519,8 @@
                 stopRecordingAndReview();
             } else {
                 try {
-                    let dur = audioEl.duration;
-                    if(!dur || isNaN(dur)) dur = 15; 
-                    maxRecDuration = Math.ceil(dur * 2);
+                    let dur = audioEl.duration; if(!dur || isNaN(dur)) dur = 15; maxRecDuration = Math.ceil(dur * 2);
 
-                    // High Quality Audio Setup (No Noise Cancellation)
                     const audioConstraints = { echoCancellation: false, noiseSuppression: false, autoGainControl: false, sampleRate: 48000, channelCount: 1 };
                     const stream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints });
                     
@@ -627,8 +594,7 @@
                 isPlaying = true; isPaused = false; document.getElementById('playBtn').innerText = "⏸";
                 if (pauseSecondsLeft > 0) { startPauseCountdown(pauseSecondsLeft); } 
                 else if (audioEl.currentTime > 0 && audioEl.currentTime < audioEl.duration) {
-                    document.getElementById('statusDisplay').innerText = `استماع (${repeatsLeft})`;
-                    audioEl.play().catch(e => { stopLoop(); });
+                    document.getElementById('statusDisplay').innerText = `استماع (${repeatsLeft})`; audioEl.play().catch(e => { stopLoop(); });
                 } else {
                     if(repeatsLeft <= 0) repeatsLeft = parseInt(document.getElementById('globalRepeats').value);
                     playCycle();
@@ -679,17 +645,13 @@
         window.goToMenu = function() { stopLoop(); stopRecordingAndReview(); showView('menu-view'); renderMenu(); } 
         function showView(id) { document.getElementById('menu-view').style.display = 'none'; document.getElementById('player-view').style.display = 'none'; document.getElementById(id).style.display = (id === 'menu-view') ? 'grid' : 'block'; }
         
-        // --- SMART LIKES ---
         window.likePost = async (id) => { 
-            const uid = localStorage.getItem('it9an_uid');
-            const myName = localStorage.getItem('it9an_name');
+            const uid = localStorage.getItem('it9an_uid'); const myName = localStorage.getItem('it9an_name');
             if(!uid) return; 
-            
             const postRef = window.doc(window.db, "posts", id);
             const docSnap = await window.getDoc(postRef);
             if (docSnap.exists()) {
-                let post = docSnap.data();
-                let likes = post.likes || [];
+                let post = docSnap.data(); let likes = post.likes || [];
                 let isLiked = likes.some(l => (typeof l === 'object' ? l.uid === uid : l === uid));
                 if (isLiked) { likes = likes.filter(l => (typeof l === 'object' ? l.uid !== uid : l !== uid)); } 
                 else { likes.push({ uid: uid, name: myName }); }
@@ -698,16 +660,12 @@
         }
 
         window.likeReply = async (postId, replyTimestamp) => {
-            const uid = localStorage.getItem('it9an_uid');
-            const myName = localStorage.getItem('it9an_name');
+            const uid = localStorage.getItem('it9an_uid'); const myName = localStorage.getItem('it9an_name');
             if(!uid) return;
-            
             const postRef = window.doc(window.db, "posts", postId);
             const docSnap = await window.getDoc(postRef);
             if (docSnap.exists()) {
-                let post = docSnap.data();
-                if(!post.replies) return;
-                
+                let post = docSnap.data(); if(!post.replies) return;
                 let updatedReplies = post.replies.map(r => {
                     if (r.timestamp === replyTimestamp) {
                         if (!r.likes) r.likes = [];
