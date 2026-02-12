@@ -112,7 +112,6 @@
         .view-counter { font-size: 13px; color: #666; text-align: center; margin-top: 5px; cursor: pointer; padding: 5px; }
         .view-counter:active { background: rgba(0,0,0,0.05); border-radius: 5px; }
         
-        .feed-container { min-height: 100px; } /* Verhindert Kollaps */
         .feed-msg { background: var(--surface); padding: 15px; border-radius: 12px; margin-bottom: 15px; border-right: 4px solid #ddd; box-shadow: 0 2px 8px rgba(0,0,0,0.03); }
         .teacher-msg { background: #fffcf2; border: 1px solid var(--gold); border-right: 4px solid var(--gold); }
         .teacher-badge { background: var(--gold); color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-left: 5px; }
@@ -131,6 +130,14 @@
 
         .reply-box { margin-top: 15px; padding: 12px; background: #f4f4f4; border-radius: 8px; border-right: 3px solid var(--primary); }
         .reply-header { font-size: 12px; font-weight: bold; color: var(--primary); margin-bottom: 8px; display: flex; align-items: center; gap: 5px; }
+
+        /* LOAD MORE BUTTON */
+        .load-more-btn {
+            display: block; width: 100%; padding: 10px; text-align: center;
+            background: #f0f0f0; color: #555; border: none; border-radius: 8px;
+            font-family: 'Amiri'; font-weight: bold; cursor: pointer; margin-top: 20px;
+        }
+        .load-more-btn:active { background: #e0e0e0; }
 
         /* RECORDING UI */
         #recording-ui { display: none; position: fixed; bottom: 120px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 350px; background: rgba(255,255,255,0.95); backdrop-filter: blur(5px); border: 2px solid var(--red); border-radius: 20px; padding: 15px; z-index: 1500; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
@@ -292,6 +299,10 @@
         let mediaRecorder, chunks = [], recInterval = null, recSeconds = 0;
         let currentBlob = null, replyTargetId = null, maxRecDuration = 0;
         let currentViewersList = [];
+        
+        // PAGINATION SETTINGS
+        let feedLimit = 10; // Start with 10
+        let allLoadedPosts = [];
 
         // --- AUDIO PROGRESS BAR ---
         const audioEl = document.getElementById('mainAudio');
@@ -301,22 +312,13 @@
 
         audioEl.addEventListener('timeupdate', () => {
             if(!audioEl.duration) return;
-            pBar.value = audioEl.currentTime;
-            pBar.max = audioEl.duration;
-            cTime.innerText = formatTime(audioEl.currentTime);
-            dTime.innerText = formatTime(audioEl.duration);
+            pBar.value = audioEl.currentTime; pBar.max = audioEl.duration;
+            cTime.innerText = formatTime(audioEl.currentTime); dTime.innerText = formatTime(audioEl.duration);
         });
-
         pBar.addEventListener('input', () => { audioEl.currentTime = pBar.value; });
+        function formatTime(sec) { if(isNaN(sec)) return "00:00"; let m = Math.floor(sec / 60); let s = Math.floor(sec % 60); return (m<10?"0"+m:m)+":"+(s<10?"0"+s:s); }
 
-        function formatTime(sec) {
-            if(isNaN(sec)) return "00:00";
-            let m = Math.floor(sec / 60); let s = Math.floor(sec % 60);
-            return (m<10?"0"+m:m)+":"+(s<10?"0"+s:s);
-        }
-
-        // --- LOGIN LOGIC (MIT FIX FÜR IDENTITÄT) ---
-        // Löscht alte Authentifizierung, damit Login immer kommt
+        // FORCE LOGIN ON RELOAD
         if(localStorage.getItem('it9an_auth') === 'true') { 
             localStorage.removeItem('it9an_auth'); 
         }
@@ -327,7 +329,7 @@
             const last = document.getElementById('lastName').value.trim();
             const role = document.getElementById('userRole').value;
 
-            // Validierung: Mind. 2 Zeichen, entweder nur Latein oder nur Arabisch
+            // Strict Validation
             const latinRegex = /^[a-zA-Z\s]+$/;
             const arabicRegex = /^[\u0600-\u06FF\s]+$/;
             const isFirstValid = (first.length >= 2) && (latinRegex.test(first) || arabicRegex.test(first));
@@ -341,18 +343,13 @@
 
             if(isPinValid) {
                 const fullName = first + " " + last;
-                
-                // --- FIX: DETERMINISTISCHE UID ---
-                // Erzeugt eine eindeutige ID aus Name+Rolle. 
-                // So ist "Ahmed Student" immer derselbe User, egal wann er sich einloggt.
-                // Das verhindert, dass man als neuer User die alten IDs "erbt".
+                // FIX: Deterministic ID without Date.now() ensures consistent identity
                 const uniqueID = 'user_' + btoa(unescape(encodeURIComponent(fullName + '_' + role))).replace(/=/g, ''); 
                 
                 localStorage.setItem('it9an_uid', uniqueID);
                 localStorage.setItem('it9an_auth', 'true');
                 localStorage.setItem('it9an_name', fullName);
                 localStorage.setItem('it9an_role', role);
-                
                 document.getElementById('login-screen').style.display = 'none';
                 updateUIForRole(); renderMenu();
             } else { alert("بيانات الدخول غير صحيحة"); }
@@ -419,6 +416,9 @@
                     currentViewersList = []; document.getElementById('viewCount').innerText = 0;
                 }
             });
+            
+            // RESET FEED LIMIT ON NEW VERSE
+            feedLimit = 10;
             loadFeed(globalId);
         }
 
@@ -433,7 +433,7 @@
             const names = namesStr.split('|||'); alert("قائمة الإعجابات:\n\n" + names.join("\n"));
         }
 
-        // --- FEED OPTIMIERUNG (Rendering Fix) ---
+        // --- OPTIMIZED FEED WITH PAGINATION ---
         function loadFeed(fileId) {
             const div = document.getElementById('community-feed');
             div.innerHTML = "<div style='text-align:center; color:#ccc; padding:10px;'>...</div>";
@@ -445,86 +445,102 @@
             const q = window.query(window.collection(window.db, "posts"), window.where("fileId", "==", idString));
             
             unsubscribeFeed = window.onSnapshot(q, (snap) => {
-                // Erst alles in eine Variable bauen, dann EINMAL ins DOM schreiben
-                // Das verhindert Flackern und Abstürze bei vielen Elementen.
-                let htmlContent = "";
+                if(snap.empty) { div.innerHTML = "<div style='text-align:center; color:#999; font-size:14px; padding:20px;'>لا توجد مشاركات حتى الآن</div>"; return; }
                 
-                if(snap.empty) { 
-                    div.innerHTML = "<div style='text-align:center; color:#999; font-size:14px; padding:20px;'>لا توجد مشاركات حتى الآن</div>"; 
-                    return; 
+                allLoadedPosts = [];
+                snap.forEach(doc => { allLoadedPosts.push({ id: doc.id, ...doc.data() }); });
+                // Newest First (Desc)
+                allLoadedPosts.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0)); 
+                
+                renderPosts(div, userRole, myUid);
+            });
+        }
+
+        function renderPosts(container, userRole, myUid) {
+            let htmlContent = "";
+            let displayPosts = allLoadedPosts.slice(0, feedLimit);
+
+            displayPosts.forEach(d => {
+                let isT = d.role === 'teacher'; 
+                let mainLikesCount = 0, mainIsLikedByMe = false, mainLikerNames = [];
+                if (d.likes && Array.isArray(d.likes)) { 
+                    mainLikesCount = d.likes.length; 
+                    mainIsLikedByMe = d.likes.some(l => (typeof l === 'object' ? l.uid === myUid : l === myUid)); 
+                    mainLikerNames = d.likes.map(l => typeof l === 'object' ? (l.name || 'مستخدم') : 'مستخدم');
                 }
                 
-                let posts = [];
-                snap.forEach(doc => { posts.push({ id: doc.id, ...doc.data() }); });
-                posts.sort((a, b) => (a.timestamp?.seconds || 0) - (b.timestamp?.seconds || 0)); 
+                const isMyMainPost = (d.uid === myUid);
+                // Fix: Allow liking if old post has no UID, but block if it matches mine
+                let mainLikeClass = mainIsLikedByMe ? 'liked' : '';
+                let mainLikeAction = `likePost('${d.id}')`;
+                let mainCursor = 'pointer';
+                let mainLockedClass = '';
                 
-                if(posts.length > 50) posts = posts.slice(posts.length - 50); // Limit auf 50
+                if (d.uid && isMyMainPost) { mainLikeAction = ''; mainLockedClass = 'locked'; mainCursor = 'not-allowed'; mainLikeClass += ' disabled'; }
 
-                posts.forEach(d => {
-                    let isT = d.role === 'teacher'; 
-                    let mainLikesCount = 0, mainIsLikedByMe = false, mainLikerNames = [];
-                    if (d.likes && Array.isArray(d.likes)) { 
-                        mainLikesCount = d.likes.length; 
-                        mainIsLikedByMe = d.likes.some(l => (typeof l === 'object' ? l.uid === myUid : l === myUid)); 
-                        mainLikerNames = d.likes.map(l => typeof l === 'object' ? (l.name || 'مستخدم') : 'مستخدم');
-                    }
-                    const isMyMainPost = (d.uid === myUid);
-                    let mainLikeClass = mainIsLikedByMe ? 'liked' : '';
-                    let mainLikeAction = `likePost('${d.id}')`;
-                    let mainCursor = 'pointer';
-                    let mainLockedClass = '';
-                    if (isMyMainPost) { mainLikeAction = ''; mainLockedClass = 'locked'; mainCursor = 'not-allowed'; }
+                let repliesHtml = "";
+                if(d.replies) {
+                    d.replies.forEach(r => {
+                        let rLikesCount = 0, rIsLikedByMe = false, rLikerNames = [];
+                        if (r.likes && Array.isArray(r.likes)) { 
+                            rLikesCount = r.likes.length; 
+                            rIsLikedByMe = r.likes.some(l => (typeof l === 'object' ? l.uid === myUid : l === myUid)); 
+                            rLikerNames = r.likes.map(l => typeof l === 'object' ? (l.name || 'مستخدم') : 'مستخدم');
+                        }
+                        const isMyReply = (r.uid === myUid);
+                        let rLikeClass = rIsLikedByMe ? 'liked' : '';
+                        let rLikeAction = `likeReply('${d.id}', ${r.timestamp})`;
+                        let rCursor = 'pointer';
+                        let rNamesStr = rLikerNames.join('|||');
+                        let rLockedClass = '';
 
-                    let repliesHtml = "";
-                    if(d.replies) {
-                        d.replies.forEach(r => {
-                            let rLikesCount = 0, rIsLikedByMe = false, rLikerNames = [];
-                            if (r.likes && Array.isArray(r.likes)) { 
-                                rLikesCount = r.likes.length; 
-                                rIsLikedByMe = r.likes.some(l => (typeof l === 'object' ? l.uid === myUid : l === myUid)); 
-                                rLikerNames = r.likes.map(l => typeof l === 'object' ? (l.name || 'مستخدم') : 'مستخدم');
-                            }
-                            const isMyReply = (r.uid === myUid);
-                            let rLikeClass = rIsLikedByMe ? 'liked' : '';
-                            let rLikeAction = `likeReply('${d.id}', ${r.timestamp})`;
-                            let rCursor = 'pointer';
-                            let rNamesStr = rLikerNames.join('|||');
-                            if (isMyReply) { rLikeAction = ''; rLockedClass = 'locked'; rCursor = 'not-allowed'; }
+                        if (r.uid && isMyReply) { rLikeAction = ''; rLockedClass = 'locked'; rCursor = 'not-allowed'; rLikeClass += ' disabled'; }
 
-                            repliesHtml += `
-                            <div class="reply-box">
-                                <div class="reply-header">🎓 ${r.name}</div>
-                                <audio controls src="${r.audioUrl}" preload="none" style="width:100%"></audio>
-                                <div class="msg-footer" style="margin-top:5px; border:none; padding-top:0;">
-                                    <div></div>
-                                    <div class="like-btn ${rLikeClass}">
-                                        <div class="like-action ${rLockedClass}" onclick="${rLikeAction}" style="cursor:${rCursor}">👍</div>
-                                        <div class="like-count" onclick="showLikeNames(event, '${rNamesStr}')">${rLikesCount}</div>
-                                    </div>
+                        repliesHtml += `
+                        <div class="reply-box">
+                            <div class="reply-header">🎓 ${r.name}</div>
+                            <audio controls src="${r.audioUrl}" preload="none" style="width:100%"></audio>
+                            <div class="msg-footer" style="margin-top:5px; border:none; padding-top:0;">
+                                <div></div>
+                                <div class="like-btn ${rLikeClass}">
+                                    <div class="like-action ${rLockedClass}" onclick="${rLikeAction}" style="cursor:${rCursor}">👍</div>
+                                    <div class="like-count" onclick="showLikeNames(event, '${rNamesStr}')">${rLikesCount}</div>
                                 </div>
-                            </div>`;
-                        });
-                    }
-                    let teacherBadge = isT ? "<span class='teacher-badge'>معلم</span>" : "";
-                    let replyBtnHtml = (userRole === 'teacher') ? `<button class="reply-btn" onclick="startReply('${d.id}')">↩️ الرد</button>` : "<div></div>";
-
-                    htmlContent += `
-                    <div class="feed-msg ${isT?'teacher-msg':''}">
-                        <div style="font-weight:bold; color:var(--primary); font-size:14px; margin-bottom:8px; display:flex; align-items:center;">${d.name} ${teacherBadge}</div>
-                        <audio controls src="${d.audioUrl}" preload="none" style="width:100%; height:35px;"></audio>
-                        <div class="msg-footer">
-                            ${replyBtnHtml}
-                            <div class="like-btn ${mainLikeClass}">
-                                <div class="like-action ${mainLockedClass}" onclick="${mainLikeAction}" style="cursor:${mainCursor}">👍</div>
-                                <div class="like-count" onclick="showLikeNames(event, '${mainLikerNames.join('|||')}')">${mainLikesCount}</div>
                             </div>
+                        </div>`;
+                    });
+                }
+                let teacherBadge = isT ? "<span class='teacher-badge'>معلم</span>" : "";
+                let replyBtnHtml = (userRole === 'teacher') ? `<button class="reply-btn" onclick="startReply('${d.id}')">↩️ الرد</button>` : "<div></div>";
+
+                htmlContent += `
+                <div class="feed-msg ${isT?'teacher-msg':''}">
+                    <div style="font-weight:bold; color:var(--primary); font-size:14px; margin-bottom:8px; display:flex; align-items:center;">${d.name} ${teacherBadge}</div>
+                    <audio controls src="${d.audioUrl}" preload="none" style="width:100%; height:35px;"></audio>
+                    <div class="msg-footer">
+                        ${replyBtnHtml}
+                        <div class="like-btn ${mainLikeClass}">
+                            <div class="like-action ${mainLockedClass}" onclick="${mainLikeAction}" style="cursor:${mainCursor}">👍</div>
+                            <div class="like-count" onclick="showLikeNames(event, '${mainLikerNames.join('|||')}')">${mainLikesCount}</div>
                         </div>
-                        ${repliesHtml ? `<div style="margin-top:10px;">${repliesHtml}</div>` : ''}
-                    </div>`;
-                });
-                
-                div.innerHTML = htmlContent; // Nur einmaliges Update des DOM
+                    </div>
+                    ${repliesHtml ? `<div style="margin-top:10px;">${repliesHtml}</div>` : ''}
+                </div>`;
             });
+
+            if (allLoadedPosts.length > feedLimit) {
+                htmlContent += `<button class="load-more-btn" onclick="loadMorePosts()">▼ عرض المزيد</button>`;
+            }
+            
+            container.innerHTML = htmlContent;
+        }
+
+        window.loadMorePosts = function() {
+            feedLimit += 10;
+            const div = document.getElementById('community-feed');
+            const userRole = localStorage.getItem('it9an_role');
+            const myUid = localStorage.getItem('it9an_uid');
+            renderPosts(div, userRole, myUid);
         }
 
         window.startReply = function(postId) { replyTargetId = postId; toggleRecord(); }
