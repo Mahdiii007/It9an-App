@@ -21,7 +21,7 @@
         body { 
             margin: 0; padding: 0; background-color: var(--bg); 
             font-family: 'Amiri', serif; color: var(--text); 
-            padding-bottom: 160px; width: 100%; overflow-x: hidden; 
+            padding-bottom: 140px; width: 100%; overflow-x: hidden; 
         }
 
         /* --- LOGIN --- */
@@ -52,24 +52,29 @@
         /* --- HEADER --- */
         .header { 
             position: sticky; top: 0; z-index: 1000; 
-            background: linear-gradient(to left, var(--primary), var(--primary-light));
+            background: linear-gradient(to right, var(--primary), var(--primary-light));
             padding: 10px 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); 
-            display: flex; justify-content: center; align-items: center; 
+            display: flex; justify-content: space-between; align-items: center; 
             height: 70px; border-bottom: 2px solid var(--gold);
         }
+        .header-btn {
+            background: rgba(255,255,255,0.1); border: 1px solid var(--gold); color: var(--gold-light);
+            padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 14px; font-family: 'Amiri';
+            font-weight: bold; display: flex; align-items: center; gap: 5px;
+        }
         #pageTitle {
-            background: var(--surface); padding: 5px 20px; border-radius: 25px; 
+            background: var(--surface); padding: 5px 15px; border-radius: 25px; 
             display: flex; align-items: center; justify-content: center; gap: 10px;
             height: 45px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); border: 2px solid var(--gold);
-            cursor: pointer; transition: transform 0.1s;
+            cursor: default; 
         }
-        #pageTitle:active { transform: scale(0.95); background: var(--gold-light); }
-        #pageTitle img { height: 28px; width: auto; display: block; }
-        #pageTitle span { font-size: 16px; color: var(--primary); font-weight: bold; border-right: 2px solid var(--gold-light); padding-right: 10px; }
+        #pageTitle img { height: 32px; width: auto; display: block; } 
+        .title-text-maktaa { font-size: 15px; color: var(--primary); font-weight: bold; border-left: 2px solid var(--gold-light); padding-left: 10px; }
 
         /* --- MENÜ --- */
         .menu-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; padding: 20px; max-width: 100%; margin: 0 auto; }
-        .menu-item { background: var(--surface); border-radius: 15px; overflow: hidden; cursor: pointer; box-shadow: var(--shadow); }
+        .menu-item { background: var(--surface); border-radius: 15px; overflow: hidden; cursor: pointer; box-shadow: var(--shadow); display: flex; flex-direction: column; }
+        .menu-item-title { text-align: center; padding: 8px 5px; font-weight: bold; color: var(--primary); border-bottom: 1px solid #eee; background: #fdfdfd; font-size: 14px; }
         .menu-item img { width: 100%; height: auto; display: block; padding: 10px; }
         
         /* --- PLAYER --- */
@@ -78,19 +83,18 @@
         .quran-frame {
             background: var(--surface); padding: 10px; border-radius: 15px;
             border: 2px solid var(--gold-light); outline: 1px solid var(--gold); outline-offset: -5px;
-            box-shadow: var(--shadow); margin-bottom: 20px; position: relative; 
-            min-height: 250px; display: flex; align-items: center; justify-content: center;
+            box-shadow: var(--shadow); margin-bottom: 20px; 
+            min-height: 200px; 
         }
-        .player-container { width: 100%; display: flex; justify-content: center; align-items: center; position: relative; }
-        .quran-image { max-width: 85%; max-height: 50vh; object-fit: contain; border-radius: 5px; display: block; }
+        .player-container { width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+        .quran-image { flex-grow: 1; max-width: calc(100% - 90px); max-height: 45vh; object-fit: contain; border-radius: 5px; display: block; }
 
         .nav-btn { 
-            position: absolute; top: 50%; transform: translateY(-50%); width: 40px; height: 60px; 
+            width: 40px; height: 60px; flex-shrink: 0;
             background: var(--bg); color: var(--primary); border: 1px solid var(--gold);
             border-radius: 8px; font-size: 24px; cursor: pointer; 
-            display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); z-index: 10;
+            display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
         }
-        #btnPrev { right: -5px; } #btnNext { left: -5px; }
         .nav-btn.hidden { opacity: 0; pointer-events: none; }
 
         /* SETTINGS */
@@ -104,11 +108,7 @@
         input[type="checkbox"] { transform: scale(1.4); accent-color: var(--gold); }
 
         /* FEED & STATS */
-        .status-bar { 
-            text-align: center; font-size: 16px; font-weight: bold; color: var(--primary); 
-            margin: 15px 0; padding: 10px; background: rgba(20, 89, 52, 0.1); 
-            border-radius: 8px; border: 1px dashed var(--primary);
-        }
+        .status-bar { text-align: center; font-size: 16px; font-weight: bold; color: var(--primary); margin: 15px 0; padding: 10px; background: rgba(20, 89, 52, 0.1); border-radius: 8px; border: 1px dashed var(--primary); }
         .view-counter { font-size: 13px; color: #666; text-align: center; margin-top: 5px; cursor: pointer; padding: 5px; }
         .view-counter:active { background: rgba(0,0,0,0.05); border-radius: 5px; }
         
@@ -116,14 +116,24 @@
         .teacher-msg { background: #fffcf2; border: 1px solid var(--gold); border-right: 4px solid var(--gold); }
         .teacher-badge { background: var(--gold); color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-left: 5px; }
         
-        .msg-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding-top: 5px; border-top: 1px solid #eee; }
-        .like-btn { cursor: pointer; display: flex; align-items: center; gap: 5px; padding: 4px 12px; border-radius: 20px; font-size: 14px; background: #f9f9f9; border: 1px solid #eee; }
+        .msg-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding-top: 10px; border-top: 1px solid #eee; }
+        
+        /* Split-Like-Button Design */
+        .like-btn { display: flex; align-items: center; border-radius: 20px; font-size: 14px; background: #f9f9f9; border: 1px solid #eee; overflow: hidden; }
         .like-btn.liked { color: var(--primary); background: #e8f5e9; border-color: var(--primary); font-weight: bold; }
-        .like-btn.disabled { opacity: 0.5; cursor: not-allowed; filter: grayscale(1); }
+        .like-btn.disabled { opacity: 0.5; filter: grayscale(1); }
+        .like-action { padding: 6px 10px; cursor: pointer; }
+        .like-action.locked { cursor: not-allowed; }
+        .like-count { padding: 6px 12px; border-right: 1px solid #ddd; cursor: pointer; background: rgba(0,0,0,0.03); }
+        .like-count:active { background: rgba(0,0,0,0.1); }
+
         .reply-btn { cursor: pointer; background: none; border: 1px solid var(--primary); color: var(--primary); padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; }
 
+        .reply-box { margin-top: 15px; padding: 12px; background: #f4f4f4; border-radius: 8px; border-right: 3px solid var(--primary); }
+        .reply-header { font-size: 12px; font-weight: bold; color: var(--primary); margin-bottom: 8px; display: flex; align-items: center; gap: 5px; }
+
         /* RECORDING UI */
-        #recording-ui { display: none; position: fixed; bottom: 110px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 350px; background: rgba(255,255,255,0.95); backdrop-filter: blur(5px); border: 2px solid var(--red); border-radius: 20px; padding: 15px; z-index: 1500; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
+        #recording-ui { display: none; position: fixed; bottom: 120px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 350px; background: rgba(255,255,255,0.95); backdrop-filter: blur(5px); border: 2px solid var(--red); border-radius: 20px; padding: 15px; z-index: 1500; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
         .rec-timer { font-size: 36px; font-weight: bold; color: var(--text); font-family: monospace; margin-bottom: 10px; }
         .rec-status-text { font-size: 14px; color: var(--red); animation: blink 1.5s infinite; margin-top: 5px; font-weight: bold; }
         .stop-ui-btn { background: var(--red); color: white; border: none; padding: 8px 25px; border-radius: 20px; font-size: 14px; font-weight: bold; cursor: pointer; font-family: 'Amiri'; }
@@ -137,8 +147,25 @@
         .btn-retry { background: var(--gold); color: white; }
         .btn-cancel { background: #f1f2f6; color: #555; }
 
-        /* FOOTER */
-        .footer { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--surface); border-top: 1px solid #eee; border-radius: 20px 20px 0 0; padding: 20px 0 30px 0; z-index: 2000; box-shadow: 0 -5px 30px rgba(0,0,0,0.05); }
+        /* FOOTER MIT PROGRESS BAR */
+        .footer { 
+            position: fixed; bottom: 0; left: 0; width: 100%; background: var(--surface); 
+            border-top: 1px solid #eee; border-radius: 20px 20px 0 0; 
+            padding: 10px 0 15px 0; z-index: 2000; box-shadow: 0 -5px 30px rgba(0,0,0,0.05); 
+            display: none; flex-direction: column;
+        }
+        
+        .progress-container {
+            display: flex; align-items: center; justify-content: center; gap: 10px; 
+            padding: 0 20px 10px 20px; direction: ltr; width: 100%; max-width: 500px; margin: 0 auto;
+        }
+        .time-text { font-size: 12px; color: #888; width: 40px; text-align: center; font-family: monospace; }
+        
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
+        input[type=range]:focus { outline: none; }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 6px; cursor: pointer; background: #e0e0e0; border-radius: 5px; }
+        input[type=range]::-webkit-slider-thumb { height: 16px; width: 16px; border-radius: 50%; background: var(--primary); cursor: pointer; -webkit-appearance: none; margin-top: -5px; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+
         .controls { display: flex; justify-content: center; align-items: center; gap: 50px; direction: ltr; }
         .btn { width: 70px; height: 70px; border-radius: 50%; border: none; font-size: 28px; color: white; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
         .btn:active { transform: scale(0.9); }
@@ -150,7 +177,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, query, where, orderBy, onSnapshot, serverTimestamp, doc, setDoc, updateDoc, increment, arrayUnion, arrayRemove, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, query, where, orderBy, onSnapshot, serverTimestamp, doc, setDoc, updateDoc, increment, arrayUnion, arrayRemove, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
         const firebaseConfig = {
@@ -168,7 +195,7 @@
         window.where = where; window.orderBy = orderBy; window.onSnapshot = onSnapshot; 
         window.serverTimestamp = serverTimestamp; window.ref = ref; 
         window.uploadBytes = uploadBytes; window.getDownloadURL = getDownloadURL;
-        window.doc = doc; window.setDoc = setDoc; window.updateDoc = updateDoc; window.increment = increment; window.arrayUnion = arrayUnion; window.arrayRemove = arrayRemove; window.deleteDoc = deleteDoc;
+        window.doc = doc; window.setDoc = setDoc; window.updateDoc = updateDoc; window.increment = increment; window.arrayUnion = arrayUnion; window.arrayRemove = arrayRemove; window.deleteDoc = deleteDoc; window.getDoc = getDoc;
     </script>
 </head>
 <body>
@@ -188,7 +215,9 @@
     </div>
 
     <div class="header">
-        <div id="pageTitle" onclick="goToMenu()"></div>
+        <button class="header-btn" onclick="goToMenu()">☰ القائمة</button>
+        <div id="pageTitle"></div>
+        <div style="width: 80px;"></div>
     </div>
 
     <div id="menu-view" class="menu-grid"></div>
@@ -210,7 +239,7 @@
         <div id="statusDisplay" class="status-bar">جاهز للتلاوة</div>
         <div class="view-counter" onclick="showViewers()">👁️ <span id="viewCount">0</span> مشاهدة</div>
 
-        <h4 style="text-align:center; color:var(--primary); margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:10px;">مشاركات الطلاب</h4>
+        <h4 style="text-align:center; color:var(--primary); margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:10px;">المشاركات</h4>
         <div id="community-feed" class="feed-container">جاري التحميل...</div>
     </div>
 
@@ -232,7 +261,12 @@
         </div>
     </div>
 
-    <div class="footer">
+    <div class="footer" id="appFooter">
+        <div class="progress-container">
+            <span id="currentTime" class="time-text">00:00</span>
+            <input type="range" id="progressBar" min="0" max="100" value="0" step="1">
+            <span id="durationTime" class="time-text">00:00</span>
+        </div>
         <div class="controls">
             <button id="recBtn" class="btn btn-rec" onclick="toggleRecord()">🎤</button>
             <button id="playBtn" class="btn btn-play" onclick="toggleSmartLoop()">▶</button>
@@ -242,8 +276,9 @@
     <audio id="mainAudio"></audio>
 
     <script>
-        const SECRET_PIN = "1234";
-        const ADMIN_RESET_PIN = "7860"; // Geheimcode zum Löschen der Views
+        const STUDENT_PIN = "1234";
+        const TEACHER_PIN = "7777";
+        const ADMIN_RESET_PIN = "7860";
 
         const KURS_DATEN = [
             { id: 1, verse: 8 }, 
@@ -253,15 +288,36 @@
 
         let currentLessonIdx = null, currentGlobalFileId = null, currentLocalVers = null;
         let unsubscribeFeed = null, unsubscribeViews = null;
-        let isPlaying = false, repeatsLeft = 0, timer = null;
+        let isPlaying = false, isPaused = false, repeatsLeft = 0, pauseInterval = null, pauseSecondsLeft = 0;
         let mediaRecorder, chunks = [], recInterval = null, recSeconds = 0;
         let currentBlob = null, replyTargetId = null, maxRecDuration = 0;
         let currentViewersList = [];
 
+        // --- AUDIO PROGRESS BAR SETUP ---
+        const audioEl = document.getElementById('mainAudio');
+        const pBar = document.getElementById('progressBar');
+        const cTime = document.getElementById('currentTime');
+        const dTime = document.getElementById('durationTime');
+
+        audioEl.addEventListener('timeupdate', () => {
+            if(!audioEl.duration) return;
+            pBar.value = audioEl.currentTime;
+            pBar.max = audioEl.duration;
+            cTime.innerText = formatTime(audioEl.currentTime);
+            dTime.innerText = formatTime(audioEl.duration);
+        });
+
+        pBar.addEventListener('input', () => { audioEl.currentTime = pBar.value; });
+
+        function formatTime(sec) {
+            if(isNaN(sec)) return "00:00";
+            let m = Math.floor(sec / 60); let s = Math.floor(sec % 60);
+            return (m<10?"0"+m:m)+":"+(s<10?"0"+s:s);
+        }
+
         if(localStorage.getItem('it9an_auth') === 'true') {
             document.getElementById('login-screen').style.display = 'none';
-            renderMenu();
-            updateUIForRole();
+            renderMenu(); updateUIForRole();
         }
 
         function checkLogin() {
@@ -270,7 +326,11 @@
             const last = document.getElementById('lastName').value.trim();
             const role = document.getElementById('userRole').value;
 
-            if(pin === SECRET_PIN && first && last) {
+            let isPinValid = false;
+            if (role === 'student' && pin === STUDENT_PIN) isPinValid = true;
+            if (role === 'teacher' && pin === TEACHER_PIN) isPinValid = true;
+
+            if(isPinValid && first && last) {
                 const fullName = first + " " + last;
                 if (!localStorage.getItem('it9an_uid')) localStorage.setItem('it9an_uid', 'user_' + Date.now());
                 localStorage.setItem('it9an_auth', 'true');
@@ -278,9 +338,8 @@
                 localStorage.setItem('it9an_role', role);
                 
                 document.getElementById('login-screen').style.display = 'none';
-                updateUIForRole();
-                renderMenu();
-            } else { alert("خطأ في البيانات"); }
+                updateUIForRole(); renderMenu();
+            } else { alert("البيانات غير مكتملة أو كلمة المرور خاطئة"); }
         }
         
         function updateUIForRole() {
@@ -291,11 +350,12 @@
 
         function renderMenu() {
             const grid = document.getElementById('menu-view'); grid.innerHTML = ""; showView('menu-view');
-            document.getElementById('pageTitle').innerHTML = "<span>قائمة الدروس</span>"; 
-            document.getElementById('pageTitle').onclick = null; 
+            document.getElementById('pageTitle').innerHTML = "<span style='border:none; padding:0; font-size:18px;'>القائمة الرئيسية</span>"; 
+            document.getElementById('appFooter').style.display = 'none';
+
             KURS_DATEN.forEach((lek, index) => {
                 let div = document.createElement('div'); div.className = 'menu-item';
-                div.innerHTML = `<img src="assets/T${lek.id}.png" onerror="this.style.display='none'">`;
+                div.innerHTML = `<div class="menu-item-title">الدرس ${index + 1}</div><img src="assets/T${lek.id}.png" onerror="this.style.display='none'">`;
                 div.onclick = () => startLesson(index); grid.appendChild(div);
             });
         }
@@ -316,28 +376,24 @@
         async function playVers(globalId, localVersNum, isAuto = false) {
             currentGlobalFileId = globalId; currentLocalVers = localVersNum;
             showView('player-view');
+            document.getElementById('appFooter').style.display = 'flex';
             
             const lessonId = KURS_DATEN[currentLessonIdx].id;
-            const titleImg = `assets/T${lessonId}.png`;
             const pgTitle = document.getElementById('pageTitle');
-            pgTitle.innerHTML = `<span>${localVersNum}</span><img src="${titleImg}" alt="Lesson Title">`;
-            pgTitle.onclick = window.goToMenu; 
+            pgTitle.innerHTML = `<img src="assets/T${lessonId}.png" alt="Lesson Title"><span class="title-text-maktaa">المقطع ${localVersNum}</span>`;
 
             const btnPrev = document.getElementById('btnPrev');
             if(localVersNum === 1) btnPrev.classList.add('hidden'); else btnPrev.classList.remove('hidden');
 
             document.getElementById('currentImg').src = `assets/${globalId}.png`;
-            const audio = document.getElementById('mainAudio'); audio.src = `assets/${globalId}.mp3`;
+            audioEl.src = `assets/${globalId}.mp3`;
             
             if(isPlaying && !isAuto) stopLoop();
-            
             document.getElementById('statusDisplay').innerText = "جاهز للتلاوة";
             
             const myName = localStorage.getItem('it9an_name');
             const statRef = window.doc(window.db, "stats", "file_" + globalId);
-            if(myName) {
-                try { await window.setDoc(statRef, { viewers: window.arrayUnion(myName) }, { merge: true }); } catch(e){}
-            }
+            if(myName) { try { await window.setDoc(statRef, { viewers: window.arrayUnion(myName) }, { merge: true }); } catch(e){} }
             
             if(unsubscribeViews) unsubscribeViews();
             unsubscribeViews = window.onSnapshot(statRef, (snap) => { 
@@ -345,17 +401,25 @@
                     currentViewersList = snap.data().viewers; 
                     document.getElementById('viewCount').innerText = currentViewersList.length; 
                 } else {
-                    currentViewersList = [];
-                    document.getElementById('viewCount').innerText = 0;
+                    currentViewersList = []; document.getElementById('viewCount').innerText = 0;
                 }
             });
-            
             loadFeed(globalId);
         }
 
         window.showViewers = function() {
             if(currentViewersList.length > 0) alert("الطلاب:\n\n" + currentViewersList.join("\n"));
-            else alert("لم يستمع أحد بعد");
+            else alert("لا يوجد أحد");
+        }
+
+        window.showLikeNames = function(event, namesStr) {
+            event.stopPropagation();
+            if(!namesStr || namesStr.trim() === '') {
+                alert("لا توجد إعجابات بعد");
+                return;
+            }
+            const names = namesStr.split('|||');
+            alert("قائمة الإعجابات:\n\n" + names.join("\n"));
         }
 
         function loadFeed(fileId) {
@@ -379,33 +443,86 @@
                 
                 posts.forEach(d => {
                     let isT = d.role === 'teacher'; 
-                    let likesCount = 0, isLikedByMe = false;
-                    if (d.likes && Array.isArray(d.likes)) { likesCount = d.likes.length; isLikedByMe = d.likes.includes(myUid); }
                     
-                    // NEU: Nur Eigene Aufnahmen blockieren, nicht Eigene Likes
-                    const isMyPost = (d.uid === myUid);
-                    let likeClass = isLikedByMe ? 'liked' : '';
-                    let likeAction = `likePost('${d.id}', ${isLikedByMe})`;
+                    // --- MAIN POST LIKE LOGIC ---
+                    let mainLikesCount = 0, mainIsLikedByMe = false;
+                    let mainLikerNames = [];
                     
-                    // Eigene Posts kann man nicht liken
-                    if (isMyPost) { likeClass += ' disabled'; likeAction = ''; }
+                    if (d.likes && Array.isArray(d.likes)) { 
+                        mainLikesCount = d.likes.length; 
+                        mainIsLikedByMe = d.likes.some(l => (typeof l === 'object' ? l.uid === myUid : l === myUid)); 
+                        mainLikerNames = d.likes.map(l => typeof l === 'object' ? (l.name || 'مستخدم') : 'مستخدم');
+                    }
+                    
+                    const isMyMainPost = (d.uid === myUid);
+                    let mainLikeClass = mainIsLikedByMe ? 'liked' : '';
+                    let mainLikeAction = `likePost('${d.id}')`;
+                    let mainCursor = 'pointer';
+                    let mainNamesStr = mainLikerNames.join('|||');
 
+                    if (isMyMainPost) { 
+                        mainLikeClass += ' disabled'; 
+                        mainLikeAction = ''; 
+                        mainCursor = 'not-allowed'; 
+                    }
+
+                    // --- REPLIES LOGIC ---
                     let repliesHtml = "";
                     if(d.replies) {
                         d.replies.forEach(r => {
-                            repliesHtml += `<div class="reply-box"><div class="reply-header">🎓 ${r.name}</div><audio controls src="${r.audioUrl}" style="width:100%"></audio></div>`;
+                            let rLikesCount = 0, rIsLikedByMe = false;
+                            let rLikerNames = [];
+                            
+                            if (r.likes && Array.isArray(r.likes)) { 
+                                rLikesCount = r.likes.length; 
+                                rIsLikedByMe = r.likes.some(l => (typeof l === 'object' ? l.uid === myUid : l === myUid)); 
+                                rLikerNames = r.likes.map(l => typeof l === 'object' ? (l.name || 'مستخدم') : 'مستخدم');
+                            }
+                            
+                            const isMyReply = (r.uid === myUid);
+                            let rLikeClass = rIsLikedByMe ? 'liked' : '';
+                            let rLikeAction = `likeReply('${d.id}', ${r.timestamp})`;
+                            let rCursor = 'pointer';
+                            let rNamesStr = rLikerNames.join('|||');
+
+                            if (isMyReply) { 
+                                rLikeClass += ' disabled'; 
+                                rLikeAction = ''; 
+                                rCursor = 'not-allowed'; 
+                            }
+
+                            repliesHtml += `
+                            <div class="reply-box">
+                                <div class="reply-header">🎓 ${r.name}</div>
+                                <audio controls src="${r.audioUrl}" style="width:100%"></audio>
+                                <div class="msg-footer" style="margin-top:5px; border:none; padding-top:0;">
+                                    <div></div>
+                                    <div class="like-btn ${rLikeClass}">
+                                        <div class="like-action ${isMyReply ? 'locked':''}" onclick="${rLikeAction}" style="cursor:${rCursor}">👍</div>
+                                        <div class="like-count" onclick="showLikeNames(event, '${rNamesStr}')">${rLikesCount}</div>
+                                    </div>
+                                </div>
+                            </div>`;
                         });
                     }
                     
                     let teacherBadge = isT ? "<span class='teacher-badge'>معلم</span>" : "";
-                    let replyBtnHtml = (userRole === 'teacher') ? `<button class="reply-btn" onclick="startReply('${d.id}')">↩️ الرد</button>` : "";
+                    let replyBtnHtml = (userRole === 'teacher') ? `<button class="reply-btn" onclick="startReply('${d.id}')">↩️ الرد</button>` : "<div></div>";
 
                     div.innerHTML += `
                     <div class="feed-msg ${isT?'teacher-msg':''}">
                         <div style="font-weight:bold; color:var(--primary); font-size:14px; margin-bottom:8px; display:flex; align-items:center;">${d.name} ${teacherBadge}</div>
                         <audio controls src="${d.audioUrl}" style="width:100%; height:35px;" onerror="this.closest('.feed-msg').remove()"></audio>
-                        ${repliesHtml}
-                        <div class="msg-footer">${replyBtnHtml}<div class="like-btn ${likeClass}" onclick="${likeAction}">👍 ${likesCount}</div></div>
+                        
+                        <div class="msg-footer">
+                            ${replyBtnHtml}
+                            <div class="like-btn ${mainLikeClass}">
+                                <div class="like-action ${isMyMainPost ? 'locked':''}" onclick="${mainLikeAction}" style="cursor:${mainCursor}">👍</div>
+                                <div class="like-count" onclick="showLikeNames(event, '${mainNamesStr}')">${mainLikesCount}</div>
+                            </div>
+                        </div>
+
+                        ${repliesHtml ? `<div style="margin-top:10px;">${repliesHtml}</div>` : ''}
                     </div>`;
                 });
             });
@@ -422,29 +539,49 @@
                 stopRecordingAndReview();
             } else {
                 try {
-                    const mainAud = document.getElementById('mainAudio');
-                    let dur = mainAud.duration;
+                    let dur = audioEl.duration;
                     if(!dur || isNaN(dur)) dur = 15; 
                     maxRecDuration = Math.ceil(dur * 2);
 
-                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                    mediaRecorder = new MediaRecorder(stream); chunks = [];
-                    mediaRecorder.ondataavailable = e => chunks.push(e.data);
+                    // TAJWID AUDIO QUALITY FIX (Kein Noise Cancellation für klaren Ton)
+                    const audioConstraints = {
+                        echoCancellation: false,
+                        noiseSuppression: false,
+                        autoGainControl: false,
+                        sampleRate: 48000,
+                        channelCount: 1
+                    };
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints });
+                    
+                    let options = { audioBitsPerSecond: 128000 };
+                    if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+                        options.mimeType = 'audio/webm;codecs=opus';
+                    } else if (MediaRecorder.isTypeSupported('audio/mp4;codecs=mp4a.40.2')) {
+                        options.mimeType = 'audio/mp4;codecs=mp4a.40.2';
+                    } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+                        options.mimeType = 'audio/mp4';
+                    }
+
+                    mediaRecorder = new MediaRecorder(stream, options);
+                    chunks = [];
+                    mediaRecorder.ondataavailable = e => { if(e.data.size > 0) chunks.push(e.data); };
                     
                     if(replyTargetId) statusText.innerText = "تسجيل رد..."; else statusText.innerText = "تسجيل تلاوة...";
 
                     mediaRecorder.onstop = () => {
-                        currentBlob = new Blob(chunks, { type: 'audio/mp3' });
+                        const mimeType = mediaRecorder.mimeType || 'audio/webm';
+                        currentBlob = new Blob(chunks, { type: mimeType });
                         showReviewModal();
                         const recBtn = document.getElementById('recBtn'); if(recBtn) recBtn.classList.remove('recording');
                         clearInterval(recInterval); ui.style.display = 'none';
+                        stream.getTracks().forEach(track => track.stop());
                     };
 
-                    mediaRecorder.start(); 
+                    mediaRecorder.start(200); 
                     const recBtn = document.getElementById('recBtn'); if(recBtn && recBtn.style.display !== 'none') recBtn.classList.add('recording');
                     ui.style.display = 'flex'; recSeconds = 0; document.getElementById('recTimer').innerText = "00:00";
                     recInterval = setInterval(() => { recSeconds++; let m = Math.floor(recSeconds / 60); let s = recSeconds % 60; document.getElementById('recTimer').innerText = (m<10?"0"+m:m)+":"+(s<10?"0"+s:s); if(recSeconds >= maxRecDuration) stopRecordingAndReview(); }, 1000);
-                } catch(e) { alert("خطأ في الميكروفون: " + e.message); replyTargetId = null; }
+                } catch(e) { alert("خطأ في الميكروفون"); replyTargetId = null; }
             }
         }
 
@@ -459,11 +596,17 @@
             const uid = localStorage.getItem('it9an_uid');
 
             try {
-                const refS = window.ref(window.storage, 'uploads/' + Date.now());
+                let ext = 'webm';
+                if (currentBlob.type.includes('mp4')) ext = 'mp4';
+                else if (currentBlob.type.includes('ogg')) ext = 'ogg';
+
+                const refS = window.ref(window.storage, `uploads/${Date.now()}_${uid}.${ext}`);
                 await window.uploadBytes(refS, currentBlob);
                 const url = await window.getDownloadURL(refS);
                 if (replyTargetId) {
-                    await window.updateDoc(window.doc(window.db, "posts", replyTargetId), { replies: window.arrayUnion({ name: name, role: role, audioUrl: url, timestamp: Date.now() }) });
+                    await window.updateDoc(window.doc(window.db, "posts", replyTargetId), { 
+                        replies: window.arrayUnion({ name: name, role: role, uid: uid, audioUrl: url, timestamp: Date.now(), likes: [] }) 
+                    });
                     replyTargetId = null; 
                 } else {
                     await window.addDoc(window.collection(window.db, "posts"), { name: name, role: role, uid: uid, audioUrl: url, fileId: String(currentGlobalFileId), likes: [], timestamp: window.serverTimestamp() });
@@ -477,23 +620,44 @@
         window.cancelRecord = function() { document.getElementById('review-modal').style.display = 'none'; currentBlob = null; replyTargetId = null; }
 
         window.toggleSmartLoop = function() {
-            if(isPlaying) { stopLoop(); return; }
-            isPlaying = true; repeatsLeft = parseInt(document.getElementById('globalRepeats').value);
-            document.getElementById('playBtn').innerText = "⏸"; playCycle();
+            if (isPlaying) {
+                isPlaying = false; isPaused = true; audioEl.pause(); clearInterval(pauseInterval);
+                document.getElementById('playBtn').innerText = "▶"; document.getElementById('statusDisplay').innerText = "متوقف مؤقتاً";
+            } else {
+                isPlaying = true; isPaused = false; document.getElementById('playBtn').innerText = "⏸";
+                if (pauseSecondsLeft > 0) { startPauseCountdown(pauseSecondsLeft); } 
+                else if (audioEl.currentTime > 0 && audioEl.currentTime < audioEl.duration) {
+                    document.getElementById('statusDisplay').innerText = `استماع (${repeatsLeft})`;
+                    audioEl.play().catch(e => { stopLoop(); });
+                } else {
+                    if(repeatsLeft <= 0) repeatsLeft = parseInt(document.getElementById('globalRepeats').value);
+                    playCycle();
+                }
+            }
         }
         
         function playCycle() {
             if(!isPlaying) return;
-            const audio = document.getElementById('mainAudio');
             document.getElementById('statusDisplay').innerText = `استماع (${repeatsLeft})`; 
-            audio.play().catch(e => { alert("Audio fehlt"); stopLoop(); });
-            audio.onended = function() {
+            audioEl.play().catch(e => { stopLoop(); });
+            audioEl.onended = function() {
                 if(!isPlaying) return;
                 if(document.getElementById('globalGap').checked) {
-                    document.getElementById('statusDisplay').innerText = "تكرار الطالب...";
-                    timer = setTimeout(() => { checkNextStep(); }, audio.duration * 1250);
+                    let pauseTime = Math.ceil(audioEl.duration * 1.25);
+                    startPauseCountdown(pauseTime);
                 } else { checkNextStep(); }
             }
+        }
+
+        function startPauseCountdown(seconds) {
+            pauseSecondsLeft = seconds;
+            document.getElementById('statusDisplay').innerText = `تكرار الطالب... (${pauseSecondsLeft} ثانية)`;
+            clearInterval(pauseInterval);
+            pauseInterval = setInterval(() => {
+                pauseSecondsLeft--;
+                if(pauseSecondsLeft > 0) { document.getElementById('statusDisplay').innerText = `تكرار الطالب... (${pauseSecondsLeft} ثانية)`; } 
+                else { clearInterval(pauseInterval); pauseSecondsLeft = 0; if(isPlaying) checkNextStep(); }
+            }, 1000);
         }
         
         function checkNextStep() {
@@ -506,29 +670,72 @@
             }
         }
         
-        function stopLoop() { isPlaying = false; clearTimeout(timer); document.getElementById('mainAudio').pause(); document.getElementById('mainAudio').currentTime = 0; document.getElementById('playBtn').innerText = "▶"; }
-        window.goToMenu = function() { stopLoop(); stopRecordingAndReview(); showView('menu-view'); } 
-        function showView(id) { document.getElementById('menu-view').style.display = 'none'; document.getElementById('player-view').style.display = 'none'; document.getElementById(id).style.display = (id === 'menu-view') ? 'grid' : 'block'; }
-        
-        window.likePost = async (id, isLiked) => { 
-            const uid = localStorage.getItem('it9an_uid');
-            if(!uid) return; 
-            const postRef = window.doc(window.db, "posts", id);
-            if (isLiked) await window.updateDoc(postRef, { likes: window.arrayRemove(uid) });
-            else await window.updateDoc(postRef, { likes: window.arrayUnion(uid) });
+        function stopLoop() { 
+            isPlaying = false; isPaused = false; pauseSecondsLeft = 0; clearInterval(pauseInterval); 
+            audioEl.pause(); audioEl.currentTime = 0; 
+            document.getElementById('playBtn').innerText = "▶"; document.getElementById('statusDisplay').innerText = "جاهز للتلاوة"; 
         }
 
-        // --- ADMIN RESET FUNKTION (GESCHÜTZT) ---
+        window.goToMenu = function() { stopLoop(); stopRecordingAndReview(); showView('menu-view'); renderMenu(); } 
+        function showView(id) { document.getElementById('menu-view').style.display = 'none'; document.getElementById('player-view').style.display = 'none'; document.getElementById(id).style.display = (id === 'menu-view') ? 'grid' : 'block'; }
+        
+        // --- SMART LIKES ---
+        window.likePost = async (id) => { 
+            const uid = localStorage.getItem('it9an_uid');
+            const myName = localStorage.getItem('it9an_name');
+            if(!uid) return; 
+            
+            const postRef = window.doc(window.db, "posts", id);
+            const docSnap = await window.getDoc(postRef);
+            if (docSnap.exists()) {
+                let post = docSnap.data();
+                let likes = post.likes || [];
+                
+                let isLiked = likes.some(l => (typeof l === 'object' ? l.uid === uid : l === uid));
+                
+                if (isLiked) {
+                    likes = likes.filter(l => (typeof l === 'object' ? l.uid !== uid : l !== uid));
+                } else {
+                    likes.push({ uid: uid, name: myName });
+                }
+                await window.updateDoc(postRef, { likes: likes });
+            }
+        }
+
+        window.likeReply = async (postId, replyTimestamp) => {
+            const uid = localStorage.getItem('it9an_uid');
+            const myName = localStorage.getItem('it9an_name');
+            if(!uid) return;
+            
+            const postRef = window.doc(window.db, "posts", postId);
+            const docSnap = await window.getDoc(postRef);
+            if (docSnap.exists()) {
+                let post = docSnap.data();
+                if(!post.replies) return;
+                
+                let updatedReplies = post.replies.map(r => {
+                    if (r.timestamp === replyTimestamp) {
+                        if (!r.likes) r.likes = [];
+                        let isLiked = r.likes.some(l => (typeof l === 'object' ? l.uid === uid : l === uid));
+                        
+                        if (isLiked) {
+                            r.likes = r.likes.filter(l => (typeof l === 'object' ? l.uid !== uid : l !== uid));
+                        } else {
+                            r.likes.push({ uid: uid, name: myName });
+                        }
+                    }
+                    return r;
+                });
+                await window.updateDoc(postRef, { replies: updatedReplies });
+            }
+        }
+
         window.resetAllStats = async function() {
             if(localStorage.getItem('it9an_role') !== 'teacher') return;
-            const code = prompt("Admin Code:");
-            if(code !== ADMIN_RESET_PIN) { alert("X"); return; }
-            
-            let totalVerses = 0;
-            KURS_DATEN.forEach(k => totalVerses += k.verse);
-            for(let i=1; i<=totalVerses; i++) {
-                try { await window.deleteDoc(window.doc(window.db, "stats", "file_"+i)); } catch(e){}
-            }
+            const code = prompt("الرمز السري:");
+            if(code !== ADMIN_RESET_PIN) return;
+            let totalVerses = 0; KURS_DATEN.forEach(k => totalVerses += k.verse);
+            for(let i=1; i<=totalVerses; i++) { try { await window.deleteDoc(window.doc(window.db, "stats", "file_"+i)); } catch(e){} }
             alert("تم التصفير");
         }
     </script>
