@@ -118,12 +118,16 @@
         
         .msg-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding-top: 10px; border-top: 1px solid #eee; }
         
-        /* Split-Like-Button Design */
+        /* Like Button Design */
         .like-btn { display: flex; align-items: center; border-radius: 20px; font-size: 14px; background: #f9f9f9; border: 1px solid #eee; overflow: hidden; }
         .like-btn.liked { color: var(--primary); background: #e8f5e9; border-color: var(--primary); font-weight: bold; }
-        .like-btn.disabled { opacity: 0.5; filter: grayscale(1); }
+        
+        /* Daumen Button */
         .like-action { padding: 6px 10px; cursor: pointer; }
-        .like-action.locked { cursor: not-allowed; }
+        /* Wenn gesperrt (eigener Post): ausgegraut & nicht klickbar */
+        .like-action.locked { cursor: not-allowed; opacity: 0.3; filter: grayscale(1); }
+        
+        /* Zähler Button */
         .like-count { padding: 6px 12px; border-right: 1px solid #ddd; cursor: pointer; background: rgba(0,0,0,0.03); }
         .like-count:active { background: rgba(0,0,0,0.1); }
 
@@ -293,7 +297,7 @@
         let currentBlob = null, replyTargetId = null, maxRecDuration = 0;
         let currentViewersList = [];
 
-        // --- AUDIO PROGRESS BAR SETUP ---
+        // --- AUDIO PROGRESS BAR ---
         const audioEl = document.getElementById('mainAudio');
         const pBar = document.getElementById('progressBar');
         const cTime = document.getElementById('currentTime');
@@ -315,8 +319,7 @@
             return (m<10?"0"+m:m)+":"+(s<10?"0"+s:s);
         }
 
-        // HINWEIS: Automatischer Login bei Seitenaktualisierung entfernt (auf Wunsch).
-        // Login wird bei jedem Neuladen verlangt.
+        // HINWEIS: Kein Auto-Login. Man muss sich jedes Mal neu anmelden.
 
         function checkLogin() {
             const pin = document.getElementById('pinInput').value;
@@ -330,7 +333,13 @@
 
             if(isPinValid && first && last) {
                 const fullName = first + " " + last;
-                if (!localStorage.getItem('it9an_uid')) localStorage.setItem('it9an_uid', 'user_' + Date.now());
+                
+                // WICHTIG: Erstelle ID basierend auf Namen + Rolle, damit man auf dem gleichen Gerät wechseln kann.
+                // Entfernt Leerzeichen und encodiert für Sicherheit
+                const uniqueID = 'user_' + btoa(unescape(encodeURIComponent(fullName + '_' + role))).replace(/=/g, ''); 
+                
+                localStorage.setItem('it9an_uid', uniqueID);
+                localStorage.setItem('it9an_auth', 'true');
                 localStorage.setItem('it9an_name', fullName);
                 localStorage.setItem('it9an_role', role);
                 
@@ -441,9 +450,9 @@
                 posts.forEach(d => {
                     let isT = d.role === 'teacher'; 
                     
+                    // MAIN POST LIKES
                     let mainLikesCount = 0, mainIsLikedByMe = false;
                     let mainLikerNames = [];
-                    
                     if (d.likes && Array.isArray(d.likes)) { 
                         mainLikesCount = d.likes.length; 
                         mainIsLikedByMe = d.likes.some(l => (typeof l === 'object' ? l.uid === myUid : l === myUid)); 
@@ -454,20 +463,20 @@
                     let mainLikeClass = mainIsLikedByMe ? 'liked' : '';
                     let mainLikeAction = `likePost('${d.id}')`;
                     let mainCursor = 'pointer';
-                    let mainNamesStr = mainLikerNames.join('|||');
-
+                    let mainLockedClass = '';
+                    
+                    // Wenn eigener Post: Daumen sperren, aber Zähler bleibt klickbar
                     if (isMyMainPost) { 
-                        mainLikeClass += ' disabled'; 
                         mainLikeAction = ''; 
-                        mainCursor = 'not-allowed'; 
+                        mainLockedClass = 'locked'; 
                     }
 
+                    // REPLIES
                     let repliesHtml = "";
                     if(d.replies) {
                         d.replies.forEach(r => {
                             let rLikesCount = 0, rIsLikedByMe = false;
                             let rLikerNames = [];
-                            
                             if (r.likes && Array.isArray(r.likes)) { 
                                 rLikesCount = r.likes.length; 
                                 rIsLikedByMe = r.likes.some(l => (typeof l === 'object' ? l.uid === myUid : l === myUid)); 
@@ -477,13 +486,11 @@
                             const isMyReply = (r.uid === myUid);
                             let rLikeClass = rIsLikedByMe ? 'liked' : '';
                             let rLikeAction = `likeReply('${d.id}', ${r.timestamp})`;
-                            let rCursor = 'pointer';
-                            let rNamesStr = rLikerNames.join('|||');
+                            let rLockedClass = '';
 
                             if (isMyReply) { 
-                                rLikeClass += ' disabled'; 
                                 rLikeAction = ''; 
-                                rCursor = 'not-allowed'; 
+                                rLockedClass = 'locked'; 
                             }
 
                             repliesHtml += `
@@ -493,8 +500,8 @@
                                 <div class="msg-footer" style="margin-top:5px; border:none; padding-top:0;">
                                     <div></div>
                                     <div class="like-btn ${rLikeClass}">
-                                        <div class="like-action ${isMyReply ? 'locked':''}" onclick="${rLikeAction}" style="cursor:${rCursor}">👍</div>
-                                        <div class="like-count" onclick="showLikeNames(event, '${rNamesStr}')">${rLikesCount}</div>
+                                        <div class="like-action ${rLockedClass}" onclick="${rLikeAction}">👍</div>
+                                        <div class="like-count" onclick="showLikeNames(event, '${rLikerNames.join('|||')}')">${rLikesCount}</div>
                                     </div>
                                 </div>
                             </div>`;
@@ -512,11 +519,10 @@
                         <div class="msg-footer">
                             ${replyBtnHtml}
                             <div class="like-btn ${mainLikeClass}">
-                                <div class="like-action ${isMyMainPost ? 'locked':''}" onclick="${mainLikeAction}" style="cursor:${mainCursor}">👍</div>
-                                <div class="like-count" onclick="showLikeNames(event, '${mainNamesStr}')">${mainLikesCount}</div>
+                                <div class="like-action ${mainLockedClass}" onclick="${mainLikeAction}">👍</div>
+                                <div class="like-count" onclick="showLikeNames(event, '${mainLikerNames.join('|||')}')">${mainLikesCount}</div>
                             </div>
                         </div>
-
                         ${repliesHtml ? `<div style="margin-top:10px;">${repliesHtml}</div>` : ''}
                     </div>`;
                 });
@@ -663,6 +669,7 @@
         window.goToMenu = function() { stopLoop(); stopRecordingAndReview(); showView('menu-view'); renderMenu(); } 
         function showView(id) { document.getElementById('menu-view').style.display = 'none'; document.getElementById('player-view').style.display = 'none'; document.getElementById(id).style.display = (id === 'menu-view') ? 'grid' : 'block'; }
         
+        // --- SMART LIKES ---
         window.likePost = async (id) => { 
             const uid = localStorage.getItem('it9an_uid');
             const myName = localStorage.getItem('it9an_name');
@@ -673,9 +680,14 @@
             if (docSnap.exists()) {
                 let post = docSnap.data();
                 let likes = post.likes || [];
+                
                 let isLiked = likes.some(l => (typeof l === 'object' ? l.uid === uid : l === uid));
-                if (isLiked) { likes = likes.filter(l => (typeof l === 'object' ? l.uid !== uid : l !== uid)); } 
-                else { likes.push({ uid: uid, name: myName }); }
+                
+                if (isLiked) {
+                    likes = likes.filter(l => (typeof l === 'object' ? l.uid !== uid : l !== uid));
+                } else {
+                    likes.push({ uid: uid, name: myName });
+                }
                 await window.updateDoc(postRef, { likes: likes });
             }
         }
@@ -695,8 +707,12 @@
                     if (r.timestamp === replyTimestamp) {
                         if (!r.likes) r.likes = [];
                         let isLiked = r.likes.some(l => (typeof l === 'object' ? l.uid === uid : l === uid));
-                        if (isLiked) { r.likes = r.likes.filter(l => (typeof l === 'object' ? l.uid !== uid : l !== uid)); } 
-                        else { r.likes.push({ uid: uid, name: myName }); }
+                        
+                        if (isLiked) {
+                            r.likes = r.likes.filter(l => (typeof l === 'object' ? l.uid !== uid : l !== uid));
+                        } else {
+                            r.likes.push({ uid: uid, name: myName });
+                        }
                     }
                     return r;
                 });
