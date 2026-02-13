@@ -205,7 +205,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, addDoc, query, where, orderBy, onSnapshot, serverTimestamp, doc, setDoc, updateDoc, increment, arrayUnion, arrayRemove, deleteDoc, getDoc, getDocs, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDoZLFvGknKztMIFAtS2-AgX6DYw4fssUA",
@@ -425,7 +425,7 @@
             
             if (uid === 'admin_super') {
                 recBtn.style.display = 'flex';
-                // Panels logic is handled in view switches
+                // Panels handled in views
             } else if (role === 'student') {
                 recBtn.style.display = 'flex';
                 if(adminMenuPanel) adminMenuPanel.style.display = 'none';
@@ -486,8 +486,7 @@
             document.getElementById('appFooter').style.display = 'flex';
             
             // ADMIN PLAYER PANEL SHOW LOGIC
-            // Hide Menu Panel first (safety)
-            document.getElementById('adminMenuPanel').style.display = 'none';
+            document.getElementById('adminMenuPanel').style.display = 'none'; // Hide global
             const uid = localStorage.getItem('it9an_uid');
             if(uid === 'admin_super') {
                 document.getElementById('adminPlayerPanel').style.display = 'block';
@@ -851,6 +850,15 @@
             const names = namesStr.split('|||'); alert("قائمة الإعجابات:\n\n" + names.join("\n"));
         }
 
+        // --- STORAGE CLEANUP HELPER ---
+        async function cleanupAudioFile(url) {
+            if(!url) return;
+            try {
+                const fileRef = window.ref(window.storage, url); 
+                await deleteObject(fileRef);
+            } catch(e) { console.log("File gone:", e); }
+        }
+
         /* --- GLOBAL ADMIN ACTIONS --- */
         window.resetAllLikes = async function() {
             if(confirm("تحذير: هل تريد حقاً حذف جميع الإعجابات من التطبيق؟")) {
@@ -885,6 +893,15 @@
                 const q = window.query(window.collection(window.db, "posts"));
                 const querySnapshot = await window.getDocs(q);
                 querySnapshot.forEach(async (docSnap) => {
+                    const data = docSnap.data();
+                    // Delete Main Audio
+                    if(data.audioUrl) await cleanupAudioFile(data.audioUrl);
+                    // Delete Reply Audios
+                    if(data.replies) {
+                        for(let r of data.replies) {
+                            if(r.audioUrl) await cleanupAudioFile(r.audioUrl);
+                        }
+                    }
                     await window.deleteDoc(window.doc(window.db, "posts", docSnap.id));
                 });
                 alert("تم حذف جميع البيانات");
@@ -920,6 +937,14 @@
                 const q = window.query(window.collection(window.db, "posts"), window.where("fileId", "==", String(currentGlobalFileId)));
                 const querySnapshot = await window.getDocs(q);
                 querySnapshot.forEach(async (docSnap) => {
+                    const data = docSnap.data();
+                    // Clean storage first
+                    if(data.audioUrl) await cleanupAudioFile(data.audioUrl);
+                    if(data.replies) {
+                        for(let r of data.replies) {
+                            if(r.audioUrl) await cleanupAudioFile(r.audioUrl);
+                        }
+                    }
                     await window.deleteDoc(window.doc(window.db, "posts", docSnap.id));
                 });
                 alert("تم الحذف");
@@ -929,7 +954,24 @@
         /* --- SINGLE ITEM ACTIONS --- */
         window.deletePost = async function(postId) {
             if(confirm("حذف هذه المشاركة؟")) {
-                try { await window.deleteDoc(window.doc(window.db, "posts", postId)); alert("تم"); } catch(e) { alert("خطأ"); }
+                try {
+                    const docRef = window.doc(window.db, "posts", postId);
+                    const docSnap = await window.getDoc(docRef);
+                    if (docSnap.exists()) {
+                        const data = docSnap.data();
+                        // 1. Delete Main Audio
+                        if(data.audioUrl) await cleanupAudioFile(data.audioUrl);
+                        // 2. Delete All Reply Audios
+                        if(data.replies) {
+                            for(let r of data.replies) {
+                                if(r.audioUrl) await cleanupAudioFile(r.audioUrl);
+                            }
+                        }
+                        // 3. Delete Doc
+                        await window.deleteDoc(docRef);
+                        alert("تم الحذف بنجاح");
+                    }
+                } catch(e) { alert("خطأ في الحذف"); }
             }
         }
 
@@ -940,9 +982,15 @@
                     const docSnap = await window.getDoc(postRef);
                     if(docSnap.exists()) {
                         let post = docSnap.data();
+                        // Find the reply to get audioUrl
+                        const replyToDelete = post.replies.find(r => r.timestamp === replyTimestamp);
+                        if (replyToDelete && replyToDelete.audioUrl) {
+                            await cleanupAudioFile(replyToDelete.audioUrl);
+                        }
+                        
                         let newReplies = post.replies.filter(r => r.timestamp !== replyTimestamp);
                         await window.updateDoc(postRef, { replies: newReplies });
-                        alert("تم");
+                        alert("تم الحذف");
                     }
                 } catch(e) { alert("خطأ"); }
             }
