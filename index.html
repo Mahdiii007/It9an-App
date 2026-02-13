@@ -113,7 +113,7 @@
         input[type="number"] { width: 50px; text-align: center; padding: 4px; border: none; border-radius: 5px; }
         input[type="checkbox"] { transform: scale(1.4); accent-color: var(--gold); }
 
-        /* ADMIN PANEL (General Styling) */
+        /* ADMIN PANEL */
         .admin-panel {
             background: #fff5f5; border: 2px solid var(--red); border-radius: 12px;
             padding: 15px; margin: 15px auto; text-align: center; display: none; width: 95%; max-width: 600px;
@@ -126,7 +126,7 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
         .btn-admin-delete-all {
-            background: #8e0000; font-weight: bold; /* Dunkleres Rot für Löschen */
+            background: #8e0000; font-weight: bold; 
         }
 
         /* FEED & STATS */
@@ -425,11 +425,15 @@
             
             if (uid === 'admin_super') {
                 recBtn.style.display = 'flex';
-                // Panels are shown dynamically in views
+                // Panels logic is handled in view switches
             } else if (role === 'student') {
                 recBtn.style.display = 'flex';
+                if(adminMenuPanel) adminMenuPanel.style.display = 'none';
+                if(adminPlayerPanel) adminPlayerPanel.style.display = 'none';
             } else {
                 recBtn.style.display = 'none'; 
+                if(adminMenuPanel) adminMenuPanel.style.display = 'none';
+                if(adminPlayerPanel) adminPlayerPanel.style.display = 'none';
             }
         }
 
@@ -438,10 +442,13 @@
             document.getElementById('pageTitle').innerHTML = "<span style='border:none; padding:0; font-size:18px;'>القائمة الرئيسية</span>"; 
             document.getElementById('appFooter').style.display = 'none';
             
-            // Show Admin Panel in Menu ONLY if Admin
+            // ADMIN MENU PANEL SHOW LOGIC
             const uid = localStorage.getItem('it9an_uid');
-            if(uid === 'admin_super') document.getElementById('adminMenuPanel').style.display = 'block';
-            else document.getElementById('adminMenuPanel').style.display = 'none';
+            if(uid === 'admin_super') {
+                document.getElementById('adminMenuPanel').style.display = 'block';
+            } else {
+                document.getElementById('adminMenuPanel').style.display = 'none';
+            }
 
             KURS_DATEN.forEach((lek, index) => {
                 let div = document.createElement('div'); div.className = 'menu-item';
@@ -478,10 +485,15 @@
             showView('player-view');
             document.getElementById('appFooter').style.display = 'flex';
             
-            // Show Admin Panel in Player ONLY if Admin
+            // ADMIN PLAYER PANEL SHOW LOGIC
+            // Hide Menu Panel first (safety)
+            document.getElementById('adminMenuPanel').style.display = 'none';
             const uid = localStorage.getItem('it9an_uid');
-            if(uid === 'admin_super') document.getElementById('adminPlayerPanel').style.display = 'block';
-            else document.getElementById('adminPlayerPanel').style.display = 'none';
+            if(uid === 'admin_super') {
+                document.getElementById('adminPlayerPanel').style.display = 'block';
+            } else {
+                document.getElementById('adminPlayerPanel').style.display = 'none';
+            }
 
             const lessonId = KURS_DATEN[currentLessonIdx].id;
             document.getElementById('pageTitle').innerHTML = `
