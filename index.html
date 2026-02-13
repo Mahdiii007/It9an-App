@@ -7,7 +7,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap" rel="stylesheet">
     
     <style>
-        /* --- MODERN ISLAMIC THEME & PERFORMANCE CSS --- */
+        /* --- MODERN ISLAMIC THEME --- */
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         
         :root { 
@@ -113,17 +113,39 @@
         input[type="number"] { width: 50px; text-align: center; padding: 4px; border: none; border-radius: 5px; }
         input[type="checkbox"] { transform: scale(1.4); accent-color: var(--gold); }
 
+        /* ADMIN PANEL */
+        .admin-panel {
+            background: #fff5f5; border: 2px solid var(--red); border-radius: 12px;
+            padding: 10px; margin-bottom: 20px; text-align: center; display: none; 
+        }
+        .admin-title { color: var(--red); font-weight: bold; margin-bottom: 10px; font-size: 14px; }
+        .admin-actions { display: flex; gap: 10px; justify-content: center; }
+        .btn-admin-reset { 
+            background: var(--red); color: white; border: none; padding: 8px 15px; 
+            border-radius: 8px; font-size: 12px; cursor: pointer; flex: 1;
+        }
+
         /* FEED & STATS */
         .status-bar { text-align: center; font-size: 16px; font-weight: bold; color: var(--primary); margin: 15px 0; padding: 10px; background: rgba(20, 89, 52, 0.1); border-radius: 8px; border: 1px dashed var(--primary); }
         .view-counter { font-size: 13px; color: #666; text-align: center; margin-top: 5px; cursor: pointer; padding: 5px; }
-        .view-counter:active { background: rgba(0,0,0,0.05); border-radius: 5px; }
-        
         .feed-container { min-height: 100px; }
-        .feed-msg { background: var(--surface); padding: 15px; border-radius: 12px; margin-bottom: 15px; border-right: 4px solid #ddd; box-shadow: 0 2px 8px rgba(0,0,0,0.03); }
-        .teacher-msg { background: #fffcf2; border: 1px solid var(--gold); border-right: 4px solid var(--gold); }
-        .teacher-badge { background: var(--gold); color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-left: 5px; }
         
-        .msg-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding-top: 10px; border-top: 1px solid #eee; }
+        /* Message Cards */
+        .feed-msg { 
+            padding: 15px; border-radius: 12px; margin-bottom: 25px; 
+            position: relative; transition: transform 0.2s;
+        }
+
+        .student-msg { background: var(--surface); border-right: 4px solid #ddd; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .teacher-msg { background: #fffcf2; border: 1px solid var(--gold); border-right: 5px solid var(--gold); box-shadow: 0 4px 10px rgba(212, 175, 55, 0.15); transform: scale(1.01); }
+        .admin-msg { background: #e8f5e9; border: 2px solid var(--primary); border-right: 6px solid var(--primary); box-shadow: 0 6px 15px rgba(15, 76, 58, 0.2); transform: scale(1.03); z-index: 5; }
+
+        .role-badge { padding: 2px 8px; border-radius: 6px; font-size: 11px; margin-left: 8px; color: white; display: inline-block; vertical-align: middle; }
+        .badge-student { background: #95a5a6; }
+        .badge-teacher { background: var(--gold); }
+        .badge-admin { background: var(--primary); font-weight: bold; }
+        
+        .msg-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(0,0,0,0.05); }
         
         .like-btn { display: flex; align-items: center; border-radius: 20px; font-size: 14px; background: #f9f9f9; border: 1px solid #eee; overflow: hidden; }
         .like-btn.liked { color: var(--primary); background: #e8f5e9; border-color: var(--primary); font-weight: bold; }
@@ -134,11 +156,43 @@
         .like-count:active { background: rgba(0,0,0,0.1); }
 
         .reply-btn { cursor: pointer; background: none; border: 1px solid var(--primary); color: var(--primary); padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; }
+        
+        .delete-btn { 
+            position: absolute; top: 10px; left: 10px; 
+            background: rgba(255,0,0,0.1); color: var(--red); 
+            border: none; border-radius: 50%; width: 30px; height: 30px; 
+            font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+        }
+        .reply-delete-btn { background: none; border: none; font-size: 12px; cursor: pointer; margin-right: 5px; opacity: 0.7; color: var(--red); }
 
-        .reply-box { margin-top: 15px; padding: 12px; background: #f4f4f4; border-radius: 8px; border-right: 3px solid var(--primary); }
+        /* NEUE THREAD STRUKTUR (Visual Connection) */
+        .replies-wrapper {
+            margin-top: 15px;
+            padding-right: 20px; /* Einrückung */
+            border-right: 3px solid #e0e0e0; /* Der "Faden" */
+            position: relative;
+        }
+        .replies-title {
+            font-size: 11px; color: #999; margin-bottom: 5px; font-weight: bold; margin-right: -24px; background: var(--bg); display: inline-block; padding: 0 5px;
+        }
+
+        .reply-box { 
+            margin-top: 10px; padding: 12px; 
+            background: #f9f9f9; border-radius: 8px; 
+            border: 1px solid #eee;
+            position: relative;
+        }
+        /* Pfeil zur Verbindungslinie */
+        .reply-box::before {
+            content: ''; position: absolute; top: 15px; right: -23px;
+            width: 20px; height: 2px; background: #e0e0e0;
+        }
+
+        .reply-box.reply-teacher { background: #fffcf2; border: 1px solid var(--gold); }
+        .reply-box.reply-admin { background: #e8f5e9; border: 1px solid var(--primary); }
+
         .reply-header { font-size: 12px; font-weight: bold; color: var(--primary); margin-bottom: 8px; display: flex; align-items: center; gap: 5px; }
 
-        /* LOAD MORE BUTTON */
         .load-more-btn {
             display: block; width: 100%; padding: 12px; text-align: center;
             background: #f0f0f0; color: #555; border: none; border-radius: 8px;
@@ -191,7 +245,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, query, where, orderBy, onSnapshot, serverTimestamp, doc, setDoc, updateDoc, increment, arrayUnion, arrayRemove, deleteDoc, getDoc, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, query, where, orderBy, onSnapshot, serverTimestamp, doc, setDoc, updateDoc, increment, arrayUnion, arrayRemove, deleteDoc, getDoc, getDocs, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
         const firebaseConfig = {
@@ -206,14 +260,13 @@
         const app = initializeApp(firebaseConfig);
         window.db = getFirestore(app); window.storage = getStorage(app);
         
-        // Offline Persistence
         enableIndexedDbPersistence(window.db).catch((err) => { console.log("Persistence error:", err.code); });
 
         window.collection = collection; window.addDoc = addDoc; window.query = query; 
         window.where = where; window.orderBy = orderBy; window.onSnapshot = onSnapshot; 
         window.serverTimestamp = serverTimestamp; window.ref = ref; 
         window.uploadBytes = uploadBytes; window.getDownloadURL = getDownloadURL;
-        window.doc = doc; window.setDoc = setDoc; window.updateDoc = updateDoc; window.increment = increment; window.arrayUnion = arrayUnion; window.arrayRemove = arrayRemove; window.deleteDoc = deleteDoc; window.getDoc = getDoc;
+        window.doc = doc; window.setDoc = setDoc; window.updateDoc = updateDoc; window.increment = increment; window.arrayUnion = arrayUnion; window.arrayRemove = arrayRemove; window.deleteDoc = deleteDoc; window.getDoc = getDoc; window.getDocs = getDocs;
     </script>
 </head>
 <body>
@@ -245,6 +298,15 @@
     <div id="menu-view" class="menu-grid"></div>
 
     <div id="player-view">
+        
+        <div id="adminPanel" class="admin-panel">
+            <div class="admin-title">🔒 لوحة تحكم المسؤول</div>
+            <div class="admin-actions">
+                <button class="btn-admin-reset" onclick="resetAllViews()">👁️ تصفير المشاهدات</button>
+                <button class="btn-admin-reset" onclick="resetAllLikes()">👍 تصفير الإعجابات</button>
+            </div>
+        </div>
+
         <div class="settings-box">
             <div class="setting-group"><div class="setting-label">تكرار</div><input type="number" id="globalRepeats" value="3" min="1"></div>
             <div class="setting-group"><div class="setting-label">وقفة</div><input type="checkbox" id="globalGap" checked></div>
@@ -301,7 +363,6 @@
         const STUDENT_PIN = "1234";
         const TEACHER_PIN = "7777";
         const ADMIN_PIN = "1879"; 
-        const ADMIN_RESET_PIN = "7860"; 
 
         const VERS_PRO_LEKTION = [ 8, 15, 9 ];
         const KURS_DATEN = VERS_PRO_LEKTION.map((anzahl, index) => {
@@ -312,9 +373,7 @@
 
         let currentLessonIdx = null, currentGlobalFileId = null, currentLocalVers = null;
         let unsubscribeFeed = null, unsubscribeViews = null;
-        let isPlaying = false, isPaused = false, pauseInterval = null, pauseSecondsLeft = 0;
-        
-        // NEU: Zählt wie oft der Vers schon gespielt wurde
+        let isPlaying = false, isPaused = false, repeatsLeft = 0, pauseInterval = null, pauseSecondsLeft = 0;
         let verseRepeatsPlayed = 0; 
 
         let mediaRecorder, chunks = [], recInterval = null, recSeconds = 0;
@@ -324,7 +383,6 @@
         let feedLimit = 3;
         let allLoadedPosts = [];
 
-        // --- AUDIO ---
         const audioEl = document.getElementById('mainAudio');
         const pBar = document.getElementById('progressBar');
         const cTime = document.getElementById('currentTime');
@@ -338,17 +396,12 @@
         pBar.addEventListener('input', () => { audioEl.currentTime = pBar.value; });
         function formatTime(sec) { if(isNaN(sec)) return "00:00"; let m = Math.floor(sec / 60); let s = Math.floor(sec % 60); return (m<10?"0"+m:m)+":"+(s<10?"0"+s:s); }
 
-        // --- DYNAMIC GAP & REPEAT LISTENER ---
         document.getElementById('globalGap').addEventListener('change', (e) => {
-            // Wenn Pause deaktiviert wird WÄHREND eine Pause läuft -> Sofort weiter
             if (!e.target.checked && pauseSecondsLeft > 0) {
-                clearInterval(pauseInterval);
-                pauseSecondsLeft = 0;
-                checkNextStep();
+                clearInterval(pauseInterval); pauseSecondsLeft = 0; checkNextStep();
             }
         });
 
-        // --- LOGIN ---
         if(localStorage.getItem('it9an_auth') === 'true') { localStorage.removeItem('it9an_auth'); }
 
         function checkLogin() {
@@ -397,8 +450,18 @@
             const role = localStorage.getItem('it9an_role');
             const uid = localStorage.getItem('it9an_uid');
             const recBtn = document.getElementById('recBtn');
-            if (uid === 'admin_super' || role === 'student') recBtn.style.display = 'flex';
-            else recBtn.style.display = 'none'; 
+            const adminPanel = document.getElementById('adminPanel');
+            
+            if (uid === 'admin_super') {
+                recBtn.style.display = 'flex';
+                adminPanel.style.display = 'block';
+            } else if (role === 'student') {
+                recBtn.style.display = 'flex';
+                adminPanel.style.display = 'none';
+            } else {
+                recBtn.style.display = 'none'; 
+                adminPanel.style.display = 'none';
+            }
         }
 
         function renderMenu() {
@@ -452,11 +515,8 @@
             document.getElementById('currentImg').src = `assets/${globalId}.png`;
             audioEl.src = `assets/${globalId}.mp3`;
             
-            // RESET LOOP STATE
             if(!isAuto) stopLoop();
-            
-            verseRepeatsPlayed = 0; // Reset Counter
-            
+            verseRepeatsPlayed = 0; 
             document.getElementById('statusDisplay').innerText = "جاهز للتلاوة";
             
             const myName = localStorage.getItem('it9an_name');
@@ -476,7 +536,6 @@
             feedLimit = 3; loadFeed(globalId);
         }
 
-        // --- FEED ---
         function loadFeed(fileId) {
             const div = document.getElementById('community-feed');
             div.innerHTML = "<div style='text-align:center; color:#ccc; padding:10px;'>...</div>";
@@ -501,9 +560,26 @@
         function renderPosts(container, userRole, myUid) {
             let htmlContent = "";
             let displayPosts = allLoadedPosts.slice(0, feedLimit);
+            const isAdmin = (myUid === 'admin_super');
 
             displayPosts.forEach(d => {
-                let isT = d.role === 'teacher'; 
+                let isTeacherPost = d.role === 'teacher';
+                let isAdminPost = d.uid === 'admin_super'; 
+                
+                let msgClass = 'feed-msg student-msg';
+                let badgeClass = 'role-badge badge-student';
+                let badgeText = 'طالب';
+
+                if (isAdminPost) {
+                    msgClass = 'feed-msg admin-msg';
+                    badgeClass = 'role-badge badge-admin';
+                    badgeText = 'المسؤول';
+                } else if (isTeacherPost) {
+                    msgClass = 'feed-msg teacher-msg';
+                    badgeClass = 'role-badge badge-teacher';
+                    badgeText = 'معلم';
+                }
+
                 let mainLikesCount = 0, mainIsLikedByMe = false, mainLikerNames = [];
                 if (d.likes && Array.isArray(d.likes)) { 
                     mainLikesCount = d.likes.length; 
@@ -517,9 +593,21 @@
                 let mainLockedClass = '';
                 if (isMyMainPost) { mainLikeAction = ''; mainLockedClass = 'locked'; mainCursor = 'not-allowed'; mainLikeClass += ' disabled'; }
 
+                let deleteBtnHtml = "";
+                if (isAdmin) {
+                    deleteBtnHtml = `<button class="delete-btn" onclick="deletePost('${d.id}')">🗑️</button>`;
+                }
+
                 let repliesHtml = "";
-                if(d.replies) {
+                if(d.replies && d.replies.length > 0) {
+                    let repliesInner = "";
                     d.replies.forEach(r => {
+                        let rIsAdmin = r.uid === 'admin_super';
+                        let rIsTeacher = r.role === 'teacher';
+                        let rBoxClass = "reply-box";
+                        if(rIsAdmin) rBoxClass += " reply-admin";
+                        else if(rIsTeacher) rBoxClass += " reply-teacher";
+
                         let rLikesCount = 0, rIsLikedByMe = false, rLikerNames = [];
                         if (r.likes && Array.isArray(r.likes)) { 
                             rLikesCount = r.likes.length; 
@@ -534,9 +622,14 @@
                         let rLockedClass = '';
                         if (isMyReply) { rLikeAction = ''; rLockedClass = 'locked'; rCursor = 'not-allowed'; rLikeClass += ' disabled'; }
 
-                        repliesHtml += `
-                        <div class="reply-box">
-                            <div class="reply-header">🎓 ${r.name}</div>
+                        let rDeleteBtn = "";
+                        if (isAdmin) {
+                            rDeleteBtn = `<button class="reply-delete-btn" onclick="deleteReply('${d.id}', ${r.timestamp})">🗑️</button>`;
+                        }
+
+                        repliesInner += `
+                        <div class="${rBoxClass}">
+                            <div class="reply-header">${rDeleteBtn} 🎓 ${r.name}</div>
                             <audio controls src="${r.audioUrl}" preload="metadata" style="width:100%"></audio>
                             <div class="msg-footer" style="margin-top:5px; border:none; padding-top:0;">
                                 <div></div>
@@ -547,13 +640,23 @@
                             </div>
                         </div>`;
                     });
+                    
+                    // WRAP REPLIES IN THREAD CONTAINER
+                    repliesHtml = `
+                    <div class="replies-wrapper">
+                        <div class="replies-title">الردود</div>
+                        ${repliesInner}
+                    </div>`;
                 }
-                let teacherBadge = isT ? "<span class='teacher-badge'>معلم</span>" : "";
-                let replyBtnHtml = (userRole === 'teacher' || myUid === 'admin_super') ? `<button class="reply-btn" onclick="startReply('${d.id}')">↩️ الرد</button>` : "<div></div>";
+                
+                let replyBtnHtml = (userRole === 'teacher' || isAdmin) ? `<button class="reply-btn" onclick="startReply('${d.id}')">↩️ الرد</button>` : "<div></div>";
 
                 htmlContent += `
-                <div class="feed-msg ${isT?'teacher-msg':''}">
-                    <div style="font-weight:bold; color:var(--primary); font-size:14px; margin-bottom:8px; display:flex; align-items:center;">${d.name} ${teacherBadge}</div>
+                <div class="${msgClass}">
+                    ${deleteBtnHtml}
+                    <div style="font-weight:bold; color:var(--primary); font-size:14px; margin-bottom:8px; display:flex; align-items:center;">
+                        ${d.name} <span class="${badgeClass}">${badgeText}</span>
+                    </div>
                     <audio controls src="${d.audioUrl}" preload="metadata" style="width:100%; height:35px;"></audio>
                     <div class="msg-footer">
                         ${replyBtnHtml}
@@ -562,7 +665,7 @@
                             <div class="like-count" onclick="showLikeNames(event, '${mainLikerNames.join('|||')}')">${mainLikesCount}</div>
                         </div>
                     </div>
-                    ${repliesHtml ? `<div style="margin-top:10px;">${repliesHtml}</div>` : ''}
+                    ${repliesHtml}
                 </div>`;
             });
 
@@ -671,11 +774,8 @@
         function playCycle() {
             if(!isPlaying) return;
             const target = parseInt(document.getElementById('globalRepeats').value);
-            // LIVE UPDATE OF COUNT: "Recitation 1 of 3"
             document.getElementById('statusDisplay').innerText = `تلاوة ${verseRepeatsPlayed + 1} من ${target}`;
-            
             audioEl.play().catch(e => { stopLoop(); });
-            
             audioEl.onended = function() {
                 if(!isPlaying) return;
                 if(document.getElementById('globalGap').checked) {
@@ -697,12 +797,8 @@
         }
         
         function checkNextStep() {
-            // INCREMENT PLAYED COUNT
             verseRepeatsPlayed++;
-            
-            // CHECK AGAINST *CURRENT* INPUT VALUE (LIVE)
             const target = parseInt(document.getElementById('globalRepeats').value) || 1;
-            
             if(verseRepeatsPlayed < target) { 
                 playCycle(); 
             } else {
@@ -764,13 +860,53 @@
             const names = namesStr.split('|||'); alert("قائمة الإعجابات:\n\n" + names.join("\n"));
         }
 
-        window.resetAllStats = async function() {
-            if(localStorage.getItem('it9an_role') !== 'teacher') return;
-            const code = prompt("الرمز السري:");
-            if(code !== ADMIN_RESET_PIN) return;
-            let totalVerses = 0; KURS_DATEN.forEach(k => totalVerses += k.verse);
-            for(let i=1; i<=totalVerses; i++) { try { await window.deleteDoc(window.doc(window.db, "stats", "file_"+i)); } catch(e){} }
-            alert("تم التصفير");
+        /* --- ADMIN ACTIONS --- */
+        window.deletePost = async function(postId) {
+            if(confirm("هل أنت متأكد من حذف هذه المشاركة؟")) {
+                try { await window.deleteDoc(window.doc(window.db, "posts", postId)); alert("تم الحذف بنجاح"); } catch(e) { alert("خطأ في الحذف"); }
+            }
+        }
+
+        window.deleteReply = async function(postId, replyTimestamp) {
+            if(confirm("هل أنت متأكد من حذف هذا الرد؟")) {
+                try {
+                    const postRef = window.doc(window.db, "posts", postId);
+                    const docSnap = await window.getDoc(postRef);
+                    if(docSnap.exists()) {
+                        let post = docSnap.data();
+                        let newReplies = post.replies.filter(r => r.timestamp !== replyTimestamp);
+                        await window.updateDoc(postRef, { replies: newReplies });
+                        alert("تم الحذف بنجاح");
+                    }
+                } catch(e) { alert("خطأ في الحذف"); }
+            }
+        }
+
+        window.resetAllLikes = async function() {
+            if(confirm("تحذير: هل تريد حقاً حذف جميع الإعجابات؟")) {
+                const q = window.query(window.collection(window.db, "posts"));
+                const querySnapshot = await window.getDocs(q);
+                querySnapshot.forEach(async (docSnap) => {
+                    let updates = { likes: [] };
+                    let data = docSnap.data();
+                    if(data.replies && data.replies.length > 0) {
+                        let cleanedReplies = data.replies.map(r => ({ ...r, likes: [] }));
+                        updates.replies = cleanedReplies;
+                    }
+                    await window.updateDoc(window.doc(window.db, "posts", docSnap.id), updates);
+                });
+                alert("تم تصفير الإعجابات");
+            }
+        }
+
+        window.resetAllViews = async function() {
+            if(confirm("تحذير: هل تريد حقاً تصفير المشاهدات؟")) {
+                let totalVerses = 0; KURS_DATEN.forEach(k => totalVerses += k.verse);
+                for(let i=1; i<=totalVerses; i++) { 
+                    try { await window.deleteDoc(window.doc(window.db, "stats", "file_"+i)); } catch(e){} 
+                }
+                alert("تم تصفير المشاهدات");
+            }
         }
     </script>
 </body>
