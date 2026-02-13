@@ -131,13 +131,8 @@
 
         /* FEED & STATS */
         .status-bar { text-align: center; font-size: 16px; font-weight: bold; color: var(--primary); margin: 15px 0; padding: 10px; background: rgba(20, 89, 52, 0.1); border-radius: 8px; border: 1px dashed var(--primary); }
-        .view-counter { 
-            font-size: 14px; color: #555; text-align: center; margin-top: 8px; 
-            cursor: pointer; padding: 8px; background: rgba(0,0,0,0.03); 
-            border-radius: 15px; width: fit-content; margin-left: auto; margin-right: auto;
-            border: 1px solid #eee; font-weight: bold;
-        }
-        .view-counter:active { background: rgba(0,0,0,0.1); transform: scale(0.98); }
+        .view-counter { font-size: 13px; color: #666; text-align: center; margin-top: 5px; cursor: pointer; padding: 5px; }
+        .view-counter:active { background: rgba(0,0,0,0.05); border-radius: 5px; }
         
         .feed-container { min-height: 100px; }
         
@@ -174,7 +169,6 @@
         .load-more-btn { display: block; width: 100%; padding: 12px; text-align: center; background: #f0f0f0; color: #555; border: none; border-radius: 8px; font-family: 'Amiri'; font-weight: bold; cursor: pointer; margin-top: 20px; }
         .load-more-btn:active { background: #e0e0e0; }
 
-        /* Error Msg */
         .audio-error-msg { display:none; color:#c0392b; font-size:12px; font-weight:bold; text-align:center; padding:10px; border:1px dashed #c0392b; border-radius:8px; background:rgba(192, 57, 43, 0.05); }
 
         /* RECORDING UI */
@@ -298,6 +292,7 @@
         </div>
         
         <div id="statusDisplay" class="status-bar">جاهز للتلاوة</div>
+        
         <div class="view-counter" onclick="showViewers()">👁️ <span id="viewCount">0</span> مشاهدة</div>
 
         <h4 style="text-align:center; color:var(--primary); margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:10px;">المشاركات</h4>
@@ -355,7 +350,9 @@
 
         let mediaRecorder, chunks = [], recInterval = null, recSeconds = 0;
         let currentBlob = null, replyTargetId = null, maxRecDuration = 0;
-        let currentViewersList = [];
+        
+        // GLOBAL VIEWERS LIST (FIXED)
+        window.currentViewersList = [];
         
         let feedLimit = 3;
         let allLoadedPosts = [];
@@ -508,26 +505,37 @@
             verseRepeatsPlayed = 0; 
             document.getElementById('statusDisplay').innerText = "جاهز للتلاوة";
             
+            // RESET LIST AND UI
+            window.currentViewersList = [];
+            document.getElementById('viewCount').innerText = "0";
+
             const myName = localStorage.getItem('it9an_name');
             const isHidden = localStorage.getItem('it9an_hidden') === 'true';
             const statRef = window.doc(window.db, "stats", "file_" + globalId);
-            if(myName && !isHidden) { try { await window.setDoc(statRef, { viewers: window.arrayUnion(myName) }, { merge: true }); } catch(e){} }
+            
+            if(myName && !isHidden) { 
+                try { await window.setDoc(statRef, { viewers: window.arrayUnion(myName) }, { merge: true }); } catch(e){} 
+            }
             
             if(unsubscribeViews) unsubscribeViews();
             unsubscribeViews = window.onSnapshot(statRef, (snap) => { 
                 if(snap.exists() && snap.data().viewers) {
-                    currentViewersList = snap.data().viewers; 
-                    document.getElementById('viewCount').innerText = currentViewersList.length; 
+                    window.currentViewersList = snap.data().viewers; 
+                    document.getElementById('viewCount').innerText = window.currentViewersList.length; 
                 } else {
-                    currentViewersList = []; document.getElementById('viewCount').innerText = 0;
+                    window.currentViewersList = []; 
+                    document.getElementById('viewCount').innerText = 0;
                 }
             });
             feedLimit = 3; loadFeed(globalId);
         }
 
         window.showViewers = function() {
-            if(currentViewersList.length > 0) alert("الطلاب:\n\n" + currentViewersList.join("\n"));
-            else alert("لا يوجد أحد");
+            if(window.currentViewersList && window.currentViewersList.length > 0) {
+                alert("الطلاب:\n\n" + window.currentViewersList.join("\n"));
+            } else {
+                alert("لا يوجد مشاهدات بعد");
+            }
         }
 
         function loadFeed(fileId) {
@@ -868,7 +876,7 @@
                 // Extracts the path from the full URL
                 const fileRef = window.ref(window.storage, url); 
                 await window.deleteObject(fileRef);
-            } catch(e) { console.log("File already gone or error:", e); }
+            } catch(e) { console.log("File gone:", e); }
         }
 
         /* --- GLOBAL ADMIN ACTIONS --- */
