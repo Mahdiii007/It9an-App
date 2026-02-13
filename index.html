@@ -129,7 +129,7 @@
             background: #8e0000; font-weight: bold; 
         }
 
-        /* FEED & STATS */
+        /* FEED */
         .status-bar { text-align: center; font-size: 16px; font-weight: bold; color: var(--primary); margin: 15px 0; padding: 10px; background: rgba(20, 89, 52, 0.1); border-radius: 8px; border: 1px dashed var(--primary); }
         .view-counter { font-size: 13px; color: #666; text-align: center; margin-top: 5px; cursor: pointer; padding: 5px; }
         .feed-container { min-height: 100px; }
@@ -145,7 +145,6 @@
         .badge-admin { background: var(--primary); font-weight: bold; }
         
         .msg-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(0,0,0,0.05); }
-        
         .like-btn { display: flex; align-items: center; border-radius: 20px; font-size: 14px; background: #f9f9f9; border: 1px solid #eee; overflow: hidden; }
         .like-btn.liked { color: var(--primary); background: #e8f5e9; border-color: var(--primary); font-weight: bold; }
         .like-btn.disabled { opacity: 0.5; filter: grayscale(1); }
@@ -153,9 +152,7 @@
         .like-action.locked { cursor: not-allowed; opacity: 0.3; filter: grayscale(1); }
         .like-count { padding: 6px 12px; border-right: 1px solid #ddd; cursor: pointer; background: rgba(0,0,0,0.03); }
         .like-count:active { background: rgba(0,0,0,0.1); }
-
         .reply-btn { cursor: pointer; background: none; border: 1px solid var(--primary); color: var(--primary); padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; }
-        
         .delete-btn { position: absolute; top: 10px; left: 10px; background: rgba(255,0,0,0.1); color: var(--red); border: none; border-radius: 50%; width: 30px; height: 30px; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
         .reply-delete-btn { background: none; border: none; font-size: 12px; cursor: pointer; margin-right: 5px; opacity: 0.7; color: var(--red); }
 
@@ -225,7 +222,10 @@
         window.where = where; window.orderBy = orderBy; window.onSnapshot = onSnapshot; 
         window.serverTimestamp = serverTimestamp; window.ref = ref; 
         window.uploadBytes = uploadBytes; window.getDownloadURL = getDownloadURL;
-        window.doc = doc; window.setDoc = setDoc; window.updateDoc = updateDoc; window.increment = increment; window.arrayUnion = arrayUnion; window.arrayRemove = arrayRemove; window.deleteDoc = deleteDoc; window.getDoc = getDoc; window.getDocs = getDocs;
+        window.doc = doc; window.setDoc = setDoc; window.updateDoc = updateDoc; window.increment = increment; window.arrayUnion = arrayUnion; window.arrayRemove = arrayRemove; 
+        window.deleteDoc = deleteDoc; window.getDoc = getDoc; window.getDocs = getDocs; 
+        // WICHTIG: deleteObject global verfügbar machen
+        window.deleteObject = deleteObject; 
     </script>
 </head>
 <body>
@@ -425,7 +425,6 @@
             
             if (uid === 'admin_super') {
                 recBtn.style.display = 'flex';
-                // Panels handled in views
             } else if (role === 'student') {
                 recBtn.style.display = 'flex';
                 if(adminMenuPanel) adminMenuPanel.style.display = 'none';
@@ -442,13 +441,9 @@
             document.getElementById('pageTitle').innerHTML = "<span style='border:none; padding:0; font-size:18px;'>القائمة الرئيسية</span>"; 
             document.getElementById('appFooter').style.display = 'none';
             
-            // ADMIN MENU PANEL SHOW LOGIC
             const uid = localStorage.getItem('it9an_uid');
-            if(uid === 'admin_super') {
-                document.getElementById('adminMenuPanel').style.display = 'block';
-            } else {
-                document.getElementById('adminMenuPanel').style.display = 'none';
-            }
+            if(uid === 'admin_super') document.getElementById('adminMenuPanel').style.display = 'block';
+            else document.getElementById('adminMenuPanel').style.display = 'none';
 
             KURS_DATEN.forEach((lek, index) => {
                 let div = document.createElement('div'); div.className = 'menu-item';
@@ -485,14 +480,10 @@
             showView('player-view');
             document.getElementById('appFooter').style.display = 'flex';
             
-            // ADMIN PLAYER PANEL SHOW LOGIC
-            document.getElementById('adminMenuPanel').style.display = 'none'; // Hide global
+            document.getElementById('adminMenuPanel').style.display = 'none'; 
             const uid = localStorage.getItem('it9an_uid');
-            if(uid === 'admin_super') {
-                document.getElementById('adminPlayerPanel').style.display = 'block';
-            } else {
-                document.getElementById('adminPlayerPanel').style.display = 'none';
-            }
+            if(uid === 'admin_super') document.getElementById('adminPlayerPanel').style.display = 'block';
+            else document.getElementById('adminPlayerPanel').style.display = 'none';
 
             const lessonId = KURS_DATEN[currentLessonIdx].id;
             document.getElementById('pageTitle').innerHTML = `
@@ -850,13 +841,14 @@
             const names = namesStr.split('|||'); alert("قائمة الإعجابات:\n\n" + names.join("\n"));
         }
 
-        // --- STORAGE CLEANUP HELPER ---
+        // --- STORAGE CLEANUP ---
         async function cleanupAudioFile(url) {
             if(!url) return;
             try {
+                // Extracts the path from the full URL
                 const fileRef = window.ref(window.storage, url); 
-                await deleteObject(fileRef);
-            } catch(e) { console.log("File gone:", e); }
+                await window.deleteObject(fileRef);
+            } catch(e) { console.log("File already gone or error:", e); }
         }
 
         /* --- GLOBAL ADMIN ACTIONS --- */
@@ -894,9 +886,7 @@
                 const querySnapshot = await window.getDocs(q);
                 querySnapshot.forEach(async (docSnap) => {
                     const data = docSnap.data();
-                    // Delete Main Audio
                     if(data.audioUrl) await cleanupAudioFile(data.audioUrl);
-                    // Delete Reply Audios
                     if(data.replies) {
                         for(let r of data.replies) {
                             if(r.audioUrl) await cleanupAudioFile(r.audioUrl);
@@ -998,5 +988,3 @@
     </script>
 </body>
 </html>
-
-
