@@ -7,7 +7,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap" rel="stylesheet">
     
     <style>
-        /* --- MODERN ISLAMIC THEME --- */
+        /* --- MODERN ISLAMIC THEME & PERFORMANCE CSS --- */
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         
         :root { 
@@ -206,7 +206,7 @@
         const app = initializeApp(firebaseConfig);
         window.db = getFirestore(app); window.storage = getStorage(app);
         
-        // OFFLINE PERSISTENCE (Für schlechtes Internet)
+        // Offline Persistence
         enableIndexedDbPersistence(window.db).catch((err) => { console.log("Persistence error:", err.code); });
 
         window.collection = collection; window.addDoc = addDoc; window.query = query; 
@@ -303,30 +303,20 @@
         const ADMIN_PIN = "1879"; 
         const ADMIN_RESET_PIN = "7860"; 
 
-        /* --- LEHRPLAN KONFIGURATION ---
-           Füge einfach die Anzahl der Verse für jede neue Lektion zur Liste hinzu.
-           Beispiel: Lektion 4 hat 12 Verse -> Schreibe 12 dazu.
-        */
-        const VERS_PRO_LEKTION = [
-            8,  // Lektion 1
-            15, // Lektion 2
-            9,  // Lektion 3
-        ];
-
-        // --- AUTOMATISCHE BERECHNUNG (NICHT ÄNDERN) ---
+        const VERS_PRO_LEKTION = [ 8, 15, 9 ];
         const KURS_DATEN = VERS_PRO_LEKTION.map((anzahl, index) => {
             let startId = 1;
             for(let i=0; i<index; i++) startId += VERS_PRO_LEKTION[i];
-            return {
-                id: index + 1,
-                verse: anzahl,
-                startGlobalId: startId
-            };
+            return { id: index + 1, verse: anzahl, startGlobalId: startId };
         });
 
         let currentLessonIdx = null, currentGlobalFileId = null, currentLocalVers = null;
         let unsubscribeFeed = null, unsubscribeViews = null;
-        let isPlaying = false, isPaused = false, repeatsLeft = 0, pauseInterval = null, pauseSecondsLeft = 0;
+        let isPlaying = false, isPaused = false, pauseInterval = null, pauseSecondsLeft = 0;
+        
+        // NEU: Zählt wie oft der Vers schon gespielt wurde
+        let verseRepeatsPlayed = 0; 
+
         let mediaRecorder, chunks = [], recInterval = null, recSeconds = 0;
         let currentBlob = null, replyTargetId = null, maxRecDuration = 0;
         let currentViewersList = [];
@@ -348,10 +338,18 @@
         pBar.addEventListener('input', () => { audioEl.currentTime = pBar.value; });
         function formatTime(sec) { if(isNaN(sec)) return "00:00"; let m = Math.floor(sec / 60); let s = Math.floor(sec % 60); return (m<10?"0"+m:m)+":"+(s<10?"0"+s:s); }
 
+        // --- DYNAMIC GAP & REPEAT LISTENER ---
+        document.getElementById('globalGap').addEventListener('change', (e) => {
+            // Wenn Pause deaktiviert wird WÄHREND eine Pause läuft -> Sofort weiter
+            if (!e.target.checked && pauseSecondsLeft > 0) {
+                clearInterval(pauseInterval);
+                pauseSecondsLeft = 0;
+                checkNextStep();
+            }
+        });
+
         // --- LOGIN ---
-        if(localStorage.getItem('it9an_auth') === 'true') { 
-            localStorage.removeItem('it9an_auth'); 
-        }
+        if(localStorage.getItem('it9an_auth') === 'true') { localStorage.removeItem('it9an_auth'); }
 
         function checkLogin() {
             const pin = document.getElementById('pinInput').value;
@@ -385,13 +383,11 @@
             if(isPinValid) {
                 const fullName = first + " " + last;
                 const uniqueID = 'user_' + btoa(unescape(encodeURIComponent(fullName + '_' + role))).replace(/=/g, ''); 
-                
                 localStorage.setItem('it9an_uid', uniqueID);
                 localStorage.setItem('it9an_auth', 'true');
                 localStorage.setItem('it9an_name', fullName);
                 localStorage.setItem('it9an_role', role);
                 localStorage.removeItem('it9an_hidden'); 
-                
                 document.getElementById('login-screen').style.display = 'none';
                 updateUIForRole(); renderMenu();
             } else { alert("بيانات الدخول غير صحيحة"); }
@@ -401,12 +397,8 @@
             const role = localStorage.getItem('it9an_role');
             const uid = localStorage.getItem('it9an_uid');
             const recBtn = document.getElementById('recBtn');
-            
-            if (uid === 'admin_super' || role === 'student') {
-                recBtn.style.display = 'flex';
-            } else {
-                recBtn.style.display = 'none'; 
-            }
+            if (uid === 'admin_super' || role === 'student') recBtn.style.display = 'flex';
+            else recBtn.style.display = 'none'; 
         }
 
         function renderMenu() {
@@ -429,17 +421,13 @@
             const currentLesson = KURS_DATEN[currentLessonIdx];
             if(currentLocalVers < currentLesson.verse) playVers(currentGlobalFileId + 1, currentLocalVers + 1);
             else { 
-                // Check if next lesson exists
-                if (currentLessonIdx + 1 < KURS_DATEN.length) {
-                    startLesson(currentLessonIdx + 1);
-                }
+                if (currentLessonIdx + 1 < KURS_DATEN.length) startLesson(currentLessonIdx + 1);
             }
         }
         window.prevVers = function() { 
             if(currentLocalVers > 1) {
                 playVers(currentGlobalFileId - 1, currentLocalVers - 1);
             } else if (currentLessonIdx > 0) {
-                // Go to last verse of previous lesson
                 let prevLesson = KURS_DATEN[currentLessonIdx - 1];
                 let prevGlobalId = prevLesson.startGlobalId + prevLesson.verse - 1;
                 currentLessonIdx--;
@@ -459,22 +447,22 @@
             `;
 
             const btnPrev = document.getElementById('btnPrev');
-            // Hide prev button ONLY if first verse of FIRST lesson
             if(localVersNum === 1 && currentLessonIdx === 0) btnPrev.classList.add('hidden'); else btnPrev.classList.remove('hidden');
 
             document.getElementById('currentImg').src = `assets/${globalId}.png`;
             audioEl.src = `assets/${globalId}.mp3`;
             
-            if(isPlaying && !isAuto) stopLoop();
+            // RESET LOOP STATE
+            if(!isAuto) stopLoop();
+            
+            verseRepeatsPlayed = 0; // Reset Counter
+            
             document.getElementById('statusDisplay').innerText = "جاهز للتلاوة";
             
             const myName = localStorage.getItem('it9an_name');
             const isHidden = localStorage.getItem('it9an_hidden') === 'true';
             const statRef = window.doc(window.db, "stats", "file_" + globalId);
-            
-            if(myName && !isHidden) { 
-                try { await window.setDoc(statRef, { viewers: window.arrayUnion(myName) }, { merge: true }); } catch(e){} 
-            }
+            if(myName && !isHidden) { try { await window.setDoc(statRef, { viewers: window.arrayUnion(myName) }, { merge: true }); } catch(e){} }
             
             if(unsubscribeViews) unsubscribeViews();
             unsubscribeViews = window.onSnapshot(statRef, (snap) => { 
@@ -485,22 +473,10 @@
                     currentViewersList = []; document.getElementById('viewCount').innerText = 0;
                 }
             });
-            
-            feedLimit = 3; 
-            loadFeed(globalId);
+            feedLimit = 3; loadFeed(globalId);
         }
 
-        window.showViewers = function() {
-            if(currentViewersList.length > 0) alert("الطلاب:\n\n" + currentViewersList.join("\n"));
-            else alert("لا يوجد أحد");
-        }
-
-        window.showLikeNames = function(event, namesStr) {
-            event.stopPropagation();
-            if(!namesStr || namesStr.trim() === '') { alert("لا توجد إعجابات بعد"); return; }
-            const names = namesStr.split('|||'); alert("قائمة الإعجابات:\n\n" + names.join("\n"));
-        }
-
+        // --- FEED ---
         function loadFeed(fileId) {
             const div = document.getElementById('community-feed');
             div.innerHTML = "<div style='text-align:center; color:#ccc; padding:10px;'>...</div>";
@@ -513,13 +489,10 @@
             
             unsubscribeFeed = window.onSnapshot(q, (snap) => {
                 const scrollY = window.scrollY;
-
                 if(snap.empty) { div.innerHTML = "<div style='text-align:center; color:#999; font-size:14px; padding:20px;'>لا توجد مشاركات حتى الآن</div>"; return; }
-                
                 allLoadedPosts = [];
                 snap.forEach(doc => { allLoadedPosts.push({ id: doc.id, ...doc.data() }); });
                 allLoadedPosts.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0)); 
-                
                 renderPosts(div, userRole, myUid);
                 window.scrollTo(0, scrollY);
             });
@@ -615,20 +588,16 @@
             if(isPlaying) stopLoop();
             const ui = document.getElementById('recording-ui');
             const statusText = document.getElementById('recText');
-            
-            if(ui.style.display === 'flex') {
-                stopRecordingAndReview();
-            } else {
+            if(ui.style.display === 'flex') { stopRecordingAndReview(); } 
+            else {
                 try {
                     let dur = audioEl.duration; if(!dur || isNaN(dur)) dur = 15; maxRecDuration = Math.ceil(dur * 2);
-
                     const audioConstraints = { echoCancellation: false, noiseSuppression: false, autoGainControl: false, sampleRate: 48000, channelCount: 1 };
                     const stream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints });
-                    
                     let options = { audioBitsPerSecond: 128000 };
-                    if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) { options.mimeType = 'audio/webm;codecs=opus'; } 
-                    else if (MediaRecorder.isTypeSupported('audio/mp4;codecs=mp4a.40.2')) { options.mimeType = 'audio/mp4;codecs=mp4a.40.2'; } 
-                    else if (MediaRecorder.isTypeSupported('audio/mp4')) { options.mimeType = 'audio/mp4'; }
+                    if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) options.mimeType = 'audio/webm;codecs=opus'; 
+                    else if (MediaRecorder.isTypeSupported('audio/mp4;codecs=mp4a.40.2')) options.mimeType = 'audio/mp4;codecs=mp4a.40.2'; 
+                    else if (MediaRecorder.isTypeSupported('audio/mp4')) options.mimeType = 'audio/mp4';
 
                     mediaRecorder = new MediaRecorder(stream, options);
                     chunks = [];
@@ -644,7 +613,6 @@
                         clearInterval(recInterval); ui.style.display = 'none';
                         stream.getTracks().forEach(track => track.stop());
                     };
-
                     mediaRecorder.start(200); 
                     const recBtn = document.getElementById('recBtn'); if(recBtn && recBtn.style.display !== 'none') recBtn.classList.add('recording');
                     ui.style.display = 'flex'; recSeconds = 0; document.getElementById('recTimer').innerText = "00:00";
@@ -692,9 +660,9 @@
                 isPlaying = true; isPaused = false; document.getElementById('playBtn').innerText = "⏸";
                 if (pauseSecondsLeft > 0) { startPauseCountdown(pauseSecondsLeft); } 
                 else if (audioEl.currentTime > 0 && audioEl.currentTime < audioEl.duration) {
-                    document.getElementById('statusDisplay').innerText = `استماع (${repeatsLeft})`; audioEl.play().catch(e => { stopLoop(); });
+                    document.getElementById('statusDisplay').innerText = `تلاوة ${verseRepeatsPlayed + 1} من ${parseInt(document.getElementById('globalRepeats').value)}`; 
+                    audioEl.play().catch(e => { stopLoop(); });
                 } else {
-                    if(repeatsLeft <= 0) repeatsLeft = parseInt(document.getElementById('globalRepeats').value);
                     playCycle();
                 }
             }
@@ -702,8 +670,12 @@
         
         function playCycle() {
             if(!isPlaying) return;
-            document.getElementById('statusDisplay').innerText = `استماع (${repeatsLeft})`; 
+            const target = parseInt(document.getElementById('globalRepeats').value);
+            // LIVE UPDATE OF COUNT: "Recitation 1 of 3"
+            document.getElementById('statusDisplay').innerText = `تلاوة ${verseRepeatsPlayed + 1} من ${target}`;
+            
             audioEl.play().catch(e => { stopLoop(); });
+            
             audioEl.onended = function() {
                 if(!isPlaying) return;
                 if(document.getElementById('globalGap').checked) {
@@ -725,20 +697,21 @@
         }
         
         function checkNextStep() {
-            repeatsLeft--;
-            if(repeatsLeft > 0) { playCycle(); } else {
+            // INCREMENT PLAYED COUNT
+            verseRepeatsPlayed++;
+            
+            // CHECK AGAINST *CURRENT* INPUT VALUE (LIVE)
+            const target = parseInt(document.getElementById('globalRepeats').value) || 1;
+            
+            if(verseRepeatsPlayed < target) { 
+                playCycle(); 
+            } else {
                  const currentLesson = KURS_DATEN[currentLessonIdx];
                  if(currentLocalVers < currentLesson.verse) playVers(currentGlobalFileId + 1, currentLocalVers + 1, true);
                  else { 
-                     // NEXT LESSON
-                     if (currentLessonIdx + 1 < KURS_DATEN.length) {
-                         startLesson(currentLessonIdx + 1);
-                     } else {
-                         // END OF COURSE
-                         stopLoop();
-                     }
+                     if (currentLessonIdx + 1 < KURS_DATEN.length) startLesson(currentLessonIdx + 1);
+                     else stopLoop();
                  }
-                 setTimeout(() => { if(isPlaying) { repeatsLeft = parseInt(document.getElementById('globalRepeats').value); playCycle(); } }, 1000);
             }
         }
         
@@ -783,6 +756,12 @@
                 });
                 await window.updateDoc(postRef, { replies: updatedReplies });
             }
+        }
+
+        window.showLikeNames = function(event, namesStr) {
+            event.stopPropagation();
+            if(!namesStr || namesStr.trim() === '') { alert("لا توجد إعجابات بعد"); return; }
+            const names = namesStr.split('|||'); alert("قائمة الإعجابات:\n\n" + names.join("\n"));
         }
 
         window.resetAllStats = async function() {
