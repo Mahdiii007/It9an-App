@@ -37,14 +37,25 @@
             box-shadow: 0 10px 30px rgba(0,0,0,0.3);
         }
         .login-title { color: var(--primary); margin: 0 0 10px 0; font-size: 28px; font-weight: bold; }
-        .login-subtitle { color: #555; margin: 0 0 25px 0; font-size: 16px; line-height: 1.6; }
+        .login-subtitle { color: #555; margin: 0 0 15px 0; font-size: 16px; line-height: 1.6; }
         .login-subtitle strong { color: var(--gold); }
+
+        /* NEU: WICHTIGE ANMERKUNG */
+        .login-note {
+            background: #fffcf2; border: 1px solid var(--gold); border-radius: 8px;
+            padding: 10px; margin-bottom: 20px; font-size: 12px; color: #555; 
+            text-align: center; line-height: 1.6;
+        }
+        .login-note span { color: var(--red); font-weight: bold; display: block; margin-top: 5px; }
 
         .login-input, .login-select { 
             font-size: 16px; padding: 12px; text-align: right; width: 100%; 
             border-radius: 10px; border: 1px solid #ddd; 
             background: var(--surface); outline: none; margin-bottom: 10px; font-family: 'Amiri';
         }
+        /* LTR for Latin inputs */
+        .latin-input { direction: ltr; text-align: left; }
+
         .login-btn {
             margin-top: 10px; padding: 12px 40px; font-weight: bold; font-size: 18px; 
             border: none; border-radius: 30px; width: 100%;
@@ -65,24 +76,43 @@
             padding: 5px 10px; border-radius: 8px; cursor: pointer; font-size: 13px; font-family: 'Amiri';
             font-weight: bold; display: flex; align-items: center; gap: 5px; white-space: nowrap;
         }
+        
+        .notif-container { position: relative; cursor: pointer; margin-left: 10px; }
+        .notif-icon { font-size: 24px; color: var(--gold-light); }
+        .notif-badge { 
+            position: absolute; top: -5px; right: -5px; 
+            background: var(--red); color: white; border-radius: 50%; 
+            width: 18px; height: 18px; font-size: 10px; 
+            display: none; align-items: center; justify-content: center; border: 2px solid white;
+        }
+
         #pageTitle {
             background: var(--surface); padding: 5px 15px; border-radius: 30px; 
             display: flex; align-items: center; justify-content: center; gap: 8px;
             height: 42px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); border: 2px solid var(--gold);
-            cursor: default; max-width: 65%; overflow: hidden;
+            cursor: default; max-width: 50%; overflow: hidden; white-space: nowrap;
         }
-        #pageTitle img { height: 28px; width: auto; display: block; object-fit: contain; } 
+        #pageTitle img { height: 28px; width: auto; display: block; object-fit: contain; flex-shrink: 0; } 
         .title-text-maktaa { 
-            font-size: 13px; color: var(--primary); font-weight: bold; 
+            font-size: clamp(12px, 3.5vw, 15px); color: var(--primary); font-weight: bold; 
             border-right: 1px solid #ddd; padding-right: 8px; margin-right: 5px; white-space: nowrap;
         }
 
-        /* --- MENÜ --- */
+        /* --- MENU & NOTIFICATIONS --- */
         .menu-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; padding: 20px; max-width: 100%; margin: 0 auto; }
         .menu-item { background: var(--surface); border-radius: 15px; overflow: hidden; cursor: pointer; box-shadow: var(--shadow); display: flex; flex-direction: column; }
         .menu-item-title { text-align: center; padding: 8px 5px; font-weight: bold; color: var(--primary); border-bottom: 1px solid #eee; background: #fdfdfd; font-size: 14px; }
         .menu-item img { width: 100%; height: auto; display: block; padding: 10px; }
         
+        #notifications-view { display: none; padding: 15px; max-width: 600px; margin: 0 auto; }
+        .notif-card { 
+            background: white; padding: 15px; margin-bottom: 10px; border-radius: 10px; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-right: 4px solid var(--primary); 
+            display: flex; justify-content: space-between; align-items: center; cursor: pointer;
+        }
+        .notif-text { font-size: 14px; color: var(--text); }
+        .notif-time { font-size: 11px; color: #888; margin-top: 4px; }
+
         /* --- PLAYER --- */
         #player-view { display: none; padding: 15px; width: 100%; max-width: 600px; margin: 0 auto; }
         
@@ -125,11 +155,9 @@
             border-radius: 8px; font-size: 12px; cursor: pointer; flex: 1; min-width: 80px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
-        .btn-admin-delete-all {
-            background: #8e0000; font-weight: bold; 
-        }
+        .btn-admin-delete-all { background: #8e0000; font-weight: bold; }
 
-        /* --- NEW CUSTOM PLAYER CSS --- */
+        /* CUSTOM PLAYER */
         .custom-player {
             display: flex; align-items: center; gap: 10px;
             background: rgba(0,0,0,0.03); padding: 8px 12px; border-radius: 30px;
@@ -147,7 +175,6 @@
 
         /* FEED & STATS */
         .status-bar { text-align: center; font-size: 16px; font-weight: bold; color: var(--primary); margin: 15px 0; padding: 10px; background: rgba(20, 89, 52, 0.1); border-radius: 8px; border: 1px dashed var(--primary); }
-        
         .view-counter { 
             font-size: 14px; color: #555; text-align: center; margin-top: 8px; 
             cursor: pointer; padding: 8px 15px; background: rgba(0,0,0,0.03); 
@@ -159,6 +186,9 @@
         .feed-container { min-height: 100px; }
         
         .feed-msg { padding: 15px; border-radius: 12px; margin-bottom: 25px; position: relative; transition: transform 0.2s; }
+        .feed-msg.highlighted { border: 2px solid var(--gold); background: #fffffa; animation: flash 1s; }
+        @keyframes flash { 0% { background: var(--gold-light); } 100% { background: #fffffa; } }
+
         .student-msg { background: var(--surface); border-right: 4px solid #ddd; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         .teacher-msg { background: #fffcf2; border: 1px solid var(--gold); border-right: 5px solid var(--gold); box-shadow: 0 4px 10px rgba(212, 175, 55, 0.15); transform: scale(1.01); }
         .admin-msg { background: #e8f5e9; border: 2px solid var(--primary); border-right: 6px solid var(--primary); box-shadow: 0 6px 15px rgba(15, 76, 58, 0.2); transform: scale(1.03); z-index: 5; }
@@ -190,6 +220,8 @@
 
         .load-more-btn { display: block; width: 100%; padding: 12px; text-align: center; background: #f0f0f0; color: #555; border: none; border-radius: 8px; font-family: 'Amiri'; font-weight: bold; cursor: pointer; margin-top: 20px; }
         .load-more-btn:active { background: #e0e0e0; }
+
+        .audio-error-msg { display:none; color:#c0392b; font-size:12px; font-weight:bold; text-align:center; padding:10px; border:1px dashed #c0392b; border-radius:8px; background:rgba(192, 57, 43, 0.05); }
 
         /* RECORDING UI */
         #recording-ui { display: none; position: fixed; bottom: 120px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 350px; background: rgba(255,255,255,0.95); backdrop-filter: blur(5px); border: 2px solid var(--red); border-radius: 20px; padding: 15px; z-index: 1500; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
@@ -259,8 +291,19 @@
                 "خيركم من تعلم القرآن وعلمه"<br>
                 <strong>مرحباً بك في رحلة الإتقان</strong>
             </div>
-            <input type="text" id="firstName" class="login-input" placeholder="الاسم">
-            <input type="text" id="lastName" class="login-input" placeholder="اللقب">
+
+            <div class="login-note">
+                ⚠️ <strong>تنبيه هام (Wichtiger Hinweis):</strong><br>
+                لضمان حفظ تقدمك، يرجى دائماً كتابة الاسم وسنة الميلاد <b>بنفس الطريقة تماماً</b> عند كل دخول.<br>
+                <span style="direction: ltr; display: block; margin-top: 5px;">(Bitte immer gleichen Namen & Jahr verwenden!)</span>
+                <span style="color:#c0392b; font-weight:bold; display:block; margin-top:5px;">يجب استخدام الأحرف اللاتينية فقط (Nur A-Z)</span>
+            </div>
+
+            <input type="text" id="firstName" class="login-input latin-input" placeholder="Vorname (z.B. Ali)" oninput="this.value=this.value.replace(/[^a-zA-Z\s]/g,'')">
+            <input type="text" id="lastName" class="login-input latin-input" placeholder="Nachname (z.B. Mueller)" oninput="this.value=this.value.replace(/[^a-zA-Z\s]/g,'')">
+            
+            <input type="number" id="birthYear" class="login-input" placeholder="سنة الميلاد (z.B. 2012)" max="2030" min="1950">
+
             <select id="userRole" class="login-input login-select">
                 <option value="student">طالب</option>
                 <option value="teacher">معلم</option>
@@ -271,9 +314,18 @@
     </div>
 
     <div class="header">
+        <div class="notif-container" onclick="showNotifications()">
+            <div class="notif-icon">🔔</div>
+            <div id="notifBadge" class="notif-badge">0</div>
+        </div>
         <button class="header-btn" onclick="goToMenu()">☰ القائمة</button>
         <div id="pageTitle"></div>
-        <div style="width: 50px;"></div>
+    </div>
+
+    <div id="notifications-view">
+        <h3 style="text-align:center; color:var(--primary);">الإشعارات</h3>
+        <div id="notifList"></div>
+        <button class="login-btn" onclick="goToMenu()">عودة</button>
     </div>
 
     <div id="adminMenuPanel" class="admin-panel" style="display:none; margin-top: 15px;">
@@ -373,10 +425,11 @@
         let mediaRecorder, chunks = [], recInterval = null, recSeconds = 0;
         let currentBlob = null, replyTargetId = null, maxRecDuration = 0;
         
-        window.currentViewersList = []; // GLOBAL LIST
+        window.currentViewersList = []; 
         
         let feedLimit = 3;
         let allLoadedPosts = [];
+        let highlightedPostId = null;
 
         // --- GLOBAL FEED PLAYER LOGIC ---
         let currentFeedAudioId = null;
@@ -405,11 +458,9 @@
         });
 
         window.playFeedAudio = function(url, id) {
-            // STOP MAIN AUDIO
-            stopLoop();
+            stopLoop(); // Stop Main Quran Audio
 
             if (currentFeedAudioId === id) {
-                // TOGGLE
                 if (feedAudioEl.paused) {
                     feedAudioEl.play();
                     document.getElementById('btn-' + id).innerText = "⏸";
@@ -418,7 +469,6 @@
                     document.getElementById('btn-' + id).innerText = "▶";
                 }
             } else {
-                // RESET OLD
                 if (currentFeedAudioId) {
                     const oldBtn = document.getElementById('btn-' + currentFeedAudioId);
                     if(oldBtn) oldBtn.innerText = "▶";
@@ -426,10 +476,9 @@
                     if(oldSeek) oldSeek.value = 0;
                 }
                 
-                // START NEW
                 currentFeedAudioId = id;
                 const newBtn = document.getElementById('btn-' + id);
-                newBtn.innerText = "⏳"; // Loading State
+                newBtn.innerText = "⏳"; 
                 
                 feedAudioEl.src = url;
                 feedAudioEl.play().then(() => {
@@ -466,6 +515,12 @@
 
         if(localStorage.getItem('it9an_auth') === 'true') { localStorage.removeItem('it9an_auth'); }
 
+        // --- NEW ID GENERATOR WITH YEAR ---
+        function generateUserId(fullName, role, year) {
+            let cleanName = fullName.toLowerCase().replace(/\s+/g, '').replace(/[^a-z0-9]/g, '');
+            return role + "_" + cleanName + "_" + year;
+        }
+
         function checkLogin() {
             const pin = document.getElementById('pinInput').value;
             
@@ -476,20 +531,27 @@
                 localStorage.setItem('it9an_role', 'teacher');
                 localStorage.setItem('it9an_hidden', 'true'); 
                 document.getElementById('login-screen').style.display = 'none';
-                updateUIForRole(); renderMenu();
+                updateUIForRole(); 
+                listenForNotifications();
+                renderMenu();
                 return;
             }
 
             const first = document.getElementById('firstName').value.trim();
             const last = document.getElementById('lastName').value.trim();
+            const year = document.getElementById('birthYear').value.trim();
             const role = document.getElementById('userRole').value;
 
+            // VALIDATION: Latin Chars Only & Year present
             const latinRegex = /^[a-zA-Z\s]+$/;
-            const arabicRegex = /^[\u0600-\u06FF\s]+$/;
-            const isFirstValid = (first.length >= 2) && (latinRegex.test(first) || arabicRegex.test(first));
-            const isLastValid = (last.length >= 2) && (latinRegex.test(last) || arabicRegex.test(last));
-
-            if (!isFirstValid || !isLastValid) { alert("بيانات الدخول غير صحيحة"); return; }
+            if (!latinRegex.test(first) || !latinRegex.test(last)) {
+                alert("الرجاء كتابة الاسم بالأحرف اللاتينية فقط (Nur lateinische Buchstaben)");
+                return;
+            }
+            if (year.length !== 4 || isNaN(year)) {
+                alert("الرجاء إدخال سنة الميلاد بشكل صحيح (4 Ziffern)");
+                return;
+            }
 
             let isPinValid = false;
             if (role === 'student' && pin === STUDENT_PIN) isPinValid = true;
@@ -497,14 +559,18 @@
 
             if(isPinValid) {
                 const fullName = first + " " + last;
-                const uniqueID = 'user_' + btoa(unescape(encodeURIComponent(fullName + '_' + role))).replace(/=/g, ''); 
+                // GENERATE UNIQUE ID
+                const uniqueID = generateUserId(fullName, role, year);
+                
                 localStorage.setItem('it9an_uid', uniqueID);
                 localStorage.setItem('it9an_auth', 'true');
                 localStorage.setItem('it9an_name', fullName);
                 localStorage.setItem('it9an_role', role);
                 localStorage.removeItem('it9an_hidden'); 
                 document.getElementById('login-screen').style.display = 'none';
-                updateUIForRole(); renderMenu();
+                updateUIForRole(); 
+                listenForNotifications();
+                renderMenu();
             } else { alert("بيانات الدخول غير صحيحة"); }
         }
         
@@ -525,6 +591,90 @@
                 recBtn.style.display = 'none'; 
                 if(adminMenuPanel) adminMenuPanel.style.display = 'none';
                 if(adminPlayerPanel) adminPlayerPanel.style.display = 'none';
+            }
+        }
+
+        // --- NOTIFICATIONS SYSTEM ---
+        let notifUnsubscribe = null;
+        function listenForNotifications() {
+            const uid = localStorage.getItem('it9an_uid');
+            const role = localStorage.getItem('it9an_role');
+            if(!uid) return;
+
+            let q;
+            if (role === 'teacher' || uid === 'admin_super') {
+                q = window.query(window.collection(window.db, "notifications"), window.where("to", "==", "teachers"));
+            } else {
+                q = window.query(window.collection(window.db, "notifications"), window.where("to", "==", uid));
+            }
+
+            if(notifUnsubscribe) notifUnsubscribe();
+            notifUnsubscribe = window.onSnapshot(q, (snap) => {
+                const list = document.getElementById('notifList');
+                const badge = document.getElementById('notifBadge');
+                list.innerHTML = "";
+                
+                let unreadCount = 0;
+                let notifs = [];
+                snap.forEach(doc => notifs.push({id: doc.id, ...doc.data()}));
+                notifs.sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+
+                if (notifs.length === 0) {
+                    list.innerHTML = "<div style='text-align:center; padding:20px; color:#999;'>لا توجد إشعارات</div>";
+                    badge.style.display = 'none';
+                    return;
+                }
+
+                notifs.forEach(n => {
+                    unreadCount++;
+                    let text = "";
+                    if(n.type === 'new_recording') text = `🎤 تسجيل جديد من ${n.senderName}`;
+                    if(n.type === 'reply') text = `✍️ رد جديد من ${n.senderName}`;
+
+                    list.innerHTML += `
+                    <div class="notif-card" onclick="openFromNotif('${n.fileId}', '${n.postId}')">
+                        <div>
+                            <div class="notif-text">${text}</div>
+                            <div class="notif-time">اضغط للذهاب للمقطع</div>
+                        </div>
+                        <div style="font-size:20px;">👈</div>
+                    </div>`;
+                });
+
+                if(unreadCount > 0) {
+                    badge.innerText = unreadCount;
+                    badge.style.display = 'flex';
+                } else {
+                    badge.style.display = 'none';
+                }
+            });
+        }
+
+        window.showNotifications = function() {
+            document.getElementById('menu-view').style.display = 'none';
+            document.getElementById('player-view').style.display = 'none';
+            document.getElementById('notifications-view').style.display = 'block';
+            document.getElementById('pageTitle').innerText = "الإشعارات";
+            document.getElementById('appFooter').style.display = 'none';
+        }
+
+        window.openFromNotif = function(fileId, postId) {
+            let foundIndex = -1;
+            let foundVerse = 1;
+            for(let i=0; i<KURS_DATEN.length; i++) {
+                let start = KURS_DATEN[i].startGlobalId;
+                let end = start + KURS_DATEN[i].verse - 1;
+                if(fileId >= start && fileId <= end) {
+                    foundIndex = i;
+                    foundVerse = fileId - start + 1;
+                    break;
+                }
+            }
+
+            if(foundIndex !== -1) {
+                currentLessonIdx = foundIndex;
+                highlightedPostId = postId;
+                playVers(parseInt(fileId), foundVerse);
             }
         }
 
@@ -593,7 +743,6 @@
             verseRepeatsPlayed = 0; 
             document.getElementById('statusDisplay').innerText = "جاهز للتلاوة";
             
-            // RESET AND SAVE
             window.currentViewersList = [];
             document.getElementById('viewCount').innerText = "0";
 
@@ -638,9 +787,30 @@
                 if(snap.empty) { div.innerHTML = "<div style='text-align:center; color:#999; font-size:14px; padding:20px;'>لا توجد مشاركات حتى الآن</div>"; return; }
                 allLoadedPosts = [];
                 snap.forEach(doc => { allLoadedPosts.push({ id: doc.id, ...doc.data() }); });
-                allLoadedPosts.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0)); 
+                
+                allLoadedPosts.sort((a, b) => {
+                    if (userRole === 'student') {
+                        if (a.uid === myUid && b.uid !== myUid) return -1;
+                        if (a.uid !== myUid && b.uid === myUid) return 1;
+                    }
+                    return (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0);
+                });
+
                 renderPosts(div, userRole, myUid);
-                window.scrollTo(0, scrollY);
+                
+                if(highlightedPostId) {
+                    setTimeout(() => {
+                        const el = document.getElementById('post-' + highlightedPostId);
+                        if(el) {
+                            el.scrollIntoView({behavior: 'smooth', block: 'center'});
+                            el.classList.add('highlighted');
+                            setTimeout(() => el.classList.remove('highlighted'), 2000);
+                        }
+                        highlightedPostId = null; 
+                    }, 500);
+                } else {
+                    window.scrollTo(0, scrollY);
+                }
             });
         }
 
@@ -714,7 +884,6 @@
                             rDeleteBtn = `<button class="reply-delete-btn" onclick="deleteReply('${d.id}', ${r.timestamp})">🗑️</button>`;
                         }
 
-                        // UNIQUE ID FOR REPLY AUDIO
                         let rUniqueId = d.id + "-reply-" + idx;
 
                         repliesInner += `
@@ -747,7 +916,7 @@
                 let replyBtnHtml = (userRole === 'teacher' || isAdmin) ? `<button class="reply-btn" onclick="startReply('${d.id}')">↩️ الرد</button>` : "<div></div>";
 
                 htmlContent += `
-                <div class="${msgClass}">
+                <div class="${msgClass}" id="post-${d.id}">
                     ${deleteBtnHtml}
                     <div style="font-weight:bold; color:var(--primary); font-size:14px; margin-bottom:8px; display:flex; align-items:center;">
                         ${d.name} <span class="${badgeClass}">${badgeText}</span>
@@ -844,9 +1013,34 @@
                     await window.updateDoc(window.doc(window.db, "posts", replyTargetId), { 
                         replies: window.arrayUnion({ name: name, role: role, uid: uid, audioUrl: url, timestamp: Date.now(), likes: [] }) 
                     });
+                    
+                    // NOTIFICATION TO STUDENT
+                    const targetPost = allLoadedPosts.find(p => p.id === replyTargetId);
+                    if(targetPost) {
+                       await window.addDoc(window.collection(window.db, "notifications"), {
+                           to: targetPost.uid,
+                           senderName: "المعلم",
+                           type: 'reply',
+                           fileId: String(currentGlobalFileId),
+                           postId: replyTargetId,
+                           timestamp: window.serverTimestamp()
+                       });
+                    }
                     replyTargetId = null; 
                 } else {
                     await window.addDoc(window.collection(window.db, "posts"), { name: name, role: role, uid: uid, audioUrl: url, fileId: String(currentGlobalFileId), likes: [], timestamp: window.serverTimestamp() });
+                    
+                    // NOTIFICATION TO TEACHERS
+                    if(role === 'student') {
+                        await window.addDoc(window.collection(window.db, "notifications"), {
+                           to: "teachers",
+                           senderName: name,
+                           type: 'new_recording',
+                           fileId: String(currentGlobalFileId),
+                           postId: null, 
+                           timestamp: window.serverTimestamp()
+                       });
+                    }
                 }
                 document.getElementById('statusDisplay').innerText = "تم الإرسال!";
                 setTimeout(() => document.getElementById('statusDisplay').innerText = "جاهز للتلاوة", 2000);
@@ -919,7 +1113,7 @@
         }
 
         window.goToMenu = function() { stopLoop(); stopRecordingAndReview(); showView('menu-view'); renderMenu(); } 
-        function showView(id) { document.getElementById('menu-view').style.display = 'none'; document.getElementById('player-view').style.display = 'none'; document.getElementById(id).style.display = (id === 'menu-view') ? 'grid' : 'block'; }
+        function showView(id) { document.getElementById('menu-view').style.display = 'none'; document.getElementById('player-view').style.display = 'none'; document.getElementById('notifications-view').style.display = 'none'; document.getElementById(id).style.display = (id === 'menu-view') ? 'grid' : 'block'; }
         
         window.likePost = async (id) => { 
             const uid = localStorage.getItem('it9an_uid'); const myName = localStorage.getItem('it9an_name');
