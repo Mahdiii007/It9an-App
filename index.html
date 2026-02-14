@@ -40,10 +40,10 @@
         .login-subtitle { color: #555; margin: 0 0 15px 0; font-size: 16px; line-height: 1.6; }
         .login-subtitle strong { color: var(--gold); }
 
-        /* NEU: WICHTIGE ANMERKUNG */
+        /* WICHTIGE ANMERKUNG (Ohne Deutsch) */
         .login-note {
             background: #fffcf2; border: 1px solid var(--gold); border-radius: 8px;
-            padding: 10px; margin-bottom: 20px; font-size: 12px; color: #555; 
+            padding: 10px; margin-bottom: 20px; font-size: 13px; color: #555; 
             text-align: center; line-height: 1.6;
         }
         .login-note span { color: var(--red); font-weight: bold; display: block; margin-top: 5px; }
@@ -53,8 +53,16 @@
             border-radius: 10px; border: 1px solid #ddd; 
             background: var(--surface); outline: none; margin-bottom: 10px; font-family: 'Amiri';
         }
-        /* LTR for Latin inputs */
+        
+        /* FIX FÜR GEBURTSJAHR & NAMEN: Zahlen/Latein linksbündig für korrekte Eingabe */
         .latin-input { direction: ltr; text-align: left; }
+        
+        /* FIX: Pfeile bei Zahlenfeldern ausblenden, damit das Jahr komplett sichtbar ist */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; margin: 0; 
+        }
+        input[type=number] { -moz-appearance: textfield; }
 
         .login-btn {
             margin-top: 10px; padding: 12px 40px; font-weight: bold; font-size: 18px; 
@@ -293,16 +301,15 @@
             </div>
 
             <div class="login-note">
-                ⚠️ <strong>تنبيه هام (Wichtiger Hinweis):</strong><br>
+                ⚠️ <strong>تنبيه هام:</strong><br>
                 لضمان حفظ تقدمك، يرجى دائماً كتابة الاسم وسنة الميلاد <b>بنفس الطريقة تماماً</b> عند كل دخول.<br>
-                <span style="direction: ltr; display: block; margin-top: 5px;">(Bitte immer gleichen Namen & Jahr verwenden!)</span>
-                <span style="color:#c0392b; font-weight:bold; display:block; margin-top:5px;">يجب استخدام الأحرف اللاتينية فقط (Nur A-Z)</span>
+                <span style="color:#c0392b; font-weight:bold; display:block; margin-top:5px;">يجب استخدام الأحرف اللاتينية فقط (A-Z)</span>
             </div>
 
-            <input type="text" id="firstName" class="login-input latin-input" placeholder="Vorname (z.B. Ali)" oninput="this.value=this.value.replace(/[^a-zA-Z\s]/g,'')">
-            <input type="text" id="lastName" class="login-input latin-input" placeholder="Nachname (z.B. Mueller)" oninput="this.value=this.value.replace(/[^a-zA-Z\s]/g,'')">
+            <input type="text" id="firstName" class="login-input latin-input" placeholder="الاسم الأول (ex. Ali)" oninput="this.value=this.value.replace(/[^a-zA-Z\s]/g,'')">
+            <input type="text" id="lastName" class="login-input latin-input" placeholder="اللقب (ex. Mueller)" oninput="this.value=this.value.replace(/[^a-zA-Z\s]/g,'')">
             
-            <input type="number" id="birthYear" class="login-input" placeholder="سنة الميلاد (z.B. 2012)" max="2030" min="1950">
+            <input type="number" id="birthYear" class="login-input latin-input" placeholder="سنة الميلاد (ex. 2012)" max="2030" min="1950">
 
             <select id="userRole" class="login-input login-select">
                 <option value="student">طالب</option>
@@ -542,14 +549,14 @@
             const year = document.getElementById('birthYear').value.trim();
             const role = document.getElementById('userRole').value;
 
-            // VALIDATION: Latin Chars Only & Year present
+            // VALIDATION
             const latinRegex = /^[a-zA-Z\s]+$/;
             if (!latinRegex.test(first) || !latinRegex.test(last)) {
-                alert("الرجاء كتابة الاسم بالأحرف اللاتينية فقط (Nur lateinische Buchstaben)");
+                alert("الرجاء كتابة الاسم بالأحرف اللاتينية فقط (Nur A-Z)");
                 return;
             }
             if (year.length !== 4 || isNaN(year)) {
-                alert("الرجاء إدخال سنة الميلاد بشكل صحيح (4 Ziffern)");
+                alert("الرجاء إدخال سنة الميلاد بشكل صحيح");
                 return;
             }
 
@@ -1014,7 +1021,6 @@
                         replies: window.arrayUnion({ name: name, role: role, uid: uid, audioUrl: url, timestamp: Date.now(), likes: [] }) 
                     });
                     
-                    // NOTIFICATION TO STUDENT
                     const targetPost = allLoadedPosts.find(p => p.id === replyTargetId);
                     if(targetPost) {
                        await window.addDoc(window.collection(window.db, "notifications"), {
@@ -1030,7 +1036,6 @@
                 } else {
                     await window.addDoc(window.collection(window.db, "posts"), { name: name, role: role, uid: uid, audioUrl: url, fileId: String(currentGlobalFileId), likes: [], timestamp: window.serverTimestamp() });
                     
-                    // NOTIFICATION TO TEACHERS
                     if(role === 'student') {
                         await window.addDoc(window.collection(window.db, "notifications"), {
                            to: "teachers",
