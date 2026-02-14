@@ -425,6 +425,7 @@
         </div>
         <button class="header-btn" onclick="goToMenu()">☰ القائمة</button>
         <div id="pageTitle"></div>
+        <button class="header-btn" onclick="logout()" title="تسجيل الخروج">🚪 خروج</button>
     </div>
 
     <div id="notifications-view">
@@ -701,6 +702,17 @@
             listenForNotifications();
             renderMenu();
         }
+        window.logout = function() {
+            if (confirm("هل تريد تسجيل الخروج؟")) {
+                clearLoginStorage();
+                document.getElementById('login-screen').style.display = 'flex';
+                document.getElementById('menu-view').style.display = 'none';
+                document.getElementById('player-view').style.display = 'none';
+                document.getElementById('notifications-view').style.display = 'none';
+                document.getElementById('admin-users-view').style.display = 'none';
+                document.getElementById('appFooter').style.display = 'none';
+            }
+        };
         (function checkStoredAuth() {
             var auth = localStorage.getItem('it9an_auth');
             var uid = localStorage.getItem('it9an_uid');
@@ -1850,4 +1862,3 @@
     </script>
 </body>
 </html>
-
