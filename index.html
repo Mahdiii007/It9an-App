@@ -1079,9 +1079,17 @@
             document.getElementById('currentImg').src = `assets/${globalId}.png`;
             audioEl.src = `assets/${globalId}.mp3`;
             
-            if(!isAuto) stopLoop();
-            verseRepeatsPlayed = 0; 
-            document.getElementById('statusDisplay').innerText = "جاهز للتلاوة";
+            if(!isAuto) {
+                stopLoop(); // Resets isPlaying to false
+            } else {
+                // AUTO TRANSITION
+                verseRepeatsPlayed = 0; // Reset counter for new verse
+                document.getElementById('statusDisplay').innerText = "bereite nächsten Vers vor...";
+                // Continue loop
+                if(isPlaying) {
+                    playCycle();
+                }
+            }
             
             window.currentViewersList = [];
             document.getElementById('viewCount').innerText = "0";
@@ -1675,7 +1683,7 @@
                 try {
                     const postRef = window.doc(window.db, "posts", postId);
                     const docSnap = await window.getDoc(postRef);
-                    if(docSnap.exists()) {
+                    if (docSnap.exists()) {
                         let post = docSnap.data();
                         const replyToDelete = post.replies.find(r => r.timestamp === replyTimestamp);
                         if (replyToDelete && replyToDelete.audioUrl) {
