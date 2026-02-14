@@ -40,7 +40,6 @@
         .login-subtitle { color: #555; margin: 0 0 15px 0; font-size: 16px; line-height: 1.6; }
         .login-subtitle strong { color: var(--gold); }
 
-        /* WICHTIGE ANMERKUNG (Ohne Deutsch) */
         .login-note {
             background: #fffcf2; border: 1px solid var(--gold); border-radius: 8px;
             padding: 10px; margin-bottom: 20px; font-size: 13px; color: #555; 
@@ -54,14 +53,11 @@
             background: var(--surface); outline: none; margin-bottom: 10px; font-family: 'Amiri';
         }
         
-        /* FIX FÜR GEBURTSJAHR & NAMEN: Zahlen/Latein linksbündig für korrekte Eingabe */
         .latin-input { direction: ltr; text-align: left; }
         
-        /* FIX: Pfeile bei Zahlenfeldern ausblenden, damit das Jahr komplett sichtbar ist */
+        /* Nummern-Pfeile ausblenden */
         input[type=number]::-webkit-inner-spin-button, 
-        input[type=number]::-webkit-outer-spin-button { 
-            -webkit-appearance: none; margin: 0; 
-        }
+        input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
         input[type=number] { -moz-appearance: textfield; }
 
         .login-btn {
@@ -141,14 +137,15 @@
         }
         .nav-btn.hidden { opacity: 0; pointer-events: none; }
 
-        /* SETTINGS */
+        /* SETTINGS (Spezifisch für Settings-Box, damit Login nicht betroffen ist) */
         .settings-box { 
             background: var(--primary-light); color: white; padding: 10px; 
             border-radius: 12px; margin-bottom: 20px; display: flex; justify-content: space-around; 
             align-items: center; box-shadow: inset 0 0 10px rgba(0,0,0,0.1);
         }
         .setting-label { font-size: 12px; color: var(--gold-light); margin-bottom: 2px; text-align:center; }
-        input[type="number"] { width: 50px; text-align: center; padding: 4px; border: none; border-radius: 5px; }
+        /* FIX: Width nur hier begrenzen */
+        .settings-box input[type="number"] { width: 50px; text-align: center; padding: 4px; border: none; border-radius: 5px; }
         input[type="checkbox"] { transform: scale(1.4); accent-color: var(--gold); }
 
         /* ADMIN PANEL */
@@ -306,10 +303,10 @@
                 <span style="color:#c0392b; font-weight:bold; display:block; margin-top:5px;">يجب استخدام الأحرف اللاتينية فقط (A-Z)</span>
             </div>
 
-            <input type="text" id="firstName" class="login-input latin-input" placeholder="الاسم الأول (ex. Ali)" oninput="this.value=this.value.replace(/[^a-zA-Z\s]/g,'')">
-            <input type="text" id="lastName" class="login-input latin-input" placeholder="اللقب (ex. Mueller)" oninput="this.value=this.value.replace(/[^a-zA-Z\s]/g,'')">
+            <input type="text" id="firstName" class="login-input latin-input" placeholder="الاسم الأول (First Name)" oninput="this.value=this.value.replace(/[^a-zA-Z\s]/g,'')">
+            <input type="text" id="lastName" class="login-input latin-input" placeholder="اللقب (Last Name)" oninput="this.value=this.value.replace(/[^a-zA-Z\s]/g,'')">
             
-            <input type="number" id="birthYear" class="login-input latin-input" placeholder="سنة الميلاد (ex. 2012)" max="2030" min="1950">
+            <input type="number" id="birthYear" class="login-input latin-input" placeholder="سنة الميلاد (Birth Year)" max="2030" min="1950">
 
             <select id="userRole" class="login-input login-select">
                 <option value="student">طالب</option>
@@ -549,10 +546,10 @@
             const year = document.getElementById('birthYear').value.trim();
             const role = document.getElementById('userRole').value;
 
-            // VALIDATION
+            // VALIDATION: Latin Chars Only & Year present
             const latinRegex = /^[a-zA-Z\s]+$/;
             if (!latinRegex.test(first) || !latinRegex.test(last)) {
-                alert("الرجاء كتابة الاسم بالأحرف اللاتينية فقط (Nur A-Z)");
+                alert("الرجاء كتابة الاسم بالأحرف اللاتينية فقط (A-Z)");
                 return;
             }
             if (year.length !== 4 || isNaN(year)) {
