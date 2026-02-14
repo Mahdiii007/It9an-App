@@ -297,11 +297,15 @@
 
         .replies-wrapper { margin-top: 20px; padding-right: 25px; border-right: 4px solid #e0e0e0; position: relative; }
         .replies-title { font-size: 13px; color: #999; margin-bottom: 8px; font-weight: bold; margin-right: -29px; background: var(--bg); display: inline-block; padding: 0 8px; }
-        .reply-box { margin-top: 12px; padding: 15px; background: #f9f9f9; border-radius: 10px; border: 1px solid #eee; position: relative; }
+        .reply-box { margin-top: 10px; padding: 10px; background: #f9f9f9; border-radius: 10px; border: 1px solid #eee; position: relative; }
         .reply-box::before { content: ''; position: absolute; top: 18px; right: -29px; width: 25px; height: 2px; background: #e0e0e0; }
         .reply-box.reply-teacher { background: #fffcf2; border: 1px solid var(--gold); }
         .reply-box.reply-admin { background: #e8f5e9; border: 1px solid var(--primary); }
-        .reply-header { font-size: 14px; font-weight: bold; color: var(--primary); margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+        .reply-top-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 4px; }
+        .reply-name-badge { font-size: 14px; font-weight: bold; color: var(--primary); display: flex; align-items: center; flex-shrink: 0; }
+        .reply-player-wrap { flex: 1; min-width: 120px; }
+        .reply-like-wrap { flex-shrink: 0; }
+        .reply-datetime { font-size: 11px; color: #888; margin-top: 2px; }
 
         .load-more-btn { display: block; width: 100%; padding: 15px; text-align: center; background: #f0f0f0; color: #555; border: none; border-radius: 10px; font-family: 'Amiri'; font-weight: bold; font-size: 16px; cursor: pointer; margin-top: 25px; }
         .load-more-btn:active { background: #e0e0e0; }
@@ -1312,23 +1316,27 @@
 
                         let rUniqueId = d.id + "-reply-" + idx;
                         let rDateStr = r.timestamp ? (function(ts){ let d=new Date(ts); return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2)+' '+('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2); })(r.timestamp) : '';
+                        let rBadge = rIsAdmin ? '<span class="role-badge badge-admin">المسؤول</span>' : (rIsTeacher ? '<span class="role-badge badge-teacher">معلم</span>' : '<span class="role-badge badge-student">طالب</span>');
 
                         repliesInner += `
                         <div class="${rBoxClass}">
-                            <div class="reply-header">${rDeleteBtn} 🎓 ${r.name}${rDateStr ? ' <span style="font-size:11px;color:#888;">'+rDateStr+'</span>' : ''}</div>
-                            <div class="custom-player">
-                                <button class="cp-btn" id="btn-${rUniqueId}" onclick="playFeedAudio('${r.audioUrl}', '${rUniqueId}')">▶</button>
-                                <input type="range" class="cp-slider" id="seek-${rUniqueId}" value="0" min="0" step="0.1" oninput="seekFeedAudio(this.value)">
-                                <span class="cp-time" id="time-${rUniqueId}">00:00</span>
-                            </div>
-
-                            <div class="msg-footer" style="margin-top:5px; border:none; padding-top:0;">
-                                <div></div>
-                                <div class="like-btn ${rLikeClass}">
-                                    <div class="like-action ${rLockedClass}" onclick="${rLikeAction}">👍</div>
-                                    <div class="like-count" onclick="showLikeNames(event, '${rNamesStr}')">${rLikesCount}</div>
+                            <div class="reply-top-row">
+                                <div class="reply-name-badge">${rDeleteBtn} 🎓 ${r.name} ${rBadge}</div>
+                                <div class="reply-player-wrap">
+                                    <div class="custom-player">
+                                        <button class="cp-btn" id="btn-${rUniqueId}" onclick="playFeedAudio('${r.audioUrl}', '${rUniqueId}')">▶</button>
+                                        <input type="range" class="cp-slider" id="seek-${rUniqueId}" value="0" min="0" step="0.1" oninput="seekFeedAudio(this.value)">
+                                        <span class="cp-time" id="time-${rUniqueId}">00:00</span>
+                                    </div>
+                                </div>
+                                <div class="reply-like-wrap">
+                                    <div class="like-btn ${rLikeClass}">
+                                        <div class="like-action ${rLockedClass}" onclick="${rLikeAction}">👍</div>
+                                        <div class="like-count" onclick="showLikeNames(event, '${rNamesStr}')">${rLikesCount}</div>
+                                    </div>
                                 </div>
                             </div>
+                            ${rDateStr ? '<div class="reply-datetime">'+rDateStr+'</div>' : ''}
                         </div>`;
                     });
                     
@@ -1794,4 +1802,3 @@
     </script>
 </body>
 </html>
-
