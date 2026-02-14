@@ -265,55 +265,48 @@
         
         .feed-container { min-height: 100px; }
         
-        /* --- COMPACT CARD: same layout for post + reply, different colors --- */
-        .feed-msg, .reply-box { padding: 6px 8px; border-radius: 8px; margin-bottom: 8px; position: relative; }
-        .feed-msg.highlighted { border: 2px solid var(--gold); animation: flash 1s; }
-        @keyframes flash { 0% { background: var(--gold-light); } 100% { background: inherit; } }
-        .student-msg { background: #f5f5f5; border: 1px solid #e0e0e0; }
-        .teacher-msg { background: #fff8e7; border: 1px solid var(--gold); }
-        .admin-msg { background: #e8f0e9; border: 1px solid var(--primary); }
-        .reply-box { margin-top: 6px; border: 1px solid #e0e0e0; }
-        .reply-box.reply-teacher { background: #fff8e7; border-color: var(--gold); }
-        .reply-box.reply-admin { background: #e8f0e9; border-color: var(--primary); }
-        .reply-box:not(.reply-teacher):not(.reply-admin) { background: #f0f0f0; }
+        .feed-msg { padding: 18px; border-radius: 15px; margin-bottom: 30px; position: relative; transition: transform 0.2s; }
+        .feed-msg.highlighted { border: 2px solid var(--gold); background: #fffffa; animation: flash 1s; }
+        @keyframes flash { 0% { background: var(--gold-light); } 100% { background: #fffffa; } }
 
-        .card-row1 { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; flex-wrap: wrap; }
-        .card-del { flex-shrink: 0; }
-        .card-name { font-weight: bold; color: var(--primary); font-size: 14px; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .card-like-wrap { flex-shrink: 0; }
-        .card-row2 { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
-        .card-datetime { font-size: 11px; color: #666; flex-shrink: 0; white-space: nowrap; }
-        .card-player { flex: 1; min-width: 0; }
-        .card-row3 { margin-top: 2px; }
-        .role-badge { padding: 2px 6px; border-radius: 4px; font-size: 11px; margin-right: 4px; color: white; }
+        .student-msg { background: var(--surface); border-right: 5px solid #ddd; box-shadow: 0 3px 8px rgba(0,0,0,0.05); }
+        .teacher-msg { background: #fffcf2; border: 1px solid var(--gold); border-right: 6px solid var(--gold); box-shadow: 0 5px 12px rgba(212, 175, 55, 0.15); transform: scale(1.01); }
+        .admin-msg { background: #e8f5e9; border: 2px solid var(--primary); border-right: 7px solid var(--primary); box-shadow: 0 6px 15px rgba(15, 76, 58, 0.2); transform: scale(1.03); z-index: 5; }
+
+        .role-badge { padding: 4px 10px; border-radius: 8px; font-size: 12px; margin-left: 10px; color: white; display: inline-block; vertical-align: middle; }
         .badge-student { background: #95a5a6; }
         .badge-teacher { background: var(--gold); }
-        .badge-admin { background: var(--primary); }
-        .like-btn { display: flex; align-items: center; border-radius: 12px; font-size: 13px; background: rgba(0,0,0,0.05); border: 1px solid #ddd; overflow: hidden; }
-        .like-btn.liked { color: var(--primary); background: #e8f5e9; border-color: var(--primary); }
+        .badge-admin { background: var(--primary); font-weight: bold; }
+        
+        .msg-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(0,0,0,0.05); }
+        /* Feed card: name, play bar and like on one line to reduce height */
+        .feed-msg .feed-top-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 4px; }
+        .feed-msg .feed-name-badge { font-weight: bold; color: var(--primary); font-size: 15px; display: flex; align-items: center; flex-shrink: 0; }
+        .feed-msg .feed-player-wrap { flex: 1; min-width: 120px; }
+        .feed-msg .feed-like-wrap { flex-shrink: 0; }
+        .like-btn { display: flex; align-items: center; border-radius: 25px; font-size: 16px; background: #f9f9f9; border: 1px solid #eee; overflow: hidden; }
+        .like-btn.liked { color: var(--primary); background: #e8f5e9; border-color: var(--primary); font-weight: bold; }
         .like-btn.disabled { opacity: 0.5; filter: grayscale(1); }
-        .like-action { padding: 4px 8px; cursor: pointer; }
-        .like-action.locked { cursor: not-allowed; opacity: 0.3; }
-        .like-count { padding: 4px 8px; font-size: 12px; cursor: pointer; }
-        .reply-btn { cursor: pointer; border: 1px solid var(--primary); color: var(--primary); padding: 4px 10px; border-radius: 6px; font-size: 13px; font-weight: bold; }
-        .delete-btn { background: rgba(255,0,0,0.12); color: var(--red); border: none; border-radius: 6px; width: 28px; height: 28px; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-        .reply-delete-btn { background: none; border: none; font-size: 12px; cursor: pointer; padding: 0 4px; color: var(--red); flex-shrink: 0; }
+        .like-action { padding: 8px 15px; cursor: pointer; }
+        .like-action.locked { cursor: not-allowed; opacity: 0.3; filter: grayscale(1); }
+        .like-count { padding: 8px 15px; border-right: 1px solid #ddd; cursor: pointer; background: rgba(0,0,0,0.03); }
+        .like-count:active { background: rgba(0,0,0,0.1); }
+        .reply-btn { cursor: pointer; background: none; border: 1px solid var(--primary); color: var(--primary); padding: 6px 15px; border-radius: 8px; font-size: 14px; font-weight: bold; }
+        .delete-btn { position: absolute; top: 12px; left: 12px; background: rgba(255,0,0,0.1); color: var(--red); border: none; border-radius: 50%; width: 35px; height: 35px; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .reply-delete-btn { background: none; border: none; font-size: 14px; cursor: pointer; margin-right: 5px; opacity: 0.7; color: var(--red); }
 
-        .replies-wrapper { margin-top: 8px; padding-right: 12px; border-right: 3px solid #ddd; }
-        .replies-title { font-size: 12px; color: #888; margin-bottom: 4px; }
-        .custom-player { padding: 4px 0; gap: 6px; }
-        .custom-player .cp-btn { width: 32px; height: 32px; font-size: 14px; }
-        .custom-player .cp-slider { height: 5px; }
-        .custom-player .cp-time { font-size: 11px; min-width: 36px; }
-        @media (max-width: 380px) {
-            .feed-msg, .reply-box { padding: 5px 6px; margin-bottom: 6px; }
-            .card-row1, .card-row2 { gap: 4px; margin-bottom: 3px; }
-            .card-name { font-size: 13px; }
-            .card-datetime { font-size: 10px; }
-            .custom-player .cp-btn { width: 28px; height: 28px; font-size: 12px; }
-            .like-action { padding: 3px 6px; }
-            .like-count { padding: 3px 6px; font-size: 11px; }
-        }
+        .replies-wrapper { margin-top: 20px; padding-right: 25px; border-right: 4px solid #e0e0e0; position: relative; }
+        .replies-title { font-size: 13px; color: #999; margin-bottom: 8px; font-weight: bold; margin-right: -29px; background: var(--bg); display: inline-block; padding: 0 8px; }
+        .reply-box { margin-top: 10px; padding: 10px; background: #f9f9f9; border-radius: 10px; border: 1px solid #eee; position: relative; }
+        .reply-box::before { content: ''; position: absolute; top: 18px; right: -29px; width: 25px; height: 2px; background: #e0e0e0; }
+        .reply-box.reply-teacher { background: #fffcf2; border: 1px solid var(--gold); }
+        .reply-box.reply-admin { background: #e8f5e9; border: 1px solid var(--primary); }
+        .reply-top-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 4px; }
+        .reply-name-badge { font-size: 14px; font-weight: bold; color: var(--primary); display: flex; align-items: center; flex-shrink: 0; }
+        .reply-player-wrap { flex: 1; min-width: 120px; }
+        .reply-like-wrap { flex-shrink: 0; }
+        .reply-datetime { font-size: 11px; color: #888; margin-top: 2px; }
+
         .load-more-btn { display: block; width: 100%; padding: 15px; text-align: center; background: #f0f0f0; color: #555; border: none; border-radius: 10px; font-family: 'Amiri'; font-weight: bold; font-size: 16px; cursor: pointer; margin-top: 25px; }
         .load-more-btn:active { background: #e0e0e0; }
 
@@ -361,7 +354,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, query, where, orderBy, onSnapshot, serverTimestamp, doc, setDoc, updateDoc, increment, arrayUnion, arrayRemove, deleteDoc, getDoc, getDocs, enableIndexedDbPersistence, limit, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, query, where, orderBy, onSnapshot, serverTimestamp, doc, setDoc, updateDoc, increment, arrayUnion, arrayRemove, deleteDoc, getDoc, getDocs, enableIndexedDbPersistence, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
         const firebaseConfig = {
@@ -376,14 +369,14 @@
         const app = initializeApp(firebaseConfig);
         window.db = getFirestore(app); window.storage = getStorage(app);
         
-        enableIndexedDbPersistence(window.db).catch((err) => { if (err.code !== "failed-precondition" && err.code !== "unimplemented") console.warn("Persistence:", err.code); });
+        enableIndexedDbPersistence(window.db).catch((err) => { console.log("Persistence error:", err.code); });
 
         window.collection = collection; window.addDoc = addDoc; window.query = query; 
         window.where = where; window.orderBy = orderBy; window.onSnapshot = onSnapshot; 
         window.serverTimestamp = serverTimestamp; window.ref = ref; 
         window.uploadBytes = uploadBytes; window.getDownloadURL = getDownloadURL;
         window.doc = doc; window.setDoc = setDoc; window.updateDoc = updateDoc; window.increment = increment; window.arrayUnion = arrayUnion; window.arrayRemove = arrayRemove; window.deleteDoc = deleteDoc; window.getDoc = getDoc; window.getDocs = getDocs; 
-        window.deleteObject = deleteObject; window.limit = limit; window.writeBatch = writeBatch;
+        window.deleteObject = deleteObject; window.limit = limit;
     </script>
 </head>
 <body>
@@ -425,7 +418,6 @@
         </div>
         <button class="header-btn" onclick="goToMenu()">☰ القائمة</button>
         <div id="pageTitle"></div>
-        <button class="header-btn" onclick="logout()" title="تسجيل الخروج">🚪 خروج</button>
     </div>
 
     <div id="notifications-view">
@@ -638,9 +630,9 @@
             }
         }
         async function deleteNotifWhenPlayingFeed(postOrReplyId) {
-            var myUid = localStorage.getItem('it9an_uid');
-            var myRole = localStorage.getItem('it9an_role');
-            if (!myUid || myUid === 'admin_super' || !allLoadedPosts || allLoadedPosts.length === 0) return;
+            const myUid = localStorage.getItem('it9an_uid');
+            const myRole = localStorage.getItem('it9an_role');
+            if (!myUid || myUid === 'admin_super') return;
             try {
                 if (postOrReplyId.indexOf('-reply-') >= 0) {
                     const postId = postOrReplyId.split('-reply-')[0];
@@ -692,41 +684,7 @@
             }
         });
 
-        // --- PERSIST LOGIN: no logout on refresh; all users (incl. teacher/admin) auto-logout after 24h to avoid cache ---
-        function clearLoginStorage() {
-            localStorage.removeItem('it9an_uid'); localStorage.removeItem('it9an_auth'); localStorage.removeItem('it9an_name'); localStorage.removeItem('it9an_role'); localStorage.removeItem('it9an_hidden'); localStorage.removeItem('it9an_lastLogin');
-        }
-        function applyStoredLogin() {
-            document.getElementById('login-screen').style.display = 'none';
-            updateUIForRole();
-            listenForNotifications();
-            renderMenu();
-        }
-        window.logout = function() {
-            if (confirm("هل تريد تسجيل الخروج؟")) {
-                if (unsubscribeFeed) { try { unsubscribeFeed(); } catch(e){} unsubscribeFeed = null; }
-                if (unsubscribeViews) { try { unsubscribeViews(); } catch(e){} unsubscribeViews = null; }
-                clearLoginStorage();
-                localStorage.removeItem('it9an_lastCleanup');
-                document.getElementById('login-screen').style.display = 'flex';
-                document.getElementById('menu-view').style.display = 'none';
-                document.getElementById('player-view').style.display = 'none';
-                document.getElementById('notifications-view').style.display = 'none';
-                document.getElementById('admin-users-view').style.display = 'none';
-                document.getElementById('appFooter').style.display = 'none';
-            }
-        };
-        (function checkStoredAuth() {
-            var auth = localStorage.getItem('it9an_auth');
-            var uid = localStorage.getItem('it9an_uid');
-            if (auth !== 'true' || !uid) return;
-            var lastLogin = parseInt(localStorage.getItem('it9an_lastLogin') || '0', 10);
-            if (lastLogin && (Date.now() - lastLogin > 24 * 60 * 60 * 1000)) {
-                clearLoginStorage();
-                return;
-            }
-            applyStoredLogin();
-        })();
+        if(localStorage.getItem('it9an_auth') === 'true') { localStorage.removeItem('it9an_auth'); }
 
         // --- NEW ID GENERATOR WITH YEAR ---
         function generateUserId(fullName, role, year) {
@@ -759,8 +717,7 @@
                 localStorage.setItem('it9an_auth', 'true');
                 localStorage.setItem('it9an_name', 'المسؤول');
                 localStorage.setItem('it9an_role', 'teacher');
-                localStorage.setItem('it9an_hidden', 'true');
-                localStorage.setItem('it9an_lastLogin', String(Date.now()));
+                localStorage.setItem('it9an_hidden', 'true'); 
                 document.getElementById('login-screen').style.display = 'none';
                 updateUIForRole(); 
                 listenForNotifications();
@@ -843,7 +800,6 @@
                 localStorage.setItem('it9an_auth', 'true');
                 localStorage.setItem('it9an_name', finalDisplayName);
                 localStorage.setItem('it9an_role', role);
-                localStorage.setItem('it9an_lastLogin', String(Date.now()));
                 localStorage.removeItem('it9an_hidden'); 
                 document.getElementById('login-screen').style.display = 'none';
                 updateUIForRole(); 
@@ -888,27 +844,40 @@
         }
 
         function loadUsers() {
-            if (adminUsersUnsubscribe) { try { adminUsersUnsubscribe(); } catch(e){} adminUsersUnsubscribe = null; }
-            var q = window.query(window.collection(window.db, "users"));
-            adminUsersUnsubscribe = window.onSnapshot(q, function(snap) {
-                var tList = document.getElementById('teachersList');
-                var sList = document.getElementById('studentsList');
-                if (!tList || !sList) return;
-                try {
-                    tList.innerHTML = "";
-                    sList.innerHTML = "";
-                    var users = [];
-                    snap.forEach(function(doc) { users.push(doc.data()); });
-                    users.sort(function(a, b) { return (b.postsCount || 0) - (a.postsCount || 0); });
-                    users.forEach(function(u) {
-                        var isBlocked = u.blocked === true;
-                        var blockBtnText = isBlocked ? "فك الحظر" : "حظر";
-                        var blockBtnClass = isBlocked ? "btn-action btn-block blocked" : "btn-action btn-block";
-                        var html = "<div class=\"user-card\"><div class=\"user-info\"><span class=\"record-count-badge\">🎤 " + (u.postsCount || 0) + "</span>" + (u.name || "") + "</div><div class=\"user-actions\"><button class=\"" + blockBtnClass + "\" onclick=\"toggleBlockUser('" + (u.uid || "") + "', " + isBlocked + ")\">" + blockBtnText + "</button><button class=\"btn-action btn-del\" onclick=\"deleteUser('" + (u.uid || "") + "')\">حذف</button></div></div>";
-                        if (u.role === 'teacher') tList.innerHTML += html; else sList.innerHTML += html;
-                    });
-                } catch (err) { console.warn("Admin users", err); }
-            }, function(err) { console.warn("Admin users listener", err); });
+            if(adminUsersUnsubscribe) adminUsersUnsubscribe();
+            const q = window.query(window.collection(window.db, "users"));
+            adminUsersUnsubscribe = window.onSnapshot(q, (snap) => {
+                const tList = document.getElementById('teachersList');
+                const sList = document.getElementById('studentsList');
+                tList.innerHTML = "";
+                sList.innerHTML = "";
+
+                let users = [];
+                snap.forEach(doc => users.push(doc.data()));
+                
+                users.sort((a,b) => (b.postsCount || 0) - (a.postsCount || 0));
+
+                users.forEach(u => {
+                    const isBlocked = u.blocked === true;
+                    const blockBtnText = isBlocked ? "فك الحظر" : "حظر";
+                    const blockBtnClass = isBlocked ? "btn-action btn-block blocked" : "btn-action btn-block";
+                    
+                    const html = `
+                    <div class="user-card">
+                        <div class="user-info">
+                            <span class="record-count-badge">🎤 ${u.postsCount || 0}</span>
+                            ${u.name}
+                        </div>
+                        <div class="user-actions">
+                            <button class="${blockBtnClass}" onclick="toggleBlockUser('${u.uid}', ${isBlocked})">${blockBtnText}</button>
+                            <button class="btn-action btn-del" onclick="deleteUser('${u.uid}')">حذف</button>
+                        </div>
+                    </div>`;
+
+                    if(u.role === 'teacher') tList.innerHTML += html;
+                    else sList.innerHTML += html;
+                });
+            });
         }
 
         window.toggleBlockUser = async function(uid, currentStatus) {
@@ -946,37 +915,33 @@
 
         // --- LEADERBOARD (TOP 3) ---
         function loadLeaderboard() {
-            var list = document.getElementById('leaderboard-list');
-            if (!list) return;
-            var setContent = function(html) {
-                try {
-                    if (list && list.parentNode) list.innerHTML = html;
-                } catch (e) {}
-            };
-            var timeoutMs = 10000;
-            var timeoutPromise = new Promise(function(_, reject) {
-                setTimeout(function() { reject(new Error('timeout')); }, timeoutMs);
-            });
-            var q = window.query(window.collection(window.db, "users"), window.where("role", "==", "student"));
-            var fetchPromise = window.getDocs(q);
-            Promise.race([fetchPromise, timeoutPromise]).then(function(snap) {
-                if (!snap || !snap.forEach) { setContent("<li style='text-align:center; color:#999; padding:10px;'>لا يوجد طلاب بعد</li>"); return; }
-                try {
-                    var users = [];
-                    snap.forEach(function(doc) { users.push(doc.data()); });
-                    users.sort(function(a, b) { return (b.postsCount || 0) - (a.postsCount || 0); });
-                    var top3 = users.slice(0, 3);
-                    if (top3.length === 0) { setContent("<li style='text-align:center; color:#999; padding:10px;'>لا يوجد طلاب بعد</li>"); return; }
-                    var html = "";
-                    for (var i = 0; i < top3.length; i++) {
-                        var u = top3[i];
-                        html += "<li class=\"lb-item\"><div style=\"display:flex; align-items:center; gap:10px;\"><span class=\"lb-rank\">#" + (i+1) + "</span><span class=\"lb-name\">" + (u.name || "") + "</span></div><div class=\"lb-stats\"><span class=\"lb-score\" title=\"مشاهدات كل الآيات مع التكرار\">👁️ " + (u.totalVerseViews || 0) + "</span><span class=\"lb-score\">🎤 " + (u.postsCount || 0) + "</span><span class=\"lb-likes\">👍 " + (u.totalLikes || 0) + "</span></div></li>";
-                    }
-                    setContent(html);
-                } catch (e) { console.warn("Leaderboard", e); setContent("<li style='text-align:center; color:#999; padding:10px;'>خطأ في التحميل</li>"); }
-            }).catch(function(e) {
-                console.warn("Leaderboard", e);
-                setContent("<li style='text-align:center; color:#999; padding:10px;'>تحميل المتصدرين... (لا يوجد اتصال؟)</li>");
+            const q = window.query(window.collection(window.db, "users"), window.where("role", "==", "student"));
+            
+            window.getDocs(q).then(snap => {
+                let users = [];
+                snap.forEach(doc => users.push(doc.data()));
+                
+                users.sort((a,b) => (b.postsCount || 0) - (a.postsCount || 0));
+                let top3 = users.slice(0, 3);
+                
+                const list = document.getElementById('leaderboard-list');
+                list.innerHTML = "";
+                if(top3.length === 0) { list.innerHTML = "<li style='text-align:center; color:#999; padding:10px;'>لا يوجد طلاب بعد</li>"; return; }
+
+                top3.forEach((u, i) => {
+                    list.innerHTML += `
+                    <li class="lb-item">
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <span class="lb-rank">#${i+1}</span>
+                            <span class="lb-name">${u.name}</span>
+                        </div>
+                        <div class="lb-stats">
+                            <span class="lb-score" title="مشاهدات كل الآيات مع التكرار">👁️ ${u.totalVerseViews || 0}</span>
+                            <span class="lb-score">🎤 ${u.postsCount || 0}</span>
+                            <span class="lb-likes">👍 ${u.totalLikes || 0}</span>
+                        </div>
+                    </li>`;
+                });
             });
         }
 
@@ -994,33 +959,48 @@
                 q = window.query(window.collection(window.db, "notifications"), window.where("to", "==", uid));
             }
 
-            if (notifUnsubscribe) { try { notifUnsubscribe(); } catch(e){} notifUnsubscribe = null; }
-            notifUnsubscribe = window.onSnapshot(q, function(snap) {
-                var list = document.getElementById('notifList');
-                var badge = document.getElementById('notifBadge');
-                if (!list || !badge) return;
-                try {
-                    list.innerHTML = "";
-                    var unreadCount = 0;
-                    var notifs = [];
-                    snap.forEach(function(doc) { notifs.push({ id: doc.id, ...doc.data() }); });
-                    notifs.sort(function(a, b) { return (b.timestamp && b.timestamp.seconds ? b.timestamp.seconds : 0) - (a.timestamp && a.timestamp.seconds ? a.timestamp.seconds : 0); });
-                    if (notifs.length === 0) {
-                        list.innerHTML = "<div style='text-align:center; padding:20px; color:#999; font-size:16px;'>لا توجد إشعارات</div>";
-                        badge.style.display = "none";
-                        return;
-                    }
-                    notifs.forEach(function(n) {
-                        unreadCount++;
-                        var text = "";
-                        if (n.type === "new_recording") text = "🎤 تسجيل جديد من " + (n.senderName || "");
-                        if (n.type === "reply") text = "✍️ رد جديد من " + (n.senderName || "");
-                        var notifDateStr = formatDateTime(n.timestamp);
-                        list.innerHTML += "<div class=\"notif-card\" onclick=\"openFromNotif('" + n.id + "', '" + (n.fileId || "") + "', '" + (n.postId || "") + "')\"><div><div class=\"notif-text\">" + text + "</div><div class=\"notif-time\">" + (notifDateStr || "اضغط للذهاب للمقطع") + "</div></div><div style=\"font-size:24px;\">👈</div></div>";
-                    });
-                    if (unreadCount > 0) { badge.innerText = unreadCount; badge.style.display = "flex"; } else { badge.style.display = "none"; }
-                } catch (err) { console.warn("Notif snapshot", err); }
-            }, function(err) { console.warn("Notif listener", err); });
+            if(notifUnsubscribe) notifUnsubscribe();
+            notifUnsubscribe = window.onSnapshot(q, (snap) => {
+                const list = document.getElementById('notifList');
+                const badge = document.getElementById('notifBadge');
+                list.innerHTML = "";
+                
+                let unreadCount = 0;
+                let notifs = [];
+                snap.forEach(doc => notifs.push({id: doc.id, ...doc.data()}));
+                
+                notifs.sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+
+                if (notifs.length === 0) {
+                    list.innerHTML = "<div style='text-align:center; padding:20px; color:#999; font-size:16px;'>لا توجد إشعارات</div>";
+                    badge.style.display = 'none';
+                    return;
+                }
+
+                notifs.forEach(n => {
+                    unreadCount++;
+                    let text = "";
+                    if(n.type === 'new_recording') text = `🎤 تسجيل جديد من ${n.senderName}`;
+                    if(n.type === 'reply') text = `✍️ رد جديد من ${n.senderName}`;
+                    let notifDateStr = formatDateTime(n.timestamp);
+
+                    list.innerHTML += `
+                    <div class="notif-card" onclick="openFromNotif('${n.id}', '${n.fileId}', '${n.postId}')">
+                        <div>
+                            <div class="notif-text">${text}</div>
+                            <div class="notif-time">${notifDateStr || 'اضغط للذهاب للمقطع'}</div>
+                        </div>
+                        <div style="font-size:24px;">👈</div>
+                    </div>`;
+                });
+
+                if(unreadCount > 0) {
+                    badge.innerText = unreadCount;
+                    badge.style.display = 'flex';
+                } else {
+                    badge.style.display = 'none';
+                }
+            });
         }
 
         window.showNotifications = function() {
@@ -1063,82 +1043,56 @@
             renderPosts(div, userRole, myUid);
         }
 
-        const CLEANUP_THROTTLE_MS = 60 * 60 * 1000;
-        const CLEANUP_BATCH_SIZE = 25;
         async function cleanup30DayOldPosts() {
-            var last = parseInt(localStorage.getItem("it9an_lastCleanup") || "0", 10);
-            if (Date.now() - last < CLEANUP_THROTTLE_MS) return;
             try {
-                localStorage.setItem("it9an_lastCleanup", String(Date.now()));
                 const cutoff = (Date.now() / 1000) - (30 * 24 * 60 * 60);
                 const q = window.query(window.collection(window.db, "posts"));
                 const snap = await window.getDocs(q);
-                var toDelete = [];
-                for (var di = 0; di < snap.docs.length; di++) {
-                    var docSnap = snap.docs[di];
-                    var data = docSnap.data();
-                    var ts = data.timestamp && data.timestamp.seconds;
-                    if (ts && ts < cutoff) toDelete.push({ id: docSnap.id, data: data });
-                    if (toDelete.length >= CLEANUP_BATCH_SIZE) break;
+                for (const docSnap of snap.docs) {
+                    const data = docSnap.data();
+                    const ts = data.timestamp && data.timestamp.seconds;
+                    if (!ts || ts >= cutoff) continue;
+                    if (data.audioUrl) await cleanupAudioFile(data.audioUrl);
+                    if (data.replies) { for (let r of data.replies) { if (r.audioUrl) await cleanupAudioFile(r.audioUrl); } }
+                    var notifQ = window.query(window.collection(window.db, "notifications"), window.where("postId", "==", docSnap.id));
+                    var notifSnap = await window.getDocs(notifQ);
+                    for (const nd of notifSnap.docs) { await window.deleteDoc(window.doc(window.db, "notifications", nd.id)); }
+                    await window.deleteDoc(window.doc(window.db, "posts", docSnap.id));
+                    if (data.uid) {
+                        try { await window.updateDoc(window.doc(window.db, "users", data.uid), { postsCount: window.increment(-1) }); } catch(e){}
+                        var likesCount = (data.likes && data.likes.length) ? data.likes.length : 0;
+                        if (data.replies) data.replies.forEach(r => { likesCount += (r.likes && r.likes.length) ? r.likes.length : 0; });
+                        if (likesCount > 0) try { await window.updateDoc(window.doc(window.db, "users", data.uid), { totalLikes: window.increment(-likesCount) }); } catch(e){}
+                    }
                 }
-                if (toDelete.length === 0) return;
-                for (var i = 0; i < Math.min(toDelete.length, CLEANUP_BATCH_SIZE); i++) {
-                    var item = toDelete[i];
-                    var data = item.data;
-                    try {
-                        if (data.audioUrl) await cleanupAudioFile(data.audioUrl);
-                        if (data.replies) { for (var r of data.replies) { if (r.audioUrl) await cleanupAudioFile(r.audioUrl); } }
-                        var notifQ = window.query(window.collection(window.db, "notifications"), window.where("postId", "==", item.id));
-                        var notifSnap = await window.getDocs(notifQ);
-                        for (var j = 0; j < notifSnap.docs.length; j++) { await window.deleteDoc(window.doc(window.db, "notifications", notifSnap.docs[j].id)); }
-                        await window.deleteDoc(window.doc(window.db, "posts", item.id));
-                        if (data.uid) {
-                            await window.updateDoc(window.doc(window.db, "users", data.uid), { postsCount: window.increment(-1) });
-                            var likesCount = (data.likes && data.likes.length) ? data.likes.length : 0;
-                            if (data.replies) data.replies.forEach(function(r) { likesCount += (r.likes && r.likes.length) ? r.likes.length : 0; });
-                            if (likesCount > 0) await window.updateDoc(window.doc(window.db, "users", data.uid), { totalLikes: window.increment(-likesCount) });
-                        }
-                    } catch (err) { console.warn("cleanup30 item", err); }
-                }
-            } catch (e) { console.warn("cleanup30Day", e); localStorage.setItem("it9an_lastCleanup", "0"); }
+            } catch(e) { console.log("cleanup30Day", e); }
         }
 
         function renderMenu() {
-            var grid = document.getElementById('lesson-grid');
-            if (!grid) return;
-            grid.innerHTML = "";
-            showView('menu-view');
-            var pageTitle = document.getElementById('pageTitle');
-            if (pageTitle) pageTitle.innerHTML = "<span style='border:none; padding:0; font-size:22px;'>القائمة الرئيسية</span>";
-            var footer = document.getElementById('appFooter');
-            if (footer) footer.style.display = 'none';
-
-            activePostFilter = null;
-
-            for (var i = 0; i < KURS_DATEN.length; i++) {
-                var lek = KURS_DATEN[i];
-                var div = document.createElement('div');
-                div.className = 'menu-item';
-                div.innerHTML = "<div class=\"menu-item-title\">الدرس " + (i + 1) + "</div><img src=\"assets/T" + lek.id + ".png\" loading=\"lazy\" onerror=\"this.style.display='none'\">";
-                div.onclick = (function(idx) { return function() { startLesson(idx); }; })(i);
-                grid.appendChild(div);
-            }
-
-            var uid = localStorage.getItem('it9an_uid');
-            if (uid === 'admin_super') {
-                var adminPanel = document.getElementById('adminMenuPanel');
-                if (adminPanel) adminPanel.style.display = 'block';
-                var lbSection = document.getElementById('leaderboard-section');
-                if (lbSection) lbSection.style.display = 'block';
+            cleanup30DayOldPosts();
+            const grid = document.getElementById('lesson-grid'); 
+            grid.innerHTML = ""; showView('menu-view');
+            document.getElementById('pageTitle').innerHTML = "<span style='border:none; padding:0; font-size:22px;'>القائمة الرئيسية</span>"; 
+            document.getElementById('appFooter').style.display = 'none';
+            
+            const uid = localStorage.getItem('it9an_uid');
+            if(uid === 'admin_super') {
+                document.getElementById('adminMenuPanel').style.display = 'block';
+                document.getElementById('leaderboard-section').style.display = 'block';
+                loadLeaderboard();
             } else {
-                var adminPanel2 = document.getElementById('adminMenuPanel');
-                if (adminPanel2) adminPanel2.style.display = 'none';
-                var lbSection2 = document.getElementById('leaderboard-section');
-                if (lbSection2) lbSection2.style.display = 'block';
+                document.getElementById('adminMenuPanel').style.display = 'none';
+                document.getElementById('leaderboard-section').style.display = 'block';
+                loadLeaderboard(); 
             }
 
-            setTimeout(function() { loadLeaderboard(); }, 0);
-            setTimeout(function() { cleanup30DayOldPosts(); }, 500);
+            activePostFilter = null; 
+
+            KURS_DATEN.forEach((lek, index) => {
+                let div = document.createElement('div'); div.className = 'menu-item';
+                div.innerHTML = `<div class="menu-item-title">الدرس ${index + 1}</div><img src="assets/T${lek.id}.png" loading="lazy" onerror="this.style.display='none'">`;
+                div.onclick = () => startLesson(index); grid.appendChild(div);
+            });
         }
 
         function startLesson(index) {
@@ -1217,27 +1171,20 @@
             const myUid = localStorage.getItem('it9an_uid');
             const statRef = window.doc(window.db, "stats", "file_" + globalId);
             
-            if (myName && !isHidden) { try { await window.setDoc(statRef, { viewers: window.arrayUnion(myName) }, { merge: true }); } catch(e){} }
-            if (myUid && myUid !== 'admin_super') { window.updateDoc(window.doc(window.db, "users", myUid), { totalVerseViews: window.increment(1) }).catch(function(){}); }
+            if(myName && !isHidden) { try { await window.setDoc(statRef, { viewers: window.arrayUnion(myName) }, { merge: true }); } catch(e){} }
+            if(myUid && myUid !== 'admin_super') { try { const uRef = window.doc(window.db, "users", myUid); await window.updateDoc(uRef, { totalVerseViews: window.increment(1) }); } catch(e){} }
             
-            if (unsubscribeViews) { try { unsubscribeViews(); } catch(e){} unsubscribeViews = null; }
-            var viewsFileId = globalId;
-            unsubscribeViews = window.onSnapshot(statRef, function(snap) {
-                if (currentGlobalFileId !== viewsFileId) return;
-                var viewEl = document.getElementById('viewCount');
-                if (!viewEl) return;
-                try {
-                    if (snap.exists() && snap.data().viewers) {
-                        window.currentViewersList = snap.data().viewers;
-                        viewEl.innerText = window.currentViewersList.length;
-                    } else {
-                        window.currentViewersList = [];
-                        viewEl.innerText = "0";
-                    }
-                } catch (e) { console.warn("Views snapshot", e); }
-            }, function(err) { console.warn("Views listener", err); });
-            feedLimit = 3;
-            loadFeed(globalId);
+            if(unsubscribeViews) unsubscribeViews();
+            unsubscribeViews = window.onSnapshot(statRef, (snap) => { 
+                if(snap.exists() && snap.data().viewers) {
+                    window.currentViewersList = snap.data().viewers; 
+                    document.getElementById('viewCount').innerText = window.currentViewersList.length; 
+                } else {
+                    window.currentViewersList = []; 
+                    document.getElementById('viewCount').innerText = 0;
+                }
+            });
+            feedLimit = 3; loadFeed(globalId);
         }
 
         window.showViewers = function() {
@@ -1248,43 +1195,38 @@
             }
         }
 
-        var currentFeedFileId = null;
         function loadFeed(fileId) {
-            var div = document.getElementById('community-feed');
-            if (!div) return;
+            const div = document.getElementById('community-feed');
             div.innerHTML = "<div style='text-align:center; color:#ccc; padding:10px;'>...</div>";
-            if (unsubscribeFeed) { try { unsubscribeFeed(); } catch(e){} unsubscribeFeed = null; }
-            currentFeedFileId = fileId;
+            if(unsubscribeFeed) unsubscribeFeed();
+            
+            const idString = String(fileId);
+            const userRole = localStorage.getItem('it9an_role');
+            const myUid = localStorage.getItem('it9an_uid');
+            const q = window.query(window.collection(window.db, "posts"), window.where("fileId", "==", idString));
+            
+            unsubscribeFeed = window.onSnapshot(q, (snap) => {
+                const scrollY = window.scrollY;
+                if(snap.empty) { div.innerHTML = "<div style='text-align:center; color:#999; font-size:16px; padding:20px;'>لا توجد مشاركات حتى الآن</div>"; return; }
+                allLoadedPosts = [];
+                snap.forEach(doc => { allLoadedPosts.push({ id: doc.id, ...doc.data() }); });
+                
+                if (activePostFilter) {
+                    allLoadedPosts = allLoadedPosts.filter(p => p.id === activePostFilter);
+                } else {
+                    allLoadedPosts.sort((a, b) => {
+                        if (userRole === 'student') {
+                            if (a.uid === myUid && b.uid !== myUid) return -1;
+                            if (a.uid !== myUid && b.uid === myUid) return 1;
+                        }
+                        return (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0);
+                    });
+                }
 
-            var idString = String(fileId);
-            var userRole = localStorage.getItem('it9an_role');
-            var myUid = localStorage.getItem('it9an_uid');
-            var q = window.query(window.collection(window.db, "posts"), window.where("fileId", "==", idString));
-
-            unsubscribeFeed = window.onSnapshot(q, function(snap) {
-                if (currentFeedFileId !== fileId) return;
-                var el = document.getElementById('community-feed');
-                if (!el || el !== div) return;
-                try {
-                    var scrollY = window.scrollY;
-                    if (snap.empty) { el.innerHTML = "<div style='text-align:center; color:#999; font-size:16px; padding:20px;'>لا توجد مشاركات حتى الآن</div>"; return; }
-                    allLoadedPosts = [];
-                    snap.forEach(function(doc) { allLoadedPosts.push({ id: doc.id, ...doc.data() }); });
-                    if (activePostFilter) {
-                        allLoadedPosts = allLoadedPosts.filter(function(p) { return p.id === activePostFilter; });
-                    } else {
-                        allLoadedPosts.sort(function(a, b) {
-                            if (userRole === 'student') {
-                                if (a.uid === myUid && b.uid !== myUid) return -1;
-                                if (a.uid !== myUid && b.uid === myUid) return 1;
-                            }
-                            return (b.timestamp && b.timestamp.seconds ? b.timestamp.seconds : 0) - (a.timestamp && a.timestamp.seconds ? a.timestamp.seconds : 0);
-                        });
-                    }
-                    renderPosts(el, userRole, myUid);
-                    if (!activePostFilter) window.scrollTo(0, scrollY);
-                } catch (err) { console.warn("Feed snapshot", err); }
-            }, function(err) { console.warn("Feed listener", err); });
+                renderPosts(div, userRole, myUid);
+                
+                if(!activePostFilter) window.scrollTo(0, scrollY);
+            });
         }
 
         function renderPosts(container, userRole, myUid) {
@@ -1378,26 +1320,23 @@
 
                         repliesInner += `
                         <div class="${rBoxClass}">
-                            <div class="card-row1">
-                                <div class="card-del">${rDeleteBtn}</div>
-                                <div class="card-name">${r.name} ${rBadge}</div>
-                                <div class="card-like-wrap">
+                            <div class="reply-top-row">
+                                <div class="reply-name-badge">${rDeleteBtn} 🎓 ${r.name} ${rBadge}</div>
+                                <div class="reply-player-wrap">
+                                    <div class="custom-player">
+                                        <button class="cp-btn" id="btn-${rUniqueId}" onclick="playFeedAudio('${r.audioUrl}', '${rUniqueId}')">▶</button>
+                                        <input type="range" class="cp-slider" id="seek-${rUniqueId}" value="0" min="0" step="0.1" oninput="seekFeedAudio(this.value)">
+                                        <span class="cp-time" id="time-${rUniqueId}">00:00</span>
+                                    </div>
+                                </div>
+                                <div class="reply-like-wrap">
                                     <div class="like-btn ${rLikeClass}">
                                         <div class="like-action ${rLockedClass}" onclick="${rLikeAction}">👍</div>
                                         <div class="like-count" onclick="showLikeNames(event, '${rNamesStr}')">${rLikesCount}</div>
                                     </div>
                                 </div>
                             </div>
-                            <div class="card-row2">
-                                <span class="card-datetime">${rDateStr}</span>
-                                <div class="card-player">
-                                    <div class="custom-player" style="display:flex;align-items:center;gap:6px;direction:ltr;">
-                                        <button class="cp-btn" id="btn-${rUniqueId}" onclick="playFeedAudio('${r.audioUrl}', '${rUniqueId}')">▶</button>
-                                        <input type="range" class="cp-slider" id="seek-${rUniqueId}" value="0" min="0" step="0.1" oninput="seekFeedAudio(this.value)">
-                                        <span class="cp-time" id="time-${rUniqueId}">00:00</span>
-                                    </div>
-                                </div>
-                            </div>
+                            ${rDateStr ? '<div class="reply-datetime">'+rDateStr+'</div>' : ''}
                         </div>`;
                     });
                     
@@ -1408,32 +1347,33 @@
                     </div>`;
                 }
                 
-                let replyBtnHtml = (userRole === 'teacher' || isAdmin) ? `<div class="card-row3"><button class="reply-btn" onclick="startReply('${d.id}')">↩️ الرد</button></div>` : "";
+                let replyBtnHtml = (userRole === 'teacher' || isAdmin) ? `<button class="reply-btn" onclick="startReply('${d.id}')">↩️ الرد</button>` : "<div></div>";
                 let postDateStr = formatDateTime(d.timestamp);
 
                 htmlContent += `
                 <div class="${msgClass}" id="post-${d.id}">
-                    <div class="card-row1">
-                        <div class="card-del">${deleteBtnHtml}</div>
-                        <div class="card-name">${d.name} <span class="${badgeClass}">${badgeText}</span></div>
-                        <div class="card-like-wrap">
+                    ${deleteBtnHtml}
+                    <div class="feed-top-row">
+                        <div class="feed-name-badge">${d.name} <span class="${badgeClass}">${badgeText}</span></div>
+                        <div class="feed-player-wrap">
+                            <div class="custom-player">
+                                <button class="cp-btn" id="btn-${d.id}" onclick="playFeedAudio('${d.audioUrl}', '${d.id}')">▶</button>
+                                <input type="range" class="cp-slider" id="seek-${d.id}" value="0" min="0" step="0.1" oninput="seekFeedAudio(this.value)">
+                                <span class="cp-time" id="time-${d.id}">00:00</span>
+                            </div>
+                        </div>
+                        <div class="feed-like-wrap">
                             <div class="like-btn ${mainLikeClass}">
                                 <div class="like-action ${mainLockedClass}" onclick="${mainLikeAction}">👍</div>
                                 <div class="like-count" onclick="showLikeNames(event, '${mainLikerNames.join('|||')}')">${mainLikesCount}</div>
                             </div>
                         </div>
                     </div>
-                    <div class="card-row2">
-                        <span class="card-datetime">${postDateStr}</span>
-                        <div class="card-player">
-                            <div class="custom-player" style="display:flex;align-items:center;gap:6px;direction:ltr;">
-                                <button class="cp-btn" id="btn-${d.id}" onclick="playFeedAudio('${d.audioUrl}', '${d.id}')">▶</button>
-                                <input type="range" class="cp-slider" id="seek-${d.id}" value="0" min="0" step="0.1" oninput="seekFeedAudio(this.value)">
-                                <span class="cp-time" id="time-${d.id}">00:00</span>
-                            </div>
-                        </div>
+                    <div class="feed-datetime" style="font-size:12px; color:#888; margin-bottom:4px;">${postDateStr}</div>
+                    <div class="msg-footer">
+                        ${replyBtnHtml}
+                        <div></div>
                     </div>
-                    ${replyBtnHtml}
                     ${repliesHtml}
                 </div>`;
             });
@@ -1574,8 +1514,8 @@
             audioEl.play().catch(e => { stopLoop(); });
             audioEl.onended = function() {
                 if(!isPlaying) return;
-                var uid = localStorage.getItem('it9an_uid');
-                if (uid && uid !== 'admin_super') { window.updateDoc(window.doc(window.db, "users", uid), { totalVerseViews: window.increment(1) }).catch(function(){}); }
+                const uid = localStorage.getItem('it9an_uid');
+                if(uid && uid !== 'admin_super') { try { window.updateDoc(window.doc(window.db, "users", uid), { totalVerseViews: window.increment(1) }); } catch(e){} }
                 if(document.getElementById('globalGap').checked) {
                     let pauseTime = Math.ceil(audioEl.duration * 1.25);
                     startPauseCountdown(pauseTime);
@@ -1618,14 +1558,7 @@
             document.getElementById('playBtn').innerText = "▶"; document.getElementById('statusDisplay').innerText = "جاهز للتلاوة"; 
         }
 
-        window.goToMenu = function() {
-            stopLoop();
-            stopRecordingAndReview();
-            if (unsubscribeFeed) { try { unsubscribeFeed(); } catch(e){} unsubscribeFeed = null; }
-            if (unsubscribeViews) { try { unsubscribeViews(); } catch(e){} unsubscribeViews = null; }
-            showView('menu-view');
-            renderMenu();
-        } 
+        window.goToMenu = function() { stopLoop(); stopRecordingAndReview(); showView('menu-view'); renderMenu(); } 
         function showView(id) { document.getElementById('menu-view').style.display = 'none'; document.getElementById('player-view').style.display = 'none'; document.getElementById('notifications-view').style.display = 'none'; document.getElementById('admin-users-view').style.display = (id === 'admin-users-view') ? 'block' : 'none'; document.getElementById(id).style.display = (id === 'menu-view') ? 'grid' : 'block'; }
         
         window.likePost = async (id, ownerUid) => { 
@@ -1698,81 +1631,48 @@
         }
 
         window.resetAllLikes = async function() {
-            if (!confirm("تحذير: هل تريد حقاً حذف جميع الإعجابات من التطبيق؟")) return;
-            try {
-                var q = window.query(window.collection(window.db, "posts"));
-                var querySnapshot = await window.getDocs(q);
-                var batch = window.writeBatch(window.db);
-                var batchCount = 0;
-                for (var i = 0; i < querySnapshot.docs.length; i++) {
-                    var docSnap = querySnapshot.docs[i];
-                    var data = docSnap.data();
-                    var updates = { likes: [] };
-                    if (data.replies && data.replies.length > 0) {
-                        var cleanedReplies = data.replies.map(function(r) { return Object.assign({}, r, { likes: [] }); });
+            if(confirm("تحذير: هل تريد حقاً حذف جميع الإعجابات من التطبيق؟")) {
+                const q = window.query(window.collection(window.db, "posts"));
+                const querySnapshot = await window.getDocs(q);
+                querySnapshot.forEach(async (docSnap) => {
+                    let updates = { likes: [] };
+                    let data = docSnap.data();
+                    if(data.replies && data.replies.length > 0) {
+                        let cleanedReplies = data.replies.map(r => ({ ...r, likes: [] }));
                         updates.replies = cleanedReplies;
                     }
-                    batch.update(window.doc(window.db, "posts", docSnap.id), updates);
-                    batchCount++;
-                    if (batchCount >= 500) { await batch.commit(); batch = window.writeBatch(window.db); batchCount = 0; }
-                }
-                if (batchCount > 0) await batch.commit();
-                var uq = window.query(window.collection(window.db, "users"));
-                var usnap = await window.getDocs(uq);
-                batch = window.writeBatch(window.db);
-                batchCount = 0;
-                for (var j = 0; j < usnap.docs.length; j++) {
-                    batch.update(usnap.docs[j].ref, { totalLikes: 0 });
-                    batchCount++;
-                    if (batchCount >= 500) { await batch.commit(); batch = window.writeBatch(window.db); batchCount = 0; }
-                }
-                if (batchCount > 0) await batch.commit();
+                    await window.updateDoc(window.doc(window.db, "posts", docSnap.id), updates);
+                });
+                
+                // RESET USER COUNTERS
+                const uq = window.query(window.collection(window.db, "users"));
+                const usnap = await window.getDocs(uq);
+                usnap.forEach(async (udoc) => {
+                    await window.updateDoc(udoc.ref, { totalLikes: 0 });
+                });
+
                 alert("تم تصفير الإعجابات (Global)");
-            } catch (e) { console.warn("resetAllLikes", e); alert("خطأ في التصفير"); }
+            }
         }
 
         window.resetAllNotifications = async function() {
-            if (!confirm("تحذير: هل تريد حذف جميع الإشعارات لجميع المعلمين والطلاب؟")) return;
-            try {
-                var q = window.query(window.collection(window.db, "notifications"));
-                var snap = await window.getDocs(q);
-                var batch = window.writeBatch(window.db);
-                var batchCount = 0;
-                for (var i = 0; i < snap.docs.length; i++) {
-                    batch.delete(window.doc(window.db, "notifications", snap.docs[i].id));
-                    batchCount++;
-                    if (batchCount >= 500) { await batch.commit(); batch = window.writeBatch(window.db); batchCount = 0; }
-                }
-                if (batchCount > 0) await batch.commit();
+            if(confirm("تحذير: هل تريد حذف جميع الإشعارات لجميع المعلمين والطلاب؟")) {
+                const q = window.query(window.collection(window.db, "notifications"));
+                const snap = await window.getDocs(q);
+                for(const d of snap.docs) { await window.deleteDoc(window.doc(window.db, "notifications", d.id)); }
                 alert("تم تصفير جميع الإشعارات");
-            } catch (e) { console.warn("resetAllNotifications", e); alert("خطأ"); }
+            }
         }
 
         window.resetAllViews = async function() {
-            if (!confirm("تحذير: هل تريد حقاً تصفير المشاهدات في كل التطبيق؟")) return;
-            try {
-                var sq = window.query(window.collection(window.db, "stats"));
-                var sSnap = await window.getDocs(sq);
-                var batch = window.writeBatch(window.db);
-                var batchCount = 0;
-                for (var si = 0; si < sSnap.docs.length; si++) {
-                    batch.delete(window.doc(window.db, "stats", sSnap.docs[si].id));
-                    batchCount++;
-                    if (batchCount >= 500) { await batch.commit(); batch = window.writeBatch(window.db); batchCount = 0; }
-                }
-                if (batchCount > 0) await batch.commit();
-                var uq = window.query(window.collection(window.db, "users"));
-                var usnap = await window.getDocs(uq);
-                batch = window.writeBatch(window.db);
-                batchCount = 0;
-                for (var ui = 0; ui < usnap.docs.length; ui++) {
-                    batch.update(usnap.docs[ui].ref, { totalVerseViews: 0 });
-                    batchCount++;
-                    if (batchCount >= 500) { await batch.commit(); batch = window.writeBatch(window.db); batchCount = 0; }
-                }
-                if (batchCount > 0) await batch.commit();
+            if(confirm("تحذير: هل تريد حقاً تصفير المشاهدات في كل التطبيق؟")) {
+                const q = window.query(window.collection(window.db, "stats"));
+                const querySnapshot = await window.getDocs(q);
+                querySnapshot.forEach(async (docSnap) => {
+                    await window.deleteDoc(window.doc(window.db, "stats", docSnap.id));
+                });
                 alert("تم تصفير المشاهدات (Global)");
-            } catch (e) { console.warn("resetAllViews", e); alert("خطأ في التصفير"); }
+            }
         }
 
         window.deleteAllPostsGlobal = async function() {
@@ -1801,10 +1701,8 @@
 
         window.resetLocalViews = async function() {
             if(confirm("تصفير مشاهدات هذا المقطع فقط؟")) {
-                try {
-                    await window.deleteDoc(window.doc(window.db, "stats", "file_" + currentGlobalFileId));
-                    alert("تم التصفير");
-                } catch(e) { alert("خطأ"); }
+                try { await window.deleteDoc(window.doc(window.db, "stats", "file_" + currentGlobalFileId)); alert("تم التصفير"); } 
+                catch(e) { alert("خطأ"); }
             }
         }
 
@@ -1812,27 +1710,17 @@
             if(confirm("تصفير إعجابات هذا المقطع فقط؟")) {
                 const q = window.query(window.collection(window.db, "posts"), window.where("fileId", "==", String(currentGlobalFileId)));
                 const querySnapshot = await window.getDocs(q);
-                var ownerDeltas = {};
-                for (const docSnap of querySnapshot.docs) {
+                querySnapshot.forEach(async (docSnap) => {
+                    // Note: This does not decrease user totalLikes perfectly, doing so requires heavy logic.
+                    // For simplicity in this app version, we just clear the post likes.
+                    let updates = { likes: [] };
                     let data = docSnap.data();
-                    let mainCount = (data.likes && data.likes.length) ? data.likes.length : 0;
-                    ownerDeltas[data.uid] = (ownerDeltas[data.uid] || 0) - mainCount;
-                    if (data.replies && data.replies.length) {
-                        for (let r of data.replies) {
-                            let rc = (r.likes && r.likes.length) ? r.likes.length : 0;
-                            if (r.uid) ownerDeltas[r.uid] = (ownerDeltas[r.uid] || 0) - rc;
-                        }
+                    if(data.replies) {
+                        updates.replies = data.replies.map(r => ({ ...r, likes: [] }));
                     }
-                    await window.updateDoc(window.doc(window.db, "posts", docSnap.id), {
-                        likes: [],
-                        replies: (data.replies || []).map(r => ({ ...r, likes: [] }))
-                    });
-                }
-                for (const uid in ownerDeltas) {
-                    if (ownerDeltas[uid] === 0) continue;
-                    try { await window.updateDoc(window.doc(window.db, "users", uid), { totalLikes: window.increment(ownerDeltas[uid]) }); } catch(e){}
-                }
-                alert("تم التصفير");
+                    await window.updateDoc(window.doc(window.db, "posts", docSnap.id), updates);
+                });
+                alert("تم التصفير (ملاحظة: عداد الإعجابات الكلي للمستخدم قد لا يتأثر بهذا الزر الفرعي)");
             }
         }
 
@@ -1914,4 +1802,3 @@
     </script>
 </body>
 </html>
-
