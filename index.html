@@ -948,20 +948,36 @@
         function loadLeaderboard() {
             var list = document.getElementById('leaderboard-list');
             if (!list) return;
+            var setContent = function(html) {
+                try {
+                    if (list && list.parentNode) list.innerHTML = html;
+                } catch (e) {}
+            };
+            var timeoutMs = 10000;
+            var timeoutPromise = new Promise(function(_, reject) {
+                setTimeout(function() { reject(new Error('timeout')); }, timeoutMs);
+            });
             var q = window.query(window.collection(window.db, "users"), window.where("role", "==", "student"));
-            window.getDocs(q).then(function(snap) {
+            var fetchPromise = window.getDocs(q);
+            Promise.race([fetchPromise, timeoutPromise]).then(function(snap) {
+                if (!snap || !snap.forEach) { setContent("<li style='text-align:center; color:#999; padding:10px;'>لا يوجد طلاب بعد</li>"); return; }
                 try {
                     var users = [];
                     snap.forEach(function(doc) { users.push(doc.data()); });
                     users.sort(function(a, b) { return (b.postsCount || 0) - (a.postsCount || 0); });
                     var top3 = users.slice(0, 3);
-                    list.innerHTML = "";
-                    if (top3.length === 0) { list.innerHTML = "<li style='text-align:center; color:#999; padding:10px;'>لا يوجد طلاب بعد</li>"; return; }
-                    top3.forEach(function(u, i) {
-                        list.innerHTML += "<li class=\"lb-item\"><div style=\"display:flex; align-items:center; gap:10px;\"><span class=\"lb-rank\">#" + (i+1) + "</span><span class=\"lb-name\">" + (u.name || "") + "</span></div><div class=\"lb-stats\"><span class=\"lb-score\" title=\"مشاهدات كل الآيات مع التكرار\">👁️ " + (u.totalVerseViews || 0) + "</span><span class=\"lb-score\">🎤 " + (u.postsCount || 0) + "</span><span class=\"lb-likes\">👍 " + (u.totalLikes || 0) + "</span></div></li>";
-                    });
-                } catch (e) { console.warn("Leaderboard", e); list.innerHTML = "<li style='text-align:center; color:#999; padding:10px;'>خطأ في التحميل</li>"; }
-            }).catch(function(e) { console.warn("Leaderboard", e); if (list) list.innerHTML = "<li style='text-align:center; color:#999; padding:10px;'>خطأ في التحميل</li>"; });
+                    if (top3.length === 0) { setContent("<li style='text-align:center; color:#999; padding:10px;'>لا يوجد طلاب بعد</li>"); return; }
+                    var html = "";
+                    for (var i = 0; i < top3.length; i++) {
+                        var u = top3[i];
+                        html += "<li class=\"lb-item\"><div style=\"display:flex; align-items:center; gap:10px;\"><span class=\"lb-rank\">#" + (i+1) + "</span><span class=\"lb-name\">" + (u.name || "") + "</span></div><div class=\"lb-stats\"><span class=\"lb-score\" title=\"مشاهدات كل الآيات مع التكرار\">👁️ " + (u.totalVerseViews || 0) + "</span><span class=\"lb-score\">🎤 " + (u.postsCount || 0) + "</span><span class=\"lb-likes\">👍 " + (u.totalLikes || 0) + "</span></div></li>";
+                    }
+                    setContent(html);
+                } catch (e) { console.warn("Leaderboard", e); setContent("<li style='text-align:center; color:#999; padding:10px;'>خطأ في التحميل</li>"); }
+            }).catch(function(e) {
+                console.warn("Leaderboard", e);
+                setContent("<li style='text-align:center; color:#999; padding:10px;'>تحميل المتصدرين... (لا يوجد اتصال؟)</li>");
+            });
         }
 
         // --- NOTIFICATIONS ---
@@ -1088,30 +1104,41 @@
         }
 
         function renderMenu() {
-            setTimeout(function() { cleanup30DayOldPosts(); }, 500);
-            const grid = document.getElementById('lesson-grid'); 
-            grid.innerHTML = ""; showView('menu-view');
-            document.getElementById('pageTitle').innerHTML = "<span style='border:none; padding:0; font-size:22px;'>القائمة الرئيسية</span>"; 
-            document.getElementById('appFooter').style.display = 'none';
-            
-            const uid = localStorage.getItem('it9an_uid');
-            if(uid === 'admin_super') {
-                document.getElementById('adminMenuPanel').style.display = 'block';
-                document.getElementById('leaderboard-section').style.display = 'block';
-                loadLeaderboard();
-            } else {
-                document.getElementById('adminMenuPanel').style.display = 'none';
-                document.getElementById('leaderboard-section').style.display = 'block';
-                loadLeaderboard(); 
+            var grid = document.getElementById('lesson-grid');
+            if (!grid) return;
+            grid.innerHTML = "";
+            showView('menu-view');
+            var pageTitle = document.getElementById('pageTitle');
+            if (pageTitle) pageTitle.innerHTML = "<span style='border:none; padding:0; font-size:22px;'>القائمة الرئيسية</span>";
+            var footer = document.getElementById('appFooter');
+            if (footer) footer.style.display = 'none';
+
+            activePostFilter = null;
+
+            for (var i = 0; i < KURS_DATEN.length; i++) {
+                var lek = KURS_DATEN[i];
+                var div = document.createElement('div');
+                div.className = 'menu-item';
+                div.innerHTML = "<div class=\"menu-item-title\">الدرس " + (i + 1) + "</div><img src=\"assets/T" + lek.id + ".png\" loading=\"lazy\" onerror=\"this.style.display='none'\">";
+                div.onclick = (function(idx) { return function() { startLesson(idx); }; })(i);
+                grid.appendChild(div);
             }
 
-            activePostFilter = null; 
+            var uid = localStorage.getItem('it9an_uid');
+            if (uid === 'admin_super') {
+                var adminPanel = document.getElementById('adminMenuPanel');
+                if (adminPanel) adminPanel.style.display = 'block';
+                var lbSection = document.getElementById('leaderboard-section');
+                if (lbSection) lbSection.style.display = 'block';
+            } else {
+                var adminPanel2 = document.getElementById('adminMenuPanel');
+                if (adminPanel2) adminPanel2.style.display = 'none';
+                var lbSection2 = document.getElementById('leaderboard-section');
+                if (lbSection2) lbSection2.style.display = 'block';
+            }
 
-            KURS_DATEN.forEach((lek, index) => {
-                let div = document.createElement('div'); div.className = 'menu-item';
-                div.innerHTML = `<div class="menu-item-title">الدرس ${index + 1}</div><img src="assets/T${lek.id}.png" loading="lazy" onerror="this.style.display='none'">`;
-                div.onclick = () => startLesson(index); grid.appendChild(div);
-            });
+            setTimeout(function() { loadLeaderboard(); }, 0);
+            setTimeout(function() { cleanup30DayOldPosts(); }, 500);
         }
 
         function startLesson(index) {
