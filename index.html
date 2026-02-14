@@ -348,14 +348,14 @@
 
             <div class="login-note">
                 ⚠️ <strong>تنبيه هام:</strong><br>
-                لضمان حفظ تقدمك، يرجى دائماً كتابة الاسم والرقم السري <b>بنفس الطريقة تماماً</b> عند كل دخول.<br>
+                لضمان حفظ تقدمك، يرجى دائماً كتابة الاسم وسنة الميلاد <b>بنفس الطريقة تماماً</b> عند كل دخول.<br>
                 <span style="color:#c0392b; font-weight:bold; display:block; margin-top:5px;">يجب استخدام الأحرف اللاتينية فقط</span>
             </div>
 
             <input type="text" id="firstName" class="login-input latin-input" placeholder="الاسم الأول" oninput="this.value=this.value.replace(/[^a-zA-Z\s]/g,'')">
             <input type="text" id="lastName" class="login-input latin-input" placeholder="اللقب" oninput="this.value=this.value.replace(/[^a-zA-Z\s]/g,'')">
             
-            <input type="number" id="birthYear" class="login-input latin-input" placeholder="الكود السري (4 أرقام)" max="9999" min="1000">
+            <input type="number" id="birthYear" class="login-input latin-input" placeholder="سنة الميلاد (4 أرقام)" max="2030" min="1950">
 
             <select id="userRole" class="login-input login-select">
                 <option value="student">طالب</option>
@@ -518,6 +518,7 @@
         let feedLimit = 3;
         let allLoadedPosts = [];
         let highlightedPostId = null;
+        let activePostFilter = null;
 
         // --- GLOBAL FEED PLAYER LOGIC ---
         let currentFeedAudioId = null;
@@ -654,7 +655,7 @@
                 return;
             }
             if (year.length !== 4 || isNaN(year)) {
-                alert("الرجاء إدخال الكود بشكل صحيح");
+                alert("الرجاء إدخال سنة الميلاد بشكل صحيح");
                 return;
             }
 
