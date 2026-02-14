@@ -23,7 +23,6 @@
             margin: 0; padding: 0; background-color: var(--bg); 
             font-family: 'Amiri', serif; color: var(--text); 
             padding-bottom: 250px; width: 100%; overflow-x: hidden;
-            /* GRÖSSERE SCHRIFT GLOBAL */
             font-size: 18px; 
         }
 
@@ -38,6 +37,8 @@
             border-radius: 20px; border: 2px solid var(--gold);
             text-align: center; width: 90%; max-width: 380px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            /* Scrollbar logic */
+            max-height: 90vh; overflow-y: auto;
         }
         .login-title { color: var(--primary); margin: 0 0 10px 0; font-size: 32px; font-weight: bold; }
         .login-subtitle { color: #555; margin: 0 0 20px 0; font-size: 18px; line-height: 1.6; }
@@ -68,6 +69,9 @@
             background: var(--gold); color: var(--primary); cursor: pointer;
             box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
         }
+        
+        /* Platzhalter für Login Scroll */
+        .login-spacer { height: 150px; width: 100%; clear: both; }
 
         /* --- HEADER --- */
         .header { 
@@ -161,22 +165,40 @@
         #player-view { display: none; padding: 15px; width: 100%; max-width: 600px; margin: 0 auto; }
         
         .quran-frame {
-            background: var(--surface); padding: 5px; border-radius: 15px;
+            background: var(--surface); padding: 0; border-radius: 15px;
             border: 2px solid var(--gold-light); outline: 1px solid var(--gold); outline-offset: -5px;
             box-shadow: var(--shadow); margin-bottom: 20px; 
-            height: auto; 
+            height: auto; overflow: hidden;
         }
-        /* Player layout: Right Btn (Prev), Image, Left Btn (Next) */
-        .player-container { width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 5px; }
-        /* Image larger */
-        .quran-image { flex-grow: 1; max-width: calc(100% - 70px); max-height: 55vh; object-fit: contain; border-radius: 5px; display: block; }
+        
+        /* Layout: [RightButton] [Image] [LeftButton] because of RTL */
+        /* NO OVERLAP, Flexbox handling spacing */
+        .player-container { 
+            width: 100%; height: 100%; 
+            display: flex; justify-content: space-between; align-items: center; 
+            padding: 5px;
+        }
+        
+        /* IMAGE MAXIMIZED */
+        .quran-image { 
+            flex-grow: 1; 
+            width: auto;
+            max-width: 100%;
+            /* Make image taller as requested */
+            max-height: 75vh; 
+            object-fit: contain; 
+            border-radius: 5px; 
+            display: block; 
+            margin: 0 5px;
+        }
 
         /* Smaller buttons */
         .nav-btn { 
-            width: 32px; height: 50px; flex-shrink: 0;
+            width: 35px; height: 50px; flex-shrink: 0;
             background: var(--bg); color: var(--primary); border: 1px solid var(--gold);
             border-radius: 8px; font-size: 20px; cursor: pointer; 
             display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
+            z-index: 10;
         }
         .nav-btn:active { background: var(--gold-light); }
 
@@ -371,6 +393,8 @@
             </select>
             <input type="password" id="pinInput" class="login-input" placeholder="كلمة المرور">
             <button onclick="checkLogin()" class="login-btn">دخول</button>
+            
+            <div class="login-spacer"></div>
         </div>
     </div>
 
@@ -454,7 +478,9 @@
         <div class="quran-frame">
             <div class="player-container">
                 <button id="btnRight" class="nav-btn" onclick="prevVers()">❯</button>
+                
                 <img id="currentImg" class="quran-image" src="" alt="Vers Bild" onerror="this.src='placeholder.png'">
+                
                 <button id="btnLeft" class="nav-btn" onclick="nextVers()">❮</button>
             </div>
         </div>
@@ -1000,8 +1026,9 @@
         }
 
         // --- NAVIGATION LOGIC: ARABIC BOOK (RTL) & LOOPING ---
-        // Right Button in DOM -> onclick="prevVers()" (Previous Verse)
-        // Left Button in DOM -> onclick="nextVers()" (Next Verse)
+        // BUTTON LOGIC:
+        // Left Button in visual -> onclick="nextVers()" (Next Verse)
+        // Right Button in visual -> onclick="prevVers()" (Previous Verse)
         
         window.nextVers = function() {
             activePostFilter = null; 
