@@ -265,48 +265,55 @@
         
         .feed-container { min-height: 100px; }
         
-        .feed-msg { padding: 18px; border-radius: 15px; margin-bottom: 30px; position: relative; transition: transform 0.2s; }
-        .feed-msg.highlighted { border: 2px solid var(--gold); background: #fffffa; animation: flash 1s; }
-        @keyframes flash { 0% { background: var(--gold-light); } 100% { background: #fffffa; } }
+        /* --- COMPACT CARD: same layout for post + reply, different colors --- */
+        .feed-msg, .reply-box { padding: 6px 8px; border-radius: 8px; margin-bottom: 8px; position: relative; }
+        .feed-msg.highlighted { border: 2px solid var(--gold); animation: flash 1s; }
+        @keyframes flash { 0% { background: var(--gold-light); } 100% { background: inherit; } }
+        .student-msg { background: #f5f5f5; border: 1px solid #e0e0e0; }
+        .teacher-msg { background: #fff8e7; border: 1px solid var(--gold); }
+        .admin-msg { background: #e8f0e9; border: 1px solid var(--primary); }
+        .reply-box { margin-top: 6px; border: 1px solid #e0e0e0; }
+        .reply-box.reply-teacher { background: #fff8e7; border-color: var(--gold); }
+        .reply-box.reply-admin { background: #e8f0e9; border-color: var(--primary); }
+        .reply-box:not(.reply-teacher):not(.reply-admin) { background: #f0f0f0; }
 
-        .student-msg { background: var(--surface); border-right: 5px solid #ddd; box-shadow: 0 3px 8px rgba(0,0,0,0.05); }
-        .teacher-msg { background: #fffcf2; border: 1px solid var(--gold); border-right: 6px solid var(--gold); box-shadow: 0 5px 12px rgba(212, 175, 55, 0.15); transform: scale(1.01); }
-        .admin-msg { background: #e8f5e9; border: 2px solid var(--primary); border-right: 7px solid var(--primary); box-shadow: 0 6px 15px rgba(15, 76, 58, 0.2); transform: scale(1.03); z-index: 5; }
-
-        .role-badge { padding: 4px 10px; border-radius: 8px; font-size: 12px; margin-left: 10px; color: white; display: inline-block; vertical-align: middle; }
+        .card-row1 { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; flex-wrap: wrap; }
+        .card-del { flex-shrink: 0; }
+        .card-name { font-weight: bold; color: var(--primary); font-size: 14px; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .card-like-wrap { flex-shrink: 0; }
+        .card-row2 { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+        .card-datetime { font-size: 11px; color: #666; flex-shrink: 0; white-space: nowrap; }
+        .card-player { flex: 1; min-width: 0; }
+        .card-row3 { margin-top: 2px; }
+        .role-badge { padding: 2px 6px; border-radius: 4px; font-size: 11px; margin-right: 4px; color: white; }
         .badge-student { background: #95a5a6; }
         .badge-teacher { background: var(--gold); }
-        .badge-admin { background: var(--primary); font-weight: bold; }
-        
-        .msg-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(0,0,0,0.05); }
-        /* Feed card: name, play bar and like on one line to reduce height */
-        .feed-msg .feed-top-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 4px; }
-        .feed-msg .feed-name-badge { font-weight: bold; color: var(--primary); font-size: 15px; display: flex; align-items: center; flex-shrink: 0; }
-        .feed-msg .feed-player-wrap { flex: 1; min-width: 120px; }
-        .feed-msg .feed-like-wrap { flex-shrink: 0; }
-        .like-btn { display: flex; align-items: center; border-radius: 25px; font-size: 16px; background: #f9f9f9; border: 1px solid #eee; overflow: hidden; }
-        .like-btn.liked { color: var(--primary); background: #e8f5e9; border-color: var(--primary); font-weight: bold; }
+        .badge-admin { background: var(--primary); }
+        .like-btn { display: flex; align-items: center; border-radius: 12px; font-size: 13px; background: rgba(0,0,0,0.05); border: 1px solid #ddd; overflow: hidden; }
+        .like-btn.liked { color: var(--primary); background: #e8f5e9; border-color: var(--primary); }
         .like-btn.disabled { opacity: 0.5; filter: grayscale(1); }
-        .like-action { padding: 8px 15px; cursor: pointer; }
-        .like-action.locked { cursor: not-allowed; opacity: 0.3; filter: grayscale(1); }
-        .like-count { padding: 8px 15px; border-right: 1px solid #ddd; cursor: pointer; background: rgba(0,0,0,0.03); }
-        .like-count:active { background: rgba(0,0,0,0.1); }
-        .reply-btn { cursor: pointer; background: none; border: 1px solid var(--primary); color: var(--primary); padding: 6px 15px; border-radius: 8px; font-size: 14px; font-weight: bold; }
-        .delete-btn { position: absolute; top: 12px; left: 12px; background: rgba(255,0,0,0.1); color: var(--red); border: none; border-radius: 50%; width: 35px; height: 35px; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-        .reply-delete-btn { background: none; border: none; font-size: 14px; cursor: pointer; margin-right: 5px; opacity: 0.7; color: var(--red); }
+        .like-action { padding: 4px 8px; cursor: pointer; }
+        .like-action.locked { cursor: not-allowed; opacity: 0.3; }
+        .like-count { padding: 4px 8px; font-size: 12px; cursor: pointer; }
+        .reply-btn { cursor: pointer; border: 1px solid var(--primary); color: var(--primary); padding: 4px 10px; border-radius: 6px; font-size: 13px; font-weight: bold; }
+        .delete-btn { background: rgba(255,0,0,0.12); color: var(--red); border: none; border-radius: 6px; width: 28px; height: 28px; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .reply-delete-btn { background: none; border: none; font-size: 12px; cursor: pointer; padding: 0 4px; color: var(--red); flex-shrink: 0; }
 
-        .replies-wrapper { margin-top: 20px; padding-right: 25px; border-right: 4px solid #e0e0e0; position: relative; }
-        .replies-title { font-size: 13px; color: #999; margin-bottom: 8px; font-weight: bold; margin-right: -29px; background: var(--bg); display: inline-block; padding: 0 8px; }
-        .reply-box { margin-top: 10px; padding: 10px; background: #f9f9f9; border-radius: 10px; border: 1px solid #eee; position: relative; }
-        .reply-box::before { content: ''; position: absolute; top: 18px; right: -29px; width: 25px; height: 2px; background: #e0e0e0; }
-        .reply-box.reply-teacher { background: #fffcf2; border: 1px solid var(--gold); }
-        .reply-box.reply-admin { background: #e8f5e9; border: 1px solid var(--primary); }
-        .reply-top-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 4px; }
-        .reply-name-badge { font-size: 14px; font-weight: bold; color: var(--primary); display: flex; align-items: center; flex-shrink: 0; }
-        .reply-player-wrap { flex: 1; min-width: 120px; }
-        .reply-like-wrap { flex-shrink: 0; }
-        .reply-datetime { font-size: 11px; color: #888; margin-top: 2px; }
-
+        .replies-wrapper { margin-top: 8px; padding-right: 12px; border-right: 3px solid #ddd; }
+        .replies-title { font-size: 12px; color: #888; margin-bottom: 4px; }
+        .custom-player { padding: 4px 0; gap: 6px; }
+        .custom-player .cp-btn { width: 32px; height: 32px; font-size: 14px; }
+        .custom-player .cp-slider { height: 5px; }
+        .custom-player .cp-time { font-size: 11px; min-width: 36px; }
+        @media (max-width: 380px) {
+            .feed-msg, .reply-box { padding: 5px 6px; margin-bottom: 6px; }
+            .card-row1, .card-row2 { gap: 4px; margin-bottom: 3px; }
+            .card-name { font-size: 13px; }
+            .card-datetime { font-size: 10px; }
+            .custom-player .cp-btn { width: 28px; height: 28px; font-size: 12px; }
+            .like-action { padding: 3px 6px; }
+            .like-count { padding: 3px 6px; font-size: 11px; }
+        }
         .load-more-btn { display: block; width: 100%; padding: 15px; text-align: center; background: #f0f0f0; color: #555; border: none; border-radius: 10px; font-family: 'Amiri'; font-weight: bold; font-size: 16px; cursor: pointer; margin-top: 25px; }
         .load-more-btn:active { background: #e0e0e0; }
 
@@ -684,7 +691,27 @@
             }
         });
 
-        if(localStorage.getItem('it9an_auth') === 'true') { localStorage.removeItem('it9an_auth'); }
+        // --- PERSIST LOGIN: no logout on refresh; all users (incl. teacher/admin) auto-logout after 24h to avoid cache ---
+        function clearLoginStorage() {
+            localStorage.removeItem('it9an_uid'); localStorage.removeItem('it9an_auth'); localStorage.removeItem('it9an_name'); localStorage.removeItem('it9an_role'); localStorage.removeItem('it9an_hidden'); localStorage.removeItem('it9an_lastLogin');
+        }
+        function applyStoredLogin() {
+            document.getElementById('login-screen').style.display = 'none';
+            updateUIForRole();
+            listenForNotifications();
+            renderMenu();
+        }
+        (function checkStoredAuth() {
+            var auth = localStorage.getItem('it9an_auth');
+            var uid = localStorage.getItem('it9an_uid');
+            if (auth !== 'true' || !uid) return;
+            var lastLogin = parseInt(localStorage.getItem('it9an_lastLogin') || '0', 10);
+            if (lastLogin && (Date.now() - lastLogin > 24 * 60 * 60 * 1000)) {
+                clearLoginStorage();
+                return;
+            }
+            applyStoredLogin();
+        })();
 
         // --- NEW ID GENERATOR WITH YEAR ---
         function generateUserId(fullName, role, year) {
@@ -717,7 +744,8 @@
                 localStorage.setItem('it9an_auth', 'true');
                 localStorage.setItem('it9an_name', 'المسؤول');
                 localStorage.setItem('it9an_role', 'teacher');
-                localStorage.setItem('it9an_hidden', 'true'); 
+                localStorage.setItem('it9an_hidden', 'true');
+                localStorage.setItem('it9an_lastLogin', String(Date.now()));
                 document.getElementById('login-screen').style.display = 'none';
                 updateUIForRole(); 
                 listenForNotifications();
@@ -800,6 +828,7 @@
                 localStorage.setItem('it9an_auth', 'true');
                 localStorage.setItem('it9an_name', finalDisplayName);
                 localStorage.setItem('it9an_role', role);
+                localStorage.setItem('it9an_lastLogin', String(Date.now()));
                 localStorage.removeItem('it9an_hidden'); 
                 document.getElementById('login-screen').style.display = 'none';
                 updateUIForRole(); 
@@ -1320,23 +1349,26 @@
 
                         repliesInner += `
                         <div class="${rBoxClass}">
-                            <div class="reply-top-row">
-                                <div class="reply-name-badge">${rDeleteBtn} 🎓 ${r.name} ${rBadge}</div>
-                                <div class="reply-player-wrap">
-                                    <div class="custom-player">
-                                        <button class="cp-btn" id="btn-${rUniqueId}" onclick="playFeedAudio('${r.audioUrl}', '${rUniqueId}')">▶</button>
-                                        <input type="range" class="cp-slider" id="seek-${rUniqueId}" value="0" min="0" step="0.1" oninput="seekFeedAudio(this.value)">
-                                        <span class="cp-time" id="time-${rUniqueId}">00:00</span>
-                                    </div>
-                                </div>
-                                <div class="reply-like-wrap">
+                            <div class="card-row1">
+                                <div class="card-del">${rDeleteBtn}</div>
+                                <div class="card-name">${r.name} ${rBadge}</div>
+                                <div class="card-like-wrap">
                                     <div class="like-btn ${rLikeClass}">
                                         <div class="like-action ${rLockedClass}" onclick="${rLikeAction}">👍</div>
                                         <div class="like-count" onclick="showLikeNames(event, '${rNamesStr}')">${rLikesCount}</div>
                                     </div>
                                 </div>
                             </div>
-                            ${rDateStr ? '<div class="reply-datetime">'+rDateStr+'</div>' : ''}
+                            <div class="card-row2">
+                                <span class="card-datetime">${rDateStr}</span>
+                                <div class="card-player">
+                                    <div class="custom-player" style="display:flex;align-items:center;gap:6px;direction:ltr;">
+                                        <button class="cp-btn" id="btn-${rUniqueId}" onclick="playFeedAudio('${r.audioUrl}', '${rUniqueId}')">▶</button>
+                                        <input type="range" class="cp-slider" id="seek-${rUniqueId}" value="0" min="0" step="0.1" oninput="seekFeedAudio(this.value)">
+                                        <span class="cp-time" id="time-${rUniqueId}">00:00</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>`;
                     });
                     
@@ -1347,33 +1379,32 @@
                     </div>`;
                 }
                 
-                let replyBtnHtml = (userRole === 'teacher' || isAdmin) ? `<button class="reply-btn" onclick="startReply('${d.id}')">↩️ الرد</button>` : "<div></div>";
+                let replyBtnHtml = (userRole === 'teacher' || isAdmin) ? `<div class="card-row3"><button class="reply-btn" onclick="startReply('${d.id}')">↩️ الرد</button></div>` : "";
                 let postDateStr = formatDateTime(d.timestamp);
 
                 htmlContent += `
                 <div class="${msgClass}" id="post-${d.id}">
-                    ${deleteBtnHtml}
-                    <div class="feed-top-row">
-                        <div class="feed-name-badge">${d.name} <span class="${badgeClass}">${badgeText}</span></div>
-                        <div class="feed-player-wrap">
-                            <div class="custom-player">
-                                <button class="cp-btn" id="btn-${d.id}" onclick="playFeedAudio('${d.audioUrl}', '${d.id}')">▶</button>
-                                <input type="range" class="cp-slider" id="seek-${d.id}" value="0" min="0" step="0.1" oninput="seekFeedAudio(this.value)">
-                                <span class="cp-time" id="time-${d.id}">00:00</span>
-                            </div>
-                        </div>
-                        <div class="feed-like-wrap">
+                    <div class="card-row1">
+                        <div class="card-del">${deleteBtnHtml}</div>
+                        <div class="card-name">${d.name} <span class="${badgeClass}">${badgeText}</span></div>
+                        <div class="card-like-wrap">
                             <div class="like-btn ${mainLikeClass}">
                                 <div class="like-action ${mainLockedClass}" onclick="${mainLikeAction}">👍</div>
                                 <div class="like-count" onclick="showLikeNames(event, '${mainLikerNames.join('|||')}')">${mainLikesCount}</div>
                             </div>
                         </div>
                     </div>
-                    <div class="feed-datetime" style="font-size:12px; color:#888; margin-bottom:4px;">${postDateStr}</div>
-                    <div class="msg-footer">
-                        ${replyBtnHtml}
-                        <div></div>
+                    <div class="card-row2">
+                        <span class="card-datetime">${postDateStr}</span>
+                        <div class="card-player">
+                            <div class="custom-player" style="display:flex;align-items:center;gap:6px;direction:ltr;">
+                                <button class="cp-btn" id="btn-${d.id}" onclick="playFeedAudio('${d.audioUrl}', '${d.id}')">▶</button>
+                                <input type="range" class="cp-slider" id="seek-${d.id}" value="0" min="0" step="0.1" oninput="seekFeedAudio(this.value)">
+                                <span class="cp-time" id="time-${d.id}">00:00</span>
+                            </div>
+                        </div>
                     </div>
+                    ${replyBtnHtml}
                     ${repliesHtml}
                 </div>`;
             });
@@ -1668,9 +1699,14 @@
             if(confirm("تحذير: هل تريد حقاً تصفير المشاهدات في كل التطبيق؟")) {
                 const q = window.query(window.collection(window.db, "stats"));
                 const querySnapshot = await window.getDocs(q);
-                querySnapshot.forEach(async (docSnap) => {
+                for (const docSnap of querySnapshot.docs) {
                     await window.deleteDoc(window.doc(window.db, "stats", docSnap.id));
-                });
+                }
+                const uq = window.query(window.collection(window.db, "users"));
+                const usnap = await window.getDocs(uq);
+                for (const udoc of usnap.docs) {
+                    await window.updateDoc(udoc.ref, { totalVerseViews: 0 });
+                }
                 alert("تم تصفير المشاهدات (Global)");
             }
         }
@@ -1701,8 +1737,10 @@
 
         window.resetLocalViews = async function() {
             if(confirm("تصفير مشاهدات هذا المقطع فقط؟")) {
-                try { await window.deleteDoc(window.doc(window.db, "stats", "file_" + currentGlobalFileId)); alert("تم التصفير"); } 
-                catch(e) { alert("خطأ"); }
+                try {
+                    await window.deleteDoc(window.doc(window.db, "stats", "file_" + currentGlobalFileId));
+                    alert("تم التصفير");
+                } catch(e) { alert("خطأ"); }
             }
         }
 
@@ -1710,17 +1748,27 @@
             if(confirm("تصفير إعجابات هذا المقطع فقط؟")) {
                 const q = window.query(window.collection(window.db, "posts"), window.where("fileId", "==", String(currentGlobalFileId)));
                 const querySnapshot = await window.getDocs(q);
-                querySnapshot.forEach(async (docSnap) => {
-                    // Note: This does not decrease user totalLikes perfectly, doing so requires heavy logic.
-                    // For simplicity in this app version, we just clear the post likes.
-                    let updates = { likes: [] };
+                var ownerDeltas = {};
+                for (const docSnap of querySnapshot.docs) {
                     let data = docSnap.data();
-                    if(data.replies) {
-                        updates.replies = data.replies.map(r => ({ ...r, likes: [] }));
+                    let mainCount = (data.likes && data.likes.length) ? data.likes.length : 0;
+                    ownerDeltas[data.uid] = (ownerDeltas[data.uid] || 0) - mainCount;
+                    if (data.replies && data.replies.length) {
+                        for (let r of data.replies) {
+                            let rc = (r.likes && r.likes.length) ? r.likes.length : 0;
+                            if (r.uid) ownerDeltas[r.uid] = (ownerDeltas[r.uid] || 0) - rc;
+                        }
                     }
-                    await window.updateDoc(window.doc(window.db, "posts", docSnap.id), updates);
-                });
-                alert("تم التصفير (ملاحظة: عداد الإعجابات الكلي للمستخدم قد لا يتأثر بهذا الزر الفرعي)");
+                    await window.updateDoc(window.doc(window.db, "posts", docSnap.id), {
+                        likes: [],
+                        replies: (data.replies || []).map(r => ({ ...r, likes: [] }))
+                    });
+                }
+                for (const uid in ownerDeltas) {
+                    if (ownerDeltas[uid] === 0) continue;
+                    try { await window.updateDoc(window.doc(window.db, "users", uid), { totalLikes: window.increment(ownerDeltas[uid]) }); } catch(e){}
+                }
+                alert("تم التصفير");
             }
         }
 
@@ -1802,3 +1850,4 @@
     </script>
 </body>
 </html>
+
