@@ -67,21 +67,27 @@
             box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
         }
 
-        /* --- HEADER --- */
+        /* --- HEADER (ZENTRIERT) --- */
         .header { 
             position: sticky; top: 0; z-index: 1000; 
             background: linear-gradient(to right, var(--primary), var(--primary-light));
-            padding: 10px 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); 
-            display: flex; justify-content: space-between; align-items: center; 
-            height: 70px; border-bottom: 2px solid var(--gold);
+            padding: 10px 5px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15); 
+            display: flex; 
+            justify-content: center; /* ZENTRIERT ALLES */
+            align-items: center; 
+            gap: 15px; /* ABSTAND ZWISCHEN DEN ELEMENTEN */
+            height: 70px; 
+            border-bottom: 2px solid var(--gold);
         }
+        
         .header-btn {
             background: rgba(255,255,255,0.1); border: 1px solid var(--gold); color: var(--gold-light);
             padding: 5px 10px; border-radius: 8px; cursor: pointer; font-size: 13px; font-family: 'Amiri';
             font-weight: bold; display: flex; align-items: center; gap: 5px; white-space: nowrap;
         }
         
-        .notif-container { position: relative; cursor: pointer; margin-left: 10px; }
+        .notif-container { position: relative; cursor: pointer; display: flex; align-items: center; }
         .notif-icon { font-size: 24px; color: var(--gold-light); }
         .notif-badge { 
             position: absolute; top: -5px; right: -5px; 
@@ -94,7 +100,8 @@
             background: var(--surface); padding: 5px 15px; border-radius: 30px; 
             display: flex; align-items: center; justify-content: center; gap: 8px;
             height: 42px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); border: 2px solid var(--gold);
-            cursor: default; max-width: 50%; overflow: hidden; white-space: nowrap;
+            cursor: default; overflow: hidden; white-space: nowrap;
+            max-width: 55%; /* Begrenzte Breite, damit es auf kleinen Handys passt */
         }
         #pageTitle img { height: 28px; width: auto; display: block; object-fit: contain; flex-shrink: 0; } 
         .title-text-maktaa { 
@@ -163,7 +170,7 @@
         .settings-box input[type="number"] { width: 50px; text-align: center; padding: 4px; border: none; border-radius: 5px; }
         input[type="checkbox"] { transform: scale(1.4); accent-color: var(--gold); }
 
-        /* ADMIN PANEL (IN MENU) */
+        /* ADMIN PANEL */
         .admin-panel {
             background: #fff5f5; border: 2px solid var(--red); border-radius: 12px;
             padding: 15px; margin: 15px auto; text-align: center; display: none; width: 95%; max-width: 600px;
@@ -177,7 +184,6 @@
         }
         .btn-admin-delete-all { background: #8e0000; font-weight: bold; }
         
-        /* ADMIN MENU BUTTON */
         .admin-menu-btn {
             background: var(--primary); color: white; border: 1px solid var(--gold);
             padding: 15px; width: 100%; border-radius: 12px; margin-bottom: 15px;
@@ -629,7 +635,7 @@
                     }
                 } catch(e) { console.log("Login Check Error", e); }
 
-                // Format Name nicely
+                // Format Name nicely (Mahdi Fakhfakh)
                 const prettyName = toTitleCase(first) + " " + toTitleCase(last);
 
                 // SAVE USER TO DB (FOR ADMIN LIST)
@@ -662,17 +668,24 @@
             const recBtn = document.getElementById('recBtn');
             const adminMenuPanel = document.getElementById('adminMenuPanel');
             const adminPlayerPanel = document.getElementById('adminPlayerPanel');
-            
+            const notifContainer = document.querySelector('.notif-container');
+
+            // HIDE BELL FOR ADMINS
             if (uid === 'admin_super') {
+                if(notifContainer) notifContainer.style.display = 'none';
                 recBtn.style.display = 'flex';
-            } else if (role === 'student') {
-                recBtn.style.display = 'flex';
-                if(adminMenuPanel) adminMenuPanel.style.display = 'none';
-                if(adminPlayerPanel) adminPlayerPanel.style.display = 'none';
+                // Panels handled in views
             } else {
-                recBtn.style.display = 'none'; 
-                if(adminMenuPanel) adminMenuPanel.style.display = 'none';
-                if(adminPlayerPanel) adminPlayerPanel.style.display = 'none';
+                if(notifContainer) notifContainer.style.display = 'flex';
+                if (role === 'student') {
+                    recBtn.style.display = 'flex';
+                    if(adminMenuPanel) adminMenuPanel.style.display = 'none';
+                    if(adminPlayerPanel) adminPlayerPanel.style.display = 'none';
+                } else {
+                    recBtn.style.display = 'none'; 
+                    if(adminMenuPanel) adminMenuPanel.style.display = 'none';
+                    if(adminPlayerPanel) adminPlayerPanel.style.display = 'none';
+                }
             }
         }
 
@@ -749,8 +762,11 @@
             const role = localStorage.getItem('it9an_role');
             if(!uid) return;
 
+            // ADMIN GETS NO NOTIFICATIONS
+            if(uid === 'admin_super') return;
+
             let q;
-            if (role === 'teacher' || uid === 'admin_super') {
+            if (role === 'teacher') {
                 q = window.query(window.collection(window.db, "notifications"), window.where("to", "==", "teachers"));
             } else {
                 q = window.query(window.collection(window.db, "notifications"), window.where("to", "==", uid));
@@ -808,10 +824,12 @@
         }
 
         window.openFromNotif = async function(notifId, fileId, postId) {
+            // 1. DELETE NOTIFICATION ON CLICK
             try {
                 await window.deleteDoc(window.doc(window.db, "notifications", notifId));
             } catch(e) { console.log(e); }
 
+            // 2. NAVIGATE
             let foundIndex = -1;
             let foundVerse = 1;
             for(let i=0; i<KURS_DATEN.length; i++) {
@@ -942,14 +960,17 @@
                 snap.forEach(doc => { allLoadedPosts.push({ id: doc.id, ...doc.data() }); });
                 
                 allLoadedPosts.sort((a, b) => {
+                    // 1. HIGHLIGHTED POST FIRST (From Notification)
                     if (highlightedPostId) {
                         if (a.id === highlightedPostId) return -1;
                         if (b.id === highlightedPostId) return 1;
                     }
+                    // 2. STUDENT: OWN POSTS FIRST
                     if (userRole === 'student') {
                         if (a.uid === myUid && b.uid !== myUid) return -1;
                         if (a.uid !== myUid && b.uid === myUid) return 1;
                     }
+                    // 3. DATE
                     return (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0);
                 });
 
@@ -1046,11 +1067,13 @@
                         repliesInner += `
                         <div class="${rBoxClass}">
                             <div class="reply-header">${rDeleteBtn} 🎓 ${r.name}</div>
+                            
                             <div class="custom-player">
                                 <button class="cp-btn" id="btn-${rUniqueId}" onclick="playFeedAudio('${r.audioUrl}', '${rUniqueId}')">▶</button>
                                 <input type="range" class="cp-slider" id="seek-${rUniqueId}" value="0" min="0" step="0.1" oninput="seekFeedAudio(this.value)">
                                 <span class="cp-time" id="time-${rUniqueId}">00:00</span>
                             </div>
+
                             <div class="msg-footer" style="margin-top:5px; border:none; padding-top:0;">
                                 <div></div>
                                 <div class="like-btn ${rLikeClass}">
@@ -1076,11 +1099,13 @@
                     <div style="font-weight:bold; color:var(--primary); font-size:14px; margin-bottom:8px; display:flex; align-items:center;">
                         ${d.name} <span class="${badgeClass}">${badgeText}</span>
                     </div>
+                    
                     <div class="custom-player">
                         <button class="cp-btn" id="btn-${d.id}" onclick="playFeedAudio('${d.audioUrl}', '${d.id}')">▶</button>
                         <input type="range" class="cp-slider" id="seek-${d.id}" value="0" min="0" step="0.1" oninput="seekFeedAudio(this.value)">
                         <span class="cp-time" id="time-${d.id}">00:00</span>
                     </div>
+
                     <div class="msg-footer">
                         ${replyBtnHtml}
                         <div class="like-btn ${mainLikeClass}">
