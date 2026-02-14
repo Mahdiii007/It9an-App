@@ -170,6 +170,7 @@
             box-shadow: var(--shadow); margin-bottom: 20px; 
             width: 100%;
             height: auto;
+            overflow: hidden;
         }
         
         /* FIX: Container Flex Logic */
@@ -185,6 +186,7 @@
         .quran-image { 
             flex: 1;
             min-width: 0;
+            max-width: 100%;
             width: auto;
             max-height: 72vh;
             object-fit: contain;
@@ -264,7 +266,7 @@
             .rec-timer { font-size: 22px; }
             .recording-row { gap: 12px; }
             .settings-box { padding: 8px 10px; gap: 10px; flex-wrap: wrap; }
-            .player-container { flex-direction: column; gap: 4px; }
+            .player-container { flex-direction: row; gap: 4px; }
             .nav-btn { width: 28px; height: 36px; }
         }
 
