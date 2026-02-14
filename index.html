@@ -355,7 +355,7 @@
             <input type="text" id="firstName" class="login-input latin-input" placeholder="الاسم الأول" oninput="this.value=this.value.replace(/[^a-zA-Z\s]/g,'')">
             <input type="text" id="lastName" class="login-input latin-input" placeholder="اللقب" oninput="this.value=this.value.replace(/[^a-zA-Z\s]/g,'')">
             
-            <input type="number" id="birthYear" class="login-input latin-input" placeholder="سنة الميلاد (4 أرقام)" max="2030" min="1950">
+            <input type="number" id="birthYear" class="login-input latin-input" placeholder="سنة الميلاد" max="2030" min="1950">
 
             <select id="userRole" class="login-input login-select">
                 <option value="student">طالب</option>
@@ -626,7 +626,7 @@
             } catch(e) { console.log("File gone:", e); }
         }
 
-        // --- LOGIN LOGIC WITH DISPLAY NAME & NUMBERING ---
+        // --- LOGIN LOGIC (NEW: Smart Duplicate Handling) ---
         async function checkLogin() {
             const pin = document.getElementById('pinInput').value;
             
@@ -667,36 +667,46 @@
                 const fullNameRaw = first + " " + last;
                 const uniqueID = generateUserId(fullNameRaw, role, year);
                 
-                // --- USER DB CHECK (BLOCK & NAME NUMBERING) ---
                 const userRef = window.doc(window.db, "users", uniqueID);
                 let finalDisplayName = toTitleCase(first) + " " + toTitleCase(last);
+                let baseNameOnly = finalDisplayName; // Keep pure name for checks
 
                 try {
                     const userSnap = await window.getDoc(userRef);
                     
                     if(userSnap.exists()) {
-                        // USER EXISTS -> Check Block & Load Name
+                        // LOGIN: User exists
                         if(userSnap.data().blocked) {
                             alert("عذراً، تم حظر هذا الحساب. يرجى مراجعة المعلم.");
                             return;
                         }
                         if(userSnap.data().name) finalDisplayName = userSnap.data().name;
-                        
-                        // Update last login
                         await window.updateDoc(userRef, { lastLogin: window.serverTimestamp() });
 
                     } else {
-                        // NEW USER -> CHECK IF NAME EXISTS ALREADY TO ADD NUMBER
-                        const qName = window.query(window.collection(window.db, "users"), window.where("baseName", "==", finalDisplayName));
+                        // NEW REGISTRATION
+                        // Check if this Base Name exists with DIFFERENT ID (different year)
+                        const qName = window.query(window.collection(window.db, "users"), window.where("baseName", "==", baseNameOnly));
                         const nameSnap = await window.getDocs(qName);
+                        
                         if (!nameSnap.empty) {
-                             finalDisplayName = `${finalDisplayName} ${nameSnap.size + 1}`;
+                             // DUPLICATE FOUND!
+                             // 1. Rename existing users to "Name (Year)"
+                             nameSnap.forEach(async (doc) => {
+                                 let data = doc.data();
+                                 if (!data.name.includes('(')) {
+                                     await window.updateDoc(doc.ref, { name: `${data.baseName} (${data.year})` });
+                                 }
+                             });
+
+                             // 2. Set new user name to "Name (Year)"
+                             finalDisplayName = `${baseNameOnly} (${year})`;
                         }
 
-                        // CREATE NEW USER
+                        // Create User
                         await window.setDoc(userRef, {
                             name: finalDisplayName,
-                            baseName: toTitleCase(first) + " " + toTitleCase(last), // To track duplicates
+                            baseName: baseNameOnly, 
                             role: role,
                             uid: uniqueID,
                             year: year,
@@ -709,7 +719,7 @@
 
                 localStorage.setItem('it9an_uid', uniqueID);
                 localStorage.setItem('it9an_auth', 'true');
-                localStorage.setItem('it9an_name', finalDisplayName); // SAVE NUMBERED NAME
+                localStorage.setItem('it9an_name', finalDisplayName);
                 localStorage.setItem('it9an_role', role);
                 localStorage.removeItem('it9an_hidden'); 
                 document.getElementById('login-screen').style.display = 'none';
@@ -727,11 +737,9 @@
             const adminPlayerPanel = document.getElementById('adminPlayerPanel');
             const notifContainer = document.querySelector('.notif-container');
 
-            // HIDE BELL FOR ADMINS
             if (uid === 'admin_super') {
                 if(notifContainer) notifContainer.style.display = 'none';
                 recBtn.style.display = 'flex';
-                // Panels handled in views
             } else {
                 if(notifContainer) notifContainer.style.display = 'flex';
                 if (role === 'student') {
@@ -746,7 +754,7 @@
             }
         }
 
-        // --- ADMIN USER MANAGEMENT (SORTED BY POSTS) ---
+        // --- ADMIN USER MANAGEMENT ---
         let adminUsersUnsubscribe = null;
         window.showAdminUserList = function() {
             document.getElementById('menu-view').style.display = 'none';
@@ -768,7 +776,6 @@
                 let users = [];
                 snap.forEach(doc => users.push(doc.data()));
                 
-                // SORT BY POSTS COUNT DESC
                 users.sort((a,b) => (b.postsCount || 0) - (a.postsCount || 0));
 
                 users.forEach(u => {
@@ -798,11 +805,9 @@
             try { await window.updateDoc(window.doc(window.db, "users", uid), { blocked: !currentStatus }); } catch(e) { alert("خطأ"); }
         }
 
-        // --- DEEP DELETE USER ---
         window.deleteUser = async function(uid) {
             if(confirm("هل أنت متأكد من حذف هذا المستخدم؟")) {
                 try {
-                    // 1. DELETE ALL POSTS BY THIS USER
                     const qPosts = window.query(window.collection(window.db, "posts"), window.where("uid", "==", uid));
                     const postSnap = await window.getDocs(qPosts);
                     postSnap.forEach(async (doc) => {
@@ -813,8 +818,6 @@
                         }
                         await window.deleteDoc(doc.ref);
                     });
-
-                    // 2. DELETE USER DOC
                     await window.deleteDoc(window.doc(window.db, "users", uid)); 
                 } catch(e) { alert("خطأ"); }
             }
@@ -825,15 +828,14 @@
                 const q = window.query(window.collection(window.db, "users"), window.where("role", "==", role));
                 const snap = await window.getDocs(q);
                 for(const userDoc of snap.docs) {
-                    await deleteUser(userDoc.id); // Re-use deep delete function
+                    await deleteUser(userDoc.id); 
                 }
                 alert("تم الحذف");
             }
         }
 
-        // --- LEADERBOARD LOGIC ---
+        // --- LEADERBOARD ---
         function loadLeaderboard() {
-            // ONLY LOAD TOP 10 STUDENTS
             const q = window.query(window.collection(window.db, "users"), window.where("role", "==", "student"));
             
             window.getDocs(q).then(snap => {
@@ -859,7 +861,7 @@
             });
         }
 
-        // --- NOTIFICATIONS SYSTEM ---
+        // --- NOTIFICATIONS ---
         let notifUnsubscribe = null;
         function listenForNotifications() {
             const uid = localStorage.getItem('it9an_uid');
@@ -882,6 +884,8 @@
                 let unreadCount = 0;
                 let notifs = [];
                 snap.forEach(doc => notifs.push({id: doc.id, ...doc.data()}));
+                
+                // SORT NOTIFICATIONS: NEWEST FIRST (DESC)
                 notifs.sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
 
                 if (notifs.length === 0) {
@@ -942,7 +946,7 @@
             if(foundIndex !== -1) {
                 currentLessonIdx = foundIndex;
                 highlightedPostId = postId;
-                activePostFilter = postId; // SOLO VIEW
+                activePostFilter = postId; 
                 playVers(parseInt(fileId), foundVerse);
             }
         }
@@ -1077,11 +1081,11 @@
                 allLoadedPosts = [];
                 snap.forEach(doc => { allLoadedPosts.push({ id: doc.id, ...doc.data() }); });
                 
-                // FILTER LOGIC
+                // FILTER LOGIC FOR NOTIFICATION CLICK
                 if (activePostFilter) {
                     allLoadedPosts = allLoadedPosts.filter(p => p.id === activePostFilter);
                 } else {
-                    // Normal Sort
+                    // NORMAL SORT
                     allLoadedPosts.sort((a, b) => {
                         if (userRole === 'student') {
                             if (a.uid === myUid && b.uid !== myUid) return -1;
@@ -1314,19 +1318,21 @@
                     }
                     replyTargetId = null; 
                 } else {
-                    await window.addDoc(window.collection(window.db, "posts"), { name: name, role: role, uid: uid, audioUrl: url, fileId: String(currentGlobalFileId), likes: [], timestamp: window.serverTimestamp() });
+                    // NEW POST ADDED
+                    const postRef = await window.addDoc(window.collection(window.db, "posts"), { name: name, role: role, uid: uid, audioUrl: url, fileId: String(currentGlobalFileId), likes: [], timestamp: window.serverTimestamp() });
                     
                     // INCREMENT USER POST COUNT
                     const userRef = window.doc(window.db, "users", uid);
                     try { await window.updateDoc(userRef, { postsCount: window.increment(1) }); } catch(e){}
 
+                    // NOTIFY TEACHERS
                     if(role === 'student') {
                         await window.addDoc(window.collection(window.db, "notifications"), {
                            to: "teachers",
                            senderName: name,
                            type: 'new_recording',
                            fileId: String(currentGlobalFileId),
-                           postId: null, 
+                           postId: postRef.id, // FIX: Pass PostID for filtering
                            timestamp: window.serverTimestamp()
                        });
                     }
