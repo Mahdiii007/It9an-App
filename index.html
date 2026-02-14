@@ -37,7 +37,7 @@
             border-radius: 20px; border: 2px solid var(--gold);
             text-align: center; width: 90%; max-width: 380px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            max-height: 90vh; overflow-y: auto; /* Scrollbar logic */
+            max-height: 90vh; overflow-y: auto;
         }
         .login-title { color: var(--primary); margin: 0 0 10px 0; font-size: 32px; font-weight: bold; }
         .login-subtitle { color: #555; margin: 0 0 20px 0; font-size: 18px; line-height: 1.6; }
@@ -68,8 +68,6 @@
             background: var(--gold); color: var(--primary); cursor: pointer;
             box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
         }
-        
-        /* Platzhalter für Login Scroll */
         .login-spacer { height: 150px; width: 100%; clear: both; }
 
         /* --- HEADER --- */
@@ -107,12 +105,13 @@
             border-right: 2px solid #ddd; padding-right: 10px; margin-right: 5px; white-space: nowrap;
         }
 
-        /* --- MENU & NOTIFICATIONS --- */
+        /* --- MENU --- */
         .menu-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; padding: 25px; max-width: 100%; margin: 0 auto; }
         .menu-item { background: var(--surface); border-radius: 18px; overflow: hidden; cursor: pointer; box-shadow: var(--shadow); display: flex; flex-direction: column; }
         .menu-item-title { text-align: center; padding: 12px 5px; font-weight: bold; color: var(--primary); border-bottom: 1px solid #eee; background: #fdfdfd; font-size: 18px; }
         .menu-item img { width: 100%; height: auto; display: block; padding: 15px; }
         
+        /* --- NOTIFICATIONS --- */
         #notifications-view { display: none; padding: 20px; max-width: 600px; margin: 0 auto; }
         .notif-card { 
             background: white; padding: 20px; margin-bottom: 15px; border-radius: 12px; 
@@ -120,9 +119,9 @@
             display: flex; justify-content: space-between; align-items: center; cursor: pointer;
         }
         .notif-text { font-size: 16px; color: var(--text); font-weight: bold; }
-        .notif-time { font-size: 13px; color: #888; margin-top: 6px; }
+        .notif-time { font-size: 12px; color: #888; margin-top: 6px; direction: ltr; text-align: right; }
 
-        /* --- ADMIN USER MANAGEMENT VIEW --- */
+        /* --- ADMIN USERS --- */
         #admin-users-view { display: none; padding: 20px; max-width: 700px; margin: 0 auto; }
         .user-group-title { color: var(--primary); font-weight: bold; font-size: 20px; margin: 25px 0 15px 0; border-bottom: 2px solid var(--gold); padding-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
         .user-card { 
@@ -130,7 +129,6 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; 
         }
         .user-info { font-weight: bold; font-size: 16px; color: #333; }
-        .user-info small { color: #888; font-weight: normal; font-size: 14px; display: block; margin-top: 2px; }
         .user-actions { display: flex; gap: 10px; }
         .btn-action { border: none; padding: 8px 12px; border-radius: 8px; font-size: 14px; cursor: pointer; color: white; font-family: 'Amiri'; }
         .btn-del { background: var(--red); }
@@ -139,7 +137,7 @@
         .btn-group-del { background: var(--red); color: white; border: none; padding: 8px 20px; border-radius: 20px; font-size: 14px; cursor: pointer; }
         .record-count-badge { background: var(--primary-light); color: white; padding: 4px 10px; border-radius: 10px; font-size: 13px; margin-right: 5px; }
 
-        /* --- LEADERBOARD (TOP 3) --- */
+        /* --- LEADERBOARD --- */
         #leaderboard-section { width: 100%; padding: 15px 20px; margin-bottom: 15px; }
         .leaderboard-card {
             background: linear-gradient(135deg, #fffcf2 0%, #ffffff 100%);
@@ -155,66 +153,51 @@
         .lb-item:last-child { border-bottom: none; }
         .lb-rank { font-weight: bold; color: var(--gold); width: 30px; font-size: 18px; }
         .lb-name { flex-grow: 1; font-weight: bold; color: #333; font-size: 17px; }
-        .lb-stats { display: flex; gap: 8px; }
-        .lb-score { background: var(--primary); color: white; padding: 4px 10px; border-radius: 12px; font-size: 13px; display: flex; align-items: center; gap:4px; }
-        .lb-likes { background: var(--gold); color: white; padding: 4px 10px; border-radius: 12px; font-size: 13px; display: flex; align-items: center; gap:4px; }
-        .lb-motivation { margin-top: 15px; font-size: 16px; color: var(--primary); font-style: italic; font-weight: bold; }
+        .lb-stats { display: flex; gap: 6px; }
+        .lb-badge { color: white; padding: 4px 8px; border-radius: 12px; font-size: 12px; display: flex; align-items: center; gap:3px; }
+        .bg-mic { background: var(--primary); }
+        .bg-like { background: var(--gold); }
+        .bg-view { background: #3498db; }
 
         /* --- PLAYER --- */
         #player-view { display: none; padding: 15px; width: 100%; max-width: 600px; margin: 0 auto; }
         
-        /* FIX: Frame Padding & Height */
         .quran-frame {
             background: var(--surface); padding: 5px; border-radius: 15px;
             border: 2px solid var(--gold-light); outline: 1px solid var(--gold); outline-offset: -5px;
             box-shadow: var(--shadow); margin-bottom: 20px; 
-            width: 100%;
-            height: auto;
+            width: 100%; height: auto;
         }
-        
-        /* FIX: Container Flex Logic */
         .player-container { 
-            width: 100%; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            gap: 10px; /* Space between elements */
+            width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 10px; 
         }
-        
-        /* FIX: Image Scaling */
         .quran-image { 
-            flex: 1; /* Take available space */
-            min-width: 0; /* CRITICAL: Allows image to shrink inside flex container */
-            width: auto;
-            max-height: 70vh; /* Scaled to viewport */
-            object-fit: contain; /* Never crop the image */
-            border-radius: 5px; 
-            display: block; 
+            flex: 1; min-width: 0; width: auto; max-height: 70vh; 
+            object-fit: contain; border-radius: 5px; display: block; 
         }
 
-        /* FIX: Buttons Fixed Size */
+        /* SMALLER SWIPE BUTTONS */
         .nav-btn { 
-            width: 40px; height: 55px; flex-shrink: 0; /* Don't shrink buttons */
+            width: 30px; height: 45px; flex-shrink: 0; /* Smaller size */
             background: var(--bg); color: var(--primary); border: 1px solid var(--gold);
-            border-radius: 8px; font-size: 20px; cursor: pointer; 
+            border-radius: 8px; font-size: 18px; cursor: pointer; 
             display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
             z-index: 10;
         }
         .nav-btn:active { background: var(--gold-light); }
-        
-        /* FORCE ARROW DIRECTION LTR TO PREVENT MIRRORING */
         .arrow-icon { direction: ltr; display: inline-block; }
 
-        /* SETTINGS - BIGGER */
+        /* SETTINGS - SINGLE LINE */
         .settings-box { 
-            background: var(--primary-light); color: white; padding: 15px; 
-            border-radius: 15px; margin-bottom: 25px; display: flex; justify-content: space-around; 
-            align-items: center; box-shadow: inset 0 0 10px rgba(0,0,0,0.1);
+            background: var(--primary-light); color: white; padding: 10px 15px; 
+            border-radius: 15px; margin-bottom: 20px; display: flex; justify-content: center; 
+            align-items: center; gap: 15px; /* Items in one line */
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.1);
         }
-        .setting-group { text-align: center; }
-        .setting-label { font-size: 16px; font-weight: bold; color: var(--gold-light); margin-bottom: 6px; display: block; }
-        .settings-box input[type="number"] { width: 70px; text-align: center; padding: 8px; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; color: var(--primary); }
-        input[type="checkbox"] { transform: scale(1.8); accent-color: var(--gold); margin: 5px; cursor: pointer; }
+        .setting-group { display: flex; align-items: center; gap: 5px; }
+        .setting-label { font-size: 16px; font-weight: bold; color: var(--gold-light); margin: 0; }
+        .settings-box input[type="number"] { width: 50px; text-align: center; padding: 5px; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; color: var(--primary); }
+        input[type="checkbox"] { transform: scale(1.5); accent-color: var(--gold); margin: 0; cursor: pointer; }
 
         /* ADMIN PANEL */
         .admin-panel {
@@ -229,7 +212,6 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
         .btn-admin-delete-all { background: #8e0000; font-weight: bold; }
-        
         .admin-menu-btn {
             background: var(--primary); color: white; border: 1px solid var(--gold);
             padding: 18px; width: 100%; border-radius: 15px; margin-bottom: 20px;
@@ -237,23 +219,7 @@
             align-items: center; justify-content: center; gap: 12px;
         }
 
-        /* CUSTOM PLAYER */
-        .custom-player {
-            display: flex; align-items: center; gap: 12px;
-            background: rgba(0,0,0,0.03); padding: 10px 15px; border-radius: 30px;
-            border: 1px solid #ddd; margin-top: 10px; direction: ltr;
-        }
-        .cp-btn {
-            width: 38px; height: 38px; border-radius: 50%; border: none;
-            background: var(--primary); color: white; cursor: pointer;
-            display: flex; align-items: center; justify-content: center; font-size: 16px;
-            flex-shrink: 0; transition: transform 0.1s;
-        }
-        .cp-btn:active { transform: scale(0.9); }
-        .cp-slider { flex-grow: 1; height: 6px; accent-color: var(--primary); cursor: pointer; }
-        .cp-time { font-size: 13px; color: #666; font-family: monospace; min-width: 40px; font-weight: bold; }
-
-        /* FEED & STATS */
+        /* --- FEED & STATS (COMPACT) --- */
         .status-bar { text-align: center; font-size: 20px; font-weight: bold; color: var(--primary); margin: 20px 0; padding: 12px; background: rgba(20, 89, 52, 0.1); border-radius: 10px; border: 1px dashed var(--primary); }
         .view-counter { 
             font-size: 16px; color: #555; text-align: center; margin-top: 10px; 
@@ -261,61 +227,67 @@
             border-radius: 25px; width: fit-content; margin-left: auto; margin-right: auto;
             border: 1px solid #ddd; font-weight: bold; transition: background 0.2s;
         }
-        .view-counter:active { background: rgba(0,0,0,0.1); transform: scale(0.98); }
         
         .feed-container { min-height: 100px; }
-        
-        .feed-msg { padding: 18px; border-radius: 15px; margin-bottom: 30px; position: relative; transition: transform 0.2s; }
+        .feed-msg { padding: 12px; border-radius: 15px; margin-bottom: 15px; position: relative; transition: transform 0.2s; } /* Padding reduced */
         .feed-msg.highlighted { border: 2px solid var(--gold); background: #fffffa; animation: flash 1s; }
-        @keyframes flash { 0% { background: var(--gold-light); } 100% { background: #fffffa; } }
-
+        
         .student-msg { background: var(--surface); border-right: 5px solid #ddd; box-shadow: 0 3px 8px rgba(0,0,0,0.05); }
         .teacher-msg { background: #fffcf2; border: 1px solid var(--gold); border-right: 6px solid var(--gold); box-shadow: 0 5px 12px rgba(212, 175, 55, 0.15); transform: scale(1.01); }
         .admin-msg { background: #e8f5e9; border: 2px solid var(--primary); border-right: 7px solid var(--primary); box-shadow: 0 6px 15px rgba(15, 76, 58, 0.2); transform: scale(1.03); z-index: 5; }
 
-        .role-badge { padding: 4px 10px; border-radius: 8px; font-size: 12px; margin-left: 10px; color: white; display: inline-block; vertical-align: middle; }
+        .role-badge { padding: 2px 8px; border-radius: 6px; font-size: 11px; margin-left: 5px; color: white; display: inline-block; vertical-align: middle; }
         .badge-student { background: #95a5a6; }
         .badge-teacher { background: var(--gold); }
         .badge-admin { background: var(--primary); font-weight: bold; }
-        
-        .msg-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(0,0,0,0.05); }
-        .like-btn { display: flex; align-items: center; border-radius: 25px; font-size: 16px; background: #f9f9f9; border: 1px solid #eee; overflow: hidden; }
-        .like-btn.liked { color: var(--primary); background: #e8f5e9; border-color: var(--primary); font-weight: bold; }
-        .like-btn.disabled { opacity: 0.5; filter: grayscale(1); }
-        .like-action { padding: 8px 15px; cursor: pointer; }
-        .like-action.locked { cursor: not-allowed; opacity: 0.3; filter: grayscale(1); }
-        .like-count { padding: 8px 15px; border-right: 1px solid #ddd; cursor: pointer; background: rgba(0,0,0,0.03); }
-        .like-count:active { background: rgba(0,0,0,0.1); }
-        .reply-btn { cursor: pointer; background: none; border: 1px solid var(--primary); color: var(--primary); padding: 6px 15px; border-radius: 8px; font-size: 14px; font-weight: bold; }
-        .delete-btn { position: absolute; top: 12px; left: 12px; background: rgba(255,0,0,0.1); color: var(--red); border: none; border-radius: 50%; width: 35px; height: 35px; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-        .reply-delete-btn { background: none; border: none; font-size: 14px; cursor: pointer; margin-right: 5px; opacity: 0.7; color: var(--red); }
 
-        .replies-wrapper { margin-top: 20px; padding-right: 25px; border-right: 4px solid #e0e0e0; position: relative; }
-        .replies-title { font-size: 13px; color: #999; margin-bottom: 8px; font-weight: bold; margin-right: -29px; background: var(--bg); display: inline-block; padding: 0 8px; }
-        .reply-box { margin-top: 12px; padding: 15px; background: #f9f9f9; border-radius: 10px; border: 1px solid #eee; position: relative; }
-        .reply-box::before { content: ''; position: absolute; top: 18px; right: -29px; width: 25px; height: 2px; background: #e0e0e0; }
-        .reply-box.reply-teacher { background: #fffcf2; border: 1px solid var(--gold); }
-        .reply-box.reply-admin { background: #e8f5e9; border: 1px solid var(--primary); }
-        .reply-header { font-size: 14px; font-weight: bold; color: var(--primary); margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
-
-        .load-more-btn { display: block; width: 100%; padding: 15px; text-align: center; background: #f0f0f0; color: #555; border: none; border-radius: 10px; font-family: 'Amiri'; font-weight: bold; font-size: 16px; cursor: pointer; margin-top: 25px; }
-        .load-more-btn:active { background: #e0e0e0; }
-
-        /* RESET FILTER BUTTON */
-        .reset-filter-btn {
-            display: block; margin: 15px auto; padding: 10px 25px;
-            background: #eee; border: 1px solid #ccc; border-radius: 25px;
-            cursor: pointer; font-size: 15px; color: #555; font-family: 'Amiri';
+        /* COMPACT FEED PLAYER LINE */
+        .msg-compact-row {
+            display: flex; align-items: center; gap: 8px; width: 100%; margin-top: 5px;
         }
+        
+        .cp-btn {
+            width: 32px; height: 32px; border-radius: 50%; border: none;
+            background: var(--primary); color: white; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; font-size: 14px;
+            flex-shrink: 0;
+        }
+        .cp-slider { flex-grow: 1; height: 5px; accent-color: var(--primary); cursor: pointer; min-width: 50px; }
+        .cp-time { font-size: 11px; color: #666; font-family: monospace; min-width: 35px; }
 
-        .audio-error-msg { display:none; color:#c0392b; font-size:14px; font-weight:bold; text-align:center; padding:15px; border:1px dashed #c0392b; border-radius:10px; background:rgba(192, 57, 43, 0.05); }
+        /* Actions in same line */
+        .compact-actions { display: flex; align-items: center; gap: 5px; margin-right: 5px; }
+        .like-btn { display: flex; align-items: center; border-radius: 20px; font-size: 14px; background: #f9f9f9; border: 1px solid #eee; overflow: hidden; height: 30px; }
+        .like-btn.liked { color: var(--primary); background: #e8f5e9; border-color: var(--primary); }
+        .like-action { padding: 0 10px; cursor: pointer; height: 100%; display: flex; align-items: center; }
+        .like-count { padding: 0 10px; border-right: 1px solid #ddd; cursor: pointer; background: rgba(0,0,0,0.03); height: 100%; display: flex; align-items: center; }
+        .reply-btn { cursor: pointer; background: none; border: 1px solid var(--primary); color: var(--primary); padding: 2px 10px; border-radius: 15px; font-size: 12px; font-weight: bold; height: 30px; white-space: nowrap; }
+        
+        .delete-btn { position: absolute; top: 8px; left: 8px; background: rgba(255,0,0,0.1); color: var(--red); border: none; border-radius: 50%; width: 25px; height: 25px; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 10; }
+        
+        .post-meta { font-size: 11px; color: #999; margin-right: 5px; }
 
-        /* RECORDING UI */
-        #recording-ui { display: none; position: fixed; bottom: 130px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 380px; background: rgba(255,255,255,0.95); backdrop-filter: blur(5px); border: 2px solid var(--red); border-radius: 25px; padding: 25px; z-index: 1500; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
-        .rec-timer { font-size: 42px; font-weight: bold; color: var(--text); font-family: monospace; margin-bottom: 15px; }
-        .rec-status-text { font-size: 16px; color: var(--red); animation: blink 1.5s infinite; margin-top: 10px; font-weight: bold; }
-        .stop-ui-btn { background: var(--red); color: white; border: none; padding: 10px 30px; border-radius: 25px; font-size: 16px; font-weight: bold; cursor: pointer; font-family: 'Amiri'; }
+        /* REPLIES */
+        .replies-wrapper { margin-top: 10px; padding-right: 15px; border-right: 3px solid #e0e0e0; }
+        .reply-box { margin-top: 8px; padding: 10px; background: #f9f9f9; border-radius: 10px; border: 1px solid #eee; }
+        .reply-box.reply-teacher { background: #fffcf2; border: 1px solid var(--gold); }
 
+        /* RECORDING UI - RAISED & COMPACT */
+        #recording-ui { 
+            display: none; position: fixed; bottom: 140px; /* Moved UP from 130px to avoid footer */
+            left: 50%; transform: translateX(-50%); width: 90%; max-width: 380px; 
+            background: rgba(255,255,255,0.95); backdrop-filter: blur(5px); 
+            border: 2px solid var(--red); border-radius: 25px; padding: 15px 25px; 
+            z-index: 1500; 
+            flex-direction: row; /* Changed to ROW */
+            align-items: center; justify-content: space-between; 
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2); 
+        }
+        .rec-timer { font-size: 28px; font-weight: bold; color: var(--text); font-family: monospace; }
+        .rec-status-text { display: none; } /* Hide text to save space, or make small */
+        .stop-ui-btn { background: var(--red); color: white; border: none; padding: 8px 20px; border-radius: 20px; font-size: 16px; font-weight: bold; cursor: pointer; font-family: 'Amiri'; }
+
+        /* REVIEW MODAL */
         #review-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(3px); z-index: 6000; justify-content: center; align-items: center; }
         .review-box { background: white; padding: 30px; border-radius: 25px; width: 85%; max-width: 350px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.3); border: 2px solid var(--primary); }
         .review-title { font-size: 24px; font-weight: bold; margin-bottom: 25px; color: var(--primary); }
@@ -382,11 +354,11 @@
             <div class="login-note">
                 ⚠️ <strong>تنبيه هام:</strong><br>
                 لضمان حفظ تقدمك، يرجى دائماً كتابة الاسم وسنة الميلاد <b>بنفس الطريقة تماماً</b> عند كل دخول.<br>
-                <span style="color:#c0392b; font-weight:bold; display:block; margin-top:5px;">يجب استخدام الأحرف اللاتينية فقط</span>
+                <span style="color:#c0392b; font-weight:bold; display:block; margin-top:5px;">(A-Z) يجب استخدام الأحرف اللاتينية فقط</span>
             </div>
 
-            <input type="text" id="firstName" class="login-input latin-input" placeholder="الاسم الأول" oninput="this.value=this.value.replace(/[^a-zA-Z\s]/g,'')">
-            <input type="text" id="lastName" class="login-input latin-input" placeholder="اللقب" oninput="this.value=this.value.replace(/[^a-zA-Z\s]/g,'')">
+            <input type="text" id="firstName" class="login-input latin-input" placeholder="First Name (A-Z)" oninput="this.value=this.value.replace(/[^a-zA-Z\s]/g,'')">
+            <input type="text" id="lastName" class="login-input latin-input" placeholder="Last Name (A-Z)" oninput="this.value=this.value.replace(/[^a-zA-Z\s]/g,'')">
             
             <input type="number" id="birthYear" class="login-input latin-input" placeholder="سنة الميلاد" oninput="if(this.value.length>4) this.value=this.value.slice(0,4);">
 
@@ -401,7 +373,7 @@
         </div>
     </div>
 
-    <div class="header">
+<div class="header">
         <div class="notif-container" onclick="showNotifications()">
             <div class="notif-icon">🔔</div>
             <div id="notifBadge" class="notif-badge">0</div>
@@ -443,8 +415,9 @@
         </div>
 
         <div class="admin-actions">
-            <button class="btn-admin-reset" onclick="resetAllViews()">👁️ تصفير كل المشاهدات</button>
-            <button class="btn-admin-reset" onclick="resetAllLikes()">👍 تصفير كل الإعجابات</button>
+            <button class="btn-admin-reset" onclick="resetAllViews()">👁️ تصفير المشاهدات</button>
+            <button class="btn-admin-reset" onclick="resetAllLikes()">👍 تصفير الإعجابات</button>
+            <button class="btn-admin-reset" onclick="resetAllNotifications()">🔔 تصفير الإشعارات</button>
             <button class="btn-admin-reset btn-admin-delete-all" onclick="deleteAllPostsGlobal()">🗑️ حذف كل التسجيلات</button>
         </div>
     </div>
@@ -474,8 +447,14 @@
         </div>
 
         <div class="settings-box">
-            <div class="setting-group"><span class="setting-label">تكرار</span><input type="number" id="globalRepeats" value="3" min="1"></div>
-            <div class="setting-group"><span class="setting-label">وقفة</span><input type="checkbox" id="globalGap" checked></div>
+            <div class="setting-group">
+                <span class="setting-label">تكرار</span>
+                <input type="number" id="globalRepeats" value="3" min="1">
+            </div>
+            <div class="setting-group" style="border-right: 1px solid rgba(255,255,255,0.3); padding-right: 15px; margin-right: 5px;">
+                <span class="setting-label">وقفة</span>
+                <input type="checkbox" id="globalGap" checked>
+            </div>
         </div>
 
         <div class="quran-frame">
@@ -492,14 +471,16 @@
         
         <div class="view-counter" onclick="showViewers()">👁️ <span id="viewCount">0</span> مشاهدة</div>
 
-        <h4 style="text-align:center; color:var(--primary); margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:10px; font-size:20px;">المشاركات</h4>
+        <h4 style="text-align:center; color:var(--primary); margin-top:20px; border-bottom:1px solid #ddd; padding-bottom:5px; font-size:18px;">المشاركات</h4>
         <div id="community-feed" class="feed-container">جاري التحميل...</div>
+        
+        <div style="height: 120px;"></div>
     </div>
 
     <div id="recording-ui">
         <div id="recTimer" class="rec-timer">00:00</div>
+        <div id="recText" class="rec-status-text">جاري التسجيل...</div> 
         <button class="stop-ui-btn" onclick="stopRecordingAndReview()">⏹ إنهاء</button>
-        <div id="recText" class="rec-status-text">جاري التسجيل...</div>
     </div>
 
     <div id="review-modal">
@@ -530,7 +511,7 @@
     
     <audio id="mainAudio"></audio>
 
-    <script>
+<script>
         const STUDENT_PIN = "1234";
         const TEACHER_PIN = "7777";
         const ADMIN_PIN = "1879"; 
@@ -552,12 +533,69 @@
         
         window.currentViewersList = []; 
         
-        let feedLimit = 3;
+        let feedLimit = 5;
         let allLoadedPosts = [];
         let highlightedPostId = null;
         let activePostFilter = null;
 
-        // --- GLOBAL FEED PLAYER LOGIC ---
+        // --- HELPER: DATE FORMAT ---
+        function formatPostDate(timestamp) {
+            if(!timestamp) return "";
+            const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            return `${day}.${month}. ${hours}:${minutes}`;
+        }
+
+        // --- CLEANUP LOGIC (30 DAYS) ---
+        async function cleanOldPosts() {
+            console.log("Checking for old posts...");
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+            
+            const q = window.query(window.collection(window.db, "posts"), window.where("timestamp", "<", thirtyDaysAgo));
+            const snapshot = await window.getDocs(q);
+            
+            if(snapshot.empty) return;
+
+            snapshot.forEach(async (docSnap) => {
+                const data = docSnap.data();
+                // 1. Delete Audio
+                if(data.audioUrl) await cleanupAudioFile(data.audioUrl);
+                
+                // 2. Decrement User Stats
+                if(data.uid) {
+                    const userRef = window.doc(window.db, "users", data.uid);
+                    const likesToRemove = data.likes ? data.likes.length : 0;
+                    try {
+                        await window.updateDoc(userRef, { 
+                            postsCount: window.increment(-1),
+                            totalLikes: window.increment(-likesToRemove)
+                        });
+                    } catch(e) { console.log("User stat update error", e); }
+                }
+
+                // 3. Delete Replies Audio & Notify
+                if(data.replies) {
+                    for(let r of data.replies) {
+                        if(r.audioUrl) await cleanupAudioFile(r.audioUrl);
+                    }
+                }
+
+                // 4. Delete the Post Doc
+                await window.deleteDoc(docSnap.ref);
+                
+                // 5. Delete associated Notification
+                const qNotif = window.query(window.collection(window.db, "notifications"), window.where("postId", "==", docSnap.id));
+                const notifSnap = await window.getDocs(qNotif);
+                notifSnap.forEach(async (nDoc) => await window.deleteDoc(nDoc.ref));
+            });
+            console.log(`Cleaned up ${snapshot.size} old posts.`);
+        }
+
+        // --- GLOBAL FEED PLAYER & NOTIF CLEARING ---
         let currentFeedAudioId = null;
         const feedAudioEl = document.getElementById('feedAudio');
 
@@ -583,8 +621,33 @@
             currentFeedAudioId = null;
         });
 
-        window.playFeedAudio = function(url, id) {
+        // PLAY AUDIO + AUTO DELETE NOTIFICATION
+        window.playFeedAudio = async function(url, id, postId, type, ownerUid) {
             stopLoop(); // Stop Main Quran Audio
+
+            // --- NOTIFICATION CLEARING LOGIC ---
+            const myRole = localStorage.getItem('it9an_role');
+            const myUid = localStorage.getItem('it9an_uid');
+            
+            if (type === 'post' && myRole === 'teacher' && postId) {
+                // Teacher plays student post -> Delete Notification for teachers
+                // We search for notification with this postId and to=='teachers'
+                const q = window.query(window.collection(window.db, "notifications"), 
+                            window.where("postId", "==", postId), 
+                            window.where("to", "==", "teachers"));
+                const snap = await window.getDocs(q);
+                snap.forEach(d => window.deleteDoc(d.ref));
+            }
+            else if (type === 'reply' && myRole === 'student' && postId && myUid) {
+                // Student plays teacher reply -> Delete Notification for THIS student
+                const q = window.query(window.collection(window.db, "notifications"), 
+                            window.where("postId", "==", postId), 
+                            window.where("to", "==", myUid),
+                            window.where("type", "==", "reply")); // Ensure it's a reply notif
+                const snap = await window.getDocs(q);
+                snap.forEach(d => window.deleteDoc(d.ref));
+            }
+            // -----------------------------------
 
             if (currentFeedAudioId === id) {
                 if (feedAudioEl.paused) {
@@ -604,13 +667,13 @@
                 
                 currentFeedAudioId = id;
                 const newBtn = document.getElementById('btn-' + id);
-                newBtn.innerText = "⏳"; 
+                if(newBtn) newBtn.innerText = "⏳"; 
                 
                 feedAudioEl.src = url;
                 feedAudioEl.play().then(() => {
-                    newBtn.innerText = "⏸";
+                    if(newBtn) newBtn.innerText = "⏸";
                 }).catch(e => {
-                    newBtn.innerText = "⚠️";
+                    if(newBtn) newBtn.innerText = "⚠️";
                     console.log(e);
                 });
             }
@@ -620,6 +683,7 @@
             feedAudioEl.currentTime = val;
         }
 
+        // --- MAIN AUDIO ---
         const audioEl = document.getElementById('mainAudio');
         const pBar = document.getElementById('progressBar');
         const cTime = document.getElementById('currentTime');
@@ -639,22 +703,16 @@
             }
         });
 
-        if(localStorage.getItem('it9an_auth') === 'true') { localStorage.removeItem('it9an_auth'); }
-
-        // --- NEW ID GENERATOR WITH YEAR ---
+        // --- ID & UTILS ---
         function generateUserId(fullName, role, year) {
             let cleanName = fullName.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
             return role + "_" + cleanName + "_" + year;
         }
-
-        // --- TITLE CASE ---
         function toTitleCase(str) {
             return str.replace(/\w\S*/g, function(txt){
                 return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
             });
         }
-
-        // --- STORAGE CLEANUP ---
         async function cleanupAudioFile(url) {
             if(!url) return;
             try {
@@ -663,7 +721,7 @@
             } catch(e) { console.log("File gone:", e); }
         }
 
-        // --- LOGIN LOGIC ---
+        // --- LOGIN ---
         async function checkLogin() {
             const pin = document.getElementById('pinInput').value;
             
@@ -677,6 +735,7 @@
                 updateUIForRole(); 
                 listenForNotifications();
                 renderMenu();
+                cleanOldPosts(); // Admin triggers cleanup
                 return;
             }
 
@@ -685,10 +744,9 @@
             const year = document.getElementById('birthYear').value.trim();
             const role = document.getElementById('userRole').value;
 
-            // VALIDATION
             const latinRegex = /^[a-zA-Z\s]+$/;
             if (!latinRegex.test(first) || !latinRegex.test(last)) {
-                alert("الرجاء كتابة الاسم بالأحرف اللاتينية فقط");
+                alert("الرجاء كتابة الاسم بالأحرف اللاتينية فقط (A-Z)");
                 return;
             }
             if (year.length !== 4 || isNaN(year)) {
@@ -703,7 +761,6 @@
             if(isPinValid) {
                 const fullNameRaw = first + " " + last;
                 const uniqueID = generateUserId(fullNameRaw, role, year);
-                
                 const userRef = window.doc(window.db, "users", uniqueID);
                 let finalDisplayName = toTitleCase(first) + " " + toTitleCase(last);
                 let baseNameOnly = finalDisplayName; 
@@ -712,19 +769,16 @@
                     const userSnap = await window.getDoc(userRef);
                     
                     if(userSnap.exists()) {
-                        // LOGIN: User exists
                         if(userSnap.data().blocked) {
-                            alert("عذراً، تم حظر هذا الحساب. يرجى مراجعة المعلم.");
+                            alert("عذراً، تم حظر هذا الحساب.");
                             return;
                         }
                         if(userSnap.data().name) finalDisplayName = userSnap.data().name;
                         await window.updateDoc(userRef, { lastLogin: window.serverTimestamp() });
-
                     } else {
                         // NEW REGISTRATION
                         const qName = window.query(window.collection(window.db, "users"), window.where("baseName", "==", baseNameOnly));
                         const nameSnap = await window.getDocs(qName);
-                        
                         if (!nameSnap.empty) {
                              nameSnap.forEach(async (doc) => {
                                  let data = doc.data();
@@ -734,18 +788,9 @@
                              });
                              finalDisplayName = `${baseNameOnly} (${year})`;
                         }
-
-                        // Create User
                         await window.setDoc(userRef, {
-                            name: finalDisplayName,
-                            baseName: baseNameOnly, 
-                            role: role,
-                            uid: uniqueID,
-                            year: year,
-                            lastLogin: window.serverTimestamp(),
-                            postsCount: 0,
-                            totalLikes: 0, // NEW: Init Likes
-                            blocked: false 
+                            name: finalDisplayName, baseName: baseNameOnly, role: role, uid: uniqueID, year: year,
+                            lastLogin: window.serverTimestamp(), postsCount: 0, totalLikes: 0, totalViews: 0, blocked: false 
                         });
                     }
                 } catch(e) { console.log("Login Check Error", e); }
@@ -773,6 +818,7 @@
             if (uid === 'admin_super') {
                 if(notifContainer) notifContainer.style.display = 'none';
                 recBtn.style.display = 'flex';
+                document.getElementById('leaderboard-section').style.display = 'block'; // Show LB in Admin too
             } else {
                 if(notifContainer) notifContainer.style.display = 'flex';
                 if (role === 'student') {
@@ -787,7 +833,7 @@
             }
         }
 
-        // --- ADMIN USER MANAGEMENT ---
+        // --- USERS & ADMIN ---
         let adminUsersUnsubscribe = null;
         window.showAdminUserList = function() {
             document.getElementById('menu-view').style.display = 'none';
@@ -803,12 +849,10 @@
             adminUsersUnsubscribe = window.onSnapshot(q, (snap) => {
                 const tList = document.getElementById('teachersList');
                 const sList = document.getElementById('studentsList');
-                tList.innerHTML = "";
-                sList.innerHTML = "";
+                tList.innerHTML = ""; sList.innerHTML = "";
 
                 let users = [];
                 snap.forEach(doc => users.push(doc.data()));
-                
                 users.sort((a,b) => (b.postsCount || 0) - (a.postsCount || 0));
 
                 users.forEach(u => {
@@ -827,63 +871,43 @@
                             <button class="btn-action btn-del" onclick="deleteUser('${u.uid}')">حذف</button>
                         </div>
                     </div>`;
-
-                    if(u.role === 'teacher') tList.innerHTML += html;
-                    else sList.innerHTML += html;
+                    if(u.role === 'teacher') tList.innerHTML += html; else sList.innerHTML += html;
                 });
             });
         }
-
-        window.toggleBlockUser = async function(uid, currentStatus) {
-            try { await window.updateDoc(window.doc(window.db, "users", uid), { blocked: !currentStatus }); } catch(e) { alert("خطأ"); }
-        }
-
+        window.toggleBlockUser = async function(uid, s) { try { await window.updateDoc(window.doc(window.db, "users", uid), { blocked: !s }); } catch(e) {} }
         window.deleteUser = async function(uid) {
-            if(confirm("هل أنت متأكد من حذف هذا المستخدم؟")) {
-                try {
-                    const qPosts = window.query(window.collection(window.db, "posts"), window.where("uid", "==", uid));
-                    const postSnap = await window.getDocs(qPosts);
-                    postSnap.forEach(async (doc) => {
-                        const data = doc.data();
-                        if(data.audioUrl) await cleanupAudioFile(data.audioUrl);
-                        if(data.replies) {
-                            for(let r of data.replies) if(r.audioUrl) await cleanupAudioFile(r.audioUrl);
-                        }
-                        await window.deleteDoc(doc.ref);
-                    });
-                    await window.deleteDoc(window.doc(window.db, "users", uid)); 
-                } catch(e) { alert("خطأ"); }
+            if(confirm("حذف المستخدم؟")) {
+                const qPosts = window.query(window.collection(window.db, "posts"), window.where("uid", "==", uid));
+                const postSnap = await window.getDocs(qPosts);
+                postSnap.forEach(async (doc) => {
+                    if(doc.data().audioUrl) await cleanupAudioFile(doc.data().audioUrl);
+                    await window.deleteDoc(doc.ref);
+                });
+                await window.deleteDoc(window.doc(window.db, "users", uid)); 
             }
         }
-
         window.deleteAllUsers = async function(role) {
-            if(confirm("تحذير: هل تريد حذف جميع " + (role==='student'?'الطلاب':'المعلمين') + "؟")) {
+            if(confirm("حذف جميع " + role + "؟")) {
                 const q = window.query(window.collection(window.db, "users"), window.where("role", "==", role));
                 const snap = await window.getDocs(q);
-                for(const userDoc of snap.docs) {
-                    await deleteUser(userDoc.id); 
-                }
-                alert("تم الحذف");
+                snap.forEach(d => deleteUser(d.id));
             }
         }
 
-        // --- LEADERBOARD (TOP 3) ---
+        // --- LEADERBOARD ---
         function loadLeaderboard() {
             const q = window.query(window.collection(window.db, "users"), window.where("role", "==", "student"));
-            
             window.getDocs(q).then(snap => {
                 let users = [];
                 snap.forEach(doc => users.push(doc.data()));
-                
-                // Sort by Posts Count
+                // Sort by Posts first, then Likes
                 users.sort((a,b) => (b.postsCount || 0) - (a.postsCount || 0));
-                
-                // Show only Top 3
                 let top3 = users.slice(0, 3);
                 
                 const list = document.getElementById('leaderboard-list');
                 list.innerHTML = "";
-                if(top3.length === 0) { list.innerHTML = "<li style='text-align:center; color:#999; padding:10px;'>لا يوجد طلاب بعد</li>"; return; }
+                if(top3.length === 0) { list.innerHTML = "<li style='text-align:center; color:#999; padding:10px;'>لا يوجد طلاب después</li>"; return; }
 
                 top3.forEach((u, i) => {
                     list.innerHTML += `
@@ -893,8 +917,9 @@
                             <span class="lb-name">${u.name}</span>
                         </div>
                         <div class="lb-stats">
-                            <span class="lb-score">🎤 ${u.postsCount || 0}</span>
-                            <span class="lb-likes">👍 ${u.totalLikes || 0}</span>
+                            <span class="lb-badge bg-view">👁️ ${u.totalViews || 0}</span>
+                            <span class="lb-badge bg-mic">🎤 ${u.postsCount || 0}</span>
+                            <span class="lb-badge bg-like">👍 ${u.totalLikes || 0}</span>
                         </div>
                     </li>`;
                 });
@@ -909,95 +934,72 @@
             if(!uid || uid === 'admin_super') return;
 
             let q;
-            if (role === 'teacher') {
-                q = window.query(window.collection(window.db, "notifications"), window.where("to", "==", "teachers"));
-            } else {
-                q = window.query(window.collection(window.db, "notifications"), window.where("to", "==", uid));
-            }
+            if (role === 'teacher') q = window.query(window.collection(window.db, "notifications"), window.where("to", "==", "teachers"));
+            else q = window.query(window.collection(window.db, "notifications"), window.where("to", "==", uid));
 
             if(notifUnsubscribe) notifUnsubscribe();
             notifUnsubscribe = window.onSnapshot(q, (snap) => {
                 const list = document.getElementById('notifList');
                 const badge = document.getElementById('notifBadge');
                 list.innerHTML = "";
-                
                 let unreadCount = 0;
                 let notifs = [];
                 snap.forEach(doc => notifs.push({id: doc.id, ...doc.data()}));
-                
                 notifs.sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
 
                 if (notifs.length === 0) {
-                    list.innerHTML = "<div style='text-align:center; padding:20px; color:#999; font-size:16px;'>لا توجد إشعارات</div>";
-                    badge.style.display = 'none';
-                    return;
+                    list.innerHTML = "<div style='text-align:center; padding:20px; color:#999;'>لا توجد إشعارات</div>";
+                    badge.style.display = 'none'; return;
                 }
-
                 notifs.forEach(n => {
                     unreadCount++;
-                    let text = "";
-                    if(n.type === 'new_recording') text = `🎤 تسجيل جديد من ${n.senderName}`;
-                    if(n.type === 'reply') text = `✍️ رد جديد من ${n.senderName}`;
-
+                    let dateStr = formatPostDate(n.timestamp);
+                    let text = n.type === 'new_recording' ? `🎤 تسجيل جديد من ${n.senderName}` : `✍️ رد جديد من ${n.senderName}`;
                     list.innerHTML += `
                     <div class="notif-card" onclick="openFromNotif('${n.id}', '${n.fileId}', '${n.postId}')">
                         <div>
                             <div class="notif-text">${text}</div>
-                            <div class="notif-time">اضغط للذهاب للمقطع</div>
+                            <div class="notif-time">${dateStr}</div>
                         </div>
                         <div style="font-size:24px;">👈</div>
                     </div>`;
                 });
-
-                if(unreadCount > 0) {
-                    badge.innerText = unreadCount;
-                    badge.style.display = 'flex';
-                } else {
-                    badge.style.display = 'none';
-                }
+                if(unreadCount > 0) { badge.innerText = unreadCount; badge.style.display = 'flex'; } 
+                else badge.style.display = 'none';
             });
         }
 
         window.showNotifications = function() {
-            document.getElementById('menu-view').style.display = 'none';
-            document.getElementById('player-view').style.display = 'none';
-            document.getElementById('admin-users-view').style.display = 'none';
-            document.getElementById('notifications-view').style.display = 'block';
+            showView('notifications-view');
             document.getElementById('pageTitle').innerText = "الإشعارات";
             document.getElementById('appFooter').style.display = 'none';
         }
 
         window.openFromNotif = async function(notifId, fileId, postId) {
-            try { await window.deleteDoc(window.doc(window.db, "notifications", notifId)); } catch(e) {}
-
-            let foundIndex = -1;
-            let foundVerse = 1;
+            // NOTE: We do NOT delete notification here. It's deleted when the user actually plays the audio in playFeedAudio.
+            // But we remove the clicked badge status from UI if we wanted, but here we just navigate.
+            
+            let foundIndex = -1, foundVerse = 1;
             for(let i=0; i<KURS_DATEN.length; i++) {
                 let start = KURS_DATEN[i].startGlobalId;
                 let end = start + KURS_DATEN[i].verse - 1;
                 if(fileId >= start && fileId <= end) {
-                    foundIndex = i;
-                    foundVerse = fileId - start + 1;
-                    break;
+                    foundIndex = i; foundVerse = fileId - start + 1; break;
                 }
             }
-
             if(foundIndex !== -1) {
                 currentLessonIdx = foundIndex;
-                highlightedPostId = postId;
-                activePostFilter = postId; 
+                highlightedPostId = postId; activePostFilter = postId;
                 playVers(parseInt(fileId), foundVerse);
             }
         }
 
         window.clearFilter = function() {
             activePostFilter = null;
-            const div = document.getElementById('community-feed');
-            const userRole = localStorage.getItem('it9an_role');
-            const myUid = localStorage.getItem('it9an_uid');
-            renderPosts(div, userRole, myUid);
+            renderPosts(document.getElementById('community-feed'), localStorage.getItem('it9an_role'), localStorage.getItem('it9an_uid'));
         }
 
+        // --- NAVIGATION & VIEWS ---
         function renderMenu() {
             const grid = document.getElementById('lesson-grid'); 
             grid.innerHTML = ""; showView('menu-view');
@@ -1007,15 +1009,13 @@
             const uid = localStorage.getItem('it9an_uid');
             if(uid === 'admin_super') {
                 document.getElementById('adminMenuPanel').style.display = 'block';
-                document.getElementById('leaderboard-section').style.display = 'none'; 
+                document.getElementById('leaderboard-section').style.display = 'block'; // Admin sees LB
             } else {
                 document.getElementById('adminMenuPanel').style.display = 'none';
                 document.getElementById('leaderboard-section').style.display = 'block';
-                loadLeaderboard(); 
             }
-
+            loadLeaderboard(); 
             activePostFilter = null; 
-
             KURS_DATEN.forEach((lek, index) => {
                 let div = document.createElement('div'); div.className = 'menu-item';
                 div.innerHTML = `<div class="menu-item-title">الدرس ${index + 1}</div><img src="assets/T${lek.id}.png" loading="lazy" onerror="this.style.display='none'">`;
@@ -1023,81 +1023,42 @@
             });
         }
 
-        function startLesson(index) {
-            currentLessonIdx = index;
-            playVers(KURS_DATEN[index].startGlobalId, 1);
-        }
-
-        // --- NAVIGATION LOGIC: ARABIC BOOK (RTL) & LOOPING ---
-        // BUTTON LOGIC:
-        // Left Button in visual -> onclick="nextVers()" (Next Verse)
-        // Right Button in visual -> onclick="prevVers()" (Previous Verse)
-        
+        function startLesson(index) { currentLessonIdx = index; playVers(KURS_DATEN[index].startGlobalId, 1); }
         window.nextVers = function() {
-            activePostFilter = null; 
-            const currentLesson = KURS_DATEN[currentLessonIdx];
-            
-            if(currentLocalVers < currentLesson.verse) {
-                // Normal Next
-                playVers(currentGlobalFileId + 1, currentLocalVers + 1);
-            } else { 
-                // Loop back to Start of THIS lesson
-                playVers(currentLesson.startGlobalId, 1);
-            }
+            activePostFilter = null; const currentLesson = KURS_DATEN[currentLessonIdx];
+            if(currentLocalVers < currentLesson.verse) playVers(currentGlobalFileId + 1, currentLocalVers + 1);
+            else playVers(currentLesson.startGlobalId, 1);
         }
-        
         window.prevVers = function() { 
-            activePostFilter = null; 
-            const currentLesson = KURS_DATEN[currentLessonIdx];
-            
-            if(currentLocalVers > 1) {
-                // Normal Prev
-                playVers(currentGlobalFileId - 1, currentLocalVers - 1);
-            } else {
-                // Loop to End of THIS lesson
-                let endGlobalId = currentLesson.startGlobalId + currentLesson.verse - 1;
-                playVers(endGlobalId, currentLesson.verse);
-            }
+            activePostFilter = null; const currentLesson = KURS_DATEN[currentLessonIdx];
+            if(currentLocalVers > 1) playVers(currentGlobalFileId - 1, currentLocalVers - 1);
+            else playVers(currentLesson.startGlobalId + currentLesson.verse - 1, currentLesson.verse);
         }
 
+        // --- PLAY VERSE & COUNT VIEW ---
         async function playVers(globalId, localVersNum, isAuto = false) {
             currentGlobalFileId = globalId; currentLocalVers = localVersNum;
-            showView('player-view');
-            document.getElementById('appFooter').style.display = 'flex';
-            
+            showView('player-view'); document.getElementById('appFooter').style.display = 'flex';
             document.getElementById('adminMenuPanel').style.display = 'none'; 
+            
             const uid = localStorage.getItem('it9an_uid');
-            if(uid === 'admin_super') document.getElementById('adminPlayerPanel').style.display = 'block';
-            else document.getElementById('adminPlayerPanel').style.display = 'none';
+            document.getElementById('adminPlayerPanel').style.display = (uid === 'admin_super') ? 'block' : 'none';
 
-            const lessonId = KURS_DATEN[currentLessonIdx].id;
-            document.getElementById('pageTitle').innerHTML = `
-                <span class="title-text-maktaa">المقطع ${localVersNum}</span>
-                <img src="assets/T${lessonId}.png" alt="Lesson Title">
-            `;
-
+            document.getElementById('pageTitle').innerHTML = `<span class="title-text-maktaa">المقطع ${localVersNum}</span><img src="assets/T${KURS_DATEN[currentLessonIdx].id}.png">`;
             document.getElementById('currentImg').src = `assets/${globalId}.png`;
             audioEl.src = `assets/${globalId}.mp3`;
             
-            if(!isAuto) {
-                stopLoop(); // Resets isPlaying to false
-            } else {
-                // AUTO TRANSITION
-                verseRepeatsPlayed = 0; // Reset counter for new verse
-                document.getElementById('statusDisplay').innerText = "bereite nächsten Vers vor...";
-                // Continue loop
-                if(isPlaying) {
-                    playCycle();
-                }
-            }
+            if(!isAuto) stopLoop();
+            else { verseRepeatsPlayed = 0; document.getElementById('statusDisplay').innerText = "bereite nächsten Vers vor..."; if(isPlaying) playCycle(); }
             
-            window.currentViewersList = [];
-            document.getElementById('viewCount').innerText = "0";
+            // INCREMENT USER TOTAL VIEWS
+            incrementUserViews();
 
+            // TRACKING VIEWS PER FILE
+            window.currentViewersList = []; document.getElementById('viewCount').innerText = "0";
             const myName = localStorage.getItem('it9an_name');
             const isHidden = localStorage.getItem('it9an_hidden') === 'true';
             const statRef = window.doc(window.db, "stats", "file_" + globalId);
-            
             if(myName && !isHidden) { try { await window.setDoc(statRef, { viewers: window.arrayUnion(myName) }, { merge: true }); } catch(e){} }
             
             if(unsubscribeViews) unsubscribeViews();
@@ -1105,25 +1066,29 @@
                 if(snap.exists() && snap.data().viewers) {
                     window.currentViewersList = snap.data().viewers; 
                     document.getElementById('viewCount').innerText = window.currentViewersList.length; 
-                } else {
-                    window.currentViewersList = []; 
-                    document.getElementById('viewCount').innerText = 0;
-                }
+                } else { window.currentViewersList = []; document.getElementById('viewCount').innerText = 0; }
             });
-            feedLimit = 3; loadFeed(globalId);
+            feedLimit = 5; loadFeed(globalId);
         }
 
-        window.showViewers = function() {
-            if(window.currentViewersList && window.currentViewersList.length > 0) {
-                alert("الطلاب:\n\n" + window.currentViewersList.join("\n"));
-            } else {
-                alert("لا يوجد مشاهدات بعد");
+        async function incrementUserViews() {
+            const uid = localStorage.getItem('it9an_uid');
+            const role = localStorage.getItem('it9an_role');
+            if (role === 'student' && uid && uid !== 'admin_super') {
+                const userRef = window.doc(window.db, "users", uid);
+                try { await window.updateDoc(userRef, { totalViews: window.increment(1) }); } catch(e) {}
             }
         }
 
+        window.showViewers = function() {
+            if(window.currentViewersList && window.currentViewersList.length > 0) alert("الطلاب:\n\n" + window.currentViewersList.join("\n"));
+            else alert("لا يوجد مشاهدات después");
+        }
+
+        // --- FEED ---
         function loadFeed(fileId) {
             const div = document.getElementById('community-feed');
-            div.innerHTML = "<div style='text-align:center; color:#ccc; padding:10px;'>...</div>";
+            div.innerHTML = "<div style='text-align:center; color:#ccc;'>...</div>";
             if(unsubscribeFeed) unsubscribeFeed();
             
             const idString = String(fileId);
@@ -1133,13 +1098,12 @@
             
             unsubscribeFeed = window.onSnapshot(q, (snap) => {
                 const scrollY = window.scrollY;
-                if(snap.empty) { div.innerHTML = "<div style='text-align:center; color:#999; font-size:16px; padding:20px;'>لا توجد مشاركات حتى الآن</div>"; return; }
+                if(snap.empty) { div.innerHTML = "<div style='text-align:center; color:#999; padding:20px;'>لا توجد مشاركات</div>"; return; }
                 allLoadedPosts = [];
                 snap.forEach(doc => { allLoadedPosts.push({ id: doc.id, ...doc.data() }); });
                 
-                if (activePostFilter) {
-                    allLoadedPosts = allLoadedPosts.filter(p => p.id === activePostFilter);
-                } else {
+                if (activePostFilter) allLoadedPosts = allLoadedPosts.filter(p => p.id === activePostFilter);
+                else {
                     allLoadedPosts.sort((a, b) => {
                         if (userRole === 'student') {
                             if (a.uid === myUid && b.uid !== myUid) return -1;
@@ -1148,210 +1112,164 @@
                         return (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0);
                     });
                 }
-
                 renderPosts(div, userRole, myUid);
-                
                 if(!activePostFilter) window.scrollTo(0, scrollY);
             });
         }
 
+        // --- NEW COMPACT POST RENDERER ---
         function renderPosts(container, userRole, myUid) {
-            let htmlContent = "";
+            let html = "";
             let displayPosts = allLoadedPosts.slice(0, feedLimit);
             const isAdmin = (myUid === 'admin_super');
-            const isTeacher = (userRole === 'teacher'); // NEW: Check if teacher
+            const isTeacher = (userRole === 'teacher');
             
-            if (activePostFilter) {
-                htmlContent += `<button class="reset-filter-btn" onclick="clearFilter()">عرض الكل</button>`;
-            }
+            if (activePostFilter) html += `<button class="reset-filter-btn" onclick="clearFilter()">عرض الكل</button>`;
 
             displayPosts.forEach(d => {
-                let isTeacherPost = d.role === 'teacher';
-                let isAdminPost = d.uid === 'admin_super'; 
-                
                 let msgClass = 'feed-msg student-msg';
                 let badgeClass = 'role-badge badge-student';
                 let badgeText = 'طالب';
+                if (d.uid === 'admin_super') { msgClass = 'feed-msg admin-msg'; badgeClass = 'role-badge badge-admin'; badgeText = 'ADM'; }
+                else if (d.role === 'teacher') { msgClass = 'feed-msg teacher-msg'; badgeClass = 'role-badge badge-teacher'; badgeText = 'TCH'; }
 
-                if (isAdminPost) {
-                    msgClass = 'feed-msg admin-msg';
-                    badgeClass = 'role-badge badge-admin';
-                    badgeText = 'المسؤول';
-                } else if (isTeacherPost) {
-                    msgClass = 'feed-msg teacher-msg';
-                    badgeClass = 'role-badge badge-teacher';
-                    badgeText = 'معلم';
+                let dateStr = formatPostDate(d.timestamp);
+
+                // Likes Logic
+                let likesCount = d.likes ? d.likes.length : 0;
+                let isLiked = d.likes && d.likes.some(l => (typeof l ==='object'?l.uid===myUid:l===myUid));
+                let likerNames = d.likes ? d.likes.map(l => typeof l==='object'?l.name:'User').join('|||') : "";
+                let likeClass = isLiked ? 'liked' : '';
+                let likeAction = `likePost('${d.id}', '${d.uid}')`;
+                if(d.uid === myUid) { likeAction = ''; likeClass += ' disabled'; }
+
+                // Delete Btn
+                let deleteBtn = "";
+                if (isAdmin || isTeacher || d.uid === myUid) {
+                    deleteBtn = `<button class="delete-btn" onclick="deletePost('${d.id}', '${d.uid}')">🗑️</button>`;
                 }
 
-                let mainLikesCount = 0, mainIsLikedByMe = false, mainLikerNames = [];
-                if (d.likes && Array.isArray(d.likes)) { 
-                    mainLikesCount = d.likes.length; 
-                    mainIsLikedByMe = d.likes.some(l => (typeof l === 'object' ? l.uid === myUid : l === myUid)); 
-                    mainLikerNames = d.likes.map(l => typeof l === 'object' ? (l.name || 'مستخدم') : 'مستخدم');
-                }
-                const isMyMainPost = (d.uid === myUid);
-                let mainLikeClass = mainIsLikedByMe ? 'liked' : '';
-                let mainLikeAction = `likePost('${d.id}', '${d.uid}')`; // Pass owner UID
-                let mainCursor = 'pointer';
-                let mainLockedClass = '';
-                if (isMyMainPost) { mainLikeAction = ''; mainLockedClass = 'locked'; mainCursor = 'not-allowed'; mainLikeClass += ' disabled'; }
-
-                let deleteBtnHtml = "";
-                // MODIFIED: Show delete button if Admin OR Teacher OR Own Post (already handled by logic but button hidden)
-                // The prompt says teachers can delete ANYONE's post.
-                if (isAdmin || isTeacher) {
-                    deleteBtnHtml = `<button class="delete-btn" onclick="deletePost('${d.id}', '${d.uid}')">🗑️</button>`;
-                } else if (isMyMainPost) {
-                     // Keep logic for students deleting their own posts if desired, 
-                     // or remove if only admins/teachers should delete. 
-                     // Assuming students can still delete their own based on previous code.
-                     deleteBtnHtml = `<button class="delete-btn" onclick="deletePost('${d.id}', '${d.uid}')">🗑️</button>`;
-                }
-
+                // Replies
                 let repliesHtml = "";
                 if(d.replies && d.replies.length > 0) {
-                    let repliesInner = "";
+                    let rInner = "";
                     d.replies.forEach((r, idx) => {
-                        let rIsAdmin = r.uid === 'admin_super';
-                        let rIsTeacher = r.role === 'teacher';
-                        let rBoxClass = "reply-box";
-                        if(rIsAdmin) rBoxClass += " reply-admin";
-                        else if(rIsTeacher) rBoxClass += " reply-teacher";
+                        let rUid = r.id + "-r-" + idx;
+                        let rDate = formatPostDate(r.timestamp);
+                        let rClass = (r.uid==='admin_super' || r.role==='teacher') ? "reply-box reply-teacher" : "reply-box";
+                        
+                        // Reply Likes
+                        let rLikes = r.likes ? r.likes.length : 0;
+                        let rIsLiked = r.likes && r.likes.some(l => (typeof l==='object'?l.uid===myUid:l===myUid));
+                        let rLikerNames = r.likes ? r.likes.map(l => typeof l==='object'?l.name:'User').join('|||') : "";
+                        let rLikeClass = rIsLiked ? 'liked' : '';
+                        let rLikeAction = `likeReply('${d.id}', ${r.timestamp}, '${r.uid}')`;
+                        if(r.uid === myUid) { rLikeAction = ''; rLikeClass += ' disabled'; }
 
-                        let rLikesCount = 0, rIsLikedByMe = false, rLikerNames = [];
-                        if (r.likes && Array.isArray(r.likes)) { 
-                            rLikesCount = r.likes.length; 
-                            rIsLikedByMe = r.likes.some(l => (typeof l === 'object' ? l.uid === myUid : l === myUid)); 
-                            rLikerNames = r.likes.map(l => typeof l === 'object' ? (l.name || 'مستخدم') : 'مستخدم');
-                        }
-                        const isMyReply = (r.uid === myUid);
-                        let rLikeClass = rIsLikedByMe ? 'liked' : '';
-                        let rLikeAction = `likeReply('${d.id}', ${r.timestamp}, '${r.uid}')`; // Pass owner UID
-                        let rCursor = 'pointer';
-                        let rNamesStr = rLikerNames.join('|||');
-                        let rLockedClass = '';
-                        if (isMyReply) { rLikeAction = ''; rLockedClass = 'locked'; rCursor = 'not-allowed'; rLikeClass += ' disabled'; }
+                        let rDel = (isAdmin || isTeacher || r.uid === myUid) ? 
+                            `<button class="delete-btn" style="top:5px; left:5px; width:20px; height:20px; font-size:12px;" onclick="deleteReply('${d.id}', ${r.timestamp}, '${r.uid}')">🗑️</button>` : "";
 
-                        let rDeleteBtn = "";
-                        // MODIFIED: Show delete button for replies too
-                        if (isAdmin || isTeacher) {
-                            rDeleteBtn = `<button class="reply-delete-btn" onclick="deleteReply('${d.id}', ${r.timestamp}, '${r.uid}')">🗑️</button>`;
-                        } else if (isMyReply) {
-                            rDeleteBtn = `<button class="reply-delete-btn" onclick="deleteReply('${d.id}', ${r.timestamp}, '${r.uid}')">🗑️</button>`;
-                        }
-
-                        let rUniqueId = d.id + "-reply-" + idx;
-
-                        repliesInner += `
-                        <div class="${rBoxClass}">
-                            <div class="reply-header">${rDeleteBtn} 🎓 ${r.name}</div>
-                            
-                            <div class="custom-player">
-                                <button class="cp-btn" id="btn-${rUniqueId}" onclick="playFeedAudio('${r.audioUrl}', '${rUniqueId}')">▶</button>
-                                <input type="range" class="cp-slider" id="seek-${rUniqueId}" value="0" min="0" step="0.1" oninput="seekFeedAudio(this.value)">
-                                <span class="cp-time" id="time-${rUniqueId}">00:00</span>
+                        rInner += `
+                        <div class="${rClass}" style="position:relative;">
+                            ${rDel}
+                            <div style="font-size:13px; font-weight:bold; color:#555; margin-bottom:5px;">
+                                ↪️ ${r.name} <span style="font-size:10px; color:#999; font-weight:normal;">${rDate}</span>
                             </div>
-
-                            <div class="msg-footer" style="margin-top:5px; border:none; padding-top:0;">
-                                <div></div>
-                                <div class="like-btn ${rLikeClass}">
-                                    <div class="like-action ${rLockedClass}" onclick="${rLikeAction}">👍</div>
-                                    <div class="like-count" onclick="showLikeNames(event, '${rNamesStr}')">${rLikesCount}</div>
+                            <div class="msg-compact-row">
+                                <button class="cp-btn" id="btn-${rUid}" onclick="playFeedAudio('${r.audioUrl}', '${rUid}', '${d.id}', 'reply', '${r.uid}')">▶</button>
+                                <input type="range" class="cp-slider" id="seek-${rUid}" value="0" min="0" step="0.1" oninput="seekFeedAudio(this.value)">
+                                <span class="cp-time" id="time-${rUid}">00:00</span>
+                                
+                                <div class="compact-actions">
+                                    <div class="like-btn ${rLikeClass}">
+                                        <div class="like-action" onclick="${rLikeAction}">👍</div>
+                                        <div class="like-count" onclick="showLikeNames(event, '${rLikerNames}')">${rLikes}</div>
+                                    </div>
                                 </div>
                             </div>
                         </div>`;
                     });
-                    
-                    repliesHtml = `
-                    <div class="replies-wrapper">
-                        <div class="replies-title">الردود</div>
-                        ${repliesInner}
-                    </div>`;
+                    repliesHtml = `<div class="replies-wrapper">${rInner}</div>`;
                 }
-                
-                let replyBtnHtml = (userRole === 'teacher' || isAdmin) ? `<button class="reply-btn" onclick="startReply('${d.id}')">↩️ الرد</button>` : "<div></div>";
 
-                htmlContent += `
+                let replyBtn = (isTeacher || isAdmin) ? `<button class="reply-btn" onclick="startReply('${d.id}')">↩️ رد</button>` : "";
+
+                html += `
                 <div class="${msgClass}" id="post-${d.id}">
-                    ${deleteBtnHtml}
-                    <div style="font-weight:bold; color:var(--primary); font-size:16px; margin-bottom:8px; display:flex; align-items:center;">
-                        ${d.name} <span class="${badgeClass}">${badgeText}</span>
+                    ${deleteBtn}
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div style="font-weight:bold; color:var(--primary); font-size:15px;">
+                            ${d.name} <span class="${badgeClass}">${badgeText}</span>
+                        </div>
+                        <span class="post-meta">${dateStr}</span>
                     </div>
-                    
-                    <div class="custom-player">
-                        <button class="cp-btn" id="btn-${d.id}" onclick="playFeedAudio('${d.audioUrl}', '${d.id}')">▶</button>
+
+                    <div class="msg-compact-row">
+                        <button class="cp-btn" id="btn-${d.id}" onclick="playFeedAudio('${d.audioUrl}', '${d.id}', '${d.id}', 'post', '${d.uid}')">▶</button>
                         <input type="range" class="cp-slider" id="seek-${d.id}" value="0" min="0" step="0.1" oninput="seekFeedAudio(this.value)">
                         <span class="cp-time" id="time-${d.id}">00:00</span>
-                    </div>
-
-                    <div class="msg-footer">
-                        ${replyBtnHtml}
-                        <div class="like-btn ${mainLikeClass}">
-                            <div class="like-action ${mainLockedClass}" onclick="${mainLikeAction}">👍</div>
-                            <div class="like-count" onclick="showLikeNames(event, '${mainLikerNames.join('|||')}')">${mainLikesCount}</div>
+                        
+                        <div class="compact-actions">
+                            ${replyBtn}
+                            <div class="like-btn ${likeClass}">
+                                <div class="like-action" onclick="${likeAction}">👍</div>
+                                <div class="like-count" onclick="showLikeNames(event, '${likerNames}')">${likesCount}</div>
+                            </div>
                         </div>
                     </div>
                     ${repliesHtml}
                 </div>`;
             });
-
+            
             if (!activePostFilter && allLoadedPosts.length > feedLimit) {
-                htmlContent += `<button class="load-more-btn" onclick="loadMorePosts()">▼ عرض المزيد</button>`;
+                html += `<button class="load-more-btn" onclick="loadMorePosts()">▼ عرض المزيد</button>`;
             }
-            container.innerHTML = htmlContent;
+            container.innerHTML = html;
         }
 
         window.loadMorePosts = function() {
-            feedLimit += 3;
-            const div = document.getElementById('community-feed');
-            const userRole = localStorage.getItem('it9an_role');
-            const myUid = localStorage.getItem('it9an_uid');
-            const scrollY = window.scrollY;
-            renderPosts(div, userRole, myUid);
-            window.scrollTo(0, scrollY);
+            feedLimit += 5;
+            loadFeed(currentGlobalFileId);
         }
 
+        // --- RECORDING ---
         window.startReply = function(postId) { replyTargetId = postId; toggleRecord(); }
-
         window.toggleRecord = async function() {
             if(isPlaying) stopLoop();
             const ui = document.getElementById('recording-ui');
-            const statusText = document.getElementById('recText');
-            if(ui.style.display === 'flex') { stopRecordingAndReview(); } 
+            if(ui.style.display === 'flex') stopRecordingAndReview(); 
             else {
                 try {
-                    let dur = audioEl.duration; if(!dur || isNaN(dur)) dur = 15; maxRecDuration = Math.ceil(dur * 2);
-                    const audioConstraints = { echoCancellation: false, noiseSuppression: false, autoGainControl: false, sampleRate: 48000, channelCount: 1 };
-                    const stream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints });
-                    let options = { audioBitsPerSecond: 128000 };
-                    if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) options.mimeType = 'audio/webm;codecs=opus'; 
-                    else if (MediaRecorder.isTypeSupported('audio/mp4;codecs=mp4a.40.2')) options.mimeType = 'audio/mp4;codecs=mp4a.40.2'; 
-                    else if (MediaRecorder.isTypeSupported('audio/mp4')) options.mimeType = 'audio/mp4';
-
-                    mediaRecorder = new MediaRecorder(stream, options);
+                    let dur = audioEl.duration || 15; maxRecDuration = Math.ceil(dur * 2);
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(stream);
                     chunks = [];
                     mediaRecorder.ondataavailable = e => { if(e.data.size > 0) chunks.push(e.data); };
-                    
-                    if(replyTargetId) statusText.innerText = "تسجيل رد..."; else statusText.innerText = "تسجيل تلاوة...";
-
                     mediaRecorder.onstop = () => {
-                        const mimeType = mediaRecorder.mimeType || 'audio/webm';
-                        currentBlob = new Blob(chunks, { type: mimeType });
+                        currentBlob = new Blob(chunks, { type: 'audio/webm' });
                         showReviewModal();
-                        const recBtn = document.getElementById('recBtn'); if(recBtn) recBtn.classList.remove('recording');
+                        document.getElementById('recBtn').classList.remove('recording');
                         clearInterval(recInterval); ui.style.display = 'none';
                         stream.getTracks().forEach(track => track.stop());
                     };
                     mediaRecorder.start(200); 
-                    const recBtn = document.getElementById('recBtn'); if(recBtn && recBtn.style.display !== 'none') recBtn.classList.add('recording');
+                    document.getElementById('recBtn').classList.add('recording');
                     ui.style.display = 'flex'; recSeconds = 0; document.getElementById('recTimer').innerText = "00:00";
-                    recInterval = setInterval(() => { recSeconds++; let m = Math.floor(recSeconds / 60); let s = recSeconds % 60; document.getElementById('recTimer').innerText = (m<10?"0"+m:m)+":"+(s<10?"0"+s:s); if(recSeconds >= maxRecDuration) stopRecordingAndReview(); }, 1000);
+                    recInterval = setInterval(() => { 
+                        recSeconds++; 
+                        let m = Math.floor(recSeconds / 60); let s = recSeconds % 60; 
+                        document.getElementById('recTimer').innerText = (m<10?"0"+m:m)+":"+(s<10?"0"+s:s); 
+                        if(recSeconds >= maxRecDuration) stopRecordingAndReview(); 
+                    }, 1000);
                 } catch(e) { alert("خطأ في الميكروفون"); replyTargetId = null; }
             }
         }
-
         window.stopRecordingAndReview = function() { if(mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop(); }
-        function showReviewModal() { const modal = document.getElementById('review-modal'); const audio = document.getElementById('reviewAudio'); if(currentBlob) { audio.src = URL.createObjectURL(currentBlob); modal.style.display = 'flex'; } }
+        function showReviewModal() { 
+            const modal = document.getElementById('review-modal'); 
+            const audio = document.getElementById('reviewAudio'); 
+            if(currentBlob) { audio.src = URL.createObjectURL(currentBlob); modal.style.display = 'flex'; } 
+        }
 
         window.confirmSend = async function() {
             document.getElementById('review-modal').style.display = 'none';
@@ -1361,111 +1279,89 @@
             const uid = localStorage.getItem('it9an_uid');
 
             try {
-                let ext = 'webm'; if (currentBlob.type.includes('mp4')) ext = 'mp4'; else if (currentBlob.type.includes('ogg')) ext = 'ogg';
-                const refS = window.ref(window.storage, `uploads/${Date.now()}_${uid}.${ext}`);
+                const refS = window.ref(window.storage, `uploads/${Date.now()}_${uid}.webm`);
                 await window.uploadBytes(refS, currentBlob);
                 const url = await window.getDownloadURL(refS);
+                
                 if (replyTargetId) {
                     await window.updateDoc(window.doc(window.db, "posts", replyTargetId), { 
                         replies: window.arrayUnion({ name: name, role: role, uid: uid, audioUrl: url, timestamp: Date.now(), likes: [] }) 
                     });
-                    
                     const targetPost = allLoadedPosts.find(p => p.id === replyTargetId);
                     if(targetPost) {
                        await window.addDoc(window.collection(window.db, "notifications"), {
-                           to: targetPost.uid,
-                           senderName: "المعلم",
-                           type: 'reply',
-                           fileId: String(currentGlobalFileId),
-                           postId: replyTargetId,
-                           timestamp: window.serverTimestamp()
+                           to: targetPost.uid, senderName: "المعلم", type: 'reply', fileId: String(currentGlobalFileId), postId: replyTargetId, timestamp: window.serverTimestamp()
                        });
                     }
                     replyTargetId = null; 
                 } else {
-                    const postRef = await window.addDoc(window.collection(window.db, "posts"), { name: name, role: role, uid: uid, audioUrl: url, fileId: String(currentGlobalFileId), likes: [], timestamp: window.serverTimestamp() });
-                    
+                    const postRef = await window.addDoc(window.collection(window.db, "posts"), { 
+                        name: name, role: role, uid: uid, audioUrl: url, fileId: String(currentGlobalFileId), likes: [], timestamp: window.serverTimestamp() 
+                    });
                     const userRef = window.doc(window.db, "users", uid);
                     try { await window.updateDoc(userRef, { postsCount: window.increment(1) }); } catch(e){}
 
                     if(role === 'student') {
                         await window.addDoc(window.collection(window.db, "notifications"), {
-                           to: "teachers",
-                           senderName: name,
-                           type: 'new_recording',
-                           fileId: String(currentGlobalFileId),
-                           postId: postRef.id, 
-                           timestamp: window.serverTimestamp()
+                           to: "teachers", senderName: name, type: 'new_recording', fileId: String(currentGlobalFileId), postId: postRef.id, timestamp: window.serverTimestamp()
                        });
                     }
                 }
                 document.getElementById('statusDisplay').innerText = "تم الإرسال!";
                 setTimeout(() => document.getElementById('statusDisplay').innerText = "جاهز للتلاوة", 2000);
-            } catch(e) { alert("خطأ في الإرسال"); }
+            } catch(e) { alert("خطأ"); }
         }
-
         window.retryRecord = function() { document.getElementById('review-modal').style.display = 'none'; toggleRecord(); }
         window.cancelRecord = function() { document.getElementById('review-modal').style.display = 'none'; currentBlob = null; replyTargetId = null; }
 
+        // --- AUDIO LOOP & LOGIC ---
         window.toggleSmartLoop = function() {
             if (isPlaying) {
                 isPlaying = false; isPaused = true; audioEl.pause(); clearInterval(pauseInterval);
                 document.getElementById('playBtn').innerText = "▶"; document.getElementById('statusDisplay').innerText = "متوقف مؤقتاً";
             } else {
                 isPlaying = true; isPaused = false; document.getElementById('playBtn').innerText = "⏸";
-                if (pauseSecondsLeft > 0) { startPauseCountdown(pauseSecondsLeft); } 
+                if (pauseSecondsLeft > 0) startPauseCountdown(pauseSecondsLeft);
                 else if (audioEl.currentTime > 0 && audioEl.currentTime < audioEl.duration) {
-                    document.getElementById('statusDisplay').innerText = `تلاوة ${verseRepeatsPlayed + 1} من ${parseInt(document.getElementById('globalRepeats').value)}`; 
-                    audioEl.play().catch(e => { stopLoop(); });
-                } else {
-                    playCycle();
-                }
+                    document.getElementById('statusDisplay').innerText = `تلاوة ${verseRepeatsPlayed + 1}`; 
+                    audioEl.play();
+                } else playCycle();
             }
         }
-        
         function playCycle() {
             if(!isPlaying) return;
             const target = parseInt(document.getElementById('globalRepeats').value);
             document.getElementById('statusDisplay').innerText = `تلاوة ${verseRepeatsPlayed + 1} من ${target}`;
-            audioEl.play().catch(e => { stopLoop(); });
+            audioEl.play();
             audioEl.onended = function() {
                 if(!isPlaying) return;
                 if(document.getElementById('globalGap').checked) {
                     let pauseTime = Math.ceil(audioEl.duration * 1.25);
                     startPauseCountdown(pauseTime);
-                } else { checkNextStep(); }
+                } else checkNextStep();
             }
         }
-
         function startPauseCountdown(seconds) {
             pauseSecondsLeft = seconds;
-            document.getElementById('statusDisplay').innerText = `تكرار الطالب... (${pauseSecondsLeft})`;
+            document.getElementById('statusDisplay').innerText = `تكرار... (${pauseSecondsLeft})`;
             clearInterval(pauseInterval);
             pauseInterval = setInterval(() => {
                 pauseSecondsLeft--;
-                if(pauseSecondsLeft > 0) { document.getElementById('statusDisplay').innerText = `تكرار الطالب... (${pauseSecondsLeft})`; } 
+                if(pauseSecondsLeft > 0) document.getElementById('statusDisplay').innerText = `تكرار... (${pauseSecondsLeft})`;
                 else { clearInterval(pauseInterval); pauseSecondsLeft = 0; if(isPlaying) checkNextStep(); }
             }, 1000);
         }
-        
         function checkNextStep() {
             verseRepeatsPlayed++;
+            incrementUserViews(); // Increment on repeat too!
             const target = parseInt(document.getElementById('globalRepeats').value) || 1;
-            if(verseRepeatsPlayed < target) { 
-                playCycle(); 
-            } else {
-                 // LOOPING LOGIC for AUTO PLAY
+            if(verseRepeatsPlayed < target) playCycle(); 
+            else {
                  const currentLesson = KURS_DATEN[currentLessonIdx];
-                 if(currentLocalVers < currentLesson.verse) {
-                     // Next Verse
-                     playVers(currentGlobalFileId + 1, currentLocalVers + 1, true);
-                 } else { 
-                     // Loop to Start of Lesson
-                     playVers(currentLesson.startGlobalId, 1, true);
-                 }
+                 if(currentLocalVers < currentLesson.verse) playVers(currentGlobalFileId + 1, currentLocalVers + 1, true);
+                 else playVers(currentLesson.startGlobalId, 1, true);
             }
         }
-        
         function stopLoop() { 
             isPlaying = false; isPaused = false; pauseSecondsLeft = 0; clearInterval(pauseInterval); 
             audioEl.pause(); audioEl.currentTime = 0; 
@@ -1473,229 +1369,168 @@
         }
 
         window.goToMenu = function() { stopLoop(); stopRecordingAndReview(); showView('menu-view'); renderMenu(); } 
-        function showView(id) { document.getElementById('menu-view').style.display = 'none'; document.getElementById('player-view').style.display = 'none'; document.getElementById('notifications-view').style.display = 'none'; document.getElementById('admin-users-view').style.display = (id === 'admin-users-view') ? 'block' : 'none'; document.getElementById(id).style.display = (id === 'menu-view') ? 'grid' : 'block'; }
-        
+        function showView(id) { 
+            document.getElementById('menu-view').style.display = 'none'; 
+            document.getElementById('player-view').style.display = 'none'; 
+            document.getElementById('notifications-view').style.display = 'none'; 
+            document.getElementById('admin-users-view').style.display = 'none';
+            document.getElementById(id).style.display = (id === 'menu-view') ? 'grid' : 'block'; 
+        }
+
+        // --- LIKES & DELETIONS ---
         window.likePost = async (id, ownerUid) => { 
-            const uid = localStorage.getItem('it9an_uid'); const myName = localStorage.getItem('it9an_name');
-            if(!uid) return; 
+            const uid = localStorage.getItem('it9an_uid'); const myName = localStorage.getItem('it9an_name'); if(!uid) return; 
             const postRef = window.doc(window.db, "posts", id);
             const docSnap = await window.getDoc(postRef);
             if (docSnap.exists()) {
                 let post = docSnap.data(); let likes = post.likes || [];
-                let isLiked = likes.some(l => (typeof l === 'object' ? l.uid === uid : l === uid));
-                
+                let isLiked = likes.some(l => (typeof l ==='object' ? l.uid === uid : l === uid));
                 let change = 0;
-                if (isLiked) { 
-                    likes = likes.filter(l => (typeof l === 'object' ? l.uid !== uid : l !== uid)); 
-                    change = -1;
-                } 
-                else { 
-                    likes.push({ uid: uid, name: myName }); 
-                    change = 1;
-                }
-                
+                if (isLiked) { likes = likes.filter(l => (typeof l ==='object'?l.uid!==uid:l!==uid)); change = -1; } 
+                else { likes.push({ uid: uid, name: myName }); change = 1; }
                 await window.updateDoc(postRef, { likes: likes });
-
-                // UPDATE USER TOTAL LIKES
                 if(ownerUid && change !== 0) {
-                    const userRef = window.doc(window.db, "users", ownerUid);
-                    try { await window.updateDoc(userRef, { totalLikes: window.increment(change) }); } catch(e){}
+                    try { await window.updateDoc(window.doc(window.db, "users", ownerUid), { totalLikes: window.increment(change) }); } catch(e){}
                 }
             }
         }
-
-        window.likeReply = async (postId, replyTimestamp, ownerUid) => {
-            const uid = localStorage.getItem('it9an_uid'); const myName = localStorage.getItem('it9an_name');
-            if(!uid) return;
+        window.likeReply = async (postId, ts, ownerUid) => {
+            const uid = localStorage.getItem('it9an_uid'); const myName = localStorage.getItem('it9an_name'); if(!uid) return;
             const postRef = window.doc(window.db, "posts", postId);
             const docSnap = await window.getDoc(postRef);
             if (docSnap.exists()) {
-                let post = docSnap.data(); if(!post.replies) return;
+                let post = docSnap.data(); let replies = post.replies;
                 let change = 0;
-
-                let updatedReplies = post.replies.map(r => {
-                    if (r.timestamp === replyTimestamp) {
+                let updatedReplies = replies.map(r => {
+                    if (r.timestamp === ts) {
                         if (!r.likes) r.likes = [];
-                        let isLiked = r.likes.some(l => (typeof l === 'object' ? l.uid === uid : l === uid));
-                        if (isLiked) { 
-                            r.likes = r.likes.filter(l => (typeof l === 'object' ? l.uid !== uid : l !== uid)); 
-                            change = -1;
-                        } 
-                        else { 
-                            r.likes.push({ uid: uid, name: myName }); 
-                            change = 1;
-                        }
+                        let isLiked = r.likes.some(l => (typeof l==='object'?l.uid===uid:l===uid));
+                        if(isLiked) { r.likes = r.likes.filter(l => (typeof l==='object'?l.uid!==uid:l!==uid)); change = -1; }
+                        else { r.likes.push({ uid: uid, name: myName }); change = 1; }
                     }
                     return r;
                 });
                 await window.updateDoc(postRef, { replies: updatedReplies });
-                
-                // UPDATE USER TOTAL LIKES
                 if(ownerUid && change !== 0) {
-                    const userRef = window.doc(window.db, "users", ownerUid);
-                    try { await window.updateDoc(userRef, { totalLikes: window.increment(change) }); } catch(e){}
+                    try { await window.updateDoc(window.doc(window.db, "users", ownerUid), { totalLikes: window.increment(change) }); } catch(e){}
                 }
             }
         }
+        window.showLikeNames = function(event, str) { event.stopPropagation(); if(str) alert(str.split('|||').join("\n")); }
 
-        window.showLikeNames = function(event, namesStr) {
-            event.stopPropagation();
-            if(!namesStr || namesStr.trim() === '') { alert("لا توجد إعجابات بعد"); return; }
-            const names = namesStr.split('|||'); alert("قائمة الإعجابات:\n\n" + names.join("\n"));
-        }
-
+        // --- GLOBAL RESETS ---
         window.resetAllLikes = async function() {
-            if(confirm("تحذير: هل تريد حقاً حذف جميع الإعجابات من التطبيق؟")) {
+            if(confirm("تصفير جميع الإعجابات؟")) {
                 const q = window.query(window.collection(window.db, "posts"));
-                const querySnapshot = await window.getDocs(q);
-                querySnapshot.forEach(async (docSnap) => {
-                    let updates = { likes: [] };
-                    let data = docSnap.data();
-                    if(data.replies && data.replies.length > 0) {
-                        let cleanedReplies = data.replies.map(r => ({ ...r, likes: [] }));
-                        updates.replies = cleanedReplies;
-                    }
-                    await window.updateDoc(window.doc(window.db, "posts", docSnap.id), updates);
+                const snap = await window.getDocs(q);
+                snap.forEach(async (d) => {
+                    let r = d.data().replies ? d.data().replies.map(x => ({...x, likes:[]})) : [];
+                    await window.updateDoc(d.ref, { likes: [], replies: r });
                 });
-                
-                // RESET USER COUNTERS
                 const uq = window.query(window.collection(window.db, "users"));
                 const usnap = await window.getDocs(uq);
-                usnap.forEach(async (udoc) => {
-                    await window.updateDoc(udoc.ref, { totalLikes: 0 });
-                });
-
-                alert("تم تصفير الإعجابات (Global)");
+                usnap.forEach(u => window.updateDoc(u.ref, { totalLikes: 0 }));
+                alert("تم التصفير");
             }
         }
-
         window.resetAllViews = async function() {
-            if(confirm("تحذير: هل تريد حقاً تصفير المشاهدات في كل التطبيق؟")) {
+            if(confirm("تصفير جميع المشاهدات؟")) {
                 const q = window.query(window.collection(window.db, "stats"));
-                const querySnapshot = await window.getDocs(q);
-                querySnapshot.forEach(async (docSnap) => {
-                    await window.deleteDoc(window.doc(window.db, "stats", docSnap.id));
-                });
-                alert("تم تصفير المشاهدات (Global)");
-            }
-        }
-
-        window.deleteAllPostsGlobal = async function() {
-            if(confirm("⚠️ تحذير خطير: هل أنت متأكد من حذف جميع التسجيلات في التطبيق؟ لا يمكن التراجع!")) {
-                const q = window.query(window.collection(window.db, "posts"));
-                const querySnapshot = await window.getDocs(q);
-                querySnapshot.forEach(async (docSnap) => {
-                    const data = docSnap.data();
-                    if(data.audioUrl) await cleanupAudioFile(data.audioUrl);
-                    if(data.replies) {
-                        for(let r of data.replies) {
-                            if(r.audioUrl) await cleanupAudioFile(r.audioUrl);
-                        }
-                    }
-                    await window.deleteDoc(window.doc(window.db, "posts", docSnap.id));
-                });
-                // RESET ALL POST COUNTS & LIKES
+                const snap = await window.getDocs(q);
+                snap.forEach(d => window.deleteDoc(d.ref));
+                // Reset user totalViews
                 const uq = window.query(window.collection(window.db, "users"));
                 const usnap = await window.getDocs(uq);
-                usnap.forEach(async (udoc) => {
-                    await window.updateDoc(udoc.ref, { postsCount: 0, totalLikes: 0 });
-                });
-                alert("تم حذف جميع البيانات");
+                usnap.forEach(u => window.updateDoc(u.ref, { totalViews: 0 }));
+                alert("تم التصفير");
             }
         }
-
-        window.resetLocalViews = async function() {
-            if(confirm("تصفير مشاهدات هذا المقطع فقط؟")) {
-                try { await window.deleteDoc(window.doc(window.db, "stats", "file_" + currentGlobalFileId)); alert("تم التصفير"); } 
-                catch(e) { alert("خطأ"); }
+        window.resetAllNotifications = async function() {
+            if(confirm("تصفير جميع الإشعارات؟")) {
+                const q = window.query(window.collection(window.db, "notifications"));
+                const snap = await window.getDocs(q);
+                snap.forEach(d => window.deleteDoc(d.ref));
+                alert("تم حذف جميع الإشعارات");
             }
         }
-
-        window.resetLocalLikes = async function() {
-            if(confirm("تصفير إعجابات هذا المقطع فقط؟")) {
-                const q = window.query(window.collection(window.db, "posts"), window.where("fileId", "==", String(currentGlobalFileId)));
-                const querySnapshot = await window.getDocs(q);
-                querySnapshot.forEach(async (docSnap) => {
-                    // Note: This does not decrease user totalLikes perfectly, doing so requires heavy logic.
-                    // For simplicity in this app version, we just clear the post likes.
-                    let updates = { likes: [] };
-                    let data = docSnap.data();
-                    if(data.replies) {
-                        updates.replies = data.replies.map(r => ({ ...r, likes: [] }));
-                    }
-                    await window.updateDoc(window.doc(window.db, "posts", docSnap.id), updates);
-                });
-                alert("تم التصفير (ملاحظة: عداد الإعجابات الكلي للمستخدم قد لا يتأثر بهذا الزر الفرعي)");
-            }
-        }
-
-        window.deleteAllLocalPosts = async function() {
-            if(confirm("هل أنت متأكد من حذف جميع تسجيلات هذا المقطع فقط؟")) {
-                const q = window.query(window.collection(window.db, "posts"), window.where("fileId", "==", String(currentGlobalFileId)));
-                const querySnapshot = await window.getDocs(q);
-                querySnapshot.forEach(async (docSnap) => {
-                    const data = docSnap.data();
+        window.deleteAllPostsGlobal = async function() {
+            if(confirm("حذف جميع البيانات (خطر)؟")) {
+                const q = window.query(window.collection(window.db, "posts"));
+                const snap = await window.getDocs(q);
+                snap.forEach(async (d) => {
+                    const data = d.data();
                     if(data.audioUrl) await cleanupAudioFile(data.audioUrl);
-                    if(data.replies) {
-                        for(let r of data.replies) {
-                            if(r.audioUrl) await cleanupAudioFile(r.audioUrl);
-                        }
-                    }
-                    // DECREMENT
-                    const userRef = window.doc(window.db, "users", data.uid);
-                    try { await window.updateDoc(userRef, { postsCount: window.increment(-1) }); } catch(e){}
-
-                    await window.deleteDoc(window.doc(window.db, "posts", docSnap.id));
+                    if(data.replies) for(let r of data.replies) if(r.audioUrl) await cleanupAudioFile(r.audioUrl);
+                    await window.deleteDoc(d.ref);
                 });
-                alert("تم الحذف");
+                const uq = window.query(window.collection(window.db, "users"));
+                const usnap = await window.getDocs(uq);
+                usnap.forEach(u => window.updateDoc(u.ref, { postsCount: 0, totalLikes: 0 }));
+                alert("تم الحذف الشامل");
             }
         }
 
-        window.deletePost = async function(postId, authorUid) {
-            if(confirm("حذف هذه المشاركة؟")) {
-                try {
-                    const docRef = window.doc(window.db, "posts", postId);
-                    const docSnap = await window.getDoc(docRef);
-                    if (docSnap.exists()) {
-                        const data = docSnap.data();
-                        if(data.audioUrl) await cleanupAudioFile(data.audioUrl);
-                        if(data.replies) {
-                            for(let r of data.replies) {
-                                if(r.audioUrl) await cleanupAudioFile(r.audioUrl);
-                            }
-                        }
-                        await window.deleteDoc(docRef);
-                        
-                        // DECREMENT COUNTER
-                        if(authorUid) {
-                             const userRef = window.doc(window.db, "users", authorUid);
-                             try { await window.updateDoc(userRef, { postsCount: window.increment(-1) }); } catch(e){}
-                        }
-
-                        alert("تم الحذف بنجاح");
-                    }
-                } catch(e) { alert("خطأ في الحذف"); }
+        window.resetLocalViews = async function() { try { await window.deleteDoc(window.doc(window.db, "stats", "file_"+currentGlobalFileId)); alert("تم"); } catch(e){} }
+        window.resetLocalLikes = async function() {
+            const q = window.query(window.collection(window.db, "posts"), window.where("fileId", "==", String(currentGlobalFileId)));
+            const snap = await window.getDocs(q);
+            snap.forEach(d => {
+                let r = d.data().replies ? d.data().replies.map(x => ({...x, likes:[]})) : [];
+                window.updateDoc(d.ref, { likes: [], replies: r });
+            });
+            alert("تم");
+        }
+        window.deleteAllLocalPosts = async function() {
+            if(confirm("حذف تسجيلات هذا المقطع؟")) {
+                const q = window.query(window.collection(window.db, "posts"), window.where("fileId", "==", String(currentGlobalFileId)));
+                const snap = await window.getDocs(q);
+                snap.forEach(async (d) => {
+                    const data = d.data();
+                    if(data.audioUrl) await cleanupAudioFile(data.audioUrl);
+                    await window.updateDoc(window.doc(window.db, "users", data.uid), { postsCount: window.increment(-1) });
+                    await window.deleteDoc(d.ref);
+                });
+                alert("تم");
             }
         }
-
-        window.deleteReply = async function(postId, replyTimestamp, authorUid) {
-            if(confirm("حذف هذا الرد؟")) {
-                try {
-                    const postRef = window.doc(window.db, "posts", postId);
-                    const docSnap = await window.getDoc(postRef);
-                    if (docSnap.exists()) {
-                        let post = docSnap.data();
-                        const replyToDelete = post.replies.find(r => r.timestamp === replyTimestamp);
-                        if (replyToDelete && replyToDelete.audioUrl) {
-                            await cleanupAudioFile(replyToDelete.audioUrl);
-                        }
-                        let newReplies = post.replies.filter(r => r.timestamp !== replyTimestamp);
-                        await window.updateDoc(postRef, { replies: newReplies });
-                        alert("تم الحذف");
+        window.deletePost = async function(pid, uid) {
+            if(confirm("حذف؟")) {
+                const d = await window.getDoc(window.doc(window.db, "posts", pid));
+                if(d.exists()) {
+                    if(d.data().audioUrl) await cleanupAudioFile(d.data().audioUrl);
+                    await window.deleteDoc(d.ref);
+                    if(uid) await window.updateDoc(window.doc(window.db, "users", uid), { postsCount: window.increment(-1) });
+                    
+                    // Delete associated notification
+                    const q = window.query(window.collection(window.db, "notifications"), window.where("postId", "==", pid));
+                    const snap = await window.getDocs(q);
+                    snap.forEach(n => window.deleteDoc(n.ref));
+                }
+            }
+        }
+        window.deleteReply = async function(pid, ts, uid) {
+            if(confirm("حذف الرد؟")) {
+                const ref = window.doc(window.db, "posts", pid);
+                const d = await window.getDoc(ref);
+                if(d.exists()) {
+                    let r = d.data().replies.find(x => x.timestamp === ts);
+                    if(r && r.audioUrl) await cleanupAudioFile(r.audioUrl);
+                    let newR = d.data().replies.filter(x => x.timestamp !== ts);
+                    await window.updateDoc(ref, { replies: newR });
+                    
+                    // Delete associated notification (if any specific one exists, usually replies don't have separate postIds, but we tracked it via postId)
+                    // Logic: Student playing teacher reply deletes notif. If we delete reply manually, notif might stay or we query it. 
+                    // Simple approach: try to find notif for this user
+                    if(uid) {
+                        const q = window.query(window.collection(window.db, "notifications"), 
+                            window.where("postId", "==", pid), window.where("type", "==", "reply"));
+                        const snap = await window.getDocs(q);
+                        snap.forEach(n => window.deleteDoc(n.ref));
                     }
-                } catch(e) { alert("خطأ"); }
+                }
             }
         }
     </script>
 </body>
 </html>
+
