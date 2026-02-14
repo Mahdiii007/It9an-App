@@ -201,6 +201,9 @@
             z-index: 10;
         }
         .nav-btn:active { background: var(--gold-light); }
+        
+        /* FORCE ARROW DIRECTION LTR TO PREVENT MIRRORING */
+        .arrow-icon { direction: ltr; display: inline-block; }
 
         /* SETTINGS - BIGGER */
         .settings-box { 
@@ -477,11 +480,11 @@
 
         <div class="quran-frame">
             <div class="player-container">
-                <button id="btnRight" class="nav-btn" onclick="prevVers()">❯</button>
+                <button id="btnRight" class="nav-btn" onclick="prevVers()"><span class="arrow-icon">❯</span></button>
                 
                 <img id="currentImg" class="quran-image" src="" alt="Vers Bild" onerror="this.src='placeholder.png'">
                 
-                <button id="btnLeft" class="nav-btn" onclick="nextVers()">❮</button>
+                <button id="btnLeft" class="nav-btn" onclick="nextVers()"><span class="arrow-icon">❮</span></button>
             </div>
         </div>
         
@@ -1148,6 +1151,7 @@
             let htmlContent = "";
             let displayPosts = allLoadedPosts.slice(0, feedLimit);
             const isAdmin = (myUid === 'admin_super');
+            const isTeacher = (userRole === 'teacher'); // NEW: Check if teacher
             
             if (activePostFilter) {
                 htmlContent += `<button class="reset-filter-btn" onclick="clearFilter()">عرض الكل</button>`;
@@ -1185,8 +1189,15 @@
                 if (isMyMainPost) { mainLikeAction = ''; mainLockedClass = 'locked'; mainCursor = 'not-allowed'; mainLikeClass += ' disabled'; }
 
                 let deleteBtnHtml = "";
-                if (isAdmin) {
+                // MODIFIED: Show delete button if Admin OR Teacher OR Own Post (already handled by logic but button hidden)
+                // The prompt says teachers can delete ANYONE's post.
+                if (isAdmin || isTeacher) {
                     deleteBtnHtml = `<button class="delete-btn" onclick="deletePost('${d.id}', '${d.uid}')">🗑️</button>`;
+                } else if (isMyMainPost) {
+                     // Keep logic for students deleting their own posts if desired, 
+                     // or remove if only admins/teachers should delete. 
+                     // Assuming students can still delete their own based on previous code.
+                     deleteBtnHtml = `<button class="delete-btn" onclick="deletePost('${d.id}', '${d.uid}')">🗑️</button>`;
                 }
 
                 let repliesHtml = "";
@@ -1214,7 +1225,10 @@
                         if (isMyReply) { rLikeAction = ''; rLockedClass = 'locked'; rCursor = 'not-allowed'; rLikeClass += ' disabled'; }
 
                         let rDeleteBtn = "";
-                        if (isAdmin) {
+                        // MODIFIED: Show delete button for replies too
+                        if (isAdmin || isTeacher) {
+                            rDeleteBtn = `<button class="reply-delete-btn" onclick="deleteReply('${d.id}', ${r.timestamp}, '${r.uid}')">🗑️</button>`;
+                        } else if (isMyReply) {
                             rDeleteBtn = `<button class="reply-delete-btn" onclick="deleteReply('${d.id}', ${r.timestamp}, '${r.uid}')">🗑️</button>`;
                         }
 
@@ -1677,5 +1691,3 @@
     </script>
 </body>
 </html>
-
-
