@@ -37,31 +37,32 @@
             text-align: center; width: 90%; max-width: 350px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.3);
         }
-        .login-title { color: var(--primary); margin: 0 0 10px 0; font-size: 28px; font-weight: bold; }
-        .login-subtitle { color: #555; margin: 0 0 15px 0; font-size: 16px; line-height: 1.6; }
-        .login-subtitle strong { color: var(--gold); }
+        .login-title { color: var(--primary); margin: 0 0 10px 0; font-size: 32px; font-weight: bold; }
+        .login-subtitle { color: #555; margin: 0 0 15px 0; font-size: 18px; line-height: 1.6; font-weight: bold; }
 
         .login-note {
             background: #fffcf2; border: 1px solid var(--gold); border-radius: 8px;
-            padding: 10px; margin-bottom: 20px; font-size: 13px; color: #555; 
+            padding: 15px; margin-bottom: 20px; font-size: 15px; color: #555; 
             text-align: center; line-height: 1.6;
         }
         .login-note span { color: var(--red); font-weight: bold; display: block; margin-top: 5px; }
 
+        /* Login Inputs: Full Width */
         .login-input, .login-select { 
-            font-size: 16px; padding: 12px; text-align: right; width: 100%; 
-            border-radius: 10px; border: 1px solid #ddd; 
-            background: var(--surface); outline: none; margin-bottom: 10px; font-family: 'Amiri';
+            font-size: 18px; padding: 12px; text-align: right; width: 100%; 
+            border-radius: 10px; border: 1px solid #ddd; font-weight: bold;
+            background: var(--surface); outline: none; margin-bottom: 15px; font-family: 'Amiri';
         }
         
         .latin-input { direction: ltr; text-align: left; }
         
+        /* Remove Arrows from Number Inputs */
         input[type=number]::-webkit-inner-spin-button, 
         input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
         input[type=number] { -moz-appearance: textfield; }
 
         .login-btn {
-            margin-top: 10px; padding: 12px 40px; font-weight: bold; font-size: 18px; 
+            margin-top: 10px; padding: 12px 40px; font-weight: bold; font-size: 20px; 
             border: none; border-radius: 30px; width: 100%;
             background: var(--gold); color: var(--primary); cursor: pointer;
             box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
@@ -73,85 +74,88 @@
             background: linear-gradient(to right, var(--primary), var(--primary-light));
             padding: 10px 5px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); 
             display: flex; justify-content: center; align-items: center; 
-            gap: 15px; height: 70px; border-bottom: 2px solid var(--gold);
+            gap: 15px; height: 80px; border-bottom: 2px solid var(--gold);
         }
         .header-btn {
             background: rgba(255,255,255,0.1); border: 1px solid var(--gold); color: var(--gold-light);
-            padding: 5px 10px; border-radius: 8px; cursor: pointer; font-size: 13px; font-family: 'Amiri';
+            padding: 8px 15px; border-radius: 10px; cursor: pointer; font-size: 16px; font-family: 'Amiri';
             font-weight: bold; display: flex; align-items: center; gap: 5px; white-space: nowrap;
         }
         
         .notif-container { position: relative; cursor: pointer; display: flex; align-items: center; }
-        .notif-icon { font-size: 24px; color: var(--gold-light); }
+        .notif-icon { font-size: 28px; color: var(--gold-light); }
         .notif-badge { 
             position: absolute; top: -5px; right: -5px; 
             background: var(--red); color: white; border-radius: 50%; 
-            width: 18px; height: 18px; font-size: 10px; 
+            width: 20px; height: 20px; font-size: 12px; 
             display: none; align-items: center; justify-content: center; border: 2px solid white;
         }
 
         #pageTitle {
-            background: var(--surface); padding: 5px 15px; border-radius: 30px; 
-            display: flex; align-items: center; justify-content: center; gap: 8px;
-            height: 42px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); border: 2px solid var(--gold);
+            background: var(--surface); padding: 5px 20px; border-radius: 30px; 
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+            height: 50px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); border: 2px solid var(--gold);
             cursor: default; overflow: hidden; white-space: nowrap; max-width: 55%;
         }
-        #pageTitle img { height: 28px; width: auto; display: block; object-fit: contain; flex-shrink: 0; } 
+        #pageTitle img { height: 35px; width: auto; display: block; object-fit: contain; flex-shrink: 0; } 
         .title-text-maktaa { 
-            font-size: clamp(12px, 3.5vw, 15px); color: var(--primary); font-weight: bold; 
-            border-right: 1px solid #ddd; padding-right: 8px; margin-right: 5px; white-space: nowrap;
+            font-size: clamp(14px, 4vw, 18px); color: var(--primary); font-weight: bold; 
+            border-right: 2px solid #ddd; padding-right: 10px; margin-right: 5px; white-space: nowrap;
         }
 
-        /* --- MENU & NOTIFICATIONS --- */
+        /* --- MENU --- */
         .menu-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; padding: 20px; max-width: 100%; margin: 0 auto; }
         .menu-item { background: var(--surface); border-radius: 15px; overflow: hidden; cursor: pointer; box-shadow: var(--shadow); display: flex; flex-direction: column; }
-        .menu-item-title { text-align: center; padding: 8px 5px; font-weight: bold; color: var(--primary); border-bottom: 1px solid #eee; background: #fdfdfd; font-size: 14px; }
+        .menu-item-title { text-align: center; padding: 10px; font-weight: bold; color: var(--primary); border-bottom: 1px solid #eee; background: #fdfdfd; font-size: 18px; }
         .menu-item img { width: 100%; height: auto; display: block; padding: 10px; }
         
+        /* --- NOTIFICATIONS VIEW --- */
         #notifications-view { display: none; padding: 15px; max-width: 600px; margin: 0 auto; }
         .notif-card { 
             background: white; padding: 15px; margin-bottom: 10px; border-radius: 10px; 
             box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-right: 4px solid var(--primary); 
             display: flex; justify-content: space-between; align-items: center; cursor: pointer;
         }
-        .notif-text { font-size: 14px; color: var(--text); }
-        .notif-time { font-size: 11px; color: #888; margin-top: 4px; }
+        .notif-text { font-size: 16px; color: var(--text); font-weight: bold; }
+        .notif-time { font-size: 12px; color: #888; margin-top: 4px; }
 
         /* --- ADMIN USER MANAGEMENT VIEW --- */
         #admin-users-view { display: none; padding: 15px; max-width: 700px; margin: 0 auto; }
-        .user-group-title { color: var(--primary); font-weight: bold; font-size: 18px; margin: 20px 0 10px 0; border-bottom: 2px solid var(--gold); padding-bottom: 5px; display: flex; justify-content: space-between; align-items: center; }
+        .user-group-title { color: var(--primary); font-weight: bold; font-size: 20px; margin: 20px 0 10px 0; border-bottom: 2px solid var(--gold); padding-bottom: 5px; display: flex; justify-content: space-between; align-items: center; }
         .user-card { 
-            background: white; padding: 12px; border-radius: 10px; margin-bottom: 10px; 
+            background: white; padding: 15px; border-radius: 10px; margin-bottom: 10px; 
             box-shadow: 0 2px 5px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; 
         }
-        .user-info { font-weight: bold; font-size: 14px; color: #333; }
+        .user-info { font-weight: bold; font-size: 16px; color: #333; }
         .user-info small { color: #888; font-weight: normal; font-size: 12px; display: block; }
         .user-actions { display: flex; gap: 8px; }
-        .btn-action { border: none; padding: 5px 10px; border-radius: 6px; font-size: 12px; cursor: pointer; color: white; font-family: 'Amiri'; }
+        .btn-action { border: none; padding: 8px 12px; border-radius: 8px; font-size: 14px; cursor: pointer; color: white; font-family: 'Amiri'; font-weight: bold; }
         .btn-del { background: var(--red); }
         .btn-block { background: var(--orange); }
         .btn-block.blocked { background: #333; }
-        .btn-group-del { background: var(--red); color: white; border: none; padding: 5px 15px; border-radius: 20px; font-size: 12px; cursor: pointer; }
-        .record-count-badge { background: var(--primary-light); color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-right: 5px; }
+        .btn-group-del { background: var(--red); color: white; border: none; padding: 8px 20px; border-radius: 20px; font-size: 14px; cursor: pointer; font-weight: bold; }
+        .record-count-badge { background: var(--primary-light); color: white; padding: 4px 10px; border-radius: 10px; font-size: 13px; margin-right: 8px; }
 
-        /* --- LEADERBOARD (TOP 10) --- */
+        /* --- LEADERBOARD (TOP 3) --- */
         #leaderboard-section { width: 100%; padding: 10px 20px; margin-bottom: 10px; }
         .leaderboard-card {
             background: linear-gradient(135deg, #fffcf2 0%, #ffffff 100%);
-            border: 2px solid var(--gold); border-radius: 15px; padding: 15px;
+            border: 2px solid var(--gold); border-radius: 15px; padding: 20px;
             box-shadow: 0 4px 15px rgba(212, 175, 55, 0.15); text-align: center;
         }
-        .lb-title { color: var(--primary); font-weight: bold; font-size: 18px; margin-bottom: 10px; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .lb-title { color: var(--primary); font-weight: bold; font-size: 22px; margin-bottom: 15px; display: flex; align-items: center; justify-content: center; gap: 10px; }
         .lb-list { list-style: none; padding: 0; margin: 0; text-align: right; }
         .lb-item { 
-            padding: 8px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; font-size: 14px; 
+            padding: 12px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; font-size: 16px; 
             align-items: center;
         }
         .lb-item:last-child { border-bottom: none; }
-        .lb-rank { font-weight: bold; color: var(--gold); width: 25px; }
-        .lb-name { flex-grow: 1; font-weight: bold; color: #333; }
-        .lb-score { background: var(--primary); color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px; }
-        .lb-motivation { margin-top: 15px; font-size: 14px; color: var(--primary); font-style: italic; font-weight: bold; }
+        .lb-rank { font-weight: bold; color: var(--gold); width: 30px; font-size: 18px; }
+        .lb-name { flex-grow: 1; font-weight: bold; color: #333; font-size: 16px; }
+        .lb-stats { display: flex; gap: 10px; font-size: 14px; font-weight: bold; }
+        .lb-score-rec { color: var(--primary); background: rgba(15, 76, 58, 0.1); padding: 4px 10px; border-radius: 10px; }
+        .lb-score-like { color: var(--primary); background: rgba(212, 175, 55, 0.2); padding: 4px 10px; border-radius: 10px; }
+        .lb-motivation { margin-top: 15px; font-size: 16px; color: var(--primary); font-style: italic; font-weight: bold; border-top: 1px dashed var(--gold); padding-top: 10px;}
 
         /* --- PLAYER --- */
         #player-view { display: none; padding: 15px; width: 100%; max-width: 600px; margin: 0 auto; }
@@ -162,26 +166,29 @@
             box-shadow: var(--shadow); margin-bottom: 20px; 
             height: auto; 
         }
-        .player-container { width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-        .quran-image { flex-grow: 1; max-width: calc(100% - 90px); max-height: 45vh; object-fit: contain; border-radius: 5px; display: block; }
+        .player-container { 
+            width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 8px; 
+            direction: ltr; /* Layout LTR for visual center, Buttons swapped logically */
+        }
+        .quran-image { flex-grow: 1; max-width: calc(100% - 100px); max-height: 50vh; object-fit: contain; border-radius: 5px; display: block; }
 
         .nav-btn { 
-            width: 40px; height: 60px; flex-shrink: 0;
-            background: var(--bg); color: var(--primary); border: 1px solid var(--gold);
-            border-radius: 8px; font-size: 24px; cursor: pointer; 
-            display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
+            width: 50px; height: 80px; flex-shrink: 0;
+            background: var(--bg); color: var(--primary); border: 2px solid var(--gold);
+            border-radius: 10px; font-size: 32px; cursor: pointer; 
+            display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 8px rgba(0,0,0,0.15); 
         }
-        .nav-btn.hidden { opacity: 0; pointer-events: none; }
+        .nav-btn:active { transform: scale(0.95); background: var(--gold-light); }
 
-        /* SETTINGS */
+        /* SETTINGS - Specific Width Fix */
         .settings-box { 
-            background: var(--primary-light); color: white; padding: 10px; 
-            border-radius: 12px; margin-bottom: 20px; display: flex; justify-content: space-around; 
+            background: var(--primary-light); color: white; padding: 15px; 
+            border-radius: 15px; margin-bottom: 20px; display: flex; justify-content: space-around; 
             align-items: center; box-shadow: inset 0 0 10px rgba(0,0,0,0.1);
         }
-        .setting-label { font-size: 12px; color: var(--gold-light); margin-bottom: 2px; text-align:center; }
-        .settings-box input[type="number"] { width: 50px; text-align: center; padding: 4px; border: none; border-radius: 5px; }
-        input[type="checkbox"] { transform: scale(1.4); accent-color: var(--gold); }
+        .setting-label { font-size: 18px; color: var(--gold-light); margin-bottom: 5px; text-align:center; font-weight: bold; }
+        .settings-box input[type="number"] { width: 70px; text-align: center; padding: 8px; border: none; border-radius: 8px; font-size: 20px; font-weight: bold; }
+        input[type="checkbox"] { transform: scale(1.8); accent-color: var(--gold); }
 
         /* ADMIN PANEL */
         .admin-panel {
@@ -200,108 +207,67 @@
         .admin-menu-btn {
             background: var(--primary); color: white; border: 1px solid var(--gold);
             padding: 15px; width: 100%; border-radius: 12px; margin-bottom: 15px;
-            font-size: 16px; font-weight: bold; cursor: pointer; display: flex;
+            font-size: 18px; font-weight: bold; cursor: pointer; display: flex;
             align-items: center; justify-content: center; gap: 10px;
         }
 
-        /* CUSTOM PLAYER */
-        .custom-player {
-            display: flex; align-items: center; gap: 10px;
-            background: rgba(0,0,0,0.03); padding: 8px 12px; border-radius: 30px;
-            border: 1px solid #ddd; margin-top: 8px; direction: ltr;
-        }
-        .cp-btn {
-            width: 32px; height: 32px; border-radius: 50%; border: none;
-            background: var(--primary); color: white; cursor: pointer;
-            display: flex; align-items: center; justify-content: center; font-size: 14px;
-            flex-shrink: 0; transition: transform 0.1s;
-        }
-        .cp-btn:active { transform: scale(0.9); }
-        .cp-slider { flex-grow: 1; height: 4px; accent-color: var(--primary); cursor: pointer; }
-        .cp-time { font-size: 11px; color: #666; font-family: monospace; min-width: 35px; }
-
         /* FEED & STATS */
-        .status-bar { text-align: center; font-size: 16px; font-weight: bold; color: var(--primary); margin: 15px 0; padding: 10px; background: rgba(20, 89, 52, 0.1); border-radius: 8px; border: 1px dashed var(--primary); }
+        .status-bar { text-align: center; font-size: 20px; font-weight: bold; color: var(--primary); margin: 15px 0; padding: 12px; background: rgba(20, 89, 52, 0.1); border-radius: 10px; border: 2px dashed var(--primary); }
         .view-counter { 
-            font-size: 14px; color: #555; text-align: center; margin-top: 8px; 
-            cursor: pointer; padding: 8px 15px; background: rgba(0,0,0,0.03); 
-            border-radius: 20px; width: fit-content; margin-left: auto; margin-right: auto;
-            border: 1px solid #ddd; font-weight: bold; transition: background 0.2s;
+            font-size: 16px; color: #555; text-align: center; margin-top: 10px; 
+            cursor: pointer; padding: 10px 20px; background: rgba(0,0,0,0.05); 
+            border-radius: 25px; width: fit-content; margin-left: auto; margin-right: auto;
+            border: 1px solid #ccc; font-weight: bold; transition: background 0.2s;
         }
-        .view-counter:active { background: rgba(0,0,0,0.1); transform: scale(0.98); }
-        
-        .feed-container { min-height: 100px; }
         
         .feed-msg { padding: 15px; border-radius: 12px; margin-bottom: 25px; position: relative; transition: transform 0.2s; }
-        .feed-msg.highlighted { border: 2px solid var(--gold); background: #fffffa; animation: flash 1s; }
-        @keyframes flash { 0% { background: var(--gold-light); } 100% { background: #fffffa; } }
-
-        .student-msg { background: var(--surface); border-right: 4px solid #ddd; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .teacher-msg { background: #fffcf2; border: 1px solid var(--gold); border-right: 5px solid var(--gold); box-shadow: 0 4px 10px rgba(212, 175, 55, 0.15); transform: scale(1.01); }
+        .feed-msg.highlighted { border: 3px solid var(--gold); background: #fffffa; animation: flash 1s; }
+        .student-msg { background: var(--surface); border-right: 5px solid #ddd; box-shadow: 0 4px 8px rgba(0,0,0,0.08); }
+        .teacher-msg { background: #fffcf2; border: 1px solid var(--gold); border-right: 6px solid var(--gold); box-shadow: 0 6px 12px rgba(212, 175, 55, 0.2); }
         .admin-msg { background: #e8f5e9; border: 2px solid var(--primary); border-right: 6px solid var(--primary); box-shadow: 0 6px 15px rgba(15, 76, 58, 0.2); transform: scale(1.03); z-index: 5; }
-
-        .role-badge { padding: 2px 8px; border-radius: 6px; font-size: 11px; margin-left: 8px; color: white; display: inline-block; vertical-align: middle; }
-        .badge-student { background: #95a5a6; }
-        .badge-teacher { background: var(--gold); }
-        .badge-admin { background: var(--primary); font-weight: bold; }
         
-        .msg-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(0,0,0,0.05); }
-        .like-btn { display: flex; align-items: center; border-radius: 20px; font-size: 14px; background: #f9f9f9; border: 1px solid #eee; overflow: hidden; }
+        .msg-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 15px; padding-top: 10px; border-top: 1px solid rgba(0,0,0,0.05); }
+        .like-btn { display: flex; align-items: center; border-radius: 20px; font-size: 16px; background: #f9f9f9; border: 1px solid #eee; overflow: hidden; }
         .like-btn.liked { color: var(--primary); background: #e8f5e9; border-color: var(--primary); font-weight: bold; }
         .like-btn.disabled { opacity: 0.5; filter: grayscale(1); }
         .like-action { padding: 6px 10px; cursor: pointer; }
         .like-action.locked { cursor: not-allowed; opacity: 0.3; filter: grayscale(1); }
         .like-count { padding: 6px 12px; border-right: 1px solid #ddd; cursor: pointer; background: rgba(0,0,0,0.03); }
         .like-count:active { background: rgba(0,0,0,0.1); }
-        .reply-btn { cursor: pointer; background: none; border: 1px solid var(--primary); color: var(--primary); padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; }
+        .reply-btn { cursor: pointer; background: none; border: 2px solid var(--primary); color: var(--primary); padding: 6px 15px; border-radius: 8px; font-size: 14px; font-weight: bold; }
         .delete-btn { position: absolute; top: 10px; left: 10px; background: rgba(255,0,0,0.1); color: var(--red); border: none; border-radius: 50%; width: 30px; height: 30px; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
         .reply-delete-btn { background: none; border: none; font-size: 12px; cursor: pointer; margin-right: 5px; opacity: 0.7; color: var(--red); }
 
-        .replies-wrapper { margin-top: 15px; padding-right: 20px; border-right: 3px solid #e0e0e0; position: relative; }
-        .replies-title { font-size: 11px; color: #999; margin-bottom: 5px; font-weight: bold; margin-right: -24px; background: var(--bg); display: inline-block; padding: 0 5px; }
-        .reply-box { margin-top: 10px; padding: 12px; background: #f9f9f9; border-radius: 8px; border: 1px solid #eee; position: relative; }
-        .reply-box::before { content: ''; position: absolute; top: 15px; right: -23px; width: 20px; height: 2px; background: #e0e0e0; }
-        .reply-box.reply-teacher { background: #fffcf2; border: 1px solid var(--gold); }
-        .reply-box.reply-admin { background: #e8f5e9; border: 1px solid var(--primary); }
-        .reply-header { font-size: 12px; font-weight: bold; color: var(--primary); margin-bottom: 8px; display: flex; align-items: center; gap: 5px; }
+        .replies-wrapper { margin-top: 20px; padding-right: 25px; border-right: 4px solid #e0e0e0; }
+        .replies-title { font-size: 13px; color: #999; margin-bottom: 8px; font-weight: bold; background: var(--bg); display: inline-block; padding: 0 5px; margin-right: -29px; }
 
-        .load-more-btn { display: block; width: 100%; padding: 12px; text-align: center; background: #f0f0f0; color: #555; border: none; border-radius: 8px; font-family: 'Amiri'; font-weight: bold; cursor: pointer; margin-top: 20px; }
-        .load-more-btn:active { background: #e0e0e0; }
-
-        /* RESET FILTER BUTTON */
         .reset-filter-btn {
-            display: block; margin: 10px auto; padding: 8px 20px;
-            background: #eee; border: 1px solid #ccc; border-radius: 20px;
-            cursor: pointer; font-size: 13px; color: #555; font-family: 'Amiri';
+            display: block; margin: 15px auto; padding: 10px 25px;
+            background: #eee; border: 1px solid #ccc; border-radius: 25px;
+            cursor: pointer; font-size: 15px; color: #333; font-family: 'Amiri'; font-weight: bold;
         }
 
-        .audio-error-msg { display:none; color:#c0392b; font-size:12px; font-weight:bold; text-align:center; padding:10px; border:1px dashed #c0392b; border-radius:8px; background:rgba(192, 57, 43, 0.05); }
+        /* CUSTOM PLAYER */
+        .custom-player {
+            display: flex; align-items: center; gap: 10px;
+            background: rgba(0,0,0,0.03); padding: 10px 15px; border-radius: 30px;
+            border: 1px solid #ddd; margin-top: 10px; direction: ltr;
+        }
+        .cp-btn { width: 38px; height: 38px; font-size: 16px; border-radius: 50%; border: none; background: var(--primary); color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .cp-slider { flex-grow: 1; height: 4px; accent-color: var(--primary); cursor: pointer; }
+        .cp-time { font-size: 11px; color: #666; font-family: monospace; min-width: 35px; }
 
         /* RECORDING UI */
-        #recording-ui { display: none; position: fixed; bottom: 120px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 350px; background: rgba(255,255,255,0.95); backdrop-filter: blur(5px); border: 2px solid var(--red); border-radius: 20px; padding: 15px; z-index: 1500; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
-        .rec-timer { font-size: 36px; font-weight: bold; color: var(--text); font-family: monospace; margin-bottom: 10px; }
-        .rec-status-text { font-size: 14px; color: var(--red); animation: blink 1.5s infinite; margin-top: 5px; font-weight: bold; }
-        .stop-ui-btn { background: var(--red); color: white; border: none; padding: 8px 25px; border-radius: 20px; font-size: 14px; font-weight: bold; cursor: pointer; font-family: 'Amiri'; }
+        #recording-ui { display: none; position: fixed; bottom: 130px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 350px; background: rgba(255,255,255,0.98); backdrop-filter: blur(8px); border: 3px solid var(--red); border-radius: 25px; padding: 20px; z-index: 1500; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 15px 50px rgba(0,0,0,0.3); }
+        .rec-timer { font-size: 42px; font-weight: bold; color: var(--text); font-family: monospace; margin-bottom: 10px; }
+        .rec-status-text { font-size: 18px; color: var(--red); animation: blink 1.5s infinite; margin-top: 5px; font-weight: bold; }
+        .stop-ui-btn { background: var(--red); color: white; border: none; padding: 10px 40px; border-radius: 25px; font-size: 18px; font-weight: bold; cursor: pointer; font-family: 'Amiri'; }
 
-        #review-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(3px); z-index: 6000; justify-content: center; align-items: center; }
-        .review-box { background: white; padding: 25px; border-radius: 20px; width: 85%; max-width: 320px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.3); border: 2px solid var(--primary); }
-        .review-title { font-size: 20px; font-weight: bold; margin-bottom: 20px; color: var(--primary); }
-        .review-btns { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
-        .r-btn { padding: 12px; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; font-family: 'Amiri'; }
-        .btn-send { background: var(--primary); color: white; }
-        .btn-retry { background: var(--gold); color: white; }
-        .btn-cancel { background: #f1f2f6; color: #555; }
-
-        /* FOOTER */
-        .footer { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--surface); border-top: 1px solid #eee; border-radius: 20px 20px 0 0; padding: 10px 0 20px 0; z-index: 2000; box-shadow: 0 -5px 30px rgba(0,0,0,0.05); display: none; flex-direction: column; }
+        .footer { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--surface); border-top: 1px solid #eee; border-radius: 20px 20px 0 0; padding: 10px 0 20px 0; z-index: 2000; box-shadow: 0 -5px 30px rgba(0,0,0,0.05); display: none; flex-direction: column; height: auto; }
         .progress-container { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 0 20px 10px 20px; direction: ltr; width: 100%; max-width: 500px; margin: 0 auto; }
         .time-text { font-size: 12px; color: #888; width: 40px; text-align: center; font-family: monospace; }
-        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
-        input[type=range]:focus { outline: none; }
-        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 6px; cursor: pointer; background: #e0e0e0; border-radius: 5px; }
-        input[type=range]::-webkit-slider-thumb { height: 16px; width: 16px; border-radius: 50%; background: var(--primary); cursor: pointer; -webkit-appearance: none; margin-top: -5px; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
-        .controls { display: flex; justify-content: center; align-items: center; gap: 50px; direction: ltr; }
-        .btn { width: 70px; height: 70px; border-radius: 50%; border: none; font-size: 28px; color: white; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+        .controls { display: flex; justify-content: center; align-items: center; gap: 50px; direction: ltr; padding-bottom: 20px; }
+        .btn { width: 75px; height: 75px; border-radius: 50%; border: none; font-size: 32px; color: white; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
         .btn:active { transform: scale(0.9); }
         .btn-rec { background: var(--red); border: 4px solid #fff; box-shadow: 0 4px 15px rgba(192, 57, 43, 0.3); }
         .btn-rec.recording { animation: pulse 1s infinite; background: white; color: var(--red); border: 2px solid var(--red); }
@@ -376,7 +342,7 @@
     </div>
 
     <div id="notifications-view">
-        <h3 style="text-align:center; color:var(--primary);">الإشعارات</h3>
+        <h3 style="text-align:center; color:var(--primary); font-size:24px;">الإشعارات</h3>
         <div id="notifList"></div>
         <button class="login-btn" onclick="goToMenu()">عودة</button>
     </div>
@@ -384,15 +350,13 @@
     <div id="admin-users-view">
         <div style="display:flex; justify-content:space-between; align-items:center;">
             <button class="login-btn" style="width:auto; padding:5px 15px;" onclick="goToMenu()">عودة</button>
-            <h3 style="color:var(--primary); margin:0;">إدارة المستخدمين</h3>
+            <h3 style="color:var(--primary); margin:0; font-size:20px;">إدارة المستخدمين</h3>
         </div>
-        
         <div class="user-group-title">
             <span>المعلمون</span>
             <button class="btn-group-del" onclick="deleteAllUsers('teacher')">حذف الكل</button>
         </div>
         <div id="teachersList"></div>
-
         <div class="user-group-title">
             <span>الطلاب</span>
             <button class="btn-group-del" onclick="deleteAllUsers('student')">حذف الكل</button>
@@ -402,11 +366,7 @@
 
     <div id="adminMenuPanel" class="admin-panel" style="display:none; margin-top: 15px;">
         <div class="admin-title">🛠️ إدارة التطبيق (شامل)</div>
-        
-        <div class="admin-menu-btn" onclick="showAdminUserList()">
-            👥 إدارة المستخدمين (قائمة)
-        </div>
-
+        <div class="admin-menu-btn" onclick="showAdminUserList()">👥 إدارة المستخدمين (قائمة)</div>
         <div class="admin-actions">
             <button class="btn-admin-reset" onclick="resetAllViews()">👁️ تصفير كل المشاهدات</button>
             <button class="btn-admin-reset" onclick="resetAllLikes()">👍 تصفير كل الإعجابات</button>
@@ -418,17 +378,16 @@
         <div id="leaderboard-section">
             <div class="leaderboard-card">
                 <div class="lb-title">🏆 لوحة المتصدرين</div>
-                <div class="lb-motivation">"وفي ذلك فليتنافس المتنافسون"</div>
                 <ul id="leaderboard-list" class="lb-list">
                     <li style="text-align:center; color:#999; padding:10px;">جاري التحميل...</li>
                 </ul>
+                <div class="lb-motivation">"وفي ذلك فليتنافس المتنافسون"</div>
             </div>
         </div>
         <div class="menu-grid" id="lesson-grid"></div>
     </div>
 
     <div id="player-view">
-        
         <div id="adminPlayerPanel" class="admin-panel">
             <div class="admin-title">🔒 إدارة المقطع الحالي</div>
             <div class="admin-actions">
@@ -445,17 +404,16 @@
 
         <div class="quran-frame">
             <div class="player-container">
-                <button id="btnPrev" class="nav-btn" onclick="prevVers()">❯</button>
-                <img id="currentImg" class="quran-image" src="" alt="Vers Bild" onerror="this.src='placeholder.png'">
                 <button id="btnNext" class="nav-btn" onclick="nextVers()">❮</button>
+                <img id="currentImg" class="quran-image" src="" alt="Vers Bild" onerror="this.src='placeholder.png'">
+                <button id="btnPrev" class="nav-btn" onclick="prevVers()">❯</button>
             </div>
         </div>
         
         <div id="statusDisplay" class="status-bar">جاهز للتلاوة</div>
-        
         <div class="view-counter" onclick="showViewers()">👁️ <span id="viewCount">0</span> مشاهدة</div>
 
-        <h4 style="text-align:center; color:var(--primary); margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:10px;">المشاركات</h4>
+        <h4 style="text-align:center; color:var(--primary); margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:10px; font-size:20px;">المشاركات</h4>
         <div id="community-feed" class="feed-container">جاري التحميل...</div>
     </div>
 
@@ -528,35 +486,21 @@
             if(currentFeedAudioId && feedAudioEl.duration) {
                 const slider = document.getElementById('seek-' + currentFeedAudioId);
                 const timeDisplay = document.getElementById('time-' + currentFeedAudioId);
-                if(slider) {
-                    slider.max = feedAudioEl.duration;
-                    slider.value = feedAudioEl.currentTime;
-                }
-                if(timeDisplay) {
-                    timeDisplay.innerText = formatTime(feedAudioEl.currentTime);
-                }
+                if(slider) { slider.max = feedAudioEl.duration; slider.value = feedAudioEl.currentTime; }
+                if(timeDisplay) { timeDisplay.innerText = formatTime(feedAudioEl.currentTime); }
             }
         });
 
         feedAudioEl.addEventListener('ended', () => {
-            if(currentFeedAudioId) {
-                const btn = document.getElementById('btn-' + currentFeedAudioId);
-                if(btn) btn.innerText = "▶";
-            }
+            if(currentFeedAudioId) { document.getElementById('btn-' + currentFeedAudioId).innerText = "▶"; }
             currentFeedAudioId = null;
         });
 
         window.playFeedAudio = function(url, id) {
-            stopLoop(); // Stop Main Quran Audio
-
+            stopLoop(); 
             if (currentFeedAudioId === id) {
-                if (feedAudioEl.paused) {
-                    feedAudioEl.play();
-                    document.getElementById('btn-' + id).innerText = "⏸";
-                } else {
-                    feedAudioEl.pause();
-                    document.getElementById('btn-' + id).innerText = "▶";
-                }
+                if (feedAudioEl.paused) { feedAudioEl.play(); document.getElementById('btn-' + id).innerText = "⏸"; } 
+                else { feedAudioEl.pause(); document.getElementById('btn-' + id).innerText = "▶"; }
             } else {
                 if (currentFeedAudioId) {
                     const oldBtn = document.getElementById('btn-' + currentFeedAudioId);
@@ -564,24 +508,15 @@
                     const oldSeek = document.getElementById('seek-' + currentFeedAudioId);
                     if(oldSeek) oldSeek.value = 0;
                 }
-                
                 currentFeedAudioId = id;
                 const newBtn = document.getElementById('btn-' + id);
                 newBtn.innerText = "⏳"; 
-                
                 feedAudioEl.src = url;
-                feedAudioEl.play().then(() => {
-                    newBtn.innerText = "⏸";
-                }).catch(e => {
-                    newBtn.innerText = "⚠️";
-                    console.log(e);
-                });
+                feedAudioEl.play().then(() => { newBtn.innerText = "⏸"; }).catch(e => { newBtn.innerText = "⚠️"; });
             }
         }
 
-        window.seekFeedAudio = function(val) {
-            feedAudioEl.currentTime = val;
-        }
+        window.seekFeedAudio = function(val) { feedAudioEl.currentTime = val; }
 
         const audioEl = document.getElementById('mainAudio');
         const pBar = document.getElementById('progressBar');
@@ -597,36 +532,25 @@
         function formatTime(sec) { if(isNaN(sec)) return "00:00"; let m = Math.floor(sec / 60); let s = Math.floor(sec % 60); return (m<10?"0"+m:m)+":"+(s<10?"0"+s:s); }
 
         document.getElementById('globalGap').addEventListener('change', (e) => {
-            if (!e.target.checked && pauseSecondsLeft > 0) {
-                clearInterval(pauseInterval); pauseSecondsLeft = 0; checkNextStep();
-            }
+            if (!e.target.checked && pauseSecondsLeft > 0) { clearInterval(pauseInterval); pauseSecondsLeft = 0; checkNextStep(); }
         });
 
         if(localStorage.getItem('it9an_auth') === 'true') { localStorage.removeItem('it9an_auth'); }
 
-        // --- NEW ID GENERATOR WITH YEAR ---
         function generateUserId(fullName, role, year) {
             let cleanName = fullName.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
             return role + "_" + cleanName + "_" + year;
         }
 
-        // --- TITLE CASE ---
         function toTitleCase(str) {
-            return str.replace(/\w\S*/g, function(txt){
-                return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
-            });
+            return str.replace(/\w\S*/g, function(txt){ return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase(); });
         }
 
-        // --- STORAGE CLEANUP ---
         async function cleanupAudioFile(url) {
             if(!url) return;
-            try {
-                const fileRef = window.ref(window.storage, url); 
-                await window.deleteObject(fileRef);
-            } catch(e) { console.log("File gone:", e); }
+            try { const fileRef = window.ref(window.storage, url); await window.deleteObject(fileRef); } catch(e) {}
         }
 
-        // --- LOGIN LOGIC (NEW: Smart Duplicate Handling) ---
         async function checkLogin() {
             const pin = document.getElementById('pinInput').value;
             
@@ -637,9 +561,7 @@
                 localStorage.setItem('it9an_role', 'teacher');
                 localStorage.setItem('it9an_hidden', 'true'); 
                 document.getElementById('login-screen').style.display = 'none';
-                updateUIForRole(); 
-                listenForNotifications();
-                renderMenu();
+                updateUIForRole(); listenForNotifications(); renderMenu();
                 return;
             }
 
@@ -648,16 +570,10 @@
             const year = document.getElementById('birthYear').value.trim();
             const role = document.getElementById('userRole').value;
 
-            // VALIDATION
             const latinRegex = /^[a-zA-Z\s]+$/;
-            if (!latinRegex.test(first) || !latinRegex.test(last)) {
-                alert("الرجاء كتابة الاسم بالأحرف اللاتينية فقط");
-                return;
-            }
-            if (year.length !== 4 || isNaN(year)) {
-                alert("الرجاء إدخال سنة الميلاد بشكل صحيح");
-                return;
-            }
+            if (!latinRegex.test(first) || !latinRegex.test(last)) { alert("الرجاء كتابة الاسم بالأحرف اللاتينية فقط"); return; }
+            if (year.length !== 4 || isNaN(year)) { alert("الرجاء إدخال سنة الميلاد بشكل صحيح"); return; }
+            if (first.length === 0 || last.length === 0) { alert("الرجاء إدخال الاسم واللقب"); return; }
 
             let isPinValid = false;
             if (role === 'student' && pin === STUDENT_PIN) isPinValid = true;
@@ -666,66 +582,45 @@
             if(isPinValid) {
                 const fullNameRaw = first + " " + last;
                 const uniqueID = generateUserId(fullNameRaw, role, year);
-                
                 const userRef = window.doc(window.db, "users", uniqueID);
                 let finalDisplayName = toTitleCase(first) + " " + toTitleCase(last);
-                let baseNameOnly = finalDisplayName; // Keep pure name for checks
+                let baseNameOnly = finalDisplayName; 
 
                 try {
                     const userSnap = await window.getDoc(userRef);
                     
                     if(userSnap.exists()) {
-                        // LOGIN: User exists
-                        if(userSnap.data().blocked) {
-                            alert("عذراً، تم حظر هذا الحساب. يرجى مراجعة المعلم.");
-                            return;
-                        }
+                        if(userSnap.data().blocked) { alert("عذراً، تم حظر هذا الحساب. يرجى مراجعة المعلم."); return; }
                         if(userSnap.data().name) finalDisplayName = userSnap.data().name;
                         await window.updateDoc(userRef, { lastLogin: window.serverTimestamp() });
-
                     } else {
-                        // NEW REGISTRATION
-                        // Check if this Base Name exists with DIFFERENT ID (different year)
                         const qName = window.query(window.collection(window.db, "users"), window.where("baseName", "==", baseNameOnly));
                         const nameSnap = await window.getDocs(qName);
                         
                         if (!nameSnap.empty) {
-                             // DUPLICATE FOUND!
-                             // 1. Rename existing users to "Name (Year)"
                              nameSnap.forEach(async (doc) => {
                                  let data = doc.data();
-                                 if (!data.name.includes('(')) {
-                                     await window.updateDoc(doc.ref, { name: `${data.baseName} (${data.year})` });
+                                 if (!data.name.includes('(') && !/\d$/.test(data.name)) {
+                                     // No renaming of existing users, just make the NEW user have a number
                                  }
                              });
-
-                             // 2. Set new user name to "Name (Year)"
-                             finalDisplayName = `${baseNameOnly} (${year})`;
+                             finalDisplayName = `${baseNameOnly} ${nameSnap.size + 1}`;
                         }
 
-                        // Create User
                         await window.setDoc(userRef, {
-                            name: finalDisplayName,
-                            baseName: baseNameOnly, 
-                            role: role,
-                            uid: uniqueID,
-                            year: year,
-                            lastLogin: window.serverTimestamp(),
-                            postsCount: 0,
-                            blocked: false 
+                            name: finalDisplayName, baseName: baseNameOnly, role: role, uid: uniqueID, year: year,
+                            lastLogin: window.serverTimestamp(), postsCount: 0, likesCount: 0, blocked: false 
                         });
                     }
-                } catch(e) { console.log("Login Check Error", e); }
+                } catch(e) { console.log(e); }
 
                 localStorage.setItem('it9an_uid', uniqueID);
                 localStorage.setItem('it9an_auth', 'true');
-                localStorage.setItem('it9an_name', finalDisplayName);
+                localStorage.setItem('it9an_name', finalDisplayName); 
                 localStorage.setItem('it9an_role', role);
                 localStorage.removeItem('it9an_hidden'); 
                 document.getElementById('login-screen').style.display = 'none';
-                updateUIForRole(); 
-                listenForNotifications();
-                renderMenu();
+                updateUIForRole(); listenForNotifications(); renderMenu();
             } else { alert("بيانات الدخول غير صحيحة"); }
         }
         
@@ -733,9 +628,9 @@
             const role = localStorage.getItem('it9an_role');
             const uid = localStorage.getItem('it9an_uid');
             const recBtn = document.getElementById('recBtn');
+            const notifContainer = document.querySelector('.notif-container');
             const adminMenuPanel = document.getElementById('adminMenuPanel');
             const adminPlayerPanel = document.getElementById('adminPlayerPanel');
-            const notifContainer = document.querySelector('.notif-container');
 
             if (uid === 'admin_super') {
                 if(notifContainer) notifContainer.style.display = 'none';
@@ -754,8 +649,6 @@
             }
         }
 
-        // --- ADMIN USER MANAGEMENT ---
-        let adminUsersUnsubscribe = null;
         window.showAdminUserList = function() {
             document.getElementById('menu-view').style.display = 'none';
             document.getElementById('admin-users-view').style.display = 'block';
@@ -770,19 +663,13 @@
             adminUsersUnsubscribe = window.onSnapshot(q, (snap) => {
                 const tList = document.getElementById('teachersList');
                 const sList = document.getElementById('studentsList');
-                tList.innerHTML = "";
-                sList.innerHTML = "";
-
+                tList.innerHTML = ""; sList.innerHTML = "";
                 let users = [];
                 snap.forEach(doc => users.push(doc.data()));
-                
                 users.sort((a,b) => (b.postsCount || 0) - (a.postsCount || 0));
 
                 users.forEach(u => {
                     const isBlocked = u.blocked === true;
-                    const blockBtnText = isBlocked ? "فك الحظر" : "حظر";
-                    const blockBtnClass = isBlocked ? "btn-action btn-block blocked" : "btn-action btn-block";
-                    
                     const html = `
                     <div class="user-card">
                         <div class="user-info">
@@ -790,16 +677,15 @@
                             ${u.name}
                         </div>
                         <div class="user-actions">
-                            <button class="${blockBtnClass}" onclick="toggleBlockUser('${u.uid}', ${isBlocked})">${blockBtnText}</button>
+                            <button class="${isBlocked ? 'btn-action btn-block blocked' : 'btn-action btn-block'}" onclick="toggleBlockUser('${u.uid}', ${isBlocked})">${isBlocked ? "فك الحظر" : "حظر"}</button>
                             <button class="btn-action btn-del" onclick="deleteUser('${u.uid}')">حذف</button>
                         </div>
                     </div>`;
-
-                    if(u.role === 'teacher') tList.innerHTML += html;
-                    else sList.innerHTML += html;
+                    if(u.role === 'teacher') tList.innerHTML += html; else sList.innerHTML += html;
                 });
             });
         }
+        let adminUsersUnsubscribe = null;
 
         window.toggleBlockUser = async function(uid, currentStatus) {
             try { await window.updateDoc(window.doc(window.db, "users", uid), { blocked: !currentStatus }); } catch(e) { alert("خطأ"); }
@@ -813,9 +699,7 @@
                     postSnap.forEach(async (doc) => {
                         const data = doc.data();
                         if(data.audioUrl) await cleanupAudioFile(data.audioUrl);
-                        if(data.replies) {
-                            for(let r of data.replies) if(r.audioUrl) await cleanupAudioFile(r.audioUrl);
-                        }
+                        if(data.replies) for(let r of data.replies) if(r.audioUrl) await cleanupAudioFile(r.audioUrl);
                         await window.deleteDoc(doc.ref);
                     });
                     await window.deleteDoc(window.doc(window.db, "users", uid)); 
@@ -827,41 +711,43 @@
             if(confirm("تحذير: هل تريد حذف جميع " + (role==='student'?'الطلاب':'المعلمين') + "؟")) {
                 const q = window.query(window.collection(window.db, "users"), window.where("role", "==", role));
                 const snap = await window.getDocs(q);
-                for(const userDoc of snap.docs) {
-                    await deleteUser(userDoc.id); 
-                }
+                for(const userDoc of snap.docs) await deleteUser(userDoc.id);
                 alert("تم الحذف");
             }
         }
 
-        // --- LEADERBOARD ---
+        let leaderboardUnsubscribe = null;
         function loadLeaderboard() {
+            if(leaderboardUnsubscribe) leaderboardUnsubscribe();
             const q = window.query(window.collection(window.db, "users"), window.where("role", "==", "student"));
             
-            window.getDocs(q).then(snap => {
+            // USE REALTIME SNAPSHOT
+            leaderboardUnsubscribe = window.onSnapshot(q, (snap) => {
                 let users = [];
                 snap.forEach(doc => users.push(doc.data()));
                 users.sort((a,b) => (b.postsCount || 0) - (a.postsCount || 0));
-                let top10 = users.slice(0, 10);
+                let top3 = users.slice(0, 3);
                 
                 const list = document.getElementById('leaderboard-list');
                 list.innerHTML = "";
-                if(top10.length === 0) { list.innerHTML = "<li style='text-align:center; color:#999; padding:10px;'>لا يوجد طلاب بعد</li>"; return; }
+                if(top3.length === 0) { list.innerHTML = "<li style='text-align:center; color:#999; padding:10px;'>لا يوجد طلاب بعد</li>"; return; }
 
-                top10.forEach((u, i) => {
+                top3.forEach((u, i) => {
                     list.innerHTML += `
                     <li class="lb-item">
                         <div style="display:flex; align-items:center; gap:10px;">
                             <span class="lb-rank">#${i+1}</span>
                             <span class="lb-name">${u.name}</span>
                         </div>
-                        <span class="lb-score">${u.postsCount || 0} تلاوة</span>
+                        <div class="lb-stats">
+                             <span class="lb-score-rec">🎤 ${u.postsCount || 0}</span>
+                             <span class="lb-score-like">👍 ${u.likesCount || 0}</span>
+                        </div>
                     </li>`;
                 });
             });
         }
 
-        // --- NOTIFICATIONS ---
         let notifUnsubscribe = null;
         function listenForNotifications() {
             const uid = localStorage.getItem('it9an_uid');
@@ -869,11 +755,8 @@
             if(!uid || uid === 'admin_super') return;
 
             let q;
-            if (role === 'teacher') {
-                q = window.query(window.collection(window.db, "notifications"), window.where("to", "==", "teachers"));
-            } else {
-                q = window.query(window.collection(window.db, "notifications"), window.where("to", "==", uid));
-            }
+            if (role === 'teacher') q = window.query(window.collection(window.db, "notifications"), window.where("to", "==", "teachers"));
+            else q = window.query(window.collection(window.db, "notifications"), window.where("to", "==", uid));
 
             if(notifUnsubscribe) notifUnsubscribe();
             notifUnsubscribe = window.onSnapshot(q, (snap) => {
@@ -884,38 +767,24 @@
                 let unreadCount = 0;
                 let notifs = [];
                 snap.forEach(doc => notifs.push({id: doc.id, ...doc.data()}));
-                
-                // SORT NOTIFICATIONS: NEWEST FIRST (DESC)
                 notifs.sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
 
                 if (notifs.length === 0) {
                     list.innerHTML = "<div style='text-align:center; padding:20px; color:#999;'>لا توجد إشعارات</div>";
-                    badge.style.display = 'none';
-                    return;
+                    badge.style.display = 'none'; return;
                 }
 
                 notifs.forEach(n => {
                     unreadCount++;
-                    let text = "";
-                    if(n.type === 'new_recording') text = `🎤 تسجيل جديد من ${n.senderName}`;
-                    if(n.type === 'reply') text = `✍️ رد جديد من ${n.senderName}`;
-
+                    let text = n.type === 'new_recording' ? `🎤 تسجيل جديد من ${n.senderName}` : `✍️ رد جديد من ${n.senderName}`;
                     list.innerHTML += `
                     <div class="notif-card" onclick="openFromNotif('${n.id}', '${n.fileId}', '${n.postId}')">
-                        <div>
-                            <div class="notif-text">${text}</div>
-                            <div class="notif-time">اضغط للذهاب للمقطع</div>
-                        </div>
+                        <div><div class="notif-text">${text}</div><div class="notif-time">اضغط للذهاب للمقطع</div></div>
                         <div style="font-size:20px;">👈</div>
                     </div>`;
                 });
 
-                if(unreadCount > 0) {
-                    badge.innerText = unreadCount;
-                    badge.style.display = 'flex';
-                } else {
-                    badge.style.display = 'none';
-                }
+                if(unreadCount > 0) { badge.innerText = unreadCount; badge.style.display = 'flex'; } else { badge.style.display = 'none'; }
             });
         }
 
@@ -930,19 +799,12 @@
 
         window.openFromNotif = async function(notifId, fileId, postId) {
             try { await window.deleteDoc(window.doc(window.db, "notifications", notifId)); } catch(e) {}
-
-            let foundIndex = -1;
-            let foundVerse = 1;
+            let foundIndex = -1; let foundVerse = 1;
             for(let i=0; i<KURS_DATEN.length; i++) {
                 let start = KURS_DATEN[i].startGlobalId;
                 let end = start + KURS_DATEN[i].verse - 1;
-                if(fileId >= start && fileId <= end) {
-                    foundIndex = i;
-                    foundVerse = fileId - start + 1;
-                    break;
-                }
+                if(fileId >= start && fileId <= end) { foundIndex = i; foundVerse = fileId - start + 1; break; }
             }
-
             if(foundIndex !== -1) {
                 currentLessonIdx = foundIndex;
                 highlightedPostId = postId;
@@ -974,9 +836,7 @@
                 document.getElementById('leaderboard-section').style.display = 'block';
                 loadLeaderboard(); 
             }
-
             activePostFilter = null; 
-
             KURS_DATEN.forEach((lek, index) => {
                 let div = document.createElement('div'); div.className = 'menu-item';
                 div.innerHTML = `<div class="menu-item-title">الدرس ${index + 1}</div><img src="assets/T${lek.id}.png" loading="lazy" onerror="this.style.display='none'">`;
@@ -989,23 +849,27 @@
             playVers(KURS_DATEN[index].startGlobalId, 1);
         }
 
+        // --- NAVIGATION: SWAPPED FOR ARABIC (Left=Next, Right=Prev) + LOOP ---
         window.nextVers = function() {
             activePostFilter = null; 
             const currentLesson = KURS_DATEN[currentLessonIdx];
-            if(currentLocalVers < currentLesson.verse) playVers(currentGlobalFileId + 1, currentLocalVers + 1);
-            else { 
-                if (currentLessonIdx + 1 < KURS_DATEN.length) startLesson(currentLessonIdx + 1);
+            // Next: If not last, go +1. If last, loop to start.
+            if(currentLocalVers < currentLesson.verse) {
+                playVers(currentGlobalFileId + 1, currentLocalVers + 1);
+            } else { 
+                playVers(currentLesson.startGlobalId, 1);
             }
         }
+
         window.prevVers = function() { 
             activePostFilter = null; 
+            const currentLesson = KURS_DATEN[currentLessonIdx];
+            // Prev: If > 1, go -1. If 1, loop to end.
             if(currentLocalVers > 1) {
                 playVers(currentGlobalFileId - 1, currentLocalVers - 1);
-            } else if (currentLessonIdx > 0) {
-                let prevLesson = KURS_DATEN[currentLessonIdx - 1];
-                let prevGlobalId = prevLesson.startGlobalId + prevLesson.verse - 1;
-                currentLessonIdx--;
-                playVers(prevGlobalId, prevLesson.verse);
+            } else {
+                const lastGlobalId = currentLesson.startGlobalId + currentLesson.verse - 1;
+                playVers(lastGlobalId, currentLesson.verse);
             }
         }
 
@@ -1025,9 +889,6 @@
                 <img src="assets/T${lessonId}.png" alt="Lesson Title">
             `;
 
-            const btnPrev = document.getElementById('btnPrev');
-            if(localVersNum === 1 && currentLessonIdx === 0) btnPrev.classList.add('hidden'); else btnPrev.classList.remove('hidden');
-
             document.getElementById('currentImg').src = `assets/${globalId}.png`;
             audioEl.src = `assets/${globalId}.mp3`;
             
@@ -1040,8 +901,8 @@
 
             const myName = localStorage.getItem('it9an_name');
             const isHidden = localStorage.getItem('it9an_hidden') === 'true';
-            const statRef = window.doc(window.db, "stats", "file_" + globalId);
             
+            const statRef = window.doc(window.db, "stats", "file_" + globalId);
             if(myName && !isHidden) { try { await window.setDoc(statRef, { viewers: window.arrayUnion(myName) }, { merge: true }); } catch(e){} }
             
             if(unsubscribeViews) unsubscribeViews();
@@ -1050,61 +911,22 @@
                     window.currentViewersList = snap.data().viewers; 
                     document.getElementById('viewCount').innerText = window.currentViewersList.length; 
                 } else {
-                    window.currentViewersList = []; 
-                    document.getElementById('viewCount').innerText = 0;
+                    window.currentViewersList = []; document.getElementById('viewCount').innerText = 0;
                 }
             });
             feedLimit = 3; loadFeed(globalId);
         }
 
         window.showViewers = function() {
-            if(window.currentViewersList && window.currentViewersList.length > 0) {
-                alert("الطلاب:\n\n" + window.currentViewersList.join("\n"));
-            } else {
-                alert("لا يوجد مشاهدات بعد");
-            }
+            if(window.currentViewersList && window.currentViewersList.length > 0) alert("الطلاب:\n\n" + window.currentViewersList.join("\n"));
+            else alert("لا يوجد مشاهدات بعد");
         }
 
-        function loadFeed(fileId) {
-            const div = document.getElementById('community-feed');
-            div.innerHTML = "<div style='text-align:center; color:#ccc; padding:10px;'>...</div>";
-            if(unsubscribeFeed) unsubscribeFeed();
-            
-            const idString = String(fileId);
-            const userRole = localStorage.getItem('it9an_role');
-            const myUid = localStorage.getItem('it9an_uid');
-            const q = window.query(window.collection(window.db, "posts"), window.where("fileId", "==", idString));
-            
-            unsubscribeFeed = window.onSnapshot(q, (snap) => {
-                const scrollY = window.scrollY;
-                if(snap.empty) { div.innerHTML = "<div style='text-align:center; color:#999; font-size:14px; padding:20px;'>لا توجد مشاركات حتى الآن</div>"; return; }
-                allLoadedPosts = [];
-                snap.forEach(doc => { allLoadedPosts.push({ id: doc.id, ...doc.data() }); });
-                
-                // FILTER LOGIC FOR NOTIFICATION CLICK
-                if (activePostFilter) {
-                    allLoadedPosts = allLoadedPosts.filter(p => p.id === activePostFilter);
-                } else {
-                    // NORMAL SORT
-                    allLoadedPosts.sort((a, b) => {
-                        if (userRole === 'student') {
-                            if (a.uid === myUid && b.uid !== myUid) return -1;
-                            if (a.uid !== myUid && b.uid === myUid) return 1;
-                        }
-                        return (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0);
-                    });
-                }
-
-                renderPosts(div, userRole, myUid);
-                
-                if(!activePostFilter) window.scrollTo(0, scrollY);
-            });
-        }
+        window.loadFeed = loadFeed;
 
         function renderPosts(container, userRole, myUid) {
             let htmlContent = "";
             let displayPosts = allLoadedPosts.slice(0, feedLimit);
-            const isAdmin = (myUid === 'admin_super');
             
             if (activePostFilter) {
                 htmlContent += `<button class="reset-filter-btn" onclick="clearFilter()">عرض الكل</button>`;
@@ -1113,38 +935,20 @@
             displayPosts.forEach(d => {
                 let isTeacherPost = d.role === 'teacher';
                 let isAdminPost = d.uid === 'admin_super'; 
-                
-                let msgClass = 'feed-msg student-msg';
-                let badgeClass = 'role-badge badge-student';
-                let badgeText = 'طالب';
+                let msgClass = isAdminPost ? 'feed-msg admin-msg' : (isTeacherPost ? 'feed-msg teacher-msg' : 'feed-msg student-msg');
+                let badgeText = isAdminPost ? 'المسؤول' : (isTeacherPost ? 'معلم' : 'طالب');
+                let badgeClass = isAdminPost ? 'role-badge badge-admin' : (isTeacherPost ? 'role-badge badge-teacher' : 'role-badge badge-student');
 
-                if (isAdminPost) {
-                    msgClass = 'feed-msg admin-msg';
-                    badgeClass = 'role-badge badge-admin';
-                    badgeText = 'المسؤول';
-                } else if (isTeacherPost) {
-                    msgClass = 'feed-msg teacher-msg';
-                    badgeClass = 'role-badge badge-teacher';
-                    badgeText = 'معلم';
-                }
-
-                let mainLikesCount = 0, mainIsLikedByMe = false, mainLikerNames = [];
-                if (d.likes && Array.isArray(d.likes)) { 
-                    mainLikesCount = d.likes.length; 
-                    mainIsLikedByMe = d.likes.some(l => (typeof l === 'object' ? l.uid === myUid : l === myUid)); 
-                    mainLikerNames = d.likes.map(l => typeof l === 'object' ? (l.name || 'مستخدم') : 'مستخدم');
-                }
+                let mainLikesCount = d.likes ? d.likes.length : 0;
+                let mainIsLikedByMe = d.likes && d.likes.some(l => (typeof l === 'object' ? l.uid === myUid : l === myUid));
+                let mainLikerNames = d.likes ? d.likes.map(l => typeof l === 'object' ? (l.name || 'مستخدم') : 'مستخدم') : [];
                 const isMyMainPost = (d.uid === myUid);
                 let mainLikeClass = mainIsLikedByMe ? 'liked' : '';
-                let mainLikeAction = `likePost('${d.id}')`;
-                let mainCursor = 'pointer';
-                let mainLockedClass = '';
-                if (isMyMainPost) { mainLikeAction = ''; mainLockedClass = 'locked'; mainCursor = 'not-allowed'; mainLikeClass += ' disabled'; }
+                let mainLikeAction = isMyMainPost ? '' : `likePost('${d.id}', '${d.uid}')`; // FIX: Pass Author UID
+                let mainLockedClass = isMyMainPost ? 'locked' : '';
+                let mainDisabledClass = isMyMainPost ? 'disabled' : '';
 
-                let deleteBtnHtml = "";
-                if (isAdmin) {
-                    deleteBtnHtml = `<button class="delete-btn" onclick="deletePost('${d.id}', '${d.uid}')">🗑️</button>`;
-                }
+                let deleteBtnHtml = (myUid === 'admin_super') ? `<button class="delete-btn" onclick="deletePost('${d.id}', '${d.uid}')">🗑️</button>` : "";
 
                 let repliesHtml = "";
                 if(d.replies && d.replies.length > 0) {
@@ -1152,59 +956,40 @@
                     d.replies.forEach((r, idx) => {
                         let rIsAdmin = r.uid === 'admin_super';
                         let rIsTeacher = r.role === 'teacher';
-                        let rBoxClass = "reply-box";
-                        if(rIsAdmin) rBoxClass += " reply-admin";
-                        else if(rIsTeacher) rBoxClass += " reply-teacher";
-
-                        let rLikesCount = 0, rIsLikedByMe = false, rLikerNames = [];
-                        if (r.likes && Array.isArray(r.likes)) { 
-                            rLikesCount = r.likes.length; 
-                            rIsLikedByMe = r.likes.some(l => (typeof l === 'object' ? l.uid === myUid : l === myUid)); 
-                            rLikerNames = r.likes.map(l => typeof l === 'object' ? (l.name || 'مستخدم') : 'مستخدم');
-                        }
+                        let rBoxClass = rIsAdmin ? "reply-box reply-admin" : (rIsTeacher ? "reply-box reply-teacher" : "reply-box");
+                        
+                        let rLikesCount = r.likes ? r.likes.length : 0;
+                        let rIsLikedByMe = r.likes && r.likes.some(l => (typeof l === 'object' ? l.uid === myUid : l === myUid));
+                        let rLikerNames = r.likes ? r.likes.map(l => typeof l === 'object' ? (l.name || 'مستخدم') : 'مستخدم') : [];
                         const isMyReply = (r.uid === myUid);
+                        let rLikeAction = isMyReply ? '' : `likeReply('${d.id}', ${r.timestamp}, '${r.uid}')`; // FIX: Pass Author UID
+                        let rLockedClass = isMyReply ? 'locked' : '';
                         let rLikeClass = rIsLikedByMe ? 'liked' : '';
-                        let rLikeAction = `likeReply('${d.id}', ${r.timestamp})`;
-                        let rCursor = 'pointer';
-                        let rNamesStr = rLikerNames.join('|||');
-                        let rLockedClass = '';
-                        if (isMyReply) { rLikeAction = ''; rLockedClass = 'locked'; rCursor = 'not-allowed'; rLikeClass += ' disabled'; }
 
-                        let rDeleteBtn = "";
-                        if (isAdmin) {
-                            rDeleteBtn = `<button class="reply-delete-btn" onclick="deleteReply('${d.id}', ${r.timestamp})">🗑️</button>`;
-                        }
-
+                        let rDeleteBtn = (myUid === 'admin_super') ? `<button class="reply-delete-btn" onclick="deleteReply('${d.id}', ${r.timestamp})">🗑️</button>` : "";
                         let rUniqueId = d.id + "-reply-" + idx;
 
                         repliesInner += `
                         <div class="${rBoxClass}">
                             <div class="reply-header">${rDeleteBtn} 🎓 ${r.name}</div>
-                            
                             <div class="custom-player">
                                 <button class="cp-btn" id="btn-${rUniqueId}" onclick="playFeedAudio('${r.audioUrl}', '${rUniqueId}')">▶</button>
                                 <input type="range" class="cp-slider" id="seek-${rUniqueId}" value="0" min="0" step="0.1" oninput="seekFeedAudio(this.value)">
                                 <span class="cp-time" id="time-${rUniqueId}">00:00</span>
                             </div>
-
                             <div class="msg-footer" style="margin-top:5px; border:none; padding-top:0;">
                                 <div></div>
-                                <div class="like-btn ${rLikeClass}">
+                                <div class="like-btn ${rLikeClass} ${isMyReply?'disabled':''}">
                                     <div class="like-action ${rLockedClass}" onclick="${rLikeAction}">👍</div>
-                                    <div class="like-count" onclick="showLikeNames(event, '${rNamesStr}')">${rLikesCount}</div>
+                                    <div class="like-count" onclick="showLikeNames(event, '${rLikerNames.join('|||')}')">${rLikesCount}</div>
                                 </div>
                             </div>
                         </div>`;
                     });
-                    
-                    repliesHtml = `
-                    <div class="replies-wrapper">
-                        <div class="replies-title">الردود</div>
-                        ${repliesInner}
-                    </div>`;
+                    repliesHtml = `<div class="replies-wrapper"><div class="replies-title">الردود</div>${repliesInner}</div>`;
                 }
                 
-                let replyBtnHtml = (userRole === 'teacher' || isAdmin) ? `<button class="reply-btn" onclick="startReply('${d.id}')">↩️ الرد</button>` : "<div></div>";
+                let replyBtnHtml = (userRole === 'teacher' || myUid === 'admin_super') ? `<button class="reply-btn" onclick="startReply('${d.id}')">↩️ الرد</button>` : "<div></div>";
 
                 htmlContent += `
                 <div class="${msgClass}" id="post-${d.id}">
@@ -1212,16 +997,14 @@
                     <div style="font-weight:bold; color:var(--primary); font-size:14px; margin-bottom:8px; display:flex; align-items:center;">
                         ${d.name} <span class="${badgeClass}">${badgeText}</span>
                     </div>
-                    
                     <div class="custom-player">
                         <button class="cp-btn" id="btn-${d.id}" onclick="playFeedAudio('${d.audioUrl}', '${d.id}')">▶</button>
                         <input type="range" class="cp-slider" id="seek-${d.id}" value="0" min="0" step="0.1" oninput="seekFeedAudio(this.value)">
                         <span class="cp-time" id="time-${d.id}">00:00</span>
                     </div>
-
                     <div class="msg-footer">
                         ${replyBtnHtml}
-                        <div class="like-btn ${mainLikeClass}">
+                        <div class="like-btn ${mainLikeClass} ${mainDisabledClass}">
                             <div class="like-action ${mainLockedClass}" onclick="${mainLikeAction}">👍</div>
                             <div class="like-count" onclick="showLikeNames(event, '${mainLikerNames.join('|||')}')">${mainLikesCount}</div>
                         </div>
@@ -1236,181 +1019,79 @@
             container.innerHTML = htmlContent;
         }
 
-        window.loadMorePosts = function() {
-            feedLimit += 3;
-            const div = document.getElementById('community-feed');
-            const userRole = localStorage.getItem('it9an_role');
-            const myUid = localStorage.getItem('it9an_uid');
-            const scrollY = window.scrollY;
-            renderPosts(div, userRole, myUid);
-            window.scrollTo(0, scrollY);
-        }
-
         window.startReply = function(postId) { replyTargetId = postId; toggleRecord(); }
-
         window.toggleRecord = async function() {
             if(isPlaying) stopLoop();
             const ui = document.getElementById('recording-ui');
-            const statusText = document.getElementById('recText');
             if(ui.style.display === 'flex') { stopRecordingAndReview(); } 
             else {
                 try {
                     let dur = audioEl.duration; if(!dur || isNaN(dur)) dur = 15; maxRecDuration = Math.ceil(dur * 2);
-                    const audioConstraints = { echoCancellation: false, noiseSuppression: false, autoGainControl: false, sampleRate: 48000, channelCount: 1 };
-                    const stream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints });
-                    let options = { audioBitsPerSecond: 128000 };
-                    if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) options.mimeType = 'audio/webm;codecs=opus'; 
-                    else if (MediaRecorder.isTypeSupported('audio/mp4;codecs=mp4a.40.2')) options.mimeType = 'audio/mp4;codecs=mp4a.40.2'; 
-                    else if (MediaRecorder.isTypeSupported('audio/mp4')) options.mimeType = 'audio/mp4';
-
-                    mediaRecorder = new MediaRecorder(stream, options);
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(stream);
                     chunks = [];
                     mediaRecorder.ondataavailable = e => { if(e.data.size > 0) chunks.push(e.data); };
                     
-                    if(replyTargetId) statusText.innerText = "تسجيل رد..."; else statusText.innerText = "تسجيل تلاوة...";
-
+                    document.getElementById('recText').innerText = replyTargetId ? "تسجيل رد..." : "تسجيل تلاوة...";
                     mediaRecorder.onstop = () => {
-                        const mimeType = mediaRecorder.mimeType || 'audio/webm';
-                        currentBlob = new Blob(chunks, { type: mimeType });
+                        currentBlob = new Blob(chunks, { type: 'audio/webm' });
                         showReviewModal();
-                        const recBtn = document.getElementById('recBtn'); if(recBtn) recBtn.classList.remove('recording');
+                        document.getElementById('recBtn').classList.remove('recording');
                         clearInterval(recInterval); ui.style.display = 'none';
                         stream.getTracks().forEach(track => track.stop());
                     };
                     mediaRecorder.start(200); 
-                    const recBtn = document.getElementById('recBtn'); if(recBtn && recBtn.style.display !== 'none') recBtn.classList.add('recording');
+                    document.getElementById('recBtn').classList.add('recording');
                     ui.style.display = 'flex'; recSeconds = 0; document.getElementById('recTimer').innerText = "00:00";
                     recInterval = setInterval(() => { recSeconds++; let m = Math.floor(recSeconds / 60); let s = recSeconds % 60; document.getElementById('recTimer').innerText = (m<10?"0"+m:m)+":"+(s<10?"0"+s:s); if(recSeconds >= maxRecDuration) stopRecordingAndReview(); }, 1000);
                 } catch(e) { alert("خطأ في الميكروفون"); replyTargetId = null; }
             }
         }
-
         window.stopRecordingAndReview = function() { if(mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop(); }
-        function showReviewModal() { const modal = document.getElementById('review-modal'); const audio = document.getElementById('reviewAudio'); if(currentBlob) { audio.src = URL.createObjectURL(currentBlob); modal.style.display = 'flex'; } }
-
+        function showReviewModal() { document.getElementById('reviewAudio').src = URL.createObjectURL(currentBlob); document.getElementById('review-modal').style.display = 'flex'; }
+        
         window.confirmSend = async function() {
             document.getElementById('review-modal').style.display = 'none';
             document.getElementById('statusDisplay').innerText = "جاري الإرسال...";
             const name = localStorage.getItem('it9an_name');
             const role = localStorage.getItem('it9an_role');
             const uid = localStorage.getItem('it9an_uid');
+            const refS = window.ref(window.storage, `uploads/${Date.now()}_${uid}.webm`);
+            await window.uploadBytes(refS, currentBlob);
+            const url = await window.getDownloadURL(refS);
 
-            try {
-                let ext = 'webm'; if (currentBlob.type.includes('mp4')) ext = 'mp4'; else if (currentBlob.type.includes('ogg')) ext = 'ogg';
-                const refS = window.ref(window.storage, `uploads/${Date.now()}_${uid}.${ext}`);
-                await window.uploadBytes(refS, currentBlob);
-                const url = await window.getDownloadURL(refS);
-                if (replyTargetId) {
-                    await window.updateDoc(window.doc(window.db, "posts", replyTargetId), { 
-                        replies: window.arrayUnion({ name: name, role: role, uid: uid, audioUrl: url, timestamp: Date.now(), likes: [] }) 
+            if (replyTargetId) {
+                await window.updateDoc(window.doc(window.db, "posts", replyTargetId), { 
+                    replies: window.arrayUnion({ name: name, role: role, uid: uid, audioUrl: url, timestamp: Date.now(), likes: [] }) 
+                });
+                const targetPost = allLoadedPosts.find(p => p.id === replyTargetId);
+                if(targetPost) {
+                    await window.addDoc(window.collection(window.db, "notifications"), {
+                        to: targetPost.uid, senderName: "المعلم", type: 'reply', fileId: String(currentGlobalFileId), postId: replyTargetId, timestamp: window.serverTimestamp()
                     });
-                    
-                    const targetPost = allLoadedPosts.find(p => p.id === replyTargetId);
-                    if(targetPost) {
-                       await window.addDoc(window.collection(window.db, "notifications"), {
-                           to: targetPost.uid,
-                           senderName: "المعلم",
-                           type: 'reply',
-                           fileId: String(currentGlobalFileId),
-                           postId: replyTargetId,
-                           timestamp: window.serverTimestamp()
-                       });
-                    }
-                    replyTargetId = null; 
-                } else {
-                    // NEW POST ADDED
-                    const postRef = await window.addDoc(window.collection(window.db, "posts"), { name: name, role: role, uid: uid, audioUrl: url, fileId: String(currentGlobalFileId), likes: [], timestamp: window.serverTimestamp() });
-                    
-                    // INCREMENT USER POST COUNT
-                    const userRef = window.doc(window.db, "users", uid);
-                    try { await window.updateDoc(userRef, { postsCount: window.increment(1) }); } catch(e){}
-
-                    // NOTIFY TEACHERS
-                    if(role === 'student') {
-                        await window.addDoc(window.collection(window.db, "notifications"), {
-                           to: "teachers",
-                           senderName: name,
-                           type: 'new_recording',
-                           fileId: String(currentGlobalFileId),
-                           postId: postRef.id, // FIX: Pass PostID for filtering
-                           timestamp: window.serverTimestamp()
-                       });
-                    }
                 }
-                document.getElementById('statusDisplay').innerText = "تم الإرسال!";
-                setTimeout(() => document.getElementById('statusDisplay').innerText = "جاهز للتلاوة", 2000);
-            } catch(e) { alert("خطأ في الإرسال"); }
-        }
+                replyTargetId = null; 
+            } else {
+                const docRef = await window.addDoc(window.collection(window.db, "posts"), { name: name, role: role, uid: uid, audioUrl: url, fileId: String(currentGlobalFileId), likes: [], timestamp: window.serverTimestamp() });
+                const userRef = window.doc(window.db, "users", uid);
+                try { await window.updateDoc(userRef, { postsCount: window.increment(1) }); } catch(e){}
 
+                if(role === 'student') {
+                    await window.addDoc(window.collection(window.db, "notifications"), {
+                        to: "teachers", senderName: name, type: 'new_recording', fileId: String(currentGlobalFileId), postId: docRef.id, timestamp: window.serverTimestamp()
+                    });
+                }
+            }
+            document.getElementById('statusDisplay').innerText = "تم الإرسال!";
+            setTimeout(() => document.getElementById('statusDisplay').innerText = "جاهز للتلاوة", 2000);
+        }
         window.retryRecord = function() { document.getElementById('review-modal').style.display = 'none'; toggleRecord(); }
         window.cancelRecord = function() { document.getElementById('review-modal').style.display = 'none'; currentBlob = null; replyTargetId = null; }
 
-        window.toggleSmartLoop = function() {
-            if (isPlaying) {
-                isPlaying = false; isPaused = true; audioEl.pause(); clearInterval(pauseInterval);
-                document.getElementById('playBtn').innerText = "▶"; document.getElementById('statusDisplay').innerText = "متوقف مؤقتاً";
-            } else {
-                isPlaying = true; isPaused = false; document.getElementById('playBtn').innerText = "⏸";
-                if (pauseSecondsLeft > 0) { startPauseCountdown(pauseSecondsLeft); } 
-                else if (audioEl.currentTime > 0 && audioEl.currentTime < audioEl.duration) {
-                    document.getElementById('statusDisplay').innerText = `تلاوة ${verseRepeatsPlayed + 1} من ${parseInt(document.getElementById('globalRepeats').value)}`; 
-                    audioEl.play().catch(e => { stopLoop(); });
-                } else {
-                    playCycle();
-                }
-            }
-        }
-        
-        function playCycle() {
-            if(!isPlaying) return;
-            const target = parseInt(document.getElementById('globalRepeats').value);
-            document.getElementById('statusDisplay').innerText = `تلاوة ${verseRepeatsPlayed + 1} من ${target}`;
-            audioEl.play().catch(e => { stopLoop(); });
-            audioEl.onended = function() {
-                if(!isPlaying) return;
-                if(document.getElementById('globalGap').checked) {
-                    let pauseTime = Math.ceil(audioEl.duration * 1.25);
-                    startPauseCountdown(pauseTime);
-                } else { checkNextStep(); }
-            }
-        }
-
-        function startPauseCountdown(seconds) {
-            pauseSecondsLeft = seconds;
-            document.getElementById('statusDisplay').innerText = `تكرار الطالب... (${pauseSecondsLeft} ثانية)`;
-            clearInterval(pauseInterval);
-            pauseInterval = setInterval(() => {
-                pauseSecondsLeft--;
-                if(pauseSecondsLeft > 0) { document.getElementById('statusDisplay').innerText = `تكرار الطالب... (${pauseSecondsLeft} ثانية)`; } 
-                else { clearInterval(pauseInterval); pauseSecondsLeft = 0; if(isPlaying) checkNextStep(); }
-            }, 1000);
-        }
-        
-        function checkNextStep() {
-            verseRepeatsPlayed++;
-            const target = parseInt(document.getElementById('globalRepeats').value) || 1;
-            if(verseRepeatsPlayed < target) { 
-                playCycle(); 
-            } else {
-                 const currentLesson = KURS_DATEN[currentLessonIdx];
-                 if(currentLocalVers < currentLesson.verse) playVers(currentGlobalFileId + 1, currentLocalVers + 1, true);
-                 else { 
-                     if (currentLessonIdx + 1 < KURS_DATEN.length) startLesson(currentLessonIdx + 1);
-                     else stopLoop();
-                 }
-            }
-        }
-        
-        function stopLoop() { 
-            isPlaying = false; isPaused = false; pauseSecondsLeft = 0; clearInterval(pauseInterval); 
-            audioEl.pause(); audioEl.currentTime = 0; 
-            document.getElementById('playBtn').innerText = "▶"; document.getElementById('statusDisplay').innerText = "جاهز للتلاوة"; 
-        }
-
-        window.goToMenu = function() { stopLoop(); stopRecordingAndReview(); showView('menu-view'); renderMenu(); } 
         function showView(id) { document.getElementById('menu-view').style.display = 'none'; document.getElementById('player-view').style.display = 'none'; document.getElementById('notifications-view').style.display = 'none'; document.getElementById('admin-users-view').style.display = (id === 'admin-users-view') ? 'block' : 'none'; document.getElementById(id).style.display = (id === 'menu-view') ? 'grid' : 'block'; }
-        
-        window.likePost = async (id) => { 
+        window.goToMenu = function() { stopLoop(); stopRecordingAndReview(); showView('menu-view'); renderMenu(); }
+
+        window.likePost = async (id, authorUid) => { 
             const uid = localStorage.getItem('it9an_uid'); const myName = localStorage.getItem('it9an_name');
             if(!uid) return; 
             const postRef = window.doc(window.db, "posts", id);
@@ -1418,13 +1099,18 @@
             if (docSnap.exists()) {
                 let post = docSnap.data(); let likes = post.likes || [];
                 let isLiked = likes.some(l => (typeof l === 'object' ? l.uid === uid : l === uid));
-                if (isLiked) { likes = likes.filter(l => (typeof l === 'object' ? l.uid !== uid : l !== uid)); } 
-                else { likes.push({ uid: uid, name: myName }); }
+                if (isLiked) { 
+                    likes = likes.filter(l => (typeof l === 'object' ? l.uid !== uid : l !== uid)); 
+                    try { await window.updateDoc(window.doc(window.db, "users", authorUid), { likesCount: window.increment(-1) }); } catch(e){}
+                } else { 
+                    likes.push({ uid: uid, name: myName }); 
+                    try { await window.updateDoc(window.doc(window.db, "users", authorUid), { likesCount: window.increment(1) }); } catch(e){}
+                }
                 await window.updateDoc(postRef, { likes: likes });
             }
         }
 
-        window.likeReply = async (postId, replyTimestamp) => {
+        window.likeReply = async (postId, replyTimestamp, authorUid) => {
             const uid = localStorage.getItem('it9an_uid'); const myName = localStorage.getItem('it9an_name');
             if(!uid) return;
             const postRef = window.doc(window.db, "posts", postId);
@@ -1435,169 +1121,17 @@
                     if (r.timestamp === replyTimestamp) {
                         if (!r.likes) r.likes = [];
                         let isLiked = r.likes.some(l => (typeof l === 'object' ? l.uid === uid : l === uid));
-                        if (isLiked) { r.likes = r.likes.filter(l => (typeof l === 'object' ? l.uid !== uid : l !== uid)); } 
-                        else { r.likes.push({ uid: uid, name: myName }); }
+                        if (isLiked) { 
+                            r.likes = r.likes.filter(l => (typeof l === 'object' ? l.uid !== uid : l !== uid));
+                            window.updateDoc(window.doc(window.db, "users", authorUid), { likesCount: window.increment(-1) }).catch(()=>{});
+                        } else { 
+                            r.likes.push({ uid: uid, name: myName }); 
+                            window.updateDoc(window.doc(window.db, "users", authorUid), { likesCount: window.increment(1) }).catch(()=>{});
+                        }
                     }
                     return r;
                 });
                 await window.updateDoc(postRef, { replies: updatedReplies });
-            }
-        }
-
-        window.showLikeNames = function(event, namesStr) {
-            event.stopPropagation();
-            if(!namesStr || namesStr.trim() === '') { alert("لا توجد إعجابات بعد"); return; }
-            const names = namesStr.split('|||'); alert("قائمة الإعجابات:\n\n" + names.join("\n"));
-        }
-
-        async function cleanupAudioFile(url) {
-            if(!url) return;
-            try {
-                const fileRef = window.ref(window.storage, url); 
-                await window.deleteObject(fileRef);
-            } catch(e) { console.log("File gone:", e); }
-        }
-
-        window.resetAllLikes = async function() {
-            if(confirm("تحذير: هل تريد حقاً حذف جميع الإعجابات من التطبيق؟")) {
-                const q = window.query(window.collection(window.db, "posts"));
-                const querySnapshot = await window.getDocs(q);
-                querySnapshot.forEach(async (docSnap) => {
-                    let updates = { likes: [] };
-                    let data = docSnap.data();
-                    if(data.replies && data.replies.length > 0) {
-                        let cleanedReplies = data.replies.map(r => ({ ...r, likes: [] }));
-                        updates.replies = cleanedReplies;
-                    }
-                    await window.updateDoc(window.doc(window.db, "posts", docSnap.id), updates);
-                });
-                alert("تم تصفير الإعجابات (Global)");
-            }
-        }
-
-        window.resetAllViews = async function() {
-            if(confirm("تحذير: هل تريد حقاً تصفير المشاهدات في كل التطبيق؟")) {
-                const q = window.query(window.collection(window.db, "stats"));
-                const querySnapshot = await window.getDocs(q);
-                querySnapshot.forEach(async (docSnap) => {
-                    await window.deleteDoc(window.doc(window.db, "stats", docSnap.id));
-                });
-                alert("تم تصفير المشاهدات (Global)");
-            }
-        }
-
-        window.deleteAllPostsGlobal = async function() {
-            if(confirm("⚠️ تحذير خطير: هل أنت متأكد من حذف جميع التسجيلات في التطبيق؟ لا يمكن التراجع!")) {
-                const q = window.query(window.collection(window.db, "posts"));
-                const querySnapshot = await window.getDocs(q);
-                querySnapshot.forEach(async (docSnap) => {
-                    const data = docSnap.data();
-                    if(data.audioUrl) await cleanupAudioFile(data.audioUrl);
-                    if(data.replies) {
-                        for(let r of data.replies) {
-                            if(r.audioUrl) await cleanupAudioFile(r.audioUrl);
-                        }
-                    }
-                    await window.deleteDoc(window.doc(window.db, "posts", docSnap.id));
-                });
-                // RESET ALL POST COUNTS
-                const uq = window.query(window.collection(window.db, "users"));
-                const usnap = await window.getDocs(uq);
-                usnap.forEach(async (udoc) => {
-                    await window.updateDoc(udoc.ref, { postsCount: 0 });
-                });
-                alert("تم حذف جميع البيانات");
-            }
-        }
-
-        window.resetLocalViews = async function() {
-            if(confirm("تصفير مشاهدات هذا المقطع فقط؟")) {
-                try { await window.deleteDoc(window.doc(window.db, "stats", "file_" + currentGlobalFileId)); alert("تم التصفير"); } 
-                catch(e) { alert("خطأ"); }
-            }
-        }
-
-        window.resetLocalLikes = async function() {
-            if(confirm("تصفير إعجابات هذا المقطع فقط؟")) {
-                const q = window.query(window.collection(window.db, "posts"), window.where("fileId", "==", String(currentGlobalFileId)));
-                const querySnapshot = await window.getDocs(q);
-                querySnapshot.forEach(async (docSnap) => {
-                    let updates = { likes: [] };
-                    let data = docSnap.data();
-                    if(data.replies) {
-                        updates.replies = data.replies.map(r => ({ ...r, likes: [] }));
-                    }
-                    await window.updateDoc(window.doc(window.db, "posts", docSnap.id), updates);
-                });
-                alert("تم التصفير");
-            }
-        }
-
-        window.deleteAllLocalPosts = async function() {
-            if(confirm("هل أنت متأكد من حذف جميع تسجيلات هذا المقطع فقط؟")) {
-                const q = window.query(window.collection(window.db, "posts"), window.where("fileId", "==", String(currentGlobalFileId)));
-                const querySnapshot = await window.getDocs(q);
-                querySnapshot.forEach(async (docSnap) => {
-                    const data = docSnap.data();
-                    if(data.audioUrl) await cleanupAudioFile(data.audioUrl);
-                    if(data.replies) {
-                        for(let r of data.replies) {
-                            if(r.audioUrl) await cleanupAudioFile(r.audioUrl);
-                        }
-                    }
-                    // DECREMENT
-                    const userRef = window.doc(window.db, "users", data.uid);
-                    try { await window.updateDoc(userRef, { postsCount: window.increment(-1) }); } catch(e){}
-
-                    await window.deleteDoc(window.doc(window.db, "posts", docSnap.id));
-                });
-                alert("تم الحذف");
-            }
-        }
-
-        window.deletePost = async function(postId, authorUid) {
-            if(confirm("حذف هذه المشاركة؟")) {
-                try {
-                    const docRef = window.doc(window.db, "posts", postId);
-                    const docSnap = await window.getDoc(docRef);
-                    if (docSnap.exists()) {
-                        const data = docSnap.data();
-                        if(data.audioUrl) await cleanupAudioFile(data.audioUrl);
-                        if(data.replies) {
-                            for(let r of data.replies) {
-                                if(r.audioUrl) await cleanupAudioFile(r.audioUrl);
-                            }
-                        }
-                        await window.deleteDoc(docRef);
-                        
-                        // DECREMENT COUNTER
-                        if(authorUid) {
-                             const userRef = window.doc(window.db, "users", authorUid);
-                             try { await window.updateDoc(userRef, { postsCount: window.increment(-1) }); } catch(e){}
-                        }
-
-                        alert("تم الحذف بنجاح");
-                    }
-                } catch(e) { alert("خطأ في الحذف"); }
-            }
-        }
-
-        window.deleteReply = async function(postId, replyTimestamp) {
-            if(confirm("حذف هذا الرد؟")) {
-                try {
-                    const postRef = window.doc(window.db, "posts", postId);
-                    const docSnap = await window.getDoc(postRef);
-                    if(docSnap.exists()) {
-                        let post = docSnap.data();
-                        const replyToDelete = post.replies.find(r => r.timestamp === replyTimestamp);
-                        if (replyToDelete && replyToDelete.audioUrl) {
-                            await cleanupAudioFile(replyToDelete.audioUrl);
-                        }
-                        let newReplies = post.replies.filter(r => r.timestamp !== replyTimestamp);
-                        await window.updateDoc(postRef, { replies: newReplies });
-                        alert("تم الحذف");
-                    }
-                } catch(e) { alert("خطأ"); }
             }
         }
     </script>
