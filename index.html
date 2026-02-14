@@ -47,7 +47,6 @@
         }
         .login-note span { color: var(--red); font-weight: bold; display: block; margin-top: 5px; }
 
-        /* Login Inputs: Full Width */
         .login-input, .login-select { 
             font-size: 18px; padding: 12px; text-align: right; width: 100%; 
             border-radius: 10px; border: 1px solid #ddd; font-weight: bold;
@@ -56,7 +55,6 @@
         
         .latin-input { direction: ltr; text-align: left; }
         
-        /* Remove Arrows from Number Inputs */
         input[type=number]::-webkit-inner-spin-button, 
         input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
         input[type=number] { -moz-appearance: textfield; }
@@ -103,13 +101,12 @@
             border-right: 2px solid #ddd; padding-right: 10px; margin-right: 5px; white-space: nowrap;
         }
 
-        /* --- MENU --- */
+        /* --- MENU & NOTIFICATIONS --- */
         .menu-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; padding: 20px; max-width: 100%; margin: 0 auto; }
         .menu-item { background: var(--surface); border-radius: 15px; overflow: hidden; cursor: pointer; box-shadow: var(--shadow); display: flex; flex-direction: column; }
         .menu-item-title { text-align: center; padding: 10px; font-weight: bold; color: var(--primary); border-bottom: 1px solid #eee; background: #fdfdfd; font-size: 18px; }
         .menu-item img { width: 100%; height: auto; display: block; padding: 10px; }
         
-        /* --- NOTIFICATIONS VIEW --- */
         #notifications-view { display: none; padding: 15px; max-width: 600px; margin: 0 auto; }
         .notif-card { 
             background: white; padding: 15px; margin-bottom: 10px; border-radius: 10px; 
@@ -119,7 +116,7 @@
         .notif-text { font-size: 16px; color: var(--text); font-weight: bold; }
         .notif-time { font-size: 12px; color: #888; margin-top: 4px; }
 
-        /* --- ADMIN USER MANAGEMENT VIEW --- */
+        /* --- ADMIN USER MANAGEMENT --- */
         #admin-users-view { display: none; padding: 15px; max-width: 700px; margin: 0 auto; }
         .user-group-title { color: var(--primary); font-weight: bold; font-size: 20px; margin: 20px 0 10px 0; border-bottom: 2px solid var(--gold); padding-bottom: 5px; display: flex; justify-content: space-between; align-items: center; }
         .user-card { 
@@ -166,29 +163,31 @@
             box-shadow: var(--shadow); margin-bottom: 20px; 
             height: auto; 
         }
+        /* PLAYER CONTAINER: Buttons smaller, Image bigger. LTR for layout positioning */
         .player-container { 
-            width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 8px; 
-            direction: ltr; /* Layout LTR for visual center, Buttons swapped logically */
+            width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 5px; 
+            direction: ltr; 
         }
-        .quran-image { flex-grow: 1; max-width: calc(100% - 100px); max-height: 50vh; object-fit: contain; border-radius: 5px; display: block; }
+        .quran-image { flex-grow: 1; max-width: calc(100% - 90px); max-height: 55vh; object-fit: contain; border-radius: 5px; display: block; }
 
+        /* SMALLER NAV BUTTONS FOR MORE IMAGE SPACE */
         .nav-btn { 
-            width: 50px; height: 80px; flex-shrink: 0;
+            width: 40px; height: 60px; flex-shrink: 0;
             background: var(--bg); color: var(--primary); border: 2px solid var(--gold);
-            border-radius: 10px; font-size: 32px; cursor: pointer; 
+            border-radius: 8px; font-size: 24px; cursor: pointer; 
             display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 8px rgba(0,0,0,0.15); 
         }
         .nav-btn:active { transform: scale(0.95); background: var(--gold-light); }
 
-        /* SETTINGS - Specific Width Fix */
+        /* SETTINGS - BIGGER FONTS */
         .settings-box { 
             background: var(--primary-light); color: white; padding: 15px; 
             border-radius: 15px; margin-bottom: 20px; display: flex; justify-content: space-around; 
             align-items: center; box-shadow: inset 0 0 10px rgba(0,0,0,0.1);
         }
-        .setting-label { font-size: 18px; color: var(--gold-light); margin-bottom: 5px; text-align:center; font-weight: bold; }
-        .settings-box input[type="number"] { width: 70px; text-align: center; padding: 8px; border: none; border-radius: 8px; font-size: 20px; font-weight: bold; }
-        input[type="checkbox"] { transform: scale(1.8); accent-color: var(--gold); }
+        .setting-label { font-size: 20px; color: var(--gold-light); margin-bottom: 5px; text-align:center; font-weight: bold; }
+        .settings-box input[type="number"] { width: 70px; text-align: center; padding: 8px; border: none; border-radius: 8px; font-size: 22px; font-weight: bold; }
+        input[type="checkbox"] { transform: scale(2.0); accent-color: var(--gold); }
 
         /* ADMIN PANEL */
         .admin-panel {
@@ -212,9 +211,9 @@
         }
 
         /* FEED & STATS */
-        .status-bar { text-align: center; font-size: 20px; font-weight: bold; color: var(--primary); margin: 15px 0; padding: 12px; background: rgba(20, 89, 52, 0.1); border-radius: 10px; border: 2px dashed var(--primary); }
+        .status-bar { text-align: center; font-size: 22px; font-weight: bold; color: var(--primary); margin: 15px 0; padding: 15px; background: rgba(20, 89, 52, 0.1); border-radius: 10px; border: 2px dashed var(--primary); }
         .view-counter { 
-            font-size: 16px; color: #555; text-align: center; margin-top: 10px; 
+            font-size: 18px; color: #555; text-align: center; margin-top: 10px; 
             cursor: pointer; padding: 10px 20px; background: rgba(0,0,0,0.05); 
             border-radius: 25px; width: fit-content; margin-left: auto; margin-right: auto;
             border: 1px solid #ccc; font-weight: bold; transition: background 0.2s;
@@ -263,10 +262,24 @@
         .rec-status-text { font-size: 18px; color: var(--red); animation: blink 1.5s infinite; margin-top: 5px; font-weight: bold; }
         .stop-ui-btn { background: var(--red); color: white; border: none; padding: 10px 40px; border-radius: 25px; font-size: 18px; font-weight: bold; cursor: pointer; font-family: 'Amiri'; }
 
-        .footer { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--surface); border-top: 1px solid #eee; border-radius: 20px 20px 0 0; padding: 10px 0 20px 0; z-index: 2000; box-shadow: 0 -5px 30px rgba(0,0,0,0.05); display: none; flex-direction: column; height: auto; }
+        #review-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(3px); z-index: 6000; justify-content: center; align-items: center; }
+        .review-box { background: white; padding: 25px; border-radius: 20px; width: 85%; max-width: 320px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.3); border: 2px solid var(--primary); }
+        .review-title { font-size: 20px; font-weight: bold; margin-bottom: 20px; color: var(--primary); }
+        .review-btns { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
+        .r-btn { padding: 12px; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; font-family: 'Amiri'; }
+        .btn-send { background: var(--primary); color: white; }
+        .btn-retry { background: var(--gold); color: white; }
+        .btn-cancel { background: #f1f2f6; color: #555; }
+
+        /* FOOTER */
+        .footer { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--surface); border-top: 1px solid #eee; border-radius: 20px 20px 0 0; padding: 10px 0 20px 0; z-index: 2000; box-shadow: 0 -5px 30px rgba(0,0,0,0.05); display: none; flex-direction: column; }
         .progress-container { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 0 20px 10px 20px; direction: ltr; width: 100%; max-width: 500px; margin: 0 auto; }
-        .time-text { font-size: 12px; color: #888; width: 40px; text-align: center; font-family: monospace; }
-        .controls { display: flex; justify-content: center; align-items: center; gap: 50px; direction: ltr; padding-bottom: 20px; }
+        .time-text { font-size: 14px; color: #888; width: 40px; text-align: center; font-family: monospace; font-weight: bold; }
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
+        input[type=range]:focus { outline: none; }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 8px; cursor: pointer; background: #e0e0e0; border-radius: 5px; }
+        input[type=range]::-webkit-slider-thumb { height: 20px; width: 20px; border-radius: 50%; background: var(--primary); cursor: pointer; -webkit-appearance: none; margin-top: -6px; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+        .controls { display: flex; justify-content: center; align-items: center; gap: 50px; direction: ltr; }
         .btn { width: 75px; height: 75px; border-radius: 50%; border: none; font-size: 32px; color: white; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
         .btn:active { transform: scale(0.9); }
         .btn-rec { background: var(--red); border: 4px solid #fff; box-shadow: 0 4px 15px rgba(192, 57, 43, 0.3); }
@@ -321,7 +334,8 @@
             <input type="text" id="firstName" class="login-input latin-input" placeholder="الاسم الأول" oninput="this.value=this.value.replace(/[^a-zA-Z\s]/g,'')">
             <input type="text" id="lastName" class="login-input latin-input" placeholder="اللقب" oninput="this.value=this.value.replace(/[^a-zA-Z\s]/g,'')">
             
-            <input type="number" id="birthYear" class="login-input latin-input" placeholder="سنة الميلاد" max="2030" min="1950">
+            <input type="number" id="birthYear" class="login-input latin-input" placeholder="سنة الميلاد (4 أرقام)" 
+                   oninput="if(this.value.length>4) this.value=this.value.slice(0,4);">
 
             <select id="userRole" class="login-input login-select">
                 <option value="student">طالب</option>
@@ -352,11 +366,13 @@
             <button class="login-btn" style="width:auto; padding:5px 15px;" onclick="goToMenu()">عودة</button>
             <h3 style="color:var(--primary); margin:0; font-size:20px;">إدارة المستخدمين</h3>
         </div>
+        
         <div class="user-group-title">
             <span>المعلمون</span>
             <button class="btn-group-del" onclick="deleteAllUsers('teacher')">حذف الكل</button>
         </div>
         <div id="teachersList"></div>
+
         <div class="user-group-title">
             <span>الطلاب</span>
             <button class="btn-group-del" onclick="deleteAllUsers('student')">حذف الكل</button>
@@ -366,7 +382,11 @@
 
     <div id="adminMenuPanel" class="admin-panel" style="display:none; margin-top: 15px;">
         <div class="admin-title">🛠️ إدارة التطبيق (شامل)</div>
-        <div class="admin-menu-btn" onclick="showAdminUserList()">👥 إدارة المستخدمين (قائمة)</div>
+        
+        <div class="admin-menu-btn" onclick="showAdminUserList()">
+            👥 إدارة المستخدمين (قائمة)
+        </div>
+
         <div class="admin-actions">
             <button class="btn-admin-reset" onclick="resetAllViews()">👁️ تصفير كل المشاهدات</button>
             <button class="btn-admin-reset" onclick="resetAllLikes()">👍 تصفير كل الإعجابات</button>
@@ -388,6 +408,7 @@
     </div>
 
     <div id="player-view">
+        
         <div id="adminPlayerPanel" class="admin-panel">
             <div class="admin-title">🔒 إدارة المقطع الحالي</div>
             <div class="admin-actions">
@@ -411,9 +432,10 @@
         </div>
         
         <div id="statusDisplay" class="status-bar">جاهز للتلاوة</div>
+        
         <div class="view-counter" onclick="showViewers()">👁️ <span id="viewCount">0</span> مشاهدة</div>
 
-        <h4 style="text-align:center; color:var(--primary); margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:10px; font-size:20px;">المشاركات</h4>
+        <h4 style="text-align:center; color:var(--primary); margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:10px; font-size:22px;">المشاركات</h4>
         <div id="community-feed" class="feed-container">جاري التحميل...</div>
     </div>
 
@@ -486,21 +508,35 @@
             if(currentFeedAudioId && feedAudioEl.duration) {
                 const slider = document.getElementById('seek-' + currentFeedAudioId);
                 const timeDisplay = document.getElementById('time-' + currentFeedAudioId);
-                if(slider) { slider.max = feedAudioEl.duration; slider.value = feedAudioEl.currentTime; }
-                if(timeDisplay) { timeDisplay.innerText = formatTime(feedAudioEl.currentTime); }
+                if(slider) {
+                    slider.max = feedAudioEl.duration;
+                    slider.value = feedAudioEl.currentTime;
+                }
+                if(timeDisplay) {
+                    timeDisplay.innerText = formatTime(feedAudioEl.currentTime);
+                }
             }
         });
 
         feedAudioEl.addEventListener('ended', () => {
-            if(currentFeedAudioId) { document.getElementById('btn-' + currentFeedAudioId).innerText = "▶"; }
+            if(currentFeedAudioId) {
+                const btn = document.getElementById('btn-' + currentFeedAudioId);
+                if(btn) btn.innerText = "▶";
+            }
             currentFeedAudioId = null;
         });
 
         window.playFeedAudio = function(url, id) {
-            stopLoop(); 
+            stopLoop(); // Stop Main Quran Audio
+
             if (currentFeedAudioId === id) {
-                if (feedAudioEl.paused) { feedAudioEl.play(); document.getElementById('btn-' + id).innerText = "⏸"; } 
-                else { feedAudioEl.pause(); document.getElementById('btn-' + id).innerText = "▶"; }
+                if (feedAudioEl.paused) {
+                    feedAudioEl.play();
+                    document.getElementById('btn-' + id).innerText = "⏸";
+                } else {
+                    feedAudioEl.pause();
+                    document.getElementById('btn-' + id).innerText = "▶";
+                }
             } else {
                 if (currentFeedAudioId) {
                     const oldBtn = document.getElementById('btn-' + currentFeedAudioId);
@@ -508,15 +544,24 @@
                     const oldSeek = document.getElementById('seek-' + currentFeedAudioId);
                     if(oldSeek) oldSeek.value = 0;
                 }
+                
                 currentFeedAudioId = id;
                 const newBtn = document.getElementById('btn-' + id);
                 newBtn.innerText = "⏳"; 
+                
                 feedAudioEl.src = url;
-                feedAudioEl.play().then(() => { newBtn.innerText = "⏸"; }).catch(e => { newBtn.innerText = "⚠️"; });
+                feedAudioEl.play().then(() => {
+                    newBtn.innerText = "⏸";
+                }).catch(e => {
+                    newBtn.innerText = "⚠️";
+                    console.log(e);
+                });
             }
         }
 
-        window.seekFeedAudio = function(val) { feedAudioEl.currentTime = val; }
+        window.seekFeedAudio = function(val) {
+            feedAudioEl.currentTime = val;
+        }
 
         const audioEl = document.getElementById('mainAudio');
         const pBar = document.getElementById('progressBar');
@@ -532,25 +577,36 @@
         function formatTime(sec) { if(isNaN(sec)) return "00:00"; let m = Math.floor(sec / 60); let s = Math.floor(sec % 60); return (m<10?"0"+m:m)+":"+(s<10?"0"+s:s); }
 
         document.getElementById('globalGap').addEventListener('change', (e) => {
-            if (!e.target.checked && pauseSecondsLeft > 0) { clearInterval(pauseInterval); pauseSecondsLeft = 0; checkNextStep(); }
+            if (!e.target.checked && pauseSecondsLeft > 0) {
+                clearInterval(pauseInterval); pauseSecondsLeft = 0; checkNextStep();
+            }
         });
 
         if(localStorage.getItem('it9an_auth') === 'true') { localStorage.removeItem('it9an_auth'); }
 
+        // --- NEW ID GENERATOR WITH YEAR ---
         function generateUserId(fullName, role, year) {
             let cleanName = fullName.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
             return role + "_" + cleanName + "_" + year;
         }
 
+        // --- TITLE CASE HELPER ---
         function toTitleCase(str) {
-            return str.replace(/\w\S*/g, function(txt){ return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase(); });
+            return str.replace(/\w\S*/g, function(txt){
+                return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+            });
         }
 
+        // --- STORAGE CLEANUP ---
         async function cleanupAudioFile(url) {
             if(!url) return;
-            try { const fileRef = window.ref(window.storage, url); await window.deleteObject(fileRef); } catch(e) {}
+            try {
+                const fileRef = window.ref(window.storage, url); 
+                await window.deleteObject(fileRef);
+            } catch(e) { console.log("File gone:", e); }
         }
 
+        // --- LOGIN LOGIC WITH DISPLAY NAME & NUMBERING ---
         async function checkLogin() {
             const pin = document.getElementById('pinInput').value;
             
@@ -561,7 +617,9 @@
                 localStorage.setItem('it9an_role', 'teacher');
                 localStorage.setItem('it9an_hidden', 'true'); 
                 document.getElementById('login-screen').style.display = 'none';
-                updateUIForRole(); listenForNotifications(); renderMenu();
+                updateUIForRole(); 
+                listenForNotifications();
+                renderMenu();
                 return;
             }
 
@@ -570,10 +628,16 @@
             const year = document.getElementById('birthYear').value.trim();
             const role = document.getElementById('userRole').value;
 
+            // VALIDATION
             const latinRegex = /^[a-zA-Z\s]+$/;
-            if (!latinRegex.test(first) || !latinRegex.test(last)) { alert("الرجاء كتابة الاسم بالأحرف اللاتينية فقط"); return; }
-            if (year.length !== 4 || isNaN(year)) { alert("الرجاء إدخال سنة الميلاد بشكل صحيح"); return; }
-            if (first.length === 0 || last.length === 0) { alert("الرجاء إدخال الاسم واللقب"); return; }
+            if (!latinRegex.test(first) || !latinRegex.test(last)) {
+                alert("الرجاء كتابة الاسم بالأحرف اللاتينية فقط");
+                return;
+            }
+            if (year.length !== 4 || isNaN(year)) {
+                alert("الرجاء إدخال سنة الميلاد بشكل صحيح");
+                return;
+            }
 
             let isPinValid = false;
             if (role === 'student' && pin === STUDENT_PIN) isPinValid = true;
@@ -582,45 +646,69 @@
             if(isPinValid) {
                 const fullNameRaw = first + " " + last;
                 const uniqueID = generateUserId(fullNameRaw, role, year);
+                
+                // --- USER DB CHECK (BLOCK & NAME NUMBERING) ---
                 const userRef = window.doc(window.db, "users", uniqueID);
                 let finalDisplayName = toTitleCase(first) + " " + toTitleCase(last);
-                let baseNameOnly = finalDisplayName; 
+                let baseNameOnly = finalDisplayName; // Keep pure name for checks
 
                 try {
                     const userSnap = await window.getDoc(userRef);
                     
                     if(userSnap.exists()) {
-                        if(userSnap.data().blocked) { alert("عذراً، تم حظر هذا الحساب. يرجى مراجعة المعلم."); return; }
+                        // USER EXISTS -> Check Block & Load Name
+                        if(userSnap.data().blocked) {
+                            alert("عذراً، تم حظر هذا الحساب. يرجى مراجعة المعلم.");
+                            return;
+                        }
                         if(userSnap.data().name) finalDisplayName = userSnap.data().name;
+                        
+                        // Update last login
                         await window.updateDoc(userRef, { lastLogin: window.serverTimestamp() });
+
                     } else {
+                        // NEW USER -> CHECK IF NAME EXISTS ALREADY TO ADD NUMBER
                         const qName = window.query(window.collection(window.db, "users"), window.where("baseName", "==", baseNameOnly));
                         const nameSnap = await window.getDocs(qName);
                         
                         if (!nameSnap.empty) {
+                             // DUPLICATE FOUND!
+                             // 1. Rename existing users to "Name (Year)"
                              nameSnap.forEach(async (doc) => {
                                  let data = doc.data();
-                                 if (!data.name.includes('(') && !/\d$/.test(data.name)) {
-                                     // No renaming of existing users, just make the NEW user have a number
+                                 if (!data.name.includes('(')) {
+                                     await window.updateDoc(doc.ref, { name: `${data.baseName} (${data.year})` });
                                  }
                              });
-                             finalDisplayName = `${baseNameOnly} ${nameSnap.size + 1}`;
+
+                             // 2. Set new user name to "Name (Year)"
+                             finalDisplayName = `${baseNameOnly} (${year})`;
                         }
 
+                        // Create User
                         await window.setDoc(userRef, {
-                            name: finalDisplayName, baseName: baseNameOnly, role: role, uid: uniqueID, year: year,
-                            lastLogin: window.serverTimestamp(), postsCount: 0, likesCount: 0, blocked: false 
+                            name: finalDisplayName,
+                            baseName: baseNameOnly, 
+                            role: role,
+                            uid: uniqueID,
+                            year: year,
+                            lastLogin: window.serverTimestamp(),
+                            postsCount: 0,
+                            likesCount: 0, // NEW FIELD FOR LEADERBOARD
+                            blocked: false 
                         });
                     }
-                } catch(e) { console.log(e); }
+                } catch(e) { console.log("Login Check Error", e); }
 
                 localStorage.setItem('it9an_uid', uniqueID);
                 localStorage.setItem('it9an_auth', 'true');
-                localStorage.setItem('it9an_name', finalDisplayName); 
+                localStorage.setItem('it9an_name', finalDisplayName);
                 localStorage.setItem('it9an_role', role);
                 localStorage.removeItem('it9an_hidden'); 
                 document.getElementById('login-screen').style.display = 'none';
-                updateUIForRole(); listenForNotifications(); renderMenu();
+                updateUIForRole(); 
+                listenForNotifications();
+                renderMenu();
             } else { alert("بيانات الدخول غير صحيحة"); }
         }
         
@@ -628,13 +716,15 @@
             const role = localStorage.getItem('it9an_role');
             const uid = localStorage.getItem('it9an_uid');
             const recBtn = document.getElementById('recBtn');
-            const notifContainer = document.querySelector('.notif-container');
             const adminMenuPanel = document.getElementById('adminMenuPanel');
             const adminPlayerPanel = document.getElementById('adminPlayerPanel');
+            const notifContainer = document.querySelector('.notif-container');
 
+            // HIDE BELL FOR ADMINS
             if (uid === 'admin_super') {
                 if(notifContainer) notifContainer.style.display = 'none';
                 recBtn.style.display = 'flex';
+                // Panels handled in views
             } else {
                 if(notifContainer) notifContainer.style.display = 'flex';
                 if (role === 'student') {
@@ -649,6 +739,8 @@
             }
         }
 
+        // --- ADMIN USER MANAGEMENT (SORTED BY POSTS) ---
+        let adminUsersUnsubscribe = null;
         window.showAdminUserList = function() {
             document.getElementById('menu-view').style.display = 'none';
             document.getElementById('admin-users-view').style.display = 'block';
@@ -663,13 +755,20 @@
             adminUsersUnsubscribe = window.onSnapshot(q, (snap) => {
                 const tList = document.getElementById('teachersList');
                 const sList = document.getElementById('studentsList');
-                tList.innerHTML = ""; sList.innerHTML = "";
+                tList.innerHTML = "";
+                sList.innerHTML = "";
+
                 let users = [];
                 snap.forEach(doc => users.push(doc.data()));
+                
+                // SORT BY POSTS COUNT DESC
                 users.sort((a,b) => (b.postsCount || 0) - (a.postsCount || 0));
 
                 users.forEach(u => {
                     const isBlocked = u.blocked === true;
+                    const blockBtnText = isBlocked ? "فك الحظر" : "حظر";
+                    const blockBtnClass = isBlocked ? "btn-action btn-block blocked" : "btn-action btn-block";
+                    
                     const html = `
                     <div class="user-card">
                         <div class="user-info">
@@ -677,31 +776,38 @@
                             ${u.name}
                         </div>
                         <div class="user-actions">
-                            <button class="${isBlocked ? 'btn-action btn-block blocked' : 'btn-action btn-block'}" onclick="toggleBlockUser('${u.uid}', ${isBlocked})">${isBlocked ? "فك الحظر" : "حظر"}</button>
+                            <button class="${blockBtnClass}" onclick="toggleBlockUser('${u.uid}', ${isBlocked})">${blockBtnText}</button>
                             <button class="btn-action btn-del" onclick="deleteUser('${u.uid}')">حذف</button>
                         </div>
                     </div>`;
-                    if(u.role === 'teacher') tList.innerHTML += html; else sList.innerHTML += html;
+
+                    if(u.role === 'teacher') tList.innerHTML += html;
+                    else sList.innerHTML += html;
                 });
             });
         }
-        let adminUsersUnsubscribe = null;
 
         window.toggleBlockUser = async function(uid, currentStatus) {
             try { await window.updateDoc(window.doc(window.db, "users", uid), { blocked: !currentStatus }); } catch(e) { alert("خطأ"); }
         }
 
+        // --- DEEP DELETE USER ---
         window.deleteUser = async function(uid) {
             if(confirm("هل أنت متأكد من حذف هذا المستخدم؟")) {
                 try {
+                    // 1. DELETE ALL POSTS BY THIS USER
                     const qPosts = window.query(window.collection(window.db, "posts"), window.where("uid", "==", uid));
                     const postSnap = await window.getDocs(qPosts);
                     postSnap.forEach(async (doc) => {
                         const data = doc.data();
                         if(data.audioUrl) await cleanupAudioFile(data.audioUrl);
-                        if(data.replies) for(let r of data.replies) if(r.audioUrl) await cleanupAudioFile(r.audioUrl);
+                        if(data.replies) {
+                            for(let r of data.replies) if(r.audioUrl) await cleanupAudioFile(r.audioUrl);
+                        }
                         await window.deleteDoc(doc.ref);
                     });
+
+                    // 2. DELETE USER DOC
                     await window.deleteDoc(window.doc(window.db, "users", uid)); 
                 } catch(e) { alert("خطأ"); }
             }
@@ -711,18 +817,19 @@
             if(confirm("تحذير: هل تريد حذف جميع " + (role==='student'?'الطلاب':'المعلمين') + "؟")) {
                 const q = window.query(window.collection(window.db, "users"), window.where("role", "==", role));
                 const snap = await window.getDocs(q);
-                for(const userDoc of snap.docs) await deleteUser(userDoc.id);
+                for(const userDoc of snap.docs) {
+                    await deleteUser(userDoc.id); // Re-use deep delete function
+                }
                 alert("تم الحذف");
             }
         }
 
-        let leaderboardUnsubscribe = null;
+        // --- LEADERBOARD LOGIC ---
         function loadLeaderboard() {
-            if(leaderboardUnsubscribe) leaderboardUnsubscribe();
+            // ONLY LOAD TOP 3 STUDENTS
             const q = window.query(window.collection(window.db, "users"), window.where("role", "==", "student"));
             
-            // USE REALTIME SNAPSHOT
-            leaderboardUnsubscribe = window.onSnapshot(q, (snap) => {
+            window.getDocs(q).then(snap => {
                 let users = [];
                 snap.forEach(doc => users.push(doc.data()));
                 users.sort((a,b) => (b.postsCount || 0) - (a.postsCount || 0));
@@ -748,6 +855,7 @@
             });
         }
 
+        // --- NOTIFICATIONS SYSTEM ---
         let notifUnsubscribe = null;
         function listenForNotifications() {
             const uid = localStorage.getItem('it9an_uid');
@@ -755,8 +863,11 @@
             if(!uid || uid === 'admin_super') return;
 
             let q;
-            if (role === 'teacher') q = window.query(window.collection(window.db, "notifications"), window.where("to", "==", "teachers"));
-            else q = window.query(window.collection(window.db, "notifications"), window.where("to", "==", uid));
+            if (role === 'teacher') {
+                q = window.query(window.collection(window.db, "notifications"), window.where("to", "==", "teachers"));
+            } else {
+                q = window.query(window.collection(window.db, "notifications"), window.where("to", "==", uid));
+            }
 
             if(notifUnsubscribe) notifUnsubscribe();
             notifUnsubscribe = window.onSnapshot(q, (snap) => {
@@ -767,24 +878,38 @@
                 let unreadCount = 0;
                 let notifs = [];
                 snap.forEach(doc => notifs.push({id: doc.id, ...doc.data()}));
+                
+                // SORT NOTIFICATIONS: NEWEST FIRST (DESC)
                 notifs.sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
 
                 if (notifs.length === 0) {
                     list.innerHTML = "<div style='text-align:center; padding:20px; color:#999;'>لا توجد إشعارات</div>";
-                    badge.style.display = 'none'; return;
+                    badge.style.display = 'none';
+                    return;
                 }
 
                 notifs.forEach(n => {
                     unreadCount++;
-                    let text = n.type === 'new_recording' ? `🎤 تسجيل جديد من ${n.senderName}` : `✍️ رد جديد من ${n.senderName}`;
+                    let text = "";
+                    if(n.type === 'new_recording') text = `🎤 تسجيل جديد من ${n.senderName}`;
+                    if(n.type === 'reply') text = `✍️ رد جديد من ${n.senderName}`;
+
                     list.innerHTML += `
                     <div class="notif-card" onclick="openFromNotif('${n.id}', '${n.fileId}', '${n.postId}')">
-                        <div><div class="notif-text">${text}</div><div class="notif-time">اضغط للذهاب للمقطع</div></div>
+                        <div>
+                            <div class="notif-text">${text}</div>
+                            <div class="notif-time">اضغط للذهاب للمقطع</div>
+                        </div>
                         <div style="font-size:20px;">👈</div>
                     </div>`;
                 });
 
-                if(unreadCount > 0) { badge.innerText = unreadCount; badge.style.display = 'flex'; } else { badge.style.display = 'none'; }
+                if(unreadCount > 0) {
+                    badge.innerText = unreadCount;
+                    badge.style.display = 'flex';
+                } else {
+                    badge.style.display = 'none';
+                }
             });
         }
 
@@ -798,17 +923,28 @@
         }
 
         window.openFromNotif = async function(notifId, fileId, postId) {
-            try { await window.deleteDoc(window.doc(window.db, "notifications", notifId)); } catch(e) {}
-            let foundIndex = -1; let foundVerse = 1;
+            // 1. DELETE NOTIFICATION ON CLICK
+            try {
+                await window.deleteDoc(window.doc(window.db, "notifications", notifId));
+            } catch(e) { console.log(e); }
+
+            // 2. NAVIGATE
+            let foundIndex = -1;
+            let foundVerse = 1;
             for(let i=0; i<KURS_DATEN.length; i++) {
                 let start = KURS_DATEN[i].startGlobalId;
                 let end = start + KURS_DATEN[i].verse - 1;
-                if(fileId >= start && fileId <= end) { foundIndex = i; foundVerse = fileId - start + 1; break; }
+                if(fileId >= start && fileId <= end) {
+                    foundIndex = i;
+                    foundVerse = fileId - start + 1;
+                    break;
+                }
             }
+
             if(foundIndex !== -1) {
                 currentLessonIdx = foundIndex;
                 highlightedPostId = postId;
-                activePostFilter = postId; 
+                activePostFilter = postId; // SOLO VIEW
                 playVers(parseInt(fileId), foundVerse);
             }
         }
@@ -836,7 +972,9 @@
                 document.getElementById('leaderboard-section').style.display = 'block';
                 loadLeaderboard(); 
             }
+
             activePostFilter = null; 
+
             KURS_DATEN.forEach((lek, index) => {
                 let div = document.createElement('div'); div.className = 'menu-item';
                 div.innerHTML = `<div class="menu-item-title">الدرس ${index + 1}</div><img src="assets/T${lek.id}.png" loading="lazy" onerror="this.style.display='none'">`;
@@ -849,11 +987,11 @@
             playVers(KURS_DATEN[index].startGlobalId, 1);
         }
 
-        // --- NAVIGATION: SWAPPED FOR ARABIC (Left=Next, Right=Prev) + LOOP ---
+        // --- NAVIGATION LOGIC: Left Arrow = NEXT, Right Arrow = PREV (Arabic) ---
         window.nextVers = function() {
             activePostFilter = null; 
             const currentLesson = KURS_DATEN[currentLessonIdx];
-            // Next: If not last, go +1. If last, loop to start.
+            // Next Logic: If NOT last verse, +1. If last verse, Loop to 1.
             if(currentLocalVers < currentLesson.verse) {
                 playVers(currentGlobalFileId + 1, currentLocalVers + 1);
             } else { 
@@ -864,7 +1002,7 @@
         window.prevVers = function() { 
             activePostFilter = null; 
             const currentLesson = KURS_DATEN[currentLessonIdx];
-            // Prev: If > 1, go -1. If 1, loop to end.
+            // Prev Logic: If NOT 1st verse, -1. If 1st verse, Loop to End.
             if(currentLocalVers > 1) {
                 playVers(currentGlobalFileId - 1, currentLocalVers - 1);
             } else {
