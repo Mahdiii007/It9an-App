@@ -14,7 +14,8 @@
             --primary: #0f4c3a; --primary-light: #1a6b54; 
             --gold: #d4af37; --gold-light: #f3e5ab;
             --bg: #f9f7f2; --surface: #ffffff; 
-            --text: #2d3436; --red: #c0392b;         
+            --text: #2d3436; --red: #c0392b; 
+            --orange: #d35400;        
             --shadow: 0 4px 20px rgba(15, 76, 58, 0.08);
         }
         
@@ -116,6 +117,22 @@
         .notif-text { font-size: 14px; color: var(--text); }
         .notif-time { font-size: 11px; color: #888; margin-top: 4px; }
 
+        /* --- ADMIN USER MANAGEMENT VIEW --- */
+        #admin-users-view { display: none; padding: 15px; max-width: 700px; margin: 0 auto; }
+        .user-group-title { color: var(--primary); font-weight: bold; font-size: 18px; margin: 20px 0 10px 0; border-bottom: 2px solid var(--gold); padding-bottom: 5px; display: flex; justify-content: space-between; align-items: center; }
+        .user-card { 
+            background: white; padding: 12px; border-radius: 10px; margin-bottom: 10px; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; 
+        }
+        .user-info { font-weight: bold; font-size: 14px; color: #333; }
+        .user-info small { color: #888; font-weight: normal; font-size: 12px; display: block; }
+        .user-actions { display: flex; gap: 8px; }
+        .btn-action { border: none; padding: 5px 10px; border-radius: 6px; font-size: 12px; cursor: pointer; color: white; font-family: 'Amiri'; }
+        .btn-del { background: var(--red); }
+        .btn-block { background: var(--orange); }
+        .btn-block.blocked { background: #333; }
+        .btn-group-del { background: var(--red); color: white; border: none; padding: 5px 15px; border-radius: 20px; font-size: 12px; cursor: pointer; }
+
         /* --- PLAYER --- */
         #player-view { display: none; padding: 15px; width: 100%; max-width: 600px; margin: 0 auto; }
         
@@ -146,7 +163,7 @@
         .settings-box input[type="number"] { width: 50px; text-align: center; padding: 4px; border: none; border-radius: 5px; }
         input[type="checkbox"] { transform: scale(1.4); accent-color: var(--gold); }
 
-        /* ADMIN PANEL */
+        /* ADMIN PANEL (IN MENU) */
         .admin-panel {
             background: #fff5f5; border: 2px solid var(--red); border-radius: 12px;
             padding: 15px; margin: 15px auto; text-align: center; display: none; width: 95%; max-width: 600px;
@@ -159,6 +176,14 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
         .btn-admin-delete-all { background: #8e0000; font-weight: bold; }
+        
+        /* ADMIN MENU BUTTON */
+        .admin-menu-btn {
+            background: var(--primary); color: white; border: 1px solid var(--gold);
+            padding: 15px; width: 100%; border-radius: 12px; margin-bottom: 15px;
+            font-size: 16px; font-weight: bold; cursor: pointer; display: flex;
+            align-items: center; justify-content: center; gap: 10px;
+        }
 
         /* CUSTOM PLAYER */
         .custom-player {
@@ -330,8 +355,32 @@
         <button class="login-btn" onclick="goToMenu()">عودة</button>
     </div>
 
+    <div id="admin-users-view">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <button class="login-btn" style="width:auto; padding:5px 15px;" onclick="goToMenu()">عودة</button>
+            <h3 style="color:var(--primary); margin:0;">إدارة المستخدمين</h3>
+        </div>
+        
+        <div class="user-group-title">
+            <span>المعلمون</span>
+            <button class="btn-group-del" onclick="deleteAllUsers('teacher')">حذف الكل</button>
+        </div>
+        <div id="teachersList"></div>
+
+        <div class="user-group-title">
+            <span>الطلاب</span>
+            <button class="btn-group-del" onclick="deleteAllUsers('student')">حذف الكل</button>
+        </div>
+        <div id="studentsList"></div>
+    </div>
+
     <div id="adminMenuPanel" class="admin-panel" style="display:none; margin-top: 15px;">
         <div class="admin-title">🛠️ إدارة التطبيق (شامل)</div>
+        
+        <div class="admin-menu-btn" onclick="showAdminUserList()">
+            👥 إدارة المستخدمين (قائمة)
+        </div>
+
         <div class="admin-actions">
             <button class="btn-admin-reset" onclick="resetAllViews()">👁️ تصفير كل المشاهدات</button>
             <button class="btn-admin-reset" onclick="resetAllLikes()">👍 تصفير كل الإعجابات</button>
@@ -523,7 +572,14 @@
             return role + "_" + cleanName + "_" + year;
         }
 
-        function checkLogin() {
+        // --- TITLE CASE HELPER ---
+        function toTitleCase(str) {
+            return str.replace(/\w\S*/g, function(txt){
+                return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+            });
+        }
+
+        async function checkLogin() {
             const pin = document.getElementById('pinInput').value;
             
             if (pin === ADMIN_PIN) {
@@ -544,7 +600,7 @@
             const year = document.getElementById('birthYear').value.trim();
             const role = document.getElementById('userRole').value;
 
-            // VALIDATION: Latin Chars Only & Year present
+            // VALIDATION
             const latinRegex = /^[a-zA-Z\s]+$/;
             if (!latinRegex.test(first) || !latinRegex.test(last)) {
                 alert("الرجاء كتابة الاسم بالأحرف اللاتينية فقط");
@@ -560,13 +616,37 @@
             if (role === 'teacher' && pin === TEACHER_PIN) isPinValid = true;
 
             if(isPinValid) {
-                const fullName = first + " " + last;
-                // GENERATE UNIQUE ID
-                const uniqueID = generateUserId(fullName, role, year);
+                const fullNameRaw = first + " " + last;
+                const uniqueID = generateUserId(fullNameRaw, role, year);
                 
+                // --- USER DB CHECK (BLOCK LOGIC) ---
+                const userRef = window.doc(window.db, "users", uniqueID);
+                try {
+                    const userSnap = await window.getDoc(userRef);
+                    if(userSnap.exists() && userSnap.data().blocked) {
+                        alert("عذراً، تم حظر هذا الحساب. يرجى مراجعة المعلم.");
+                        return;
+                    }
+                } catch(e) { console.log("Login Check Error", e); }
+
+                // Format Name nicely
+                const prettyName = toTitleCase(first) + " " + toTitleCase(last);
+
+                // SAVE USER TO DB (FOR ADMIN LIST)
+                try {
+                    await window.setDoc(userRef, {
+                        name: prettyName,
+                        role: role,
+                        uid: uniqueID,
+                        year: year,
+                        lastLogin: window.serverTimestamp(),
+                        blocked: false 
+                    }, { merge: true });
+                } catch(e) {}
+
                 localStorage.setItem('it9an_uid', uniqueID);
                 localStorage.setItem('it9an_auth', 'true');
-                localStorage.setItem('it9an_name', fullName);
+                localStorage.setItem('it9an_name', prettyName);
                 localStorage.setItem('it9an_role', role);
                 localStorage.removeItem('it9an_hidden'); 
                 document.getElementById('login-screen').style.display = 'none';
@@ -593,6 +673,72 @@
                 recBtn.style.display = 'none'; 
                 if(adminMenuPanel) adminMenuPanel.style.display = 'none';
                 if(adminPlayerPanel) adminPlayerPanel.style.display = 'none';
+            }
+        }
+
+        // --- ADMIN USER MANAGEMENT ---
+        let adminUsersUnsubscribe = null;
+        window.showAdminUserList = function() {
+            document.getElementById('menu-view').style.display = 'none';
+            document.getElementById('admin-users-view').style.display = 'block';
+            document.getElementById('pageTitle').innerText = "إدارة المستخدمين";
+            document.getElementById('appFooter').style.display = 'none';
+            loadUsers();
+        }
+
+        function loadUsers() {
+            if(adminUsersUnsubscribe) adminUsersUnsubscribe();
+            const q = window.query(window.collection(window.db, "users"));
+            adminUsersUnsubscribe = window.onSnapshot(q, (snap) => {
+                const tList = document.getElementById('teachersList');
+                const sList = document.getElementById('studentsList');
+                tList.innerHTML = "";
+                sList.innerHTML = "";
+
+                snap.forEach(doc => {
+                    const u = doc.data();
+                    const isBlocked = u.blocked === true;
+                    const blockBtnText = isBlocked ? "فك الحظر" : "حظر";
+                    const blockBtnClass = isBlocked ? "btn-action btn-block blocked" : "btn-action btn-block";
+                    
+                    const html = `
+                    <div class="user-card">
+                        <div class="user-info">
+                            ${u.name}
+                            <small>${u.year || ''} - ${u.uid}</small>
+                        </div>
+                        <div class="user-actions">
+                            <button class="${blockBtnClass}" onclick="toggleBlockUser('${u.uid}', ${isBlocked})">${blockBtnText}</button>
+                            <button class="btn-action btn-del" onclick="deleteUser('${u.uid}')">حذف</button>
+                        </div>
+                    </div>`;
+
+                    if(u.role === 'teacher') tList.innerHTML += html;
+                    else sList.innerHTML += html;
+                });
+            });
+        }
+
+        window.toggleBlockUser = async function(uid, currentStatus) {
+            try {
+                await window.updateDoc(window.doc(window.db, "users", uid), { blocked: !currentStatus });
+            } catch(e) { alert("خطأ"); }
+        }
+
+        window.deleteUser = async function(uid) {
+            if(confirm("هل أنت متأكد من حذف هذا المستخدم؟")) {
+                try { await window.deleteDoc(window.doc(window.db, "users", uid)); } catch(e) { alert("خطأ"); }
+            }
+        }
+
+        window.deleteAllUsers = async function(role) {
+            if(confirm("تحذير: هل تريد حذف جميع " + (role==='student'?'الطلاب':'المعلمين') + "؟")) {
+                const q = window.query(window.collection(window.db, "users"), window.where("role", "==", role));
+                const snap = await window.getDocs(q);
+                snap.forEach(async (doc) => {
+                    await window.deleteDoc(doc.ref);
+                });
+                alert("تم الحذف");
             }
         }
 
@@ -634,7 +780,7 @@
                     if(n.type === 'reply') text = `✍️ رد جديد من ${n.senderName}`;
 
                     list.innerHTML += `
-                    <div class="notif-card" onclick="openFromNotif('${n.fileId}', '${n.postId}')">
+                    <div class="notif-card" onclick="openFromNotif('${n.id}', '${n.fileId}', '${n.postId}')">
                         <div>
                             <div class="notif-text">${text}</div>
                             <div class="notif-time">اضغط للذهاب للمقطع</div>
@@ -655,12 +801,17 @@
         window.showNotifications = function() {
             document.getElementById('menu-view').style.display = 'none';
             document.getElementById('player-view').style.display = 'none';
+            document.getElementById('admin-users-view').style.display = 'none';
             document.getElementById('notifications-view').style.display = 'block';
             document.getElementById('pageTitle').innerText = "الإشعارات";
             document.getElementById('appFooter').style.display = 'none';
         }
 
-        window.openFromNotif = function(fileId, postId) {
+        window.openFromNotif = async function(notifId, fileId, postId) {
+            try {
+                await window.deleteDoc(window.doc(window.db, "notifications", notifId));
+            } catch(e) { console.log(e); }
+
             let foundIndex = -1;
             let foundVerse = 1;
             for(let i=0; i<KURS_DATEN.length; i++) {
@@ -791,6 +942,10 @@
                 snap.forEach(doc => { allLoadedPosts.push({ id: doc.id, ...doc.data() }); });
                 
                 allLoadedPosts.sort((a, b) => {
+                    if (highlightedPostId) {
+                        if (a.id === highlightedPostId) return -1;
+                        if (b.id === highlightedPostId) return 1;
+                    }
                     if (userRole === 'student') {
                         if (a.uid === myUid && b.uid !== myUid) return -1;
                         if (a.uid !== myUid && b.uid === myUid) return 1;
@@ -891,13 +1046,11 @@
                         repliesInner += `
                         <div class="${rBoxClass}">
                             <div class="reply-header">${rDeleteBtn} 🎓 ${r.name}</div>
-                            
                             <div class="custom-player">
                                 <button class="cp-btn" id="btn-${rUniqueId}" onclick="playFeedAudio('${r.audioUrl}', '${rUniqueId}')">▶</button>
                                 <input type="range" class="cp-slider" id="seek-${rUniqueId}" value="0" min="0" step="0.1" oninput="seekFeedAudio(this.value)">
                                 <span class="cp-time" id="time-${rUniqueId}">00:00</span>
                             </div>
-
                             <div class="msg-footer" style="margin-top:5px; border:none; padding-top:0;">
                                 <div></div>
                                 <div class="like-btn ${rLikeClass}">
@@ -923,13 +1076,11 @@
                     <div style="font-weight:bold; color:var(--primary); font-size:14px; margin-bottom:8px; display:flex; align-items:center;">
                         ${d.name} <span class="${badgeClass}">${badgeText}</span>
                     </div>
-                    
                     <div class="custom-player">
                         <button class="cp-btn" id="btn-${d.id}" onclick="playFeedAudio('${d.audioUrl}', '${d.id}')">▶</button>
                         <input type="range" class="cp-slider" id="seek-${d.id}" value="0" min="0" step="0.1" oninput="seekFeedAudio(this.value)">
                         <span class="cp-time" id="time-${d.id}">00:00</span>
                     </div>
-
                     <div class="msg-footer">
                         ${replyBtnHtml}
                         <div class="like-btn ${mainLikeClass}">
@@ -1113,7 +1264,7 @@
         }
 
         window.goToMenu = function() { stopLoop(); stopRecordingAndReview(); showView('menu-view'); renderMenu(); } 
-        function showView(id) { document.getElementById('menu-view').style.display = 'none'; document.getElementById('player-view').style.display = 'none'; document.getElementById('notifications-view').style.display = 'none'; document.getElementById(id).style.display = (id === 'menu-view') ? 'grid' : 'block'; }
+        function showView(id) { document.getElementById('menu-view').style.display = 'none'; document.getElementById('player-view').style.display = 'none'; document.getElementById('notifications-view').style.display = 'none'; document.getElementById('admin-users-view').style.display = (id === 'admin-users-view') ? 'block' : 'none'; document.getElementById(id).style.display = (id === 'menu-view') ? 'grid' : 'block'; }
         
         window.likePost = async (id) => { 
             const uid = localStorage.getItem('it9an_uid'); const myName = localStorage.getItem('it9an_name');
