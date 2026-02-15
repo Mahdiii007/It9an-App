@@ -126,18 +126,19 @@
         #admin-users-view { display: none; padding: 20px; max-width: 700px; margin: 0 auto; }
         .user-group-title { color: var(--primary); font-weight: bold; font-size: 20px; margin: 25px 0 15px 0; border-bottom: 2px solid var(--gold); padding-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
         .user-card { 
-            background: white; padding: 15px; border-radius: 12px; margin-bottom: 12px; 
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; 
+            background: white; padding: 6px 10px; border-radius: 8px; margin-bottom: 6px; 
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05); display: flex; flex-wrap: nowrap; align-items: center; gap: 8px; 
         }
-        .user-info { font-weight: bold; font-size: 16px; color: #333; }
-        .user-info small { color: #888; font-weight: normal; font-size: 14px; display: block; margin-top: 2px; }
-        .user-actions { display: flex; gap: 10px; }
-        .btn-action { border: none; padding: 8px 12px; border-radius: 8px; font-size: 14px; cursor: pointer; color: white; font-family: 'Amiri'; }
+        .user-card .user-row { display: flex; align-items: center; gap: 8px; flex-wrap: nowrap; flex: 1; min-width: 0; }
+        .user-card .user-stats { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+        .user-card .user-name { font-weight: bold; font-size: 14px; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 1; min-width: 0; }
+        .btn-action { border: none; padding: 4px 8px; border-radius: 6px; font-size: 12px; cursor: pointer; color: white; font-family: 'Amiri'; flex-shrink: 0; }
         .btn-del { background: var(--red); }
         .btn-block { background: var(--orange); }
         .btn-block.blocked { background: #333; }
         .btn-group-del { background: var(--red); color: white; border: none; padding: 8px 20px; border-radius: 20px; font-size: 14px; cursor: pointer; }
-        .record-count-badge { background: var(--primary-light); color: white; padding: 4px 10px; border-radius: 10px; font-size: 13px; margin-right: 5px; }
+        .user-card .record-count-badge { background: var(--primary-light); color: white; padding: 2px 6px; border-radius: 6px; font-size: 11px; }
+        .user-card .lb-score, .user-card .lb-likes { padding: 2px 6px; font-size: 11px; }
 
         /* --- LEADERBOARD (TOP 3) --- */
         #leaderboard-section { width: 100%; padding: 15px 20px; margin-bottom: 15px; }
@@ -893,15 +894,15 @@
                     const recLabel = u.role === 'teacher' ? 'ردود' : 'تسجيلات';
                     const html = `
                     <div class="user-card">
-                        <div class="user-info">
-                            <span class="lb-score" title="مشاهدات">👁️ ${u.totalVerseViews || 0}</span>
-                            <span class="lb-likes" style="margin-left:6px;">👍 ${u.totalLikes || 0}</span>
-                            <span class="record-count-badge">🎤 ${recCount} ${recLabel}</span>
-                            ${u.name}
-                        </div>
-                        <div class="user-actions">
-                            <button class="${blockBtnClass}" onclick="toggleBlockUser('${u.uid}', ${isBlocked})">${blockBtnText}</button>
-                            <button class="btn-action btn-del" onclick="deleteUser('${u.uid}')">حذف</button>
+                        <button class="btn-action btn-del" onclick="deleteUser('${u.uid}')">🗑</button>
+                        <button class="${blockBtnClass}" onclick="toggleBlockUser('${u.uid}', ${isBlocked})">${blockBtnText}</button>
+                        <div class="user-row">
+                            <span class="user-name">${u.name}</span>
+                            <span class="user-stats">
+                                <span class="lb-score" title="مشاهدات">👁️ ${u.totalVerseViews || 0}</span>
+                                <span class="lb-likes">👍 ${u.totalLikes || 0}</span>
+                                <span class="record-count-badge">🎤 ${recCount}</span>
+                            </span>
                         </div>
                     </div>`;
 
@@ -1276,12 +1277,6 @@
             const statRef = window.doc(window.db, "stats", "file_" + globalId);
             
             if(myName && !isHidden) { try { await window.setDoc(statRef, { viewers: window.arrayUnion(myName) }, { merge: true }); } catch(e){} }
-            if(myUid && myUid !== 'admin_super') { 
-                try { 
-                    await window.setDoc(statRef, {}, { merge: true });
-                    await window.updateDoc(statRef, { verseViewCount: window.increment(1) }); 
-                } catch(e){} 
-            }
             
             if(unsubscribeViews) unsubscribeViews();
             unsubscribeViews = window.onSnapshot(statRef, (snap) => { 
@@ -1629,10 +1624,15 @@
             const target = parseInt(document.getElementById('globalRepeats').value);
             document.getElementById('statusDisplay').innerText = `تلاوة ${verseRepeatsPlayed + 1} من ${target}`;
             audioEl.play().catch(e => { stopLoop(); });
-            audioEl.onended = function() {
+            audioEl.onended = async function() {
                 if(!isPlaying) return;
                 const uid = localStorage.getItem('it9an_uid');
-                if(uid && uid !== 'admin_super') { try { window.updateDoc(window.doc(window.db, "users", uid), { totalVerseViews: window.increment(1) }); } catch(e){} }
+                if(uid && uid !== 'admin_super') {
+                    try { await window.updateDoc(window.doc(window.db, "users", uid), { totalVerseViews: window.increment(1) }); } catch(e){}
+                    if(verseRepeatsPlayed === 0) {
+                        try { const sRef = window.doc(window.db, "stats", "file_" + currentGlobalFileId); await window.setDoc(sRef, {}, { merge: true }); await window.updateDoc(sRef, { verseViewCount: window.increment(1) }); } catch(e){}
+                    }
+                }
                 if(document.getElementById('globalGap').checked) {
                     let pauseTime = Math.ceil(audioEl.duration * 1.25);
                     startPauseCountdown(pauseTime);
@@ -1942,3 +1942,4 @@
     </script>
 </body>
 </html>
+
