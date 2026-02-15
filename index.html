@@ -1160,33 +1160,7 @@
             renderPosts(div, userRole, myUid);
         }
 
-        async function cleanup30DayOldPosts() {
-            try {
-                const cutoff = (Date.now() / 1000) - (30 * 24 * 60 * 60);
-                const q = window.query(window.collection(window.db, "posts"));
-                const snap = await window.getDocs(q);
-                for (const docSnap of snap.docs) {
-                    const data = docSnap.data();
-                    const ts = data.timestamp && data.timestamp.seconds;
-                    if (!ts || ts >= cutoff) continue;
-                    if (data.audioUrl) await cleanupAudioFile(data.audioUrl);
-                    if (data.replies) { for (let r of data.replies) { if (r.audioUrl) await cleanupAudioFile(r.audioUrl); } }
-                    var notifQ = window.query(window.collection(window.db, "notifications"), window.where("postId", "==", docSnap.id));
-                    var notifSnap = await window.getDocs(notifQ);
-                    for (const nd of notifSnap.docs) { await window.deleteDoc(window.doc(window.db, "notifications", nd.id)); }
-                    await window.deleteDoc(window.doc(window.db, "posts", docSnap.id));
-                    if (data.uid) {
-                        try { await window.updateDoc(window.doc(window.db, "users", data.uid), { postsCount: window.increment(-1) }); } catch(e){}
-                        var likesCount = (data.likes && data.likes.length) ? data.likes.length : 0;
-                        if (data.replies) data.replies.forEach(r => { likesCount += (r.likes && r.likes.length) ? r.likes.length : 0; });
-                        if (likesCount > 0) try { await window.updateDoc(window.doc(window.db, "users", data.uid), { totalLikes: window.increment(-likesCount) }); } catch(e){}
-                    }
-                }
-            } catch(e) { console.log("cleanup30Day", e); }
-        }
-
         function renderMenu() {
-            cleanup30DayOldPosts();
             const grid = document.getElementById('lesson-grid'); 
             grid.innerHTML = ""; showView('menu-view');
             document.getElementById('pageTitle').innerHTML = "<span style='border:none; padding:0; font-size:22px;'>القائمة الرئيسية</span>"; 
