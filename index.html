@@ -1271,12 +1271,8 @@
             window.currentViewersList = [];
             document.getElementById('viewCount').innerText = "0";
 
-            const myName = localStorage.getItem('it9an_name');
-            const isHidden = localStorage.getItem('it9an_hidden') === 'true';
             const myUid = localStorage.getItem('it9an_uid');
             const statRef = window.doc(window.db, "stats", "file_" + globalId);
-            
-            if(myName && !isHidden) { try { await window.setDoc(statRef, { viewers: window.arrayUnion(myName) }, { merge: true }); } catch(e){} }
             
             if(unsubscribeViews) unsubscribeViews();
             unsubscribeViews = window.onSnapshot(statRef, (snap) => { 
@@ -1627,10 +1623,18 @@
             audioEl.onended = async function() {
                 if(!isPlaying) return;
                 const uid = localStorage.getItem('it9an_uid');
+                const myName = localStorage.getItem('it9an_name');
+                const isHidden = localStorage.getItem('it9an_hidden') === 'true';
                 if(uid && uid !== 'admin_super') {
                     try { await window.updateDoc(window.doc(window.db, "users", uid), { totalVerseViews: window.increment(1) }); } catch(e){}
                     if(verseRepeatsPlayed === 0) {
-                        try { const sRef = window.doc(window.db, "stats", "file_" + currentGlobalFileId); await window.setDoc(sRef, {}, { merge: true }); await window.updateDoc(sRef, { verseViewCount: window.increment(1) }); } catch(e){}
+                        try {
+                            const sRef = window.doc(window.db, "stats", "file_" + currentGlobalFileId);
+                            await window.setDoc(sRef, {}, { merge: true });
+                            const updates = { verseViewCount: window.increment(1) };
+                            if(myName && !isHidden) updates.viewers = window.arrayUnion(myName);
+                            await window.updateDoc(sRef, updates);
+                        } catch(e){}
                     }
                 }
                 if(document.getElementById('globalGap').checked) {
@@ -1942,4 +1946,3 @@
     </script>
 </body>
 </html>
-
