@@ -378,7 +378,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, query, where, orderBy, onSnapshot, serverTimestamp, doc, setDoc, updateDoc, increment, arrayUnion, arrayRemove, deleteDoc, getDoc, getDocs, enableIndexedDbPersistence, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, query, where, orderBy, onSnapshot, serverTimestamp, doc, setDoc, updateDoc, increment, arrayUnion, arrayRemove, deleteDoc, getDoc, getDocs, enableIndexedDbPersistence, limit, deleteField } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
         const firebaseConfig = {
@@ -399,7 +399,7 @@
         window.where = where; window.orderBy = orderBy; window.onSnapshot = onSnapshot; 
         window.serverTimestamp = serverTimestamp; window.ref = ref; 
         window.uploadBytes = uploadBytes; window.getDownloadURL = getDownloadURL;
-        window.doc = doc; window.setDoc = setDoc; window.updateDoc = updateDoc; window.increment = increment; window.arrayUnion = arrayUnion; window.arrayRemove = arrayRemove; window.deleteDoc = deleteDoc; window.getDoc = getDoc; window.getDocs = getDocs; 
+        window.doc = doc; window.setDoc = setDoc; window.updateDoc = updateDoc; window.increment = increment; window.arrayUnion = arrayUnion; window.arrayRemove = arrayRemove; window.deleteDoc = deleteDoc; window.getDoc = getDoc; window.getDocs = getDocs; window.deleteField = deleteField; 
         window.deleteObject = deleteObject; window.limit = limit;
     </script>
 </head>
@@ -587,7 +587,7 @@
         let mediaRecorder, chunks = [], recInterval = null, recSeconds = 0;
         let currentBlob = null, replyTargetId = null, maxRecDuration = 0;
         
-        window.currentViewersList = []; 
+        window.currentViewersData = { viewers: {}, totalRepetitions: 0 }; 
         
         let feedLimit = 3;
         let allLoadedPosts = [];
@@ -997,6 +997,18 @@
                 }
             }
 
+            const statsQ = window.query(window.collection(window.db, "stats"));
+            const statsSnap = await window.getDocs(statsQ);
+            for(const sDoc of statsSnap.docs) {
+                const sData = sDoc.data();
+                const viewers = sData.viewers && typeof sData.viewers === 'object' && !Array.isArray(sData.viewers) ? sData.viewers : {};
+                if(viewers[uid]) {
+                    const userCount = (viewers[uid].count || 0);
+                    const updates = { [`viewers.${uid}`]: window.deleteField(), totalRepetitions: window.increment(-userCount), verseViewCount: window.increment(-1) };
+                    try { await window.updateDoc(sDoc.ref, updates); } catch(e){}
+                }
+            }
+
             await window.deleteDoc(window.doc(window.db, "users", uid));
         }
 
@@ -1268,7 +1280,7 @@
                 }
             }
             
-            window.currentViewersList = [];
+            window.currentViewersData = { viewers: {}, totalRepetitions: 0 };
             document.getElementById('viewCount').innerText = "0";
 
             const myUid = localStorage.getItem('it9an_uid');
@@ -1278,11 +1290,11 @@
             unsubscribeViews = window.onSnapshot(statRef, (snap) => { 
                 if(snap.exists()) {
                     const d = snap.data();
-                    window.currentViewersList = d.viewers || [];
-                    const verseViews = d.verseViewCount || 0;
-                    document.getElementById('viewCount').innerText = verseViews;
+                    const viewersObj = d.viewers && typeof d.viewers === 'object' && !Array.isArray(d.viewers) ? d.viewers : {};
+                    window.currentViewersData = { viewers: viewersObj, totalRepetitions: d.totalRepetitions || 0 };
+                    document.getElementById('viewCount').innerText = d.totalRepetitions || 0;
                 } else {
-                    window.currentViewersList = []; 
+                    window.currentViewersData = { viewers: {}, totalRepetitions: 0 }; 
                     document.getElementById('viewCount').innerText = 0;
                 }
             });
@@ -1290,11 +1302,17 @@
         }
 
         window.showViewers = function() {
-            if(window.currentViewersList && window.currentViewersList.length > 0) {
-                alert("الطلاب:\n\n" + window.currentViewersList.join("\n"));
-            } else {
+            const data = window.currentViewersData || { viewers: {}, totalRepetitions: 0 };
+            const viewers = data.viewers || {};
+            const total = data.totalRepetitions || 0;
+            const entries = Object.entries(viewers).map(([uid, v]) => ({ uid, name: (v && v.name) || 'مستخدم', count: (v && v.count) || 0 })).filter(e => e.count > 0);
+            if(entries.length === 0 && total === 0) {
                 alert("لا يوجد مشاهدات بعد");
+                return;
             }
+            let lines = ["👁️ " + total + " المجموع الكلي\n"];
+            entries.sort((a,b) => (b.count || 0) - (a.count || 0)).forEach(e => { lines.push("👁️ " + e.count + "  " + e.name); });
+            alert(lines.join("\n"));
         }
 
         function loadFeed(fileId) {
@@ -1627,15 +1645,17 @@
                 const isHidden = localStorage.getItem('it9an_hidden') === 'true';
                 if(uid && uid !== 'admin_super') {
                     try { await window.updateDoc(window.doc(window.db, "users", uid), { totalVerseViews: window.increment(1) }); } catch(e){}
-                    if(verseRepeatsPlayed === 0) {
-                        try {
-                            const sRef = window.doc(window.db, "stats", "file_" + currentGlobalFileId);
-                            await window.setDoc(sRef, {}, { merge: true });
-                            const updates = { verseViewCount: window.increment(1) };
-                            if(myName && !isHidden) updates.viewers = window.arrayUnion(myName);
-                            await window.updateDoc(sRef, updates);
-                        } catch(e){}
-                    }
+                    try {
+                        const sRef = window.doc(window.db, "stats", "file_" + currentGlobalFileId);
+                        await window.setDoc(sRef, {}, { merge: true });
+                        const updates = { totalRepetitions: window.increment(1) };
+                        if(verseRepeatsPlayed === 0) updates.verseViewCount = window.increment(1);
+                        if(myName && !isHidden) {
+                            updates[`viewers.${uid}.name`] = myName;
+                            updates[`viewers.${uid}.count`] = window.increment(1);
+                        }
+                        await window.updateDoc(sRef, updates);
+                    } catch(e){}
                 }
                 if(document.getElementById('globalGap').checked) {
                     let pauseTime = Math.ceil(audioEl.duration * 1.25);
@@ -1946,3 +1966,4 @@
     </script>
 </body>
 </html>
+
