@@ -814,6 +814,7 @@
                             postsCount: 0,
                             totalLikes: 0,
                             totalVerseViews: 0,
+                            totalRepliesCount: 0,
                             blocked: false 
                         });
                     }
@@ -878,18 +879,24 @@
                 let users = [];
                 snap.forEach(doc => users.push(doc.data()));
                 
-                users.sort((a,b) => (b.postsCount || 0) - (a.postsCount || 0));
+                users.sort((a,b) => {
+                    if(a.role !== b.role) return (a.role === 'teacher' ? -1 : 1);
+                    if(a.role === 'teacher') return (b.totalRepliesCount || 0) - (a.totalRepliesCount || 0);
+                    return (b.totalVerseViews || 0) - (a.totalVerseViews || 0);
+                });
 
                 users.forEach(u => {
                     const isBlocked = u.blocked === true;
                     const blockBtnText = isBlocked ? "فك الحظر" : "حظر";
                     const blockBtnClass = isBlocked ? "btn-action btn-block blocked" : "btn-action btn-block";
-                    
+                    const recCount = u.role === 'teacher' ? (u.totalRepliesCount || 0) : (u.postsCount || 0);
+                    const recLabel = u.role === 'teacher' ? 'ردود' : 'تسجيلات';
                     const html = `
                     <div class="user-card">
                         <div class="user-info">
-                            <span class="record-count-badge">🎤 ${u.postsCount || 0}</span>
+                            <span class="lb-score" title="مشاهدات">👁️ ${u.totalVerseViews || 0}</span>
                             <span class="lb-likes" style="margin-left:6px;">👍 ${u.totalLikes || 0}</span>
+                            <span class="record-count-badge">🎤 ${recCount} ${recLabel}</span>
                             ${u.name}
                         </div>
                         <div class="user-actions">
@@ -908,33 +915,106 @@
             try { await window.updateDoc(window.doc(window.db, "users", uid), { blocked: !currentStatus }); } catch(e) { alert("خطأ"); }
         }
 
+        async function deleteUserInternal(uid) {
+            const userSnap = await window.getDoc(window.doc(window.db, "users", uid));
+            const userData = userSnap.exists() ? userSnap.data() : {};
+            const role = userData.role || 'student';
+
+            const qAll = window.query(window.collection(window.db, "posts"));
+            const allSnap = await window.getDocs(qAll);
+
+            if(role === 'student') {
+                for(const doc of allSnap.docs) {
+                    const data = doc.data();
+                    if(data.uid === uid) {
+                        if(data.replies) {
+                            for(const r of data.replies) {
+                                if(r.uid && r.uid !== uid) {
+                                    try { await window.updateDoc(window.doc(window.db, "users", r.uid), { totalRepliesCount: window.increment(-1), totalLikes: window.increment(-((r.likes && r.likes.length) || 0)) }); } catch(e){}
+                                }
+                            }
+                        }
+                        const notifQ = window.query(window.collection(window.db, "notifications"), window.where("postId", "==", doc.id));
+                        const notifSnap = await window.getDocs(notifQ);
+                        for(const nd of notifSnap.docs) await window.deleteDoc(window.doc(window.db, "notifications", nd.id));
+                        if(data.audioUrl) await cleanupAudioFile(data.audioUrl);
+                        if(data.replies) for(let r of data.replies) if(r.audioUrl) await cleanupAudioFile(r.audioUrl);
+                        await window.deleteDoc(doc.ref);
+                    } else {
+                        const likedMain = data.likes && data.likes.some(l => (typeof l === 'object' ? l.uid : l) === uid);
+                        let likedReplies = 0;
+                        if(data.replies) data.replies.forEach(r => { if(r.likes && r.likes.some(l => (typeof l === 'object' ? l.uid : l) === uid)) likedReplies++; });
+                        if(likedMain && data.uid) { try { await window.updateDoc(window.doc(window.db, "users", data.uid), { totalLikes: window.increment(-1) }); } catch(e){} }
+                        if(likedReplies > 0 && data.replies) {
+                            const authorsToDec = {};
+                            data.replies.forEach(r => { if(r.likes && r.likes.some(l => (typeof l === 'object' ? l.uid : l) === uid) && r.uid) authorsToDec[r.uid] = (authorsToDec[r.uid] || 0) + 1; });
+                            for(const [au, c] of Object.entries(authorsToDec)) { try { await window.updateDoc(window.doc(window.db, "users", au), { totalLikes: window.increment(-c) }); } catch(e){} }
+                        }
+                    }
+                }
+                const notifToUser = window.query(window.collection(window.db, "notifications"), window.where("to", "==", uid));
+                const notifSnap2 = await window.getDocs(notifToUser);
+                for(const nd of notifSnap2.docs) await window.deleteDoc(window.doc(window.db, "notifications", nd.id));
+            } else {
+                for(const doc of allSnap.docs) {
+                    const data = doc.data();
+                    if(data.uid === uid) {
+                        if(data.replies) {
+                            for(const r of data.replies) {
+                                if(r.uid && r.uid !== uid) {
+                                    try { await window.updateDoc(window.doc(window.db, "users", r.uid), { totalRepliesCount: window.increment(-1), totalLikes: window.increment(-((r.likes && r.likes.length) || 0)) }); } catch(e){}
+                                }
+                                if(r.audioUrl) await cleanupAudioFile(r.audioUrl);
+                            }
+                        }
+                        const notifQ = window.query(window.collection(window.db, "notifications"), window.where("postId", "==", doc.id));
+                        const notifSnap = await window.getDocs(notifQ);
+                        for(const nd of notifSnap.docs) await window.deleteDoc(window.doc(window.db, "notifications", nd.id));
+                        if(data.audioUrl) await cleanupAudioFile(data.audioUrl);
+                        await window.deleteDoc(doc.ref);
+                    } else if(data.replies && data.replies.some(r => r.uid === uid)) {
+                        const toRemove = data.replies.filter(r => r.uid === uid);
+                        for(const r of toRemove) {
+                            if(r.audioUrl) await cleanupAudioFile(r.audioUrl);
+                            const nq = window.query(window.collection(window.db, "notifications"), window.where("postId", "==", doc.id), window.where("type", "==", "reply"));
+                            const ns = await window.getDocs(nq);
+                            for(const nd of ns.docs) { if(nd.data().replyTimestamp === r.timestamp) { await window.deleteDoc(window.doc(window.db, "notifications", nd.id)); break; } }
+                        }
+                        const newReplies = data.replies.filter(r => r.uid !== uid);
+                        await window.updateDoc(doc.ref, { replies: newReplies });
+                    } else {
+                        const likedMain = data.likes && data.likes.some(l => (typeof l === 'object' ? l.uid : l) === uid);
+                        let likedReplies = 0;
+                        if(data.replies) data.replies.forEach(r => { if(r.likes && r.likes.some(l => (typeof l === 'object' ? l.uid : l) === uid)) likedReplies++; });
+                        if(likedMain && data.uid) { try { await window.updateDoc(window.doc(window.db, "users", data.uid), { totalLikes: window.increment(-1) }); } catch(e){} }
+                        if(likedReplies > 0 && data.replies) {
+                            const authorsToDec = {};
+                            data.replies.forEach(r => { if(r.likes && r.likes.some(l => (typeof l === 'object' ? l.uid : l) === uid) && r.uid) authorsToDec[r.uid] = (authorsToDec[r.uid] || 0) + 1; });
+                            for(const [au, c] of Object.entries(authorsToDec)) { try { await window.updateDoc(window.doc(window.db, "users", au), { totalLikes: window.increment(-c) }); } catch(e){} }
+                        }
+                    }
+                }
+            }
+
+            await window.deleteDoc(window.doc(window.db, "users", uid));
+        }
+
         window.deleteUser = async function(uid) {
             if(confirm("هل أنت متأكد من حذف هذا المستخدم؟")) {
-                try {
-                    const qPosts = window.query(window.collection(window.db, "posts"), window.where("uid", "==", uid));
-                    const postSnap = await window.getDocs(qPosts);
-                    postSnap.forEach(async (doc) => {
-                        const data = doc.data();
-                        if(data.audioUrl) await cleanupAudioFile(data.audioUrl);
-                        if(data.replies) {
-                            for(let r of data.replies) if(r.audioUrl) await cleanupAudioFile(r.audioUrl);
-                        }
-                        await window.deleteDoc(doc.ref);
-                    });
-                    await window.deleteDoc(window.doc(window.db, "users", uid)); 
-                } catch(e) { alert("خطأ"); }
+                try { await deleteUserInternal(uid); alert("تم الحذف"); } catch(e) { alert("خطأ"); }
             }
         }
 
         window.deleteAllUsers = async function(role) {
-            if(confirm("تحذير: هل تريد حذف جميع " + (role==='student'?'الطلاب':'المعلمين') + "؟")) {
+            if(!confirm("تحذير: هل تريد حذف جميع " + (role==='student'?'الطلاب':'المعلمين') + "؟")) return;
+            try {
                 const q = window.query(window.collection(window.db, "users"), window.where("role", "==", role));
                 const snap = await window.getDocs(q);
                 for(const userDoc of snap.docs) {
-                    await deleteUser(userDoc.id); 
+                    await deleteUserInternal(userDoc.id);
                 }
                 alert("تم الحذف");
-            }
+            } catch(e) { alert("خطأ: " + e.message); }
         }
 
         // --- LEADERBOARD (TOP 3) ---
@@ -945,7 +1025,7 @@
                 let users = [];
                 snap.forEach(doc => users.push(doc.data()));
                 
-                users.sort((a,b) => (b.postsCount || 0) - (a.postsCount || 0));
+                users.sort((a,b) => (b.totalVerseViews || 0) - (a.totalVerseViews || 0));
                 let top3 = users.slice(0, 3);
                 
                 const list = document.getElementById('leaderboard-list');
@@ -1196,13 +1276,20 @@
             const statRef = window.doc(window.db, "stats", "file_" + globalId);
             
             if(myName && !isHidden) { try { await window.setDoc(statRef, { viewers: window.arrayUnion(myName) }, { merge: true }); } catch(e){} }
-            if(myUid && myUid !== 'admin_super') { try { const uRef = window.doc(window.db, "users", myUid); await window.updateDoc(uRef, { totalVerseViews: window.increment(1) }); } catch(e){} }
+            if(myUid && myUid !== 'admin_super') { 
+                try { 
+                    await window.setDoc(statRef, {}, { merge: true });
+                    await window.updateDoc(statRef, { verseViewCount: window.increment(1) }); 
+                } catch(e){} 
+            }
             
             if(unsubscribeViews) unsubscribeViews();
             unsubscribeViews = window.onSnapshot(statRef, (snap) => { 
-                if(snap.exists() && snap.data().viewers) {
-                    window.currentViewersList = snap.data().viewers; 
-                    document.getElementById('viewCount').innerText = window.currentViewersList.length; 
+                if(snap.exists()) {
+                    const d = snap.data();
+                    window.currentViewersList = d.viewers || [];
+                    const verseViews = d.verseViewCount || 0;
+                    document.getElementById('viewCount').innerText = verseViews;
                 } else {
                     window.currentViewersList = []; 
                     document.getElementById('viewCount').innerText = 0;
@@ -1480,6 +1567,9 @@
                     await window.updateDoc(window.doc(window.db, "posts", replyTargetId), { 
                         replies: window.arrayUnion({ name: name, role: role, uid: uid, audioUrl: url, timestamp: replyTs, likes: [] }) 
                     });
+                    if(role === 'teacher') {
+                        try { await window.updateDoc(window.doc(window.db, "users", uid), { totalRepliesCount: window.increment(1) }); } catch(e){}
+                    }
                     const targetPost = allLoadedPosts.find(p => p.id === replyTargetId);
                     if(targetPost) {
                        await window.addDoc(window.collection(window.db, "notifications"), {
@@ -1770,20 +1860,24 @@
             if(confirm("هل أنت متأكد من حذف جميع تسجيلات هذا المقطع فقط؟")) {
                 const q = window.query(window.collection(window.db, "posts"), window.where("fileId", "==", String(currentGlobalFileId)));
                 const querySnapshot = await window.getDocs(q);
-                querySnapshot.forEach(async (docSnap) => {
+                for(const docSnap of querySnapshot.docs) {
                     const data = docSnap.data();
-                    if(data.audioUrl) await cleanupAudioFile(data.audioUrl);
                     if(data.replies) {
-                        for(let r of data.replies) {
+                        for(const r of data.replies) {
+                            if(r.uid) {
+                                const rLikes = (r.likes && r.likes.length) || 0;
+                                try { await window.updateDoc(window.doc(window.db, "users", r.uid), { totalRepliesCount: window.increment(-1), totalLikes: window.increment(-rLikes) }); } catch(e){}
+                            }
                             if(r.audioUrl) await cleanupAudioFile(r.audioUrl);
                         }
                     }
-                    // DECREMENT
-                    const userRef = window.doc(window.db, "users", data.uid);
-                    try { await window.updateDoc(userRef, { postsCount: window.increment(-1) }); } catch(e){}
-
+                    const notifQ = window.query(window.collection(window.db, "notifications"), window.where("postId", "==", docSnap.id));
+                    const notifSnap = await window.getDocs(notifQ);
+                    for(const nd of notifSnap.docs) await window.deleteDoc(window.doc(window.db, "notifications", nd.id));
+                    if(data.audioUrl) await cleanupAudioFile(data.audioUrl);
+                    try { await window.updateDoc(window.doc(window.db, "users", data.uid), { postsCount: window.increment(-1), totalLikes: window.increment(-((data.likes && data.likes.length) || 0)) }); } catch(e){}
                     await window.deleteDoc(window.doc(window.db, "posts", docSnap.id));
-                });
+                }
                 alert("تم الحذف");
             }
         }
@@ -1795,22 +1889,25 @@
                     const docSnap = await window.getDoc(docRef);
                     if (docSnap.exists()) {
                         const data = docSnap.data();
-                        if(data.audioUrl) await cleanupAudioFile(data.audioUrl);
                         if(data.replies) {
-                            for(let r of data.replies) {
+                            for(const r of data.replies) {
+                                if(r.uid) {
+                                    const rLikes = (r.likes && r.likes.length) || 0;
+                                    try { await window.updateDoc(window.doc(window.db, "users", r.uid), { totalRepliesCount: window.increment(-1), totalLikes: window.increment(-rLikes) }); } catch(e){}
+                                }
                                 if(r.audioUrl) await cleanupAudioFile(r.audioUrl);
                             }
                         }
-                        await window.deleteDoc(docRef);
                         var notifQ = window.query(window.collection(window.db, "notifications"), window.where("postId", "==", postId));
                         var notifSnap = await window.getDocs(notifQ);
                         for(const nd of notifSnap.docs) { await window.deleteDoc(window.doc(window.db, "notifications", nd.id)); }
+                        if(data.audioUrl) await cleanupAudioFile(data.audioUrl);
+                        await window.deleteDoc(docRef);
                         if(authorUid) {
                              const userRef = window.doc(window.db, "users", authorUid);
                              try { await window.updateDoc(userRef, { postsCount: window.increment(-1) }); } catch(e){}
                         }
                         var likesCount = (data.likes && data.likes.length) ? data.likes.length : 0;
-                        if(data.replies) { data.replies.forEach(r => { likesCount += (r.likes && r.likes.length) ? r.likes.length : 0; }); }
                         if(authorUid && likesCount > 0) { try { await window.updateDoc(window.doc(window.db, "users", authorUid), { totalLikes: window.increment(-likesCount) }); } catch(e){} }
                         alert("تم الحذف بنجاح");
                     }
@@ -1836,6 +1933,7 @@
                         var notifSnap = await window.getDocs(notifQ);
                         for(const nd of notifSnap.docs) { if(nd.data().replyTimestamp === replyTimestamp) { await window.deleteDoc(window.doc(window.db, "notifications", nd.id)); break; } }
                         if(authorUid && replyLikes > 0) { try { await window.updateDoc(window.doc(window.db, "users", authorUid), { totalLikes: window.increment(-replyLikes) }); } catch(e){} }
+                        if(authorUid) { try { await window.updateDoc(window.doc(window.db, "users", authorUid), { totalRepliesCount: window.increment(-1) }); } catch(e){} }
                         alert("تم الحذف");
                     }
                 } catch(e) { alert("خطأ"); }
@@ -1844,4 +1942,3 @@
     </script>
 </body>
 </html>
-
