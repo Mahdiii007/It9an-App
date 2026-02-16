@@ -788,7 +788,6 @@
         });
 
         window.playFeedAudio = function(url, id) {
-            stopLoop();
             if (!url) return;
 
             if (currentFeedAudioId === id) {
@@ -799,7 +798,10 @@
                     feedAudioEl.pause();
                     document.getElementById('btn-' + id).innerText = "▶";
                 }
-            } else {
+                return;
+            }
+
+            stopLoop();
                 if (currentFeedAudioId) {
                     const oldBtn = document.getElementById('btn-' + currentFeedAudioId);
                     if(oldBtn) oldBtn.innerText = "▶";
@@ -818,7 +820,6 @@
                     newBtn.innerText = "⚠️";
                     console.log(e);
                 });
-            }
         }
 
         window.seekFeedAudio = function(val) {
@@ -3031,4 +3032,5 @@
     </script>
 </body>
 </html>
+
 
