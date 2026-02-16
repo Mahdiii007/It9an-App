@@ -103,6 +103,7 @@
         }
         #pageTitle img { height: 35px; width: auto; display: block; object-fit: contain; flex-shrink: 0; } 
         .header-user-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; font-size: clamp(12px, 3vw, 16px); color: var(--primary); margin-right: 8px; }
+        .header-user-name-main { font-size: 22px; color: var(--primary); font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; text-align: center; display: block; }
         .title-text-maktaa { 
             font-size: clamp(14px, 4vw, 18px); color: var(--primary); font-weight: bold; 
             border-right: 2px solid #ddd; padding-right: 10px; margin-right: 5px; white-space: nowrap;
@@ -159,59 +160,67 @@
         .lb-item.lb-item-me { background: linear-gradient(90deg, rgba(192, 57, 43, 0.25), rgba(192, 57, 43, 0.1)); border-radius: 8px; border: 1px solid rgba(192, 57, 43, 0.4); }
         .lb-show-more-btn { display: block; width: 100%; margin-top: 12px; padding: 10px; background: var(--primary); color: white; border: none; border-radius: 10px; font-size: 15px; font-family: 'Amiri'; font-weight: bold; cursor: pointer; }
         .lb-show-more-btn:active { opacity: 0.9; }
-        .lb-rank { font-weight: bold; color: var(--gold); width: 30px; font-size: 18px; }
-        .lb-name { flex-grow: 1; font-weight: bold; color: #333; font-size: clamp(12px, 2.5vw, 17px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
-        .lb-stats { display: flex; gap: 8px; }
-        .lb-score { background: var(--primary); color: white; padding: 4px 10px; border-radius: 12px; font-size: 13px; display: flex; align-items: center; gap:4px; }
-        .lb-likes { background: var(--gold); color: white; padding: 4px 10px; border-radius: 12px; font-size: 13px; display: flex; align-items: center; gap:4px; }
+        .lb-rank { font-weight: bold; color: var(--gold); font-size: 18px; flex-shrink: 0; }
+        .lb-name { font-weight: bold; color: #333; font-size: clamp(12px, 2.5vw, 17px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+        .lb-stats { display: flex; gap: 6px; flex-shrink: 0; flex-wrap: nowrap; }
+        .lb-score, .lb-likes { 
+            background: var(--primary); color: white; padding: 4px 6px; border-radius: 10px; 
+            font-size: clamp(10px, 2vw, 13px); display: inline-flex; align-items: center; gap: 2px; 
+            white-space: nowrap; width: fit-content; min-width: fit-content;
+        }
+        .lb-likes { background: var(--gold); }
         .lb-motivation { margin-top: 15px; font-size: 16px; color: var(--primary); font-style: italic; font-weight: bold; }
 
         /* --- PLAYER --- */
         #player-view { display: none; padding: 15px; width: 100%; max-width: 600px; margin: 0 auto; }
         
-        /* FIX: Frame Padding & Height */
+        .verse-section { width: 100vw; margin-left: calc((100% - 100vw) / 2); box-sizing: border-box; }
+        
+        .verse-list-btn { width: 100%; padding: 10px; margin-bottom: 8px; background: var(--gold); color: var(--primary); border: 2px solid var(--primary); border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; font-family: 'Amiri'; }
+        .verse-list-btn:active { opacity: 0.9; }
+        
         .quran-frame {
             background: var(--surface); padding: 5px; border-radius: 15px;
             border: 2px solid var(--gold-light); outline: 1px solid var(--gold); outline-offset: -5px;
-            box-shadow: var(--shadow); margin-bottom: 20px; 
+            box-shadow: var(--shadow); margin-bottom: 8px; 
             width: 100%;
             height: auto;
             overflow: hidden;
         }
         
-        /* FIX: Container Flex Logic */
-        .player-container { 
-            width: 100%; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            gap: 6px;
-        }
+        .player-container { width: 100%; }
         
-        /* FIX: Image Scaling */
         .quran-image { 
-            flex: 1;
-            min-width: 0;
+            width: 100%;
             max-width: 100%;
-            width: auto;
-            max-height: 72vh;
+            height: auto;
+            max-height: 75vh;
             object-fit: contain;
             border-radius: 5px; 
             display: block; 
         }
 
-        /* FIX: Smaller nav buttons so verse image can be larger, no overlap */
+        .nav-buttons-row { display: flex; gap: 8px; margin-bottom: 15px; }
         .nav-btn { 
-            width: 32px; height: 44px; flex-shrink: 0;
+            flex: 1;
+            min-height: 44px;
+            height: 44px;
+            min-width: 80px;
             background: var(--bg); color: var(--primary); border: 1px solid var(--gold);
-            border-radius: 6px; font-size: 16px; cursor: pointer; 
-            display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
-            z-index: 10;
+            border-radius: 8px; font-size: 18px; cursor: pointer; 
+            display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
         .nav-btn:active { background: var(--gold-light); }
-        
-        /* FORCE ARROW DIRECTION LTR TO PREVENT MIRRORING */
         .arrow-icon { direction: ltr; display: inline-block; }
+
+        #verse-list-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 3000; overflow-y: auto; padding: 10px 0; }
+        .verse-list-content { background: var(--surface); border-radius: 15px; padding: 15px; width: 100%; max-width: 100vw; margin: 0 auto; box-sizing: border-box; }
+        .verse-list-title { text-align: center; font-weight: bold; color: var(--primary); margin-bottom: 15px; font-size: 18px; }
+        .verse-list-grid { display: flex; flex-direction: column; gap: 12px; }
+        .verse-list-item { background: var(--surface); border-radius: 12px; overflow: hidden; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border: 2px solid transparent; display: flex; flex-direction: column; width: 100%; }
+        .verse-list-item:hover, .verse-list-item.active { border-color: var(--gold); }
+        .verse-list-item img { width: 100%; max-width: 100vw; height: auto; display: block; object-fit: contain; }
+        .verse-list-item span { text-align: center; padding: 8px; font-size: 14px; font-weight: bold; color: var(--primary); }
 
         /* SETTINGS: one line - pause, checkbox, repeats input and label */
         .settings-box { 
@@ -272,8 +281,7 @@
             .rec-timer { font-size: 22px; }
             .recording-row { gap: 12px; }
             .settings-box { padding: 8px 10px; gap: 10px; flex-wrap: wrap; }
-            .player-container { flex-direction: row; gap: 4px; }
-            .nav-btn { width: 28px; height: 36px; }
+            .nav-btn { min-height: 48px; min-width: 100px; font-size: 16px; padding: 12px; }
         }
 
         /* FEED & STATS */
@@ -519,13 +527,24 @@
             <div class="setting-group"><span class="setting-label">تكرار</span><input type="number" id="globalRepeats" value="3" min="1"><span class="setting-label">مرات</span></div>
         </div>
 
-        <div class="quran-frame">
-            <div class="player-container">
-                <button id="btnRight" class="nav-btn" onclick="prevVers()"><span class="arrow-icon">❯</span></button>
-                
-                <img id="currentImg" class="quran-image" src="" alt="Vers Bild" onerror="this.src='placeholder.png'">
-                
-                <button id="btnLeft" class="nav-btn" onclick="nextVers()"><span class="arrow-icon">❮</span></button>
+        <div class="verse-section">
+            <button class="verse-list-btn" onclick="showVerseList()">📋 قائمة مقاطع الدرس</button>
+            <div class="quran-frame">
+                <div class="player-container">
+                    <img id="currentImg" class="quran-image" src="" alt="Vers Bild" onerror="this.src='placeholder.png'">
+                </div>
+            </div>
+            <div class="nav-buttons-row">
+                <button id="btnRight" class="nav-btn" onclick="prevVers()"><span class="arrow-icon">❯ السابق</span></button>
+                <button id="btnLeft" class="nav-btn" onclick="nextVers()"><span class="arrow-icon">التالي ❮</span></button>
+            </div>
+        </div>
+        
+        <div id="verse-list-modal" onclick="if(event.target===this) hideVerseList()">
+            <div class="verse-list-content" onclick="event.stopPropagation()">
+                <div class="verse-list-title">اختر الآية</div>
+                <div id="verse-list-grid" class="verse-list-grid"></div>
+                <button class="verse-list-btn" style="margin-top:15px;" onclick="hideVerseList()">إغلاق</button>
             </div>
         </div>
         
@@ -1085,7 +1104,7 @@
                 if(isMe) cls += ' lb-item-me';
                 list.innerHTML += `
                 <li class="${cls}">
-                    <div style="display:flex; align-items:center; gap:10px;">
+                    <div style="display:flex; align-items:center; gap:4px; flex-shrink: 1; min-width: 0;">
                         <span class="lb-rank">#${rank}</span>
                         <span class="lb-name">${u.name}</span>
                     </div>
@@ -1223,11 +1242,7 @@
             grid.innerHTML = ""; showView('menu-view');
             const myName = localStorage.getItem('it9an_name') || '';
             const nameClean = myName.replace(/\s*\(\d{4}\)\s*$/, '').trim();
-            const nameParts = nameClean.split(/\s+/);
-            const vorname = nameParts[0] || '';
-            const nachname = nameParts.slice(1).join(' ') || '';
-            const nameHtml = (vorname || nachname) ? `<span class="header-user-name">${vorname} ${nachname}</span>` : '';
-            document.getElementById('pageTitle').innerHTML = `<span style='border:none; padding:0; font-size:22px;'>القائمة الرئيسية</span>${nameHtml ? ' ' + nameHtml : ''}`; 
+            document.getElementById('pageTitle').innerHTML = `<span class="header-user-name-main">${nameClean || ''}</span>`; 
             document.getElementById('appFooter').style.display = 'none';
             
             const uid = localStorage.getItem('it9an_uid');
@@ -1273,6 +1288,24 @@
             }
         }
         
+        window.showVerseList = function() {
+            if(currentLessonIdx === null) return;
+            const lesson = KURS_DATEN[currentLessonIdx];
+            const grid = document.getElementById('verse-list-grid');
+            grid.innerHTML = '';
+            for(let v = 1; v <= lesson.verse; v++) {
+                const globalId = lesson.startGlobalId + v - 1;
+                const isActive = (globalId === currentGlobalFileId);
+                const div = document.createElement('div');
+                div.className = 'verse-list-item' + (isActive ? ' active' : '');
+                div.innerHTML = `<img src="assets/${globalId}.png" alt="Vers ${v}" onerror="this.style.display='none'"><span>المقطع ${v}</span>`;
+                div.onclick = () => { playVers(globalId, v); hideVerseList(); };
+                grid.appendChild(div);
+            }
+            document.getElementById('verse-list-modal').style.display = 'block';
+        }
+        window.hideVerseList = function() { document.getElementById('verse-list-modal').style.display = 'none'; }
+
         window.prevVers = function() { 
             activePostFilter = null; 
             const currentLesson = KURS_DATEN[currentLessonIdx];
@@ -2004,4 +2037,3 @@
     </script>
 </body>
 </html>
-
