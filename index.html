@@ -102,6 +102,7 @@
             cursor: default; overflow: hidden; white-space: nowrap; max-width: 60%;
         }
         #pageTitle img { height: 35px; width: auto; display: block; object-fit: contain; flex-shrink: 0; } 
+        .header-user-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; font-size: clamp(12px, 3vw, 16px); color: var(--primary); margin-right: 8px; }
         .title-text-maktaa { 
             font-size: clamp(14px, 4vw, 18px); color: var(--primary); font-weight: bold; 
             border-right: 2px solid #ddd; padding-right: 10px; margin-right: 5px; white-space: nowrap;
@@ -154,8 +155,12 @@
             align-items: center;
         }
         .lb-item:last-child { border-bottom: none; }
+        .lb-item.lb-item-top3 { background: linear-gradient(90deg, rgba(212, 175, 55, 0.25), rgba(212, 175, 55, 0.1)); border-radius: 8px; margin-bottom: 4px; }
+        .lb-item.lb-item-me { background: linear-gradient(90deg, rgba(192, 57, 43, 0.25), rgba(192, 57, 43, 0.1)); border-radius: 8px; border: 1px solid rgba(192, 57, 43, 0.4); }
+        .lb-show-more-btn { display: block; width: 100%; margin-top: 12px; padding: 10px; background: var(--primary); color: white; border: none; border-radius: 10px; font-size: 15px; font-family: 'Amiri'; font-weight: bold; cursor: pointer; }
+        .lb-show-more-btn:active { opacity: 0.9; }
         .lb-rank { font-weight: bold; color: var(--gold); width: 30px; font-size: 18px; }
-        .lb-name { flex-grow: 1; font-weight: bold; color: #333; font-size: 17px; }
+        .lb-name { flex-grow: 1; font-weight: bold; color: #333; font-size: clamp(12px, 2.5vw, 17px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
         .lb-stats { display: flex; gap: 8px; }
         .lb-score { background: var(--primary); color: white; padding: 4px 10px; border-radius: 12px; font-size: 13px; display: flex; align-items: center; gap:4px; }
         .lb-likes { background: var(--gold); color: white; padding: 4px 10px; border-radius: 12px; font-size: 13px; display: flex; align-items: center; gap:4px; }
@@ -440,7 +445,7 @@
             <div class="notif-icon">🔔</div>
             <div id="notifBadge" class="notif-badge">0</div>
         </div>
-        <button class="header-btn" onclick="goToMenu()">☰ القائمة</button>
+        <button id="menuBtn" class="header-btn" onclick="goToMenu()">☰ القائمة</button>
         <div id="pageTitle"></div>
     </div>
 
@@ -492,6 +497,7 @@
                 <ul id="leaderboard-list" class="lb-list">
                     <li style="text-align:center; color:#999; padding:10px;">جاري التحميل...</li>
                 </ul>
+                <button id="lbShowMoreBtn" class="lb-show-more-btn" onclick="toggleLeaderboardFull()" style="display:none;">عرض بقية الطلاب</button>
             </div>
         </div>
         <div class="menu-grid" id="lesson-grid"></div>
@@ -570,7 +576,8 @@
     <script>
         const STUDENT_PIN = "1234";
         const TEACHER_PIN = "7777";
-        const ADMIN_PIN = "1879"; 
+        const ADMIN_PIN = "1879";
+        const TEACHER_LOTFI_PIN = "9898"; 
 
         const VERS_PRO_LEKTION = [ 8, 15, 9, 15, 16 ];
         const KURS_DATEN = VERS_PRO_LEKTION.map((anzahl, index) => {
@@ -736,6 +743,33 @@
         async function checkLogin() {
             const pin = document.getElementById('pinInput').value;
             
+            if (pin === TEACHER_LOTFI_PIN) {
+                const first = "Lotfi", last = "Fakhfakh", year = "1967", role = "teacher";
+                const fullNameRaw = first + " " + last;
+                const uniqueID = generateUserId(fullNameRaw, role, year);
+                const userRef = window.doc(window.db, "users", uniqueID);
+                let finalDisplayName = "Lotfi Fakhfakh";
+                try {
+                    const userSnap = await window.getDoc(userRef);
+                    if(userSnap.exists()) {
+                        if(userSnap.data().blocked) { alert("عذراً، تم حظر هذا الحساب."); return; }
+                        if(userSnap.data().name) finalDisplayName = userSnap.data().name;
+                        await window.updateDoc(userRef, { lastLogin: window.serverTimestamp() });
+                    } else {
+                        await window.setDoc(userRef, { name: finalDisplayName, baseName: finalDisplayName, role, uid: uniqueID, year, lastLogin: window.serverTimestamp(), postsCount: 0, totalLikes: 0, totalVerseViews: 0, totalRepliesCount: 0, blocked: false });
+                    }
+                } catch(e) { console.log("Login Error", e); }
+                localStorage.setItem('it9an_uid', uniqueID);
+                localStorage.setItem('it9an_auth', 'true');
+                localStorage.setItem('it9an_name', finalDisplayName);
+                localStorage.setItem('it9an_role', role);
+                document.getElementById('login-screen').style.display = 'none';
+                updateUIForRole();
+                listenForNotifications();
+                renderMenu();
+                return;
+            }
+
             if (pin === ADMIN_PIN) {
                 localStorage.setItem('it9an_uid', 'admin_super');
                 localStorage.setItem('it9an_auth', 'true');
@@ -865,6 +899,7 @@
             document.getElementById('admin-users-view').style.display = 'block';
             document.getElementById('pageTitle').innerText = "إدارة المستخدمين";
             document.getElementById('appFooter').style.display = 'none';
+            const menuBtn = document.getElementById('menuBtn'); if(menuBtn) menuBtn.style.display = 'flex';
             loadUsers();
         }
 
@@ -1031,34 +1066,56 @@
         }
 
         // --- LEADERBOARD (TOP 3) ---
+        let leaderboardAllUsers = [];
+        let leaderboardShowFull = false;
+
+        function renderLeaderboardItems(users, showAll, myUid) {
+            const list = document.getElementById('leaderboard-list');
+            const btn = document.getElementById('lbShowMoreBtn');
+            list.innerHTML = "";
+            if(users.length === 0) { list.innerHTML = "<li style='text-align:center; color:#999; padding:10px;'>لا يوجد طلاب بعد</li>"; if(btn) btn.style.display = 'none'; return; }
+            const toShow = showAll ? users : users.slice(0, 3);
+            if(btn) { btn.style.display = users.length > 3 ? 'block' : 'none'; btn.innerText = showAll ? 'عرض Top 3 فقط' : 'عرض بقية الطلاب'; }
+            toShow.forEach((u, i) => {
+                const rank = i + 1;
+                const isTop3 = rank <= 3;
+                const isMe = u.uid === myUid;
+                let cls = 'lb-item';
+                if(isTop3) cls += ' lb-item-top3';
+                if(isMe) cls += ' lb-item-me';
+                list.innerHTML += `
+                <li class="${cls}">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <span class="lb-rank">#${rank}</span>
+                        <span class="lb-name">${u.name}</span>
+                    </div>
+                    <div class="lb-stats">
+                        <span class="lb-score" title="مشاهدات">👁️ ${u.totalVerseViews || 0}</span>
+                        <span class="lb-score">🎤 ${u.postsCount || 0}</span>
+                        <span class="lb-likes">👍 ${u.totalLikes || 0}</span>
+                    </div>
+                </li>`;
+            });
+        }
+
+        window.toggleLeaderboardFull = function() {
+            leaderboardShowFull = !leaderboardShowFull;
+            renderLeaderboardItems(leaderboardAllUsers, leaderboardShowFull, localStorage.getItem('it9an_uid'));
+        }
+
         function loadLeaderboard() {
             const q = window.query(window.collection(window.db, "users"), window.where("role", "==", "student"));
-            
+            const myUid = localStorage.getItem('it9an_uid');
             window.getDocs(q).then(snap => {
                 let users = [];
-                snap.forEach(doc => users.push(doc.data()));
-                
-                users.sort((a,b) => (b.totalVerseViews || 0) - (a.totalVerseViews || 0));
-                let top3 = users.slice(0, 3);
-                
-                const list = document.getElementById('leaderboard-list');
-                list.innerHTML = "";
-                if(top3.length === 0) { list.innerHTML = "<li style='text-align:center; color:#999; padding:10px;'>لا يوجد طلاب بعد</li>"; return; }
-
-                top3.forEach((u, i) => {
-                    list.innerHTML += `
-                    <li class="lb-item">
-                        <div style="display:flex; align-items:center; gap:10px;">
-                            <span class="lb-rank">#${i+1}</span>
-                            <span class="lb-name">${u.name}</span>
-                        </div>
-                        <div class="lb-stats">
-                            <span class="lb-score" title="مشاهدات كل الآيات مع التكرار">👁️ ${u.totalVerseViews || 0}</span>
-                            <span class="lb-score">🎤 ${u.postsCount || 0}</span>
-                            <span class="lb-likes">👍 ${u.totalLikes || 0}</span>
-                        </div>
-                    </li>`;
+                snap.forEach(doc => users.push({ ...doc.data(), uid: doc.data().uid || doc.id }));
+                users.sort((a,b) => {
+                    const sumA = (a.totalVerseViews || 0) + (a.postsCount || 0) + (a.totalLikes || 0);
+                    const sumB = (b.totalVerseViews || 0) + (b.postsCount || 0) + (b.totalLikes || 0);
+                    return sumB - sumA;
                 });
+                leaderboardAllUsers = users;
+                renderLeaderboardItems(users, leaderboardShowFull, myUid);
             });
         }
 
@@ -1127,6 +1184,7 @@
             document.getElementById('notifications-view').style.display = 'block';
             document.getElementById('pageTitle').innerText = "الإشعارات";
             document.getElementById('appFooter').style.display = 'none';
+            const menuBtn = document.getElementById('menuBtn'); if(menuBtn) menuBtn.style.display = 'flex';
         }
 
         window.openFromNotif = async function(notifId, fileId, postId) {
@@ -1163,7 +1221,13 @@
         function renderMenu() {
             const grid = document.getElementById('lesson-grid'); 
             grid.innerHTML = ""; showView('menu-view');
-            document.getElementById('pageTitle').innerHTML = "<span style='border:none; padding:0; font-size:22px;'>القائمة الرئيسية</span>"; 
+            const myName = localStorage.getItem('it9an_name') || '';
+            const nameClean = myName.replace(/\s*\(\d{4}\)\s*$/, '').trim();
+            const nameParts = nameClean.split(/\s+/);
+            const vorname = nameParts[0] || '';
+            const nachname = nameParts.slice(1).join(' ') || '';
+            const nameHtml = (vorname || nachname) ? `<span class="header-user-name">${vorname} ${nachname}</span>` : '';
+            document.getElementById('pageTitle').innerHTML = `<span style='border:none; padding:0; font-size:22px;'>القائمة الرئيسية</span>${nameHtml ? ' ' + nameHtml : ''}`; 
             document.getElementById('appFooter').style.display = 'none';
             
             const uid = localStorage.getItem('it9an_uid');
@@ -1674,7 +1738,7 @@
         }
 
         window.goToMenu = function() { stopLoop(); stopRecordingAndReview(); showView('menu-view'); renderMenu(); } 
-        function showView(id) { document.getElementById('menu-view').style.display = 'none'; document.getElementById('player-view').style.display = 'none'; document.getElementById('notifications-view').style.display = 'none'; document.getElementById('admin-users-view').style.display = (id === 'admin-users-view') ? 'block' : 'none'; document.getElementById(id).style.display = (id === 'menu-view') ? 'grid' : 'block'; }
+        function showView(id) { document.getElementById('menu-view').style.display = 'none'; document.getElementById('player-view').style.display = 'none'; document.getElementById('notifications-view').style.display = 'none'; document.getElementById('admin-users-view').style.display = (id === 'admin-users-view') ? 'block' : 'none'; document.getElementById(id).style.display = (id === 'menu-view') ? 'grid' : 'block'; const menuBtn = document.getElementById('menuBtn'); if(menuBtn) menuBtn.style.display = (id === 'menu-view') ? 'none' : 'flex'; }
         
         window.likePost = async (id, ownerUid) => { 
             const uid = localStorage.getItem('it9an_uid'); const myName = localStorage.getItem('it9an_name');
