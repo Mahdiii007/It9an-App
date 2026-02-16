@@ -383,6 +383,13 @@
 
         #review-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(3px); z-index: 6000; justify-content: center; align-items: center; }
         .review-box { background: white; padding: 30px; border-radius: 25px; width: 85%; max-width: 350px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.3); border: 2px solid var(--primary); }
+        #ffmpeg-load-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 7000; justify-content: center; align-items: center; }
+        .ffmpeg-load-box { background: white; padding: 30px; border-radius: 25px; width: 90%; max-width: 360px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.3); border: 2px solid var(--primary); }
+        .ffmpeg-load-title { font-size: 20px; font-weight: bold; margin-bottom: 20px; color: var(--primary); }
+        .ffmpeg-progress-bar { width: 100%; height: 24px; background: #e0e0e0; border-radius: 12px; overflow: hidden; margin: 15px 0; }
+        .ffmpeg-progress-fill { height: 100%; background: linear-gradient(90deg, var(--primary), var(--primary-light)); transition: width 0.2s; }
+        .ffmpeg-progress-text { font-size: 18px; font-weight: bold; color: var(--primary); margin: 8px 0; }
+        .ffmpeg-eta-text { font-size: 14px; color: #666; }
         .review-title { font-size: 24px; font-weight: bold; margin-bottom: 25px; color: var(--primary); }
         .review-btns { display: flex; flex-direction: column; gap: 15px; margin-top: 20px; }
         .r-btn { padding: 15px; border: none; border-radius: 12px; font-size: 18px; font-weight: bold; cursor: pointer; font-family: 'Amiri'; }
@@ -590,6 +597,15 @@
         <div id="recText" class="rec-status-text">جاري التسجيل...</div>
     </div>
 
+    <div id="ffmpeg-load-modal">
+        <div class="ffmpeg-load-box">
+            <div class="ffmpeg-load-title">جاري تحميل المحول...</div>
+            <div class="ffmpeg-progress-bar"><div class="ffmpeg-progress-fill" id="ffmpegProgressFill" style="width:0%"></div></div>
+            <div class="ffmpeg-progress-text" id="ffmpegProgressText">0%</div>
+            <div class="ffmpeg-eta-text" id="ffmpegEtaText">جاري التحميل...</div>
+        </div>
+    </div>
+
     <div id="review-modal">
         <div class="review-box">
             <div class="review-title">مراجعة التسجيل</div>
@@ -646,6 +662,89 @@
         let savedIdsForFeed = new Set();
         let highlightedPostId = null;
         let activePostFilter = null;
+
+        let ffmpegInstance = null;
+        function showFfmpegLoadModal() {
+            document.getElementById('ffmpeg-load-modal').style.display = 'flex';
+            document.getElementById('ffmpegProgressFill').style.width = '0%';
+            document.getElementById('ffmpegProgressText').innerText = '0%';
+            document.getElementById('ffmpegEtaText').innerText = 'جاري التحميل...';
+        }
+        function updateFfmpegProgress(pct, etaSec) {
+            const fill = document.getElementById('ffmpegProgressFill');
+            const text = document.getElementById('ffmpegProgressText');
+            const eta = document.getElementById('ffmpegEtaText');
+            if (fill) fill.style.width = (pct || 0) + '%';
+            if (text) text.innerText = (pct != null ? Math.round(pct) + '%' : '...');
+            if (eta) eta.innerText = etaSec != null ? (etaSec < 5 ? 'شبه منتهي...' : (etaSec < 60 ? `حوالي ${Math.ceil(etaSec)} ثانية` : `حوالي ${Math.ceil(etaSec/60)} دقيقة`)) : 'جاري التحميل...';
+        }
+        function hideFfmpegLoadModal() {
+            document.getElementById('ffmpeg-load-modal').style.display = 'none';
+        }
+        function fetchWithProgress(url, onProgress) {
+            return new Promise((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                xhr.open('GET', url);
+                xhr.responseType = 'blob';
+                const startTime = Date.now();
+                xhr.onprogress = (e) => {
+                    if (e.lengthComputable) {
+                        const pct = (e.loaded / e.total) * 100;
+                        const elapsed = (Date.now() - startTime) / 1000;
+                        const speed = elapsed > 0 ? e.loaded / elapsed : 0;
+                        const remaining = speed > 0 ? (e.total - e.loaded) / speed : null;
+                        onProgress(pct, remaining);
+                    } else {
+                        onProgress(null, null);
+                    }
+                };
+                xhr.onload = () => resolve(xhr.response);
+                xhr.onerror = () => reject(new Error('Network error'));
+                xhr.send();
+            });
+        }
+        async function loadFfmpeg() {
+            if (ffmpegInstance) return ffmpegInstance;
+            showFfmpegLoadModal();
+            try {
+                const { FFmpeg } = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm/index.js');
+                const ffmpeg = new FFmpeg();
+                const baseURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd';
+                const urlJs = `${baseURL}/ffmpeg-core.js`;
+                const urlWasm = `${baseURL}/ffmpeg-core.wasm`;
+                updateFfmpegProgress(2, null);
+                const blobJs = await fetchWithProgress(urlJs, (pct, eta) => {
+                    const totalPct = pct != null ? (pct * 0.08) : 2;
+                    updateFfmpegProgress(totalPct, eta);
+                });
+                updateFfmpegProgress(10, null);
+                const blobWasm = await fetchWithProgress(urlWasm, (pct, eta) => {
+                    const totalPct = pct != null ? 10 + (pct * 0.88) : 10;
+                    updateFfmpegProgress(totalPct, eta);
+                });
+                updateFfmpegProgress(98, 0);
+                const coreURL = URL.createObjectURL(blobJs);
+                const wasmURL = URL.createObjectURL(blobWasm);
+                await ffmpeg.load({ coreURL, wasmURL });
+                URL.revokeObjectURL(coreURL);
+                URL.revokeObjectURL(wasmURL);
+                ffmpegInstance = ffmpeg;
+                updateFfmpegProgress(100, 0);
+                await new Promise(r => setTimeout(r, 400));
+            } finally {
+                hideFfmpegLoadModal();
+            }
+            return ffmpegInstance;
+        }
+        async function transcodeToMp4(blob) {
+            const ffmpeg = await loadFfmpeg();
+            const ext = blob.type.includes('ogg') ? 'ogg' : 'webm';
+            await ffmpeg.writeFile('input.' + ext, new Uint8Array(await blob.arrayBuffer()));
+            await ffmpeg.exec(['-i', 'input.' + ext, '-c:a', 'aac', '-b:a', '128k', '-ar', '48000', '-ac', '1', 'output.mp4']);
+            const data = await ffmpeg.readFile('output.mp4');
+            try { await ffmpeg.deleteFile('input.' + ext); await ffmpeg.deleteFile('output.mp4'); } catch(e){}
+            return new Blob([data], { type: 'audio/mp4' });
+        }
 
         // --- GLOBAL FEED PLAYER LOGIC ---
         let currentFeedAudioId = null;
@@ -2275,9 +2374,10 @@
                     const audioConstraints = { echoCancellation: false, noiseSuppression: false, autoGainControl: false, sampleRate: 48000, channelCount: 1 };
                     const stream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints });
                     let options = { audioBitsPerSecond: 128000 };
-                    if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) options.mimeType = 'audio/webm;codecs=opus'; 
-                    else if (MediaRecorder.isTypeSupported('audio/mp4;codecs=mp4a.40.2')) options.mimeType = 'audio/mp4;codecs=mp4a.40.2'; 
+                    // MP4/AAC zuerst: spielt auf iPhone/Mac/Safari flüssig. WebM/Opus verursacht Ruckler auf Safari.
+                    if (MediaRecorder.isTypeSupported('audio/mp4;codecs=mp4a.40.2')) options.mimeType = 'audio/mp4;codecs=mp4a.40.2'; 
                     else if (MediaRecorder.isTypeSupported('audio/mp4')) options.mimeType = 'audio/mp4';
+                    else if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) options.mimeType = 'audio/webm;codecs=opus';
 
                     mediaRecorder = new MediaRecorder(stream, options);
                     chunks = [];
@@ -2286,7 +2386,7 @@
                     if(replyTargetId) statusText.innerText = "تسجيل رد..."; else statusText.innerText = "تسجيل تلاوة...";
 
                     mediaRecorder.onstop = () => {
-                        const mimeType = mediaRecorder.mimeType || 'audio/webm';
+                        const mimeType = mediaRecorder.mimeType || 'audio/mp4';
                         currentBlob = new Blob(chunks, { type: mimeType });
                         showReviewModal();
                         const recBtn = document.getElementById('recBtn'); if(recBtn) recBtn.classList.remove('recording');
@@ -2306,15 +2406,26 @@
 
         window.confirmSend = async function() {
             document.getElementById('review-modal').style.display = 'none';
-            document.getElementById('statusDisplay').innerText = "جاري الإرسال...";
             const name = localStorage.getItem('it9an_name');
             const role = localStorage.getItem('it9an_role');
             const uid = localStorage.getItem('it9an_uid');
 
             try {
-                let ext = 'webm'; if (currentBlob.type.includes('mp4')) ext = 'mp4'; else if (currentBlob.type.includes('ogg')) ext = 'ogg';
+                let blobToUpload = currentBlob;
+                const needsTranscode = blobToUpload.type.includes('webm') || blobToUpload.type.includes('ogg');
+                if (needsTranscode) {
+                    document.getElementById('statusDisplay').innerText = "جاري تحويل الصيغة...";
+                    try {
+                        blobToUpload = await transcodeToMp4(currentBlob);
+                    } catch (e) {
+                        console.error(e);
+                        alert("فشل تحويل الصيغة. سيتم الإرسال بالصيغة الأصلية.");
+                    }
+                }
+                document.getElementById('statusDisplay').innerText = "جاري الإرسال...";
+                let ext = 'webm'; if (blobToUpload.type.includes('mp4')) ext = 'mp4'; else if (blobToUpload.type.includes('ogg')) ext = 'ogg';
                 const refS = window.ref(window.storage, `uploads/${Date.now()}_${uid}.${ext}`);
-                await window.uploadBytes(refS, currentBlob);
+                await window.uploadBytes(refS, blobToUpload);
                 const url = await window.getDownloadURL(refS);
                 if (replyTargetId) {
                     const replyTs = Date.now();
