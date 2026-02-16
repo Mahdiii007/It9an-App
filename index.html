@@ -9,6 +9,7 @@
     <style>
         /* --- MODERN ISLAMIC THEME --- */
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        html { overflow-x: hidden; }
         
         :root { 
             --primary: #0f4c3a; --primary-light: #1a6b54; 
@@ -172,9 +173,9 @@
         .lb-motivation { margin-top: 15px; font-size: 16px; color: var(--primary); font-style: italic; font-weight: bold; }
 
         /* --- PLAYER --- */
-        #player-view { display: none; padding: 15px; width: 100%; max-width: 600px; margin: 0 auto; }
+        #player-view { display: none; padding: 15px; width: 100%; max-width: 600px; margin: 0 auto; overflow-x: hidden; }
         
-        .verse-section { width: 100vw; margin-left: calc((100% - 100vw) / 2); box-sizing: border-box; }
+        .verse-section { width: 100%; max-width: 100%; box-sizing: border-box; overflow-x: hidden; }
         
         .verse-list-btn { width: 100%; padding: 10px; margin-bottom: 8px; background: var(--gold); color: var(--primary); border: 2px solid var(--primary); border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; font-family: 'Amiri'; }
         .verse-list-btn:active { opacity: 0.9; }
@@ -183,7 +184,7 @@
             background: var(--surface); padding: 5px; border-radius: 15px;
             border: 2px solid var(--gold-light); outline: 1px solid var(--gold); outline-offset: -5px;
             box-shadow: var(--shadow); margin-bottom: 8px; 
-            width: 100%;
+            width: 100%; max-width: 100%;
             height: auto;
             overflow: hidden;
         }
@@ -200,7 +201,7 @@
             display: block; 
         }
 
-        .nav-buttons-row { display: flex; gap: 8px; margin-bottom: 15px; }
+        .nav-buttons-row { display: flex; gap: 8px; margin-bottom: 15px; width: 100%; max-width: 100%; }
         .nav-btn { 
             flex: 1;
             min-height: 44px;
@@ -213,13 +214,13 @@
         .nav-btn:active { background: var(--gold-light); }
         .arrow-icon { direction: ltr; display: inline-block; }
 
-        #verse-list-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 3000; overflow-y: auto; padding: 10px 0; }
-        .verse-list-content { background: var(--surface); border-radius: 15px; padding: 15px; width: 100%; max-width: 100vw; margin: 0 auto; box-sizing: border-box; }
+        #verse-list-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; max-width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 3000; overflow-x: hidden; overflow-y: auto; padding: 10px; box-sizing: border-box; }
+        .verse-list-content { background: var(--surface); border-radius: 15px; padding: 15px; width: 100%; max-width: 100%; margin: 0 auto; box-sizing: border-box; }
         .verse-list-title { text-align: center; font-weight: bold; color: var(--primary); margin-bottom: 15px; font-size: 18px; }
         .verse-list-grid { display: flex; flex-direction: column; gap: 12px; }
         .verse-list-item { background: var(--surface); border-radius: 12px; overflow: hidden; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border: 2px solid transparent; display: flex; flex-direction: column; width: 100%; }
         .verse-list-item:hover, .verse-list-item.active { border-color: var(--gold); }
-        .verse-list-item img { width: 100%; max-width: 100vw; height: auto; display: block; object-fit: contain; }
+        .verse-list-item img { width: 100%; max-width: 100%; height: auto; display: block; object-fit: contain; }
         .verse-list-item span { text-align: center; padding: 8px; font-size: 14px; font-weight: bold; color: var(--primary); }
 
         /* SETTINGS: one line - pause, checkbox, repeats input and label */
@@ -2037,3 +2038,5 @@
     </script>
 </body>
 </html>
+
+
