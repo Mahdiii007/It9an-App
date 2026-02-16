@@ -1188,7 +1188,7 @@
 
         window.deleteUser = async function(uid) {
             if(confirm("هل أنت متأكد من حذف هذا المستخدم؟")) {
-                try { await deleteUserInternal(uid); alert("تم الحذف"); } catch(e) { alert("خطأ"); }
+                try { await deleteUserInternal(uid); loadLeaderboard(); alert("تم الحذف"); } catch(e) { alert("خطأ"); }
             }
         }
 
@@ -1200,6 +1200,7 @@
                 for(const userDoc of snap.docs) {
                     await deleteUserInternal(userDoc.id);
                 }
+                loadLeaderboard();
                 alert("تم الحذف");
             } catch(e) { alert("خطأ: " + e.message); }
         }
@@ -1252,6 +1253,9 @@
         }
 
         function loadLeaderboard() {
+            lbLikesCache = {};
+            lbRecordingsCache = {};
+            lbViewsCache = {};
             const q = window.query(window.collection(window.db, "users"), window.where("role", "==", "student"));
             const myUid = localStorage.getItem('it9an_uid');
             window.getDocs(q).then(snap => {
@@ -2660,7 +2664,7 @@
             if(confirm("تحذير: هل تريد حقاً حذف جميع الإعجابات من التطبيق؟")) {
                 const q = window.query(window.collection(window.db, "posts"));
                 const querySnapshot = await window.getDocs(q);
-                querySnapshot.forEach(async (docSnap) => {
+                for(const docSnap of querySnapshot.docs) {
                     let updates = { likes: [] };
                     let data = docSnap.data();
                     if(data.replies && data.replies.length > 0) {
@@ -2668,15 +2672,13 @@
                         updates.replies = cleanedReplies;
                     }
                     await window.updateDoc(window.doc(window.db, "posts", docSnap.id), updates);
-                });
-                
-                // RESET USER COUNTERS
+                }
                 const uq = window.query(window.collection(window.db, "users"));
                 const usnap = await window.getDocs(uq);
-                usnap.forEach(async (udoc) => {
+                for(const udoc of usnap.docs) {
                     await window.updateDoc(udoc.ref, { totalLikes: 0 });
-                });
-
+                }
+                loadLeaderboard();
                 alert("تم تصفير الإعجابات (Global)");
             }
         }
@@ -2694,14 +2696,15 @@
             if(confirm("تحذير: هل تريد حقاً تصفير المشاهدات في كل التطبيق؟")) {
                 const q = window.query(window.collection(window.db, "stats"));
                 const querySnapshot = await window.getDocs(q);
-                querySnapshot.forEach(async (docSnap) => {
+                for(const docSnap of querySnapshot.docs) {
                     await window.deleteDoc(window.doc(window.db, "stats", docSnap.id));
-                });
+                }
                 const uq = window.query(window.collection(window.db, "users"));
                 const usnap = await window.getDocs(uq);
-                usnap.forEach(async (udoc) => {
+                for(const udoc of usnap.docs) {
                     await window.updateDoc(udoc.ref, { totalVerseViews: 0 });
-                });
+                }
+                loadLeaderboard();
                 alert("تم تصفير المشاهدات (Global)");
             }
         }
@@ -2710,7 +2713,7 @@
             if(confirm("⚠️ تحذير خطير: هل أنت متأكد من حذف جميع التسجيلات في التطبيق؟ لا يمكن التراجع!")) {
                 const q = window.query(window.collection(window.db, "posts"));
                 const querySnapshot = await window.getDocs(q);
-                querySnapshot.forEach(async (docSnap) => {
+                for(const docSnap of querySnapshot.docs) {
                     const data = docSnap.data();
                     const notifQ = window.query(window.collection(window.db, "notifications"), window.where("postId", "==", docSnap.id));
                     const notifSnap = await window.getDocs(notifQ);
@@ -2722,20 +2725,20 @@
                         }
                     }
                     await window.deleteDoc(window.doc(window.db, "posts", docSnap.id));
-                });
-                // RESET ALL POST COUNTS & LIKES
+                }
                 const uq = window.query(window.collection(window.db, "users"));
                 const usnap = await window.getDocs(uq);
-                usnap.forEach(async (udoc) => {
+                for(const udoc of usnap.docs) {
                     await window.updateDoc(udoc.ref, { postsCount: 0, totalLikes: 0 });
-                });
+                }
+                loadLeaderboard();
                 alert("تم حذف جميع البيانات");
             }
         }
 
         window.resetLocalViews = async function() {
             if(confirm("تصفير مشاهدات هذا المقطع فقط؟")) {
-                try { await window.deleteDoc(window.doc(window.db, "stats", "file_" + currentGlobalFileId)); alert("تم التصفير"); } 
+                try { await window.deleteDoc(window.doc(window.db, "stats", "file_" + currentGlobalFileId)); loadLeaderboard(); alert("تم التصفير"); } 
                 catch(e) { alert("خطأ"); }
             }
         }
@@ -2764,6 +2767,7 @@
                 for(const [uid, count] of Object.entries(userLikesToDecrement)) {
                     try { await window.updateDoc(window.doc(window.db, "users", uid), { totalLikes: window.increment(-count) }); } catch(e){}
                 }
+                loadLeaderboard();
                 alert("تم التصفير");
             }
         }
@@ -2790,6 +2794,7 @@
                     try { await window.updateDoc(window.doc(window.db, "users", data.uid), { postsCount: window.increment(-1), totalLikes: window.increment(-((data.likes && data.likes.length) || 0)) }); } catch(e){}
                     await window.deleteDoc(window.doc(window.db, "posts", docSnap.id));
                 }
+                loadLeaderboard();
                 alert("تم الحذف");
             }
         }
@@ -2821,6 +2826,7 @@
                         }
                         var likesCount = (data.likes && data.likes.length) ? data.likes.length : 0;
                         if(authorUid && likesCount > 0) { try { await window.updateDoc(window.doc(window.db, "users", authorUid), { totalLikes: window.increment(-likesCount) }); } catch(e){} }
+                        loadLeaderboard();
                         alert("تم الحذف بنجاح");
                     }
                 } catch(e) { alert("خطأ في الحذف"); }
@@ -2846,6 +2852,7 @@
                         await window.updateDoc(postRef, { replies: newReplies });
                         if(authorUid && replyLikes > 0) { try { await window.updateDoc(window.doc(window.db, "users", authorUid), { totalLikes: window.increment(-replyLikes) }); } catch(e){} }
                         if(authorUid) { try { await window.updateDoc(window.doc(window.db, "users", authorUid), { totalRepliesCount: window.increment(-1) }); } catch(e){} }
+                        loadLeaderboard();
                         alert("تم الحذف");
                     }
                 } catch(e) { alert("خطأ"); }
