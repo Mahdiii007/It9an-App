@@ -1246,6 +1246,16 @@
                         <div class="lb-likes-list" id="lb-recordings-${u.uid}" style="display:none;"></div>
                     </li>`;
                 });
+                const isTeacherLikesOpen = lbLikesOpenUid && leaderboardAllTeachers.some(t => t.uid === lbLikesOpenUid);
+                const isTeacherRecOpen = lbRecordingsOpenUid && leaderboardAllTeachers.some(t => t.uid === lbRecordingsOpenUid);
+                if (isTeacherLikesOpen) {
+                    const container = document.getElementById('lb-likes-' + lbLikesOpenUid);
+                    if (container) { container.style.display = 'block'; renderLbLikesList(container, lbLikesOpenUid, lbLikesOpenOffset); }
+                }
+                if (isTeacherRecOpen) {
+                    const container = document.getElementById('lb-recordings-' + lbRecordingsOpenUid);
+                    if (container) { container.style.display = 'block'; renderLbRecordingsList(container, lbRecordingsOpenUid, lbRecordingsOpenOffset); }
+                }
                 if (onFirstRender && firstSnap) { onFirstRender(); firstSnap = false; }
             });
         }
