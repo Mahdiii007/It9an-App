@@ -152,13 +152,27 @@
         }
         .lb-title { color: var(--primary); font-weight: bold; font-size: 22px; margin-bottom: 15px; display: flex; align-items: center; justify-content: center; gap: 10px; }
         .lb-list { list-style: none; padding: 0; margin: 0; text-align: right; }
+        .lb-item-wrapper { border-bottom: 1px solid #eee; }
+        .lb-item-wrapper:last-child { border-bottom: none; }
         .lb-item { 
-            padding: 14px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; font-size: 18px; 
+            padding: 14px; display: flex; justify-content: space-between; font-size: 18px; 
             align-items: center;
         }
-        .lb-item:last-child { border-bottom: none; }
-        .lb-item.lb-item-top3 { background: linear-gradient(90deg, rgba(212, 175, 55, 0.25), rgba(212, 175, 55, 0.1)); border-radius: 8px; margin-bottom: 4px; }
-        .lb-item.lb-item-me { background: linear-gradient(90deg, rgba(192, 57, 43, 0.25), rgba(192, 57, 43, 0.1)); border-radius: 8px; border: 1px solid rgba(192, 57, 43, 0.4); }
+        .lb-item-wrapper.lb-item-top3 .lb-item { background: linear-gradient(90deg, rgba(212, 175, 55, 0.25), rgba(212, 175, 55, 0.1)); border-radius: 8px; margin-bottom: 4px; }
+        .lb-item-wrapper.lb-item-me .lb-item { background: linear-gradient(90deg, rgba(192, 57, 43, 0.25), rgba(192, 57, 43, 0.1)); border-radius: 8px; border: 1px solid rgba(192, 57, 43, 0.4); }
+        .lb-likes-click { cursor: pointer; }
+        .lb-likes-click:hover { opacity: 0.9; }
+        .lb-likes-list { padding: 10px 14px; background: #f9f9f9; border-radius: 0 0 10px 10px; border: 1px solid #eee; border-top: none; }
+        .lb-liked-item { display: flex; align-items: center; gap: 10px; padding: 10px; background: white; border-radius: 10px; margin-bottom: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.06); border: 1px solid #eee; }
+        .lb-liked-item:last-of-type { margin-bottom: 0; }
+        .lb-liked-item img { width: 60px; height: 60px; object-fit: cover; border-radius: 8px; flex-shrink: 0; }
+        .lb-liked-img-click { cursor: pointer; }
+        .lb-liked-img-click:hover { opacity: 0.85; }
+        .lb-liked-item .lb-liked-info { flex: 1; min-width: 0; }
+        .lb-liked-item .lb-liked-name { font-weight: bold; color: var(--primary); font-size: 14px; }
+        .lb-liked-item .lb-liked-date { font-size: 12px; color: #888; }
+        .lb-liked-item .lb-liked-play { flex-shrink: 0; }
+        .lb-load-more-likes { display: block; width: 100%; margin-top: 10px; padding: 10px; background: var(--primary); color: white; border: none; border-radius: 10px; font-size: 14px; font-family: 'Amiri'; font-weight: bold; cursor: pointer; }
         .lb-show-more-btn { display: block; width: 100%; margin-top: 12px; padding: 10px; background: var(--primary); color: white; border: none; border-radius: 10px; font-size: 15px; font-family: 'Amiri'; font-weight: bold; cursor: pointer; }
         .lb-show-more-btn:active { opacity: 0.9; }
         .lb-rank { font-weight: bold; color: var(--gold); font-size: 22px; flex-shrink: 0; }
@@ -178,6 +192,7 @@
         .verse-section { width: 100%; max-width: 100%; box-sizing: border-box; overflow-x: hidden; }
         
         .verse-list-btn { width: 100%; padding: 10px; margin-bottom: 8px; background: var(--gold); color: var(--primary); border: 2px solid var(--primary); border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; font-family: 'Amiri'; }
+        .lb-back-btn { background: var(--primary); color: var(--gold-light); border-color: var(--gold); }
         .verse-list-btn:active { opacity: 0.9; }
         
         .quran-frame {
@@ -328,6 +343,8 @@
         .like-count:active { background: rgba(0,0,0,0.1); }
         .reply-btn { cursor: pointer; background: none; border: 1px solid var(--primary); color: var(--primary); padding: 4px 12px; border-radius: 6px; font-size: 13px; font-weight: bold; }
         .delete-btn { background: rgba(255,0,0,0.1); color: var(--red); border: none; border-radius: 50%; width: 28px; height: 28px; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .save-btn { background: rgba(0,0,0,0.05); border: 1px solid #ddd; border-radius: 50%; width: 32px; height: 32px; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .save-btn.saved { background: rgba(212, 175, 55, 0.2); border-color: var(--gold); }
         .reply-delete-btn { background: rgba(255,0,0,0.1); border: none; border-radius: 50%; width: 24px; height: 24px; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--red); margin-left: 4px; }
 
         .replies-wrapper { margin-top: 8px; padding-right: 16px; border-right: 3px solid #e0e0e0; position: relative; }
@@ -464,6 +481,12 @@
         <button class="login-btn" onclick="goToMenu()">عودة</button>
     </div>
 
+    <div id="saved-list-view" style="display:none; padding: 20px; max-width: 600px; margin: 0 auto;">
+        <h3 style="text-align:center; color:var(--primary); font-size:24px;">📌 للمشاهدة لاحقاً</h3>
+        <div id="savedList" class="feed-container"></div>
+        <button class="login-btn" onclick="goToMenu()">عودة</button>
+    </div>
+
     <div id="admin-users-view">
         <div style="display:flex; justify-content:space-between; align-items:center;">
             <button class="login-btn" style="width:auto; padding:8px 20px; font-size:16px;" onclick="goToMenu()">عودة</button>
@@ -509,6 +532,7 @@
                 <button id="lbShowMoreBtn" class="lb-show-more-btn" onclick="toggleLeaderboardFull()" style="display:none;">عرض بقية الطلاب</button>
             </div>
         </div>
+        <button class="verse-list-btn" style="margin: 15px 0;" onclick="showSavedList()">📌 للمشاهدة لاحقاً</button>
         <div class="menu-grid" id="lesson-grid"></div>
     </div>
 
@@ -529,6 +553,7 @@
         </div>
 
         <div class="verse-section">
+            <button id="lbBackToLikesBtn" class="verse-list-btn lb-back-btn" onclick="goBackToLbList()" style="display:none;">↩️ العودة</button>
             <button class="verse-list-btn" onclick="showVerseList()">📋 قائمة مقاطع الدرس</button>
             <div class="quran-frame">
                 <div class="player-container">
@@ -618,6 +643,7 @@
         
         let feedLimit = 3;
         let allLoadedPosts = [];
+        let savedIdsForFeed = new Set();
         let highlightedPostId = null;
         let activePostFilter = null;
 
@@ -1084,6 +1110,9 @@
         let leaderboardShowFull = false;
 
         function renderLeaderboardItems(users, showAll, myUid) {
+            lbLikesOpenUid = null;
+            lbRecordingsOpenUid = null;
+            lbViewsOpenUid = null;
             const list = document.getElementById('leaderboard-list');
             const btn = document.getElementById('lbShowMoreBtn');
             list.innerHTML = "";
@@ -1094,20 +1123,26 @@
                 const rank = i + 1;
                 const isTop3 = rank <= 3;
                 const isMe = u.uid === myUid;
-                let cls = 'lb-item';
+                let cls = 'lb-item-wrapper';
                 if(isTop3) cls += ' lb-item-top3';
                 if(isMe) cls += ' lb-item-me';
+                const likesCount = u.totalLikes || 0;
                 list.innerHTML += `
                 <li class="${cls}">
-                    <div style="display:flex; align-items:center; gap:4px; flex-shrink: 1; min-width: 0;">
-                        <span class="lb-rank">#${rank}</span>
-                        <span class="lb-name">${u.name}</span>
+                    <div class="lb-item">
+                        <div style="display:flex; align-items:center; gap:4px; flex-shrink: 1; min-width: 0;">
+                            <span class="lb-rank">#${rank}</span>
+                            <span class="lb-name">${u.name}</span>
+                        </div>
+                        <div class="lb-stats">
+                            <span class="lb-score lb-likes-click" onclick="toggleLbViews('${u.uid}')" title="عرض المشاهدات">👁️ ${u.totalVerseViews || 0}</span>
+                            <span class="lb-score lb-likes-click" onclick="toggleLbRecordings('${u.uid}')" title="عرض التسجيلات">🎤 ${u.postsCount || 0}</span>
+                            <span class="lb-likes lb-likes-click" onclick="toggleLbLikes('${u.uid}')" title="عرض الإعجابات">👍 ${likesCount}</span>
+                        </div>
                     </div>
-                    <div class="lb-stats">
-                        <span class="lb-score" title="مشاهدات">👁️ ${u.totalVerseViews || 0}</span>
-                        <span class="lb-score">🎤 ${u.postsCount || 0}</span>
-                        <span class="lb-likes">👍 ${u.totalLikes || 0}</span>
-                    </div>
+                    <div class="lb-likes-list" id="lb-views-${u.uid}" style="display:none;"></div>
+                    <div class="lb-likes-list" id="lb-recordings-${u.uid}" style="display:none;"></div>
+                    <div class="lb-likes-list" id="lb-likes-${u.uid}" style="display:none;"></div>
                 </li>`;
             });
         }
@@ -1131,6 +1166,506 @@
                 leaderboardAllUsers = users;
                 renderLeaderboardItems(users, leaderboardShowFull, myUid);
             });
+        }
+
+        let lbLikesOpenUid = null;
+        let lbRecordingsOpenUid = null;
+        let lbViewsOpenUid = null;
+        let lbLikesCache = {};
+        let lbRecordingsCache = {};
+        let lbViewsCache = {};
+        const LB_LIKES_PAGE = 3;
+        const LB_RECORDINGS_PAGE = 3;
+        const LB_VIEWS_PAGE = 3;
+
+        window.toggleLbViews = async function(studentUid) {
+            const container = document.getElementById('lb-views-' + studentUid);
+            if (!container) return;
+            if (lbViewsOpenUid === studentUid) {
+                container.style.display = 'none';
+                lbViewsOpenUid = null;
+                return;
+            }
+            const prevViews = document.getElementById('lb-views-' + lbViewsOpenUid);
+            if (prevViews) prevViews.style.display = 'none';
+            const prevRec = document.getElementById('lb-recordings-' + lbRecordingsOpenUid);
+            if (prevRec) prevRec.style.display = 'none';
+            const prevLike = document.getElementById('lb-likes-' + lbLikesOpenUid);
+            if (prevLike) prevLike.style.display = 'none';
+            lbLikesOpenUid = null;
+            lbRecordingsOpenUid = null;
+            lbViewsOpenUid = studentUid;
+            if (!lbViewsCache[studentUid]) {
+                container.innerHTML = '<div style="padding:15px; text-align:center; color:#999;">جاري التحميل...</div>';
+                container.style.display = 'block';
+                const items = await fetchStudentViewedVerses(studentUid);
+                lbViewsCache[studentUid] = items;
+            }
+            renderLbViewsList(container, studentUid, 0);
+            container.style.display = 'block';
+        }
+
+        async function fetchStudentViewedVerses(studentUid) {
+            const q = window.query(window.collection(window.db, "stats"));
+            const snap = await window.getDocs(q);
+            const all = [];
+            snap.forEach(docSnap => {
+                const id = docSnap.id;
+                if (!id.startsWith('file_')) return;
+                const fileId = parseInt(id.replace('file_', ''), 10);
+                const data = docSnap.data();
+                const viewers = data.viewers && typeof data.viewers === 'object' ? data.viewers : {};
+                const v = viewers[studentUid];
+                if (!v || (v.count || 0) <= 0) return;
+                let lastViewed = 0;
+                if (v.lastViewed) {
+                    if (typeof v.lastViewed === 'object' && v.lastViewed.seconds) lastViewed = v.lastViewed.seconds * 1000;
+                    else if (typeof v.lastViewed === 'number') lastViewed = v.lastViewed;
+                }
+                all.push({ fileId, repetitions: v.count || 0, lastViewed });
+            });
+            all.sort((a, b) => {
+                const diff = (b.lastViewed || 0) - (a.lastViewed || 0);
+                return diff !== 0 ? diff : (b.fileId || 0) - (a.fileId || 0);
+            });
+            return all;
+        }
+
+        function renderLbViewsList(container, studentUid, offset) {
+            const items = lbViewsCache[studentUid] || [];
+            const toShow = items.slice(0, offset + LB_VIEWS_PAGE);
+            const hasMore = items.length > toShow.length;
+            let html = '';
+            toShow.forEach((it) => {
+                const imgSrc = `assets/${it.fileId}.png`;
+                html += `
+                <div class="lb-liked-item">
+                    <img src="${imgSrc}" alt="Vers" onerror="this.src='placeholder.png'" class="lb-liked-img-click" onclick="goToVerseFromViews('${it.fileId}', '${studentUid}', ${offset})" title="الذهاب للمقطع">
+                    <div class="lb-liked-info">
+                        <div class="lb-liked-name">🔄 ${it.repetitions} تكرار</div>
+                    </div>
+                </div>`;
+            });
+            if (hasMore) {
+                const newOffset = toShow.length;
+                html += `<button class="lb-load-more-likes" onclick="loadMoreLbViews('${studentUid}', ${newOffset})">عرض 3 مقاطع أخرى ▼</button>`;
+            }
+            container.innerHTML = html || '<div style="padding:15px; text-align:center; color:#999;">لا توجد مشاهدات بعد</div>';
+        }
+
+        window.loadMoreLbViews = function(studentUid, offset) {
+            const container = document.getElementById('lb-views-' + studentUid);
+            if (container) renderLbViewsList(container, studentUid, offset);
+        }
+
+        window.toggleLbRecordings = async function(studentUid) {
+            const container = document.getElementById('lb-recordings-' + studentUid);
+            if (!container) return;
+            if (lbRecordingsOpenUid === studentUid) {
+                container.style.display = 'none';
+                lbRecordingsOpenUid = null;
+                return;
+            }
+            const prevViews = document.getElementById('lb-views-' + lbViewsOpenUid);
+            if (prevViews) prevViews.style.display = 'none';
+            lbViewsOpenUid = null;
+            const prevRec = document.getElementById('lb-recordings-' + lbRecordingsOpenUid);
+            if (prevRec) prevRec.style.display = 'none';
+            const prevLike = document.getElementById('lb-likes-' + lbLikesOpenUid);
+            if (prevLike) prevLike.style.display = 'none';
+            lbLikesOpenUid = null;
+            lbRecordingsOpenUid = studentUid;
+            if (!lbRecordingsCache[studentUid]) {
+                container.innerHTML = '<div style="padding:15px; text-align:center; color:#999;">جاري التحميل...</div>';
+                container.style.display = 'block';
+                const items = await fetchStudentRecordings(studentUid);
+                lbRecordingsCache[studentUid] = items;
+            }
+            renderLbRecordingsList(container, studentUid, 0);
+            container.style.display = 'block';
+        }
+
+        async function fetchStudentRecordings(studentUid) {
+            const q = window.query(window.collection(window.db, "posts"), window.where("uid", "==", studentUid));
+            const snap = await window.getDocs(q);
+            const all = [];
+            snap.forEach(docSnap => {
+                const data = docSnap.data();
+                const postId = docSnap.id;
+                const fileId = data.fileId || '1';
+                const likesCount = (data.likes && data.likes.length) || 0;
+                let ts = 0;
+                if (data.timestamp) {
+                    if (typeof data.timestamp === 'object' && data.timestamp.seconds) ts = data.timestamp.seconds * 1000;
+                    else if (typeof data.timestamp === 'number') ts = data.timestamp;
+                }
+                all.push({ postId, audioUrl: data.audioUrl, fileId, likesCount, timestamp: ts });
+            });
+            all.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+            return all;
+        }
+
+        function renderLbRecordingsList(container, studentUid, offset) {
+            const items = lbRecordingsCache[studentUid] || [];
+            const toShow = items.slice(0, offset + LB_RECORDINGS_PAGE);
+            const hasMore = items.length > toShow.length;
+            let html = '';
+            window._lbRecordingsUrls = [];
+            toShow.forEach((it, idx) => {
+                window._lbRecordingsUrls.push(it.audioUrl || '');
+                const playId = 'lbr-' + studentUid.replace(/[^a-zA-Z0-9]/g, '_') + '-' + idx;
+                const imgSrc = `assets/${it.fileId}.png`;
+                const dateStr = it.timestamp ? (function(ts){ const d=new Date(ts); return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2)+' '+('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2); })(it.timestamp) : '';
+                html += `
+                <div class="lb-liked-item">
+                    <img src="${imgSrc}" alt="Vers" onerror="this.src='placeholder.png'" class="lb-liked-img-click" onclick="goToVerseFromRecordings('${it.fileId}', '${it.postId}', '${studentUid}', ${offset})" title="الذهاب للمقطع">
+                    <div class="lb-liked-info">
+                        <div class="lb-liked-name">👍 ${it.likesCount}</div>
+                        <div class="lb-liked-date">${dateStr}</div>
+                    </div>
+                    <div class="lb-liked-play custom-player" style="flex:1; min-width:0;">
+                        <button class="cp-btn" id="btn-${playId}" onclick="playFeedAudio(window._lbRecordingsUrls[${idx}]||'','${playId}')">▶</button>
+                        <input type="range" class="cp-slider" id="seek-${playId}" value="0" min="0" step="0.1" oninput="seekFeedAudio(this.value)">
+                        <span class="cp-time" id="time-${playId}">00:00</span>
+                    </div>
+                </div>`;
+            });
+            if (hasMore) {
+                const newOffset = toShow.length;
+                html += `<button class="lb-load-more-likes" onclick="loadMoreLbRecordings('${studentUid}', ${newOffset})">عرض 3 تسجيلات أخرى ▼</button>`;
+            }
+            container.innerHTML = html || '<div style="padding:15px; text-align:center; color:#999;">لا توجد تسجيلات بعد</div>';
+        }
+
+        window.loadMoreLbRecordings = function(studentUid, offset) {
+            const container = document.getElementById('lb-recordings-' + studentUid);
+            if (container) renderLbRecordingsList(container, studentUid, offset);
+        }
+
+        window.toggleLbLikes = async function(studentUid) {
+            const container = document.getElementById('lb-likes-' + studentUid);
+            if (!container) return;
+            if (lbLikesOpenUid === studentUid) {
+                container.style.display = 'none';
+                lbLikesOpenUid = null;
+                return;
+            }
+            const prevViews = document.getElementById('lb-views-' + lbViewsOpenUid);
+            if (prevViews) prevViews.style.display = 'none';
+            lbViewsOpenUid = null;
+            const prevRec = document.getElementById('lb-recordings-' + lbRecordingsOpenUid);
+            if (prevRec) prevRec.style.display = 'none';
+            lbRecordingsOpenUid = null;
+            const prev = document.getElementById('lb-likes-' + lbLikesOpenUid);
+            if (prev) prev.style.display = 'none';
+            lbLikesOpenUid = studentUid;
+            if (!lbLikesCache[studentUid]) {
+                container.innerHTML = '<div style="padding:15px; text-align:center; color:#999;">جاري التحميل...</div>';
+                container.style.display = 'block';
+                const items = await fetchLikedRecordings(studentUid);
+                lbLikesCache[studentUid] = items;
+            }
+            renderLbLikesList(container, studentUid, 0);
+            container.style.display = 'block';
+        }
+
+        async function fetchLikedRecordings(studentUid) {
+            const q = window.query(window.collection(window.db, "posts"));
+            const snap = await window.getDocs(q);
+            const all = [];
+            snap.forEach(docSnap => {
+                const data = docSnap.data();
+                const postId = docSnap.id;
+                const fileId = data.fileId || '1';
+                if (data.uid === studentUid && data.likes && data.likes.length) {
+                    data.likes.forEach(l => {
+                        const name = typeof l === 'object' ? (l.name || 'مستخدم') : 'مستخدم';
+                        const ts = typeof l === 'object' && l.timestamp ? l.timestamp : 0;
+                        all.push({ type: 'post', postId, audioUrl: data.audioUrl, fileId, likerName: name, timestamp: ts, playId: postId });
+                    });
+                }
+                if (data.replies) {
+                    data.replies.forEach((r, idx) => {
+                        if (r.uid === studentUid && r.likes && r.likes.length) {
+                            r.likes.forEach(l => {
+                                const name = typeof l === 'object' ? (l.name || 'مستخدم') : 'مستخدم';
+                                const ts = typeof l === 'object' && l.timestamp ? l.timestamp : 0;
+                                all.push({ type: 'reply', postId, replyIdx: idx, replyTimestamp: r.timestamp, audioUrl: r.audioUrl, fileId: data.fileId || '1', likerName: name, timestamp: ts, playId: postId + '-reply-' + idx });
+                            });
+                        }
+                    });
+                }
+            });
+            all.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+            return all;
+        }
+
+        function renderLbLikesList(container, studentUid, offset) {
+            const items = lbLikesCache[studentUid] || [];
+            const toShow = items.slice(0, offset + LB_LIKES_PAGE);
+            const hasMore = items.length > toShow.length;
+            let html = '';
+            window._lbLikedUrls = [];
+            toShow.forEach((it, idx) => {
+                window._lbLikedUrls.push(it.audioUrl || '');
+                const playId = 'lb-' + studentUid.replace(/[^a-zA-Z0-9]/g, '_') + '-' + idx;
+                const imgSrc = `assets/${it.fileId}.png`;
+                const dateStr = it.timestamp ? (function(ts){ const d=new Date(ts); return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2)+' '+('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2); })(it.timestamp) : '';
+                html += `
+                <div class="lb-liked-item">
+                    <img src="${imgSrc}" alt="Vers" onerror="this.src='placeholder.png'" class="lb-liked-img-click" onclick="goToVerseFromLikes('${it.fileId}', '${it.postId}', '${studentUid}', ${offset})" title="الذهاب للمقطع">
+                    <div class="lb-liked-info">
+                        <div class="lb-liked-name">${(it.likerName || '').replace(/</g,'&lt;')}</div>
+                        <div class="lb-liked-date">${dateStr}</div>
+                    </div>
+                    <div class="lb-liked-play custom-player" style="flex:1; min-width:0;">
+                        <button class="cp-btn" id="btn-${playId}" onclick="playFeedAudio(window._lbLikedUrls[${idx}]||'','${playId}')">▶</button>
+                        <input type="range" class="cp-slider" id="seek-${playId}" value="0" min="0" step="0.1" oninput="seekFeedAudio(this.value)">
+                        <span class="cp-time" id="time-${playId}">00:00</span>
+                    </div>
+                </div>`;
+            });
+            if (hasMore) {
+                const newOffset = toShow.length;
+                html += `<button class="lb-load-more-likes" onclick="loadMoreLbLikes('${studentUid}', ${newOffset})">عرض 3 إعجابات أخرى ▼</button>`;
+            }
+            container.innerHTML = html || '<div style="padding:15px; text-align:center; color:#999;">لا توجد إعجابات بعد</div>';
+        }
+
+        window.loadMoreLbLikes = function(studentUid, offset) {
+            const container = document.getElementById('lb-likes-' + studentUid);
+            if (container) renderLbLikesList(container, studentUid, offset);
+        }
+
+        let lbReturnSource = null;
+        let lbReturnToUid = null;
+        let lbReturnOffset = 0;
+
+        window.goToVerseFromLikes = function(fileId, postId, studentUid, offset) {
+            let foundIndex = -1, foundVerse = 1;
+            for (let i = 0; i < KURS_DATEN.length; i++) {
+                const start = KURS_DATEN[i].startGlobalId;
+                const end = start + KURS_DATEN[i].verse - 1;
+                if (fileId >= start && fileId <= end) {
+                    foundIndex = i;
+                    foundVerse = fileId - start + 1;
+                    break;
+                }
+            }
+            if (foundIndex >= 0) {
+                lbReturnSource = 'likes';
+                lbReturnToUid = studentUid || null;
+                lbReturnOffset = offset || 0;
+                currentLessonIdx = foundIndex;
+                highlightedPostId = postId;
+                activePostFilter = postId;
+                const openEl = lbLikesOpenUid ? document.getElementById('lb-likes-' + lbLikesOpenUid) : null;
+                if (openEl) openEl.style.display = 'none';
+                lbLikesOpenUid = null;
+                const openRec = lbRecordingsOpenUid ? document.getElementById('lb-recordings-' + lbRecordingsOpenUid) : null;
+                if (openRec) openRec.style.display = 'none';
+                lbRecordingsOpenUid = null;
+                const openViews = lbViewsOpenUid ? document.getElementById('lb-views-' + lbViewsOpenUid) : null;
+                if (openViews) openViews.style.display = 'none';
+                lbViewsOpenUid = null;
+                playVers(parseInt(fileId), foundVerse);
+                updateLbBackButton();
+            }
+        }
+
+        window.goToVerseFromViews = function(fileId, studentUid, offset) {
+            let foundIndex = -1, foundVerse = 1;
+            for (let i = 0; i < KURS_DATEN.length; i++) {
+                const start = KURS_DATEN[i].startGlobalId;
+                const end = start + KURS_DATEN[i].verse - 1;
+                if (fileId >= start && fileId <= end) {
+                    foundIndex = i;
+                    foundVerse = fileId - start + 1;
+                    break;
+                }
+            }
+            if (foundIndex >= 0) {
+                lbReturnSource = 'views';
+                lbReturnToUid = studentUid || null;
+                lbReturnOffset = offset || 0;
+                currentLessonIdx = foundIndex;
+                highlightedPostId = null;
+                activePostFilter = null;
+                const openEl = lbLikesOpenUid ? document.getElementById('lb-likes-' + lbLikesOpenUid) : null;
+                if (openEl) openEl.style.display = 'none';
+                lbLikesOpenUid = null;
+                const openRec = lbRecordingsOpenUid ? document.getElementById('lb-recordings-' + lbRecordingsOpenUid) : null;
+                if (openRec) openRec.style.display = 'none';
+                lbRecordingsOpenUid = null;
+                const openViews = lbViewsOpenUid ? document.getElementById('lb-views-' + lbViewsOpenUid) : null;
+                if (openViews) openViews.style.display = 'none';
+                lbViewsOpenUid = null;
+                feedLimit = 3;
+                playVers(parseInt(fileId), foundVerse);
+                updateLbBackButton();
+            }
+        }
+
+        window.goToVerseFromRecordings = function(fileId, postId, studentUid, offset) {
+            let foundIndex = -1, foundVerse = 1;
+            for (let i = 0; i < KURS_DATEN.length; i++) {
+                const start = KURS_DATEN[i].startGlobalId;
+                const end = start + KURS_DATEN[i].verse - 1;
+                if (fileId >= start && fileId <= end) {
+                    foundIndex = i;
+                    foundVerse = fileId - start + 1;
+                    break;
+                }
+            }
+            if (foundIndex >= 0) {
+                lbReturnSource = 'recordings';
+                lbReturnToUid = studentUid || null;
+                lbReturnOffset = offset || 0;
+                currentLessonIdx = foundIndex;
+                highlightedPostId = postId;
+                activePostFilter = postId;
+                const openEl = lbLikesOpenUid ? document.getElementById('lb-likes-' + lbLikesOpenUid) : null;
+                if (openEl) openEl.style.display = 'none';
+                lbLikesOpenUid = null;
+                const openRec = lbRecordingsOpenUid ? document.getElementById('lb-recordings-' + lbRecordingsOpenUid) : null;
+                if (openRec) openRec.style.display = 'none';
+                lbRecordingsOpenUid = null;
+                const openViews = lbViewsOpenUid ? document.getElementById('lb-views-' + lbViewsOpenUid) : null;
+                if (openViews) openViews.style.display = 'none';
+                lbViewsOpenUid = null;
+                playVers(parseInt(fileId), foundVerse);
+                updateLbBackButton();
+            }
+        }
+
+        window.goBackToLikesList = function() {
+            if (lbReturnSource !== 'likes' || !lbReturnToUid) return;
+            const uid = lbReturnToUid;
+            const offset = lbReturnOffset;
+            lbReturnSource = null;
+            lbReturnToUid = null;
+            lbReturnOffset = 0;
+            activePostFilter = null;
+            highlightedPostId = null;
+            stopLoop();
+            showView('menu-view');
+            document.getElementById('appFooter').style.display = 'none';
+            const idx = leaderboardAllUsers.findIndex(u => u.uid === uid);
+            if (idx >= 0 && idx > 2) leaderboardShowFull = true;
+            renderMenu();
+            setTimeout(() => {
+                lbLikesOpenUid = uid;
+                const container = document.getElementById('lb-likes-' + uid);
+                if (container) {
+                    if (!lbLikesCache[uid]) {
+                        container.innerHTML = '<div style="padding:15px; text-align:center; color:#999;">جاري التحميل...</div>';
+                        container.style.display = 'block';
+                        fetchLikedRecordings(uid).then(items => {
+                            lbLikesCache[uid] = items;
+                            renderLbLikesList(container, uid, offset);
+                            container.style.display = 'block';
+                        });
+                    } else {
+                        renderLbLikesList(container, uid, offset);
+                        container.style.display = 'block';
+                    }
+                }
+                const el = document.getElementById('lb-likes-' + uid);
+                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 100);
+            updateLbBackButton();
+        }
+
+        window.goBackToRecordingsList = function() {
+            if (lbReturnSource !== 'recordings' || !lbReturnToUid) return;
+            const uid = lbReturnToUid;
+            const offset = lbReturnOffset;
+            lbReturnSource = null;
+            lbReturnToUid = null;
+            lbReturnOffset = 0;
+            activePostFilter = null;
+            highlightedPostId = null;
+            stopLoop();
+            showView('menu-view');
+            document.getElementById('appFooter').style.display = 'none';
+            const idx = leaderboardAllUsers.findIndex(u => u.uid === uid);
+            if (idx >= 0 && idx > 2) leaderboardShowFull = true;
+            renderMenu();
+            setTimeout(() => {
+                lbRecordingsOpenUid = uid;
+                const container = document.getElementById('lb-recordings-' + uid);
+                if (container) {
+                    if (!lbRecordingsCache[uid]) {
+                        container.innerHTML = '<div style="padding:15px; text-align:center; color:#999;">جاري التحميل...</div>';
+                        container.style.display = 'block';
+                        fetchStudentRecordings(uid).then(items => {
+                            lbRecordingsCache[uid] = items;
+                            renderLbRecordingsList(container, uid, offset);
+                            container.style.display = 'block';
+                        });
+                    } else {
+                        renderLbRecordingsList(container, uid, offset);
+                        container.style.display = 'block';
+                    }
+                }
+                const el = document.getElementById('lb-recordings-' + uid);
+                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 100);
+            updateLbBackButton();
+        }
+
+        window.goBackToViewsList = function() {
+            if (lbReturnSource !== 'views' || !lbReturnToUid) return;
+            const uid = lbReturnToUid;
+            const offset = lbReturnOffset;
+            lbReturnSource = null;
+            lbReturnToUid = null;
+            lbReturnOffset = 0;
+            activePostFilter = null;
+            highlightedPostId = null;
+            stopLoop();
+            showView('menu-view');
+            document.getElementById('appFooter').style.display = 'none';
+            const idx = leaderboardAllUsers.findIndex(u => u.uid === uid);
+            if (idx >= 0 && idx > 2) leaderboardShowFull = true;
+            renderMenu();
+            setTimeout(() => {
+                lbViewsOpenUid = uid;
+                const container = document.getElementById('lb-views-' + uid);
+                if (container) {
+                    if (!lbViewsCache[uid]) {
+                        container.innerHTML = '<div style="padding:15px; text-align:center; color:#999;">جاري التحميل...</div>';
+                        container.style.display = 'block';
+                        fetchStudentViewedVerses(uid).then(items => {
+                            lbViewsCache[uid] = items;
+                            renderLbViewsList(container, uid, offset);
+                            container.style.display = 'block';
+                        });
+                    } else {
+                        renderLbViewsList(container, uid, offset);
+                        container.style.display = 'block';
+                    }
+                }
+                const el = document.getElementById('lb-views-' + uid);
+                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 100);
+            updateLbBackButton();
+        }
+
+        window.goBackToLbList = function() {
+            if (lbReturnSource === 'likes') goBackToLikesList();
+            else if (lbReturnSource === 'recordings') goBackToRecordingsList();
+            else if (lbReturnSource === 'views') goBackToViewsList();
+        }
+
+        function updateLbBackButton() {
+            const btn = document.getElementById('lbBackToLikesBtn');
+            if (btn) {
+                btn.style.display = lbReturnSource ? 'flex' : 'none';
+                if (lbReturnSource === 'recordings') btn.innerText = '↩️ العودة لقائمة التسجيلات';
+                else if (lbReturnSource === 'views') btn.innerText = '↩️ العودة لقائمة المشاهدات';
+                else btn.innerText = '↩️ العودة لقائمة الإعجابات';
+            }
         }
 
         // --- NOTIFICATIONS ---
@@ -1227,10 +1762,11 @@
 
         window.clearFilter = function() {
             activePostFilter = null;
+            highlightedPostId = null;
             const div = document.getElementById('community-feed');
             const userRole = localStorage.getItem('it9an_role');
             const myUid = localStorage.getItem('it9an_uid');
-            renderPosts(div, userRole, myUid);
+            renderPosts(div, userRole, myUid, savedIdsForFeed);
         }
 
         function renderMenu() {
@@ -1263,6 +1799,7 @@
 
         function startLesson(index) {
             currentLessonIdx = index;
+            activePostFilter = null; highlightedPostId = null;
             playVers(KURS_DATEN[index].startGlobalId, 1);
         }
 
@@ -1272,7 +1809,7 @@
         // Right Button in visual -> onclick="prevVers()" (Previous Verse)
         
         window.nextVers = function() {
-            activePostFilter = null; 
+            activePostFilter = null; highlightedPostId = null;
             const currentLesson = KURS_DATEN[currentLessonIdx];
             
             if(currentLocalVers < currentLesson.verse) {
@@ -1295,7 +1832,7 @@
                 const div = document.createElement('div');
                 div.className = 'verse-list-item' + (isActive ? ' active' : '');
                 div.innerHTML = `<img src="assets/${globalId}.png" alt="Vers ${v}" onerror="this.style.display='none'"><span>المقطع ${v}</span>`;
-                div.onclick = () => { playVers(globalId, v); hideVerseList(); };
+                div.onclick = () => { activePostFilter = null; highlightedPostId = null; playVers(globalId, v); hideVerseList(); };
                 grid.appendChild(div);
             }
             document.getElementById('verse-list-modal').style.display = 'block';
@@ -1303,7 +1840,7 @@
         window.hideVerseList = function() { document.getElementById('verse-list-modal').style.display = 'none'; }
 
         window.prevVers = function() { 
-            activePostFilter = null; 
+            activePostFilter = null; highlightedPostId = null; 
             const currentLesson = KURS_DATEN[currentLessonIdx];
             
             if(currentLocalVers > 1) {
@@ -1319,6 +1856,7 @@
         async function playVers(globalId, localVersNum, isAuto = false) {
             currentGlobalFileId = globalId; currentLocalVers = localVersNum;
             showView('player-view');
+            updateLbBackButton();
             document.getElementById('appFooter').style.display = 'flex';
             
             document.getElementById('adminMenuPanel').style.display = 'none'; 
@@ -1392,14 +1930,23 @@
             const myUid = localStorage.getItem('it9an_uid');
             const q = window.query(window.collection(window.db, "posts"), window.where("fileId", "==", idString));
             
-            unsubscribeFeed = window.onSnapshot(q, (snap) => {
+            unsubscribeFeed = window.onSnapshot(q, async (snap) => {
                 const scrollY = window.scrollY;
                 if(snap.empty) { div.innerHTML = "<div style='text-align:center; color:#999; font-size:16px; padding:20px;'>لا توجد مشاركات حتى الآن</div>"; return; }
                 allLoadedPosts = [];
                 snap.forEach(doc => { allLoadedPosts.push({ id: doc.id, ...doc.data() }); });
                 
                 if (activePostFilter) {
-                    allLoadedPosts = allLoadedPosts.filter(p => p.id === activePostFilter);
+                    const hp = allLoadedPosts.find(p => p.id === activePostFilter);
+                    if (hp) {
+                        allLoadedPosts.sort((a, b) => {
+                            if (a.id === activePostFilter) return -1;
+                            if (b.id === activePostFilter) return 1;
+                            return (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0);
+                        });
+                    } else {
+                        allLoadedPosts.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+                    }
                 } else {
                     allLoadedPosts.sort((a, b) => {
                         if (userRole === 'student') {
@@ -1410,17 +1957,26 @@
                     });
                 }
 
-                renderPosts(div, userRole, myUid);
+                savedIdsForFeed = new Set();
+                if (myUid && myUid !== 'admin_super') {
+                    try {
+                        const savedQ = window.query(window.collection(window.db, "savedRecordings"), window.where("uid", "==", myUid));
+                        const savedSnap = await window.getDocs(savedQ);
+                        savedSnap.forEach(d => savedIdsForFeed.add(d.data().postId));
+                    } catch(e) {}
+                }
+                renderPosts(div, userRole, myUid, savedIdsForFeed);
                 
                 if(!activePostFilter) window.scrollTo(0, scrollY);
             });
         }
 
-        function renderPosts(container, userRole, myUid) {
+        function renderPosts(container, userRole, myUid, savedIds) {
+            savedIds = savedIds || new Set();
             let htmlContent = "";
             let displayPosts = allLoadedPosts.slice(0, feedLimit);
             const isAdmin = (myUid === 'admin_super');
-            const isTeacher = (userRole === 'teacher'); // NEW: Check if teacher
+            const isTeacher = (userRole === 'teacher');
             
             if (activePostFilter) {
                 htmlContent += `<button class="reset-filter-btn" onclick="clearFilter()">عرض الكل</button>`;
@@ -1443,6 +1999,7 @@
                     badgeClass = 'role-badge badge-teacher';
                     badgeText = 'معلم';
                 }
+                if (highlightedPostId && d.id === highlightedPostId) msgClass += ' highlighted';
 
                 let mainLikesCount = 0, mainIsLikedByMe = false, mainLikerNames = [];
                 if (d.likes && Array.isArray(d.likes)) { 
@@ -1539,6 +2096,8 @@
                 
                 let replyBtnHtml = (userRole === 'teacher' || isAdmin) ? `<button class="reply-btn" onclick="startReply('${d.id}')">↩️ الرد</button>` : "<div></div>";
                 let postDateStr = formatDateTime(d.timestamp);
+                const isSaved = savedIds.has(d.id);
+                const saveBtnHtml = (myUid && myUid !== 'admin_super') ? `<button class="save-btn ${isSaved ? 'saved' : ''}" onclick="toggleSaveForLater('${d.id}', ${isSaved})" title="${isSaved ? 'إزالة من القائمة' : 'حفظ للمشاهدة لاحقاً'}">${isSaved ? '📌' : '📎'}</button>` : '';
 
                 let delBtn = deleteBtnHtml ? `<div class="feed-delete-wrap">${deleteBtnHtml}</div>` : '';
                 htmlContent += `
@@ -1546,6 +2105,7 @@
                     <div class="feed-row1">
                         ${delBtn}
                         <div class="feed-name-badge">${d.name} <span class="${badgeClass}">${badgeText}</span></div>
+                        ${saveBtnHtml}
                         <div class="feed-like-wrap">
                             <div class="like-btn ${mainLikeClass}">
                                 <div class="like-action ${mainLockedClass}" onclick="${mainLikeAction}">👍</div>
@@ -1580,8 +2140,126 @@
             const userRole = localStorage.getItem('it9an_role');
             const myUid = localStorage.getItem('it9an_uid');
             const scrollY = window.scrollY;
-            renderPosts(div, userRole, myUid);
+            renderPosts(div, userRole, myUid, savedIdsForFeed);
             window.scrollTo(0, scrollY);
+        }
+
+        window.toggleSaveForLater = async function(postId, isSaved) {
+            const myUid = localStorage.getItem('it9an_uid');
+            if (!myUid || myUid === 'admin_super') return;
+            try {
+                const col = window.collection(window.db, "savedRecordings");
+                if (isSaved) {
+                    const q = window.query(col, window.where("uid", "==", myUid), window.where("postId", "==", postId));
+                    const snap = await window.getDocs(q);
+                    for (const doc of snap.docs) await window.deleteDoc(doc.ref);
+                    savedIdsForFeed.delete(postId);
+                } else {
+                    await window.addDoc(col, { uid: myUid, postId, savedAt: window.serverTimestamp() });
+                    savedIdsForFeed.add(postId);
+                }
+                const div = document.getElementById('community-feed');
+                if (div) renderPosts(div, localStorage.getItem('it9an_role'), myUid, savedIdsForFeed);
+            } catch (e) { console.error(e); alert("حدث خطأ"); }
+        }
+
+        window.showSavedList = async function() {
+            const myUid = localStorage.getItem('it9an_uid');
+            if (!myUid) { alert("يجب تسجيل الدخول"); return; }
+            showView('saved-list-view');
+            document.getElementById('pageTitle').innerText = "📌 للمشاهدة لاحقاً";
+            document.getElementById('appFooter').style.display = 'none';
+            const container = document.getElementById('savedList');
+            container.innerHTML = "<div style='text-align:center; color:#999; padding:20px;'>جاري التحميل...</div>";
+            try {
+                const savedQ = window.query(window.collection(window.db, "savedRecordings"), window.where("uid", "==", myUid));
+                const savedSnap = await window.getDocs(savedQ);
+                const items = [];
+                for (const d of savedSnap.docs) {
+                    const data = d.data();
+                    items.push({ savedDocId: d.id, postId: data.postId, savedAt: data.savedAt });
+                }
+                items.sort((a, b) => {
+                    const sa = a.savedAt?.seconds || 0, sb = b.savedAt?.seconds || 0;
+                    return sb - sa;
+                });
+                if (items.length === 0) {
+                    container.innerHTML = "<div style='text-align:center; color:#999; font-size:16px; padding:20px;'>لا توجد تسجيلات محفوظة</div>";
+                    return;
+                }
+                let html = "";
+                for (const it of items) {
+                    const postSnap = await window.getDoc(window.doc(window.db, "posts", it.postId));
+                    if (!postSnap.exists()) continue;
+                    const d = { id: postSnap.id, ...postSnap.data() };
+                    const fileId = d.fileId ? String(d.fileId) : '';
+                    let msgClass = 'feed-msg student-msg';
+                    let badgeClass = 'role-badge badge-student';
+                    let badgeText = 'طالب';
+                    if (d.uid === 'admin_super') { msgClass = 'feed-msg admin-msg'; badgeClass = 'role-badge badge-admin'; badgeText = 'المسؤول'; }
+                    else if (d.role === 'teacher') { msgClass = 'feed-msg teacher-msg'; badgeClass = 'role-badge badge-teacher'; badgeText = 'معلم'; }
+                    let postDateStr = formatDateTime(d.timestamp);
+                    let repliesHtml = "";
+                    if (d.replies && d.replies.length > 0) {
+                        let repliesInner = "";
+                        d.replies.forEach((r, idx) => {
+                            let rBoxClass = "reply-box";
+                            if (r.uid === 'admin_super') rBoxClass += " reply-admin";
+                            else if (r.role === 'teacher') rBoxClass += " reply-teacher";
+                            else rBoxClass += " reply-student";
+                            let rDateStr = r.timestamp ? (function(ts){ let dt=new Date(ts); return dt.getFullYear()+'-'+('0'+(dt.getMonth()+1)).slice(-2)+'-'+('0'+dt.getDate()).slice(-2)+' '+('0'+dt.getHours()).slice(-2)+':'+('0'+dt.getMinutes()).slice(-2); })(r.timestamp) : '';
+                            let rBadge = r.uid === 'admin_super' ? '<span class="role-badge badge-admin">المسؤول</span>' : (r.role === 'teacher' ? '<span class="role-badge badge-teacher">معلم</span>' : '<span class="role-badge badge-student">طالب</span>');
+                            let rUniqueId = d.id + "-saved-reply-" + idx;
+                            repliesInner += `<div class="${rBoxClass}"><div class="reply-row1"><div class="reply-name-badge">${r.name} ${rBadge}</div></div><div class="reply-row2">${rDateStr ? '<span class="reply-datetime">'+rDateStr+'</span>' : ''}<div class="reply-player-wrap"><div class="custom-player"><button class="cp-btn" id="btn-${rUniqueId}" onclick="playFeedAudio('${r.audioUrl}', '${rUniqueId}')">▶</button><input type="range" class="cp-slider" id="seek-${rUniqueId}" value="0" min="0" step="0.1" oninput="seekFeedAudio(this.value)"><span class="cp-time" id="time-${rUniqueId}">00:00</span></div></div></div></div>`;
+                        });
+                        repliesHtml = `<div class="replies-wrapper"><div class="replies-title">الردود</div>${repliesInner}</div>`;
+                    }
+                    const openToFeed = fileId ? `openSavedToFeed('${fileId}', '${d.id}')` : '';
+                    html += `<div class="${msgClass}" id="saved-post-${d.id}">
+                        <div class="feed-row1">
+                            <div class="feed-delete-wrap"><button class="delete-btn" onclick="removeFromSaved('${it.savedDocId}', '${d.id}')" title="إزالة من القائمة">🗑️</button></div>
+                            <div class="feed-name-badge">${d.name} <span class="${badgeClass}">${badgeText}</span></div>
+                        </div>
+                        <div class="feed-row2">
+                            <span class="feed-datetime">${postDateStr}</span>
+                            <div class="feed-player-wrap">
+                                <div class="custom-player">
+                                    <button class="cp-btn" id="btn-saved-${d.id}" onclick="playFeedAudio('${d.audioUrl}', 'saved-${d.id}')">▶</button>
+                                    <input type="range" class="cp-slider" id="seek-saved-${d.id}" value="0" min="0" step="0.1" oninput="seekFeedAudio(this.value)">
+                                    <span class="cp-time" id="time-saved-${d.id}">00:00</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="feed-row3">${fileId ? `<button class="reply-btn" onclick="${openToFeed}">فتح في الدرس</button>` : ''}</div>
+                        ${repliesHtml}
+                    </div>`;
+                }
+                container.innerHTML = html || "<div style='text-align:center; color:#999; padding:20px;'>لا توجد تسجيلات محفوظة</div>";
+            } catch (e) { console.error(e); container.innerHTML = "<div style='text-align:center; color:#c00; padding:20px;'>حدث خطأ</div>"; }
+        }
+
+        window.removeFromSaved = async function(savedDocId, postId) {
+            try {
+                await window.deleteDoc(window.doc(window.db, "savedRecordings", savedDocId));
+                savedIdsForFeed.delete(postId);
+                await showSavedList();
+            } catch (e) { console.error(e); alert("حدث خطأ"); }
+        }
+
+        window.openSavedToFeed = function(fileId, postId) {
+            let foundIndex = -1, foundVerse = 1;
+            for (let i = 0; i < KURS_DATEN.length; i++) {
+                const lek = KURS_DATEN[i];
+                const start = lek.startGlobalId, end = start + lek.verse - 1;
+                const fid = parseInt(fileId);
+                if (fid >= start && fid <= end) { foundIndex = i; foundVerse = fid - start + 1; break; }
+            }
+            if (foundIndex >= 0) {
+                currentLessonIdx = foundIndex;
+                highlightedPostId = postId;
+                activePostFilter = postId;
+                playVers(parseInt(fileId), foundVerse);
+            }
         }
 
         window.startReply = function(postId) { replyTargetId = postId; toggleRecord(); }
@@ -1732,10 +2410,9 @@
                         await window.setDoc(sRef, {}, { merge: true });
                         const updates = { totalRepetitions: window.increment(1) };
                         if(verseRepeatsPlayed === 0) updates.verseViewCount = window.increment(1);
-                        if(myName && !isHidden) {
-                            updates[`viewers.${uid}.name`] = myName;
-                            updates[`viewers.${uid}.count`] = window.increment(1);
-                        }
+                        updates[`viewers.${uid}.count`] = window.increment(1);
+                        updates[`viewers.${uid}.lastViewed`] = window.serverTimestamp();
+                        if(myName && !isHidden) updates[`viewers.${uid}.name`] = myName;
                         await window.updateDoc(sRef, updates);
                     } catch(e){}
                 }
@@ -1781,8 +2458,8 @@
             document.getElementById('playBtn').innerText = "▶"; document.getElementById('statusDisplay').innerText = "جاهز للتلاوة"; 
         }
 
-        window.goToMenu = function() { stopLoop(); stopRecordingAndReview(); showView('menu-view'); renderMenu(); } 
-        function showView(id) { document.getElementById('menu-view').style.display = 'none'; document.getElementById('player-view').style.display = 'none'; document.getElementById('notifications-view').style.display = 'none'; document.getElementById('admin-users-view').style.display = (id === 'admin-users-view') ? 'block' : 'none'; document.getElementById(id).style.display = (id === 'menu-view') ? 'grid' : 'block'; const menuBtn = document.getElementById('menuBtn'); if(menuBtn) menuBtn.style.display = (id === 'menu-view') ? 'none' : 'flex'; }
+        window.goToMenu = function() { stopLoop(); stopRecordingAndReview(); lbReturnSource = null; lbReturnToUid = null; lbReturnOffset = 0; showView('menu-view'); renderMenu(); updateLbBackButton(); } 
+        function showView(id) { document.getElementById('menu-view').style.display = 'none'; document.getElementById('player-view').style.display = 'none'; document.getElementById('notifications-view').style.display = 'none'; document.getElementById('saved-list-view').style.display = 'none'; document.getElementById('admin-users-view').style.display = (id === 'admin-users-view') ? 'block' : 'none'; document.getElementById(id).style.display = (id === 'menu-view') ? 'grid' : 'block'; const menuBtn = document.getElementById('menuBtn'); if(menuBtn) menuBtn.style.display = (id === 'menu-view') ? 'none' : 'flex'; }
         
         window.likePost = async (id, ownerUid) => { 
             const uid = localStorage.getItem('it9an_uid'); const myName = localStorage.getItem('it9an_name');
@@ -1800,7 +2477,7 @@
                     change = -1;
                 } 
                 else { 
-                    likes.push({ uid: uid, name: myName }); 
+                    likes.push({ uid: uid, name: myName, timestamp: Date.now() }); 
                     change = 1;
                 }
                 
@@ -1846,7 +2523,7 @@
                             change = -1;
                         } 
                         else { 
-                            r.likes.push({ uid: uid, name: myName }); 
+                            r.likes.push({ uid: uid, name: myName, timestamp: Date.now() }); 
                             change = 1;
                         }
                     }
