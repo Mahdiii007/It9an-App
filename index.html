@@ -126,7 +126,6 @@
         .notif-time { font-size: 13px; color: #888; margin-top: 6px; }
 
         /* --- ADMIN USER MANAGEMENT VIEW --- */
-        #admin-users-view { display: none; padding: 20px; max-width: 700px; margin: 0 auto; }
         .user-group-title { color: var(--primary); font-weight: bold; font-size: 20px; margin: 25px 0 15px 0; border-bottom: 2px solid var(--gold); padding-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
         .user-card { 
             background: white; padding: 6px 10px; border-radius: 8px; margin-bottom: 6px; 
@@ -494,31 +493,8 @@
         <button class="login-btn" onclick="goToMenu()">عودة</button>
     </div>
 
-    <div id="admin-users-view">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-            <button class="login-btn" style="width:auto; padding:8px 20px; font-size:16px;" onclick="goToMenu()">عودة</button>
-            <h3 style="color:var(--primary); margin:0;">إدارة المستخدمين</h3>
-        </div>
-        
-        <div class="user-group-title">
-            <span>المعلمون</span>
-            <button class="btn-group-del" onclick="deleteAllUsers('teacher')">حذف الكل</button>
-        </div>
-        <div id="teachersList"></div>
-
-        <div class="user-group-title">
-            <span>الطلاب</span>
-            <button class="btn-group-del" onclick="deleteAllUsers('student')">حذف الكل</button>
-        </div>
-        <div id="studentsList"></div>
-    </div>
-
     <div id="adminMenuPanel" class="admin-panel" style="display:none; margin-top: 15px;">
         <div class="admin-title">🛠️ إدارة التطبيق (شامل)</div>
-        
-        <div class="admin-menu-btn" onclick="showAdminUserList()">
-            👥 إدارة المستخدمين (قائمة)
-        </div>
 
         <div class="admin-actions">
             <button class="btn-admin-reset" onclick="resetAllNotifications()">🔔 تصفير كل الإشعارات</button>
@@ -537,6 +513,10 @@
                     <li style="text-align:center; color:#999; padding:10px;">جاري التحميل...</li>
                 </ul>
                 <button id="lbShowMoreBtn" class="lb-show-more-btn" onclick="toggleLeaderboardFull()" style="display:none;">عرض بقية الطلاب</button>
+            </div>
+            <div id="adminTeachersLeaderboard" class="leaderboard-card" style="margin-top:15px; display:none;">
+                <div class="lb-title">🏆 أفضل المعلمين</div>
+                <ul id="leaderboard-teachers-list" class="lb-list"></ul>
             </div>
         </div>
         <button class="verse-list-btn" style="margin: 15px 0;" onclick="showSavedList()">📌 للمشاهدة لاحقاً</button>
@@ -1041,61 +1021,6 @@
             }
         }
 
-        // --- ADMIN USER MANAGEMENT ---
-        let adminUsersUnsubscribe = null;
-        window.showAdminUserList = function() {
-            document.getElementById('menu-view').style.display = 'none';
-            document.getElementById('admin-users-view').style.display = 'block';
-            document.getElementById('pageTitle').innerText = "إدارة المستخدمين";
-            document.getElementById('appFooter').style.display = 'none';
-            const menuBtn = document.getElementById('menuBtn'); if(menuBtn) menuBtn.style.display = 'flex';
-            loadUsers();
-        }
-
-        function loadUsers() {
-            if(adminUsersUnsubscribe) adminUsersUnsubscribe();
-            const q = window.query(window.collection(window.db, "users"));
-            adminUsersUnsubscribe = window.onSnapshot(q, (snap) => {
-                const tList = document.getElementById('teachersList');
-                const sList = document.getElementById('studentsList');
-                tList.innerHTML = "";
-                sList.innerHTML = "";
-
-                let users = [];
-                snap.forEach(doc => users.push(doc.data()));
-                
-                users.sort((a,b) => {
-                    if(a.role !== b.role) return (a.role === 'teacher' ? -1 : 1);
-                    if(a.role === 'teacher') return (b.totalRepliesCount || 0) - (a.totalRepliesCount || 0);
-                    return (b.totalVerseViews || 0) - (a.totalVerseViews || 0);
-                });
-
-                users.forEach(u => {
-                    const isBlocked = u.blocked === true;
-                    const blockBtnText = isBlocked ? "فك الحظر" : "حظر";
-                    const blockBtnClass = isBlocked ? "btn-action btn-block blocked" : "btn-action btn-block";
-                    const recCount = u.role === 'teacher' ? (u.totalRepliesCount || 0) : (u.postsCount || 0);
-                    const recLabel = u.role === 'teacher' ? 'ردود' : 'تسجيلات';
-                    const html = `
-                    <div class="user-card">
-                        <button class="btn-action btn-del" onclick="deleteUser('${u.uid}')">🗑</button>
-                        <button class="${blockBtnClass}" onclick="toggleBlockUser('${u.uid}', ${isBlocked})">${blockBtnText}</button>
-                        <div class="user-row">
-                            <span class="user-name">${u.name}</span>
-                            <span class="user-stats">
-                                <span class="lb-score" title="مشاهدات">👁️ ${u.totalVerseViews || 0}</span>
-                                <span class="lb-likes">👍 ${u.totalLikes || 0}</span>
-                                <span class="record-count-badge">🎤 ${recCount}</span>
-                            </span>
-                        </div>
-                    </div>`;
-
-                    if(u.role === 'teacher') tList.innerHTML += html;
-                    else sList.innerHTML += html;
-                });
-            });
-        }
-
         window.toggleBlockUser = async function(uid, currentStatus) {
             try { await window.updateDoc(window.doc(window.db, "users", uid), { blocked: !currentStatus }); } catch(e) { alert("خطأ"); }
         }
@@ -1197,21 +1122,8 @@
 
         window.deleteUser = async function(uid) {
             if(confirm("هل أنت متأكد من حذف هذا المستخدم؟")) {
-                try { await deleteUserInternal(uid); loadLeaderboard(); alert("تم الحذف"); } catch(e) { alert("خطأ"); }
+                try { await deleteUserInternal(uid); loadLeaderboard(); if(localStorage.getItem('it9an_uid')==='admin_super') loadTeachersLeaderboard(); alert("تم الحذف"); } catch(e) { alert("خطأ"); }
             }
-        }
-
-        window.deleteAllUsers = async function(role) {
-            if(!confirm("تحذير: هل تريد حذف جميع " + (role==='student'?'الطلاب':'المعلمين') + "؟")) return;
-            try {
-                const q = window.query(window.collection(window.db, "users"), window.where("role", "==", role));
-                const snap = await window.getDocs(q);
-                for(const userDoc of snap.docs) {
-                    await deleteUserInternal(userDoc.id);
-                }
-                loadLeaderboard();
-                alert("تم الحذف");
-            } catch(e) { alert("خطأ: " + e.message); }
         }
 
         // --- LEADERBOARD (TOP 3) ---
@@ -1226,11 +1138,13 @@
             }
             const list = document.getElementById('leaderboard-list');
             const btn = document.getElementById('lbShowMoreBtn');
+            const isAdmin = myUid === 'admin_super';
             list.innerHTML = "";
             if(users.length === 0) { list.innerHTML = "<li style='text-align:center; color:#999; padding:10px;'>لا يوجد طلاب بعد</li>"; if(btn) btn.style.display = 'none'; return; }
             const toShow = showAll ? users : users.slice(0, 3);
             if(btn) { btn.style.display = users.length > 3 ? 'block' : 'none'; btn.innerText = showAll ? 'عرض Top 3 فقط' : 'عرض بقية الطلاب'; }
             toShow.forEach((u, i) => {
+                adminUserRoles[u.uid] = 'student';
                 const rank = i + 1;
                 const isTop3 = rank <= 3;
                 const isMe = u.uid === myUid;
@@ -1238,10 +1152,15 @@
                 if(isTop3) cls += ' lb-item-top3';
                 if(isMe) cls += ' lb-item-me';
                 const likesCount = u.totalLikes || 0;
+                const isBlocked = u.blocked === true;
+                const blockBtnText = isBlocked ? "فك الحظر" : "حظر";
+                const blockBtnClass = isBlocked ? "btn-action btn-block blocked" : "btn-action btn-block";
+                const adminBtns = isAdmin ? `<button class="delete-btn" onclick="deleteUser('${u.uid}')" title="حذف">🗑️</button><button class="${blockBtnClass}" style="padding:4px 10px; font-size:12px;" onclick="toggleBlockUser('${u.uid}', ${isBlocked})">${blockBtnText}</button>` : '';
                 list.innerHTML += `
                 <li class="${cls}">
                     <div class="lb-item">
                         <div style="display:flex; align-items:center; gap:4px; flex-shrink: 1; min-width: 0;">
+                            ${adminBtns}
                             <span class="lb-rank">#${rank}</span>
                             <span class="lb-name">${u.name}</span>
                         </div>
@@ -1280,6 +1199,57 @@
             renderLeaderboardItems(leaderboardAllUsers, leaderboardShowFull, localStorage.getItem('it9an_uid'));
         }
 
+        let leaderboardAllTeachers = [];
+        let unsubscribeTeachersLeaderboard = null;
+
+        function loadTeachersLeaderboard(onFirstRender) {
+            const panel = document.getElementById('adminTeachersLeaderboard');
+            const list = document.getElementById('leaderboard-teachers-list');
+            if (!panel || !list) { if (onFirstRender) onFirstRender(); return; }
+            const myUid = localStorage.getItem('it9an_uid');
+            if (myUid !== 'admin_super') { panel.style.display = 'none'; if (onFirstRender) onFirstRender(); return; }
+            panel.style.display = 'block';
+            if (unsubscribeTeachersLeaderboard) unsubscribeTeachersLeaderboard();
+            let firstSnap = true;
+            const q = window.query(window.collection(window.db, "users"), window.where("role", "==", "teacher"));
+            unsubscribeTeachersLeaderboard = window.onSnapshot(q, (snap) => {
+                let teachers = [];
+                snap.forEach(doc => teachers.push({ ...doc.data(), uid: doc.data().uid || doc.id }));
+                teachers.sort((a,b) => (b.totalRepliesCount || 0) - (a.totalRepliesCount || 0));
+                leaderboardAllTeachers = teachers;
+                list.innerHTML = "";
+                if (teachers.length === 0) { list.innerHTML = "<li style='text-align:center; color:#999; padding:10px;'>لا يوجد معلمون</li>"; if (onFirstRender && firstSnap) { onFirstRender(); firstSnap = false; } return; }
+                teachers.forEach((u, i) => {
+                    adminUserRoles[u.uid] = 'teacher';
+                    const rank = i + 1;
+                    const isBlocked = u.blocked === true;
+                    const blockBtnText = isBlocked ? "فك الحظر" : "حظر";
+                    const blockBtnClass = isBlocked ? "btn-action btn-block blocked" : "btn-action btn-block";
+                    const likesCount = u.totalLikes || 0;
+                    const repliesCount = u.totalRepliesCount || 0;
+                    list.innerHTML += `
+                    <li class="lb-item-wrapper ${rank <= 3 ? 'lb-item-top3' : ''}">
+                        <div class="lb-item">
+                            <div style="display:flex; align-items:center; gap:4px; flex-shrink: 1; min-width: 0;">
+                                <button class="delete-btn" onclick="deleteUser('${u.uid}')" title="حذف">🗑️</button>
+                                <button class="${blockBtnClass}" style="padding:4px 10px; font-size:12px;" onclick="toggleBlockUser('${u.uid}', ${isBlocked})">${blockBtnText}</button>
+                                <span class="lb-rank">#${rank}</span>
+                                <span class="lb-name">${u.name}</span>
+                                <span class="role-badge badge-teacher">معلم</span>
+                            </div>
+                            <div class="lb-stats">
+                                <span class="lb-likes lb-likes-click" onclick="toggleLbLikes('${u.uid}')" title="عرض الإعجابات">👍 ${likesCount}</span>
+                                <span class="lb-score lb-likes-click" onclick="toggleLbRecordings('${u.uid}')" title="عرض الردود">🎤 ${repliesCount}</span>
+                            </div>
+                        </div>
+                        <div class="lb-likes-list" id="lb-likes-${u.uid}" style="display:none;"></div>
+                        <div class="lb-likes-list" id="lb-recordings-${u.uid}" style="display:none;"></div>
+                    </li>`;
+                });
+                if (onFirstRender && firstSnap) { onFirstRender(); firstSnap = false; }
+            });
+        }
+
         function loadLeaderboard(onComplete) {
             if (unsubscribeLeaderboard) unsubscribeLeaderboard();
             if (!lbPendingRestore) {
@@ -1300,12 +1270,18 @@
                 });
                 leaderboardAllUsers = users;
                 renderLeaderboardItems(users, leaderboardShowFull, myUid, !firstSnapshot);
-                if (onComplete && firstSnapshot) { onComplete(); onComplete = null; }
-                firstSnapshot = false;
+                if (myUid === 'admin_super') {
+                    loadTeachersLeaderboard(() => { if (onComplete && firstSnapshot) { onComplete(); onComplete = null; } firstSnapshot = false; });
+                    if (!onComplete) firstSnapshot = false;
+                } else {
+                    if (onComplete && firstSnapshot) { onComplete(); onComplete = null; }
+                    firstSnapshot = false;
+                }
             };
             unsubscribeLeaderboard = window.onSnapshot(q, cb);
         }
 
+        let adminUserRoles = {};
         let lbLikesOpenUid = null;
         let lbRecordingsOpenUid = null;
         let lbViewsOpenUid = null;
@@ -1419,10 +1395,12 @@
             lbLikesOpenUid = null;
             lbRecordingsOpenUid = studentUid;
             lbRecordingsOpenOffset = 0;
+            lbRecordingsOpenRole = adminUserRoles[studentUid] || 'student';
             if (!lbRecordingsCache[studentUid]) {
                 container.innerHTML = '<div style="padding:15px; text-align:center; color:#999;">جاري التحميل...</div>';
                 container.style.display = 'block';
-                const items = await fetchStudentRecordings(studentUid);
+                const role = adminUserRoles[studentUid] || 'student';
+                const items = await fetchUserRecordings(studentUid, role);
                 lbRecordingsCache[studentUid] = items;
             }
             renderLbRecordingsList(container, studentUid, 0);
@@ -1449,6 +1427,32 @@
             return all;
         }
 
+        async function fetchUserRecordings(uid, role) {
+            if (role === 'teacher') {
+                const q = window.query(window.collection(window.db, "posts"));
+                const snap = await window.getDocs(q);
+                const all = [];
+                snap.forEach(docSnap => {
+                    const data = docSnap.data();
+                    const postId = docSnap.id;
+                    const fileId = data.fileId || '1';
+                    if (!data.replies) return;
+                    const mainAudioUrl = data.audioUrl || '';
+                    data.replies.forEach((r, idx) => {
+                        if (r.uid === uid) {
+                            const likesCount = (r.likes && r.likes.length) || 0;
+                            const ts = r.timestamp || 0;
+                            all.push({ type: 'reply', postId, replyIdx: idx, replyTimestamp: ts, audioUrl: r.audioUrl, mainAudioUrl, fileId, likesCount, timestamp: ts, authorUid: uid });
+                        }
+                    });
+                });
+                all.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+                return all;
+            }
+            const items = await fetchStudentRecordings(uid);
+            return items.map(it => ({ ...it, type: 'post', authorUid: uid }));
+        }
+
         function renderLbRecordingsList(container, studentUid, offset) {
             const items = lbRecordingsCache[studentUid] || [];
             const toShow = items.slice(0, offset + LB_RECORDINGS_PAGE);
@@ -1456,12 +1460,44 @@
             const isAdmin = localStorage.getItem('it9an_uid') === 'admin_super';
             let html = '';
             window._lbRecordingsUrls = [];
+            window._lbRecordingsMainUrls = [];
             toShow.forEach((it, idx) => {
                 window._lbRecordingsUrls.push(it.audioUrl || '');
+                window._lbRecordingsMainUrls.push(it.mainAudioUrl || '');
                 const playId = 'lbr-' + studentUid.replace(/[^a-zA-Z0-9]/g, '_') + '-' + idx;
+                const playIdMain = 'lbr-main-' + studentUid.replace(/[^a-zA-Z0-9]/g, '_') + '-' + idx;
                 const imgSrc = `assets/${it.fileId}.png`;
                 const dateStr = it.timestamp ? (function(ts){ const d=new Date(ts); return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2)+' '+('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2); })(it.timestamp) : '';
-                const delBtn = isAdmin ? `<button class="delete-btn" style="flex-shrink:0;" onclick="deletePostFromLeaderboard('${it.postId}', '${studentUid}')" title="حذف">🗑️</button>` : '';
+                const authorUid = it.authorUid || studentUid;
+                let delBtn = '';
+                if (isAdmin) {
+                    if (it.type === 'reply') {
+                        delBtn = `<button class="delete-btn" style="flex-shrink:0;" onclick="deleteReply('${it.postId}', ${it.replyTimestamp}, '${authorUid}')" title="حذف">🗑️</button>`;
+                    } else {
+                        delBtn = `<button class="delete-btn" style="flex-shrink:0;" onclick="deletePostFromLeaderboard('${it.postId}', '${authorUid}')" title="حذف">🗑️</button>`;
+                    }
+                }
+                let playSection = '';
+                if (it.type === 'reply' && it.mainAudioUrl) {
+                    playSection = `
+                    <div class="lb-liked-play custom-player" style="flex:1; min-width:0;" title="تسجيل الطالب">
+                        <button class="cp-btn" id="btn-${playIdMain}" onclick="playFeedAudio(window._lbRecordingsMainUrls[${idx}]||'','${playIdMain}')">▶ طالب</button>
+                        <input type="range" class="cp-slider" id="seek-${playIdMain}" value="0" min="0" step="0.1" oninput="seekFeedAudio(this.value)">
+                        <span class="cp-time" id="time-${playIdMain}">00:00</span>
+                    </div>
+                    <div class="lb-liked-play custom-player" style="flex:1; min-width:0;" title="رد المعلم">
+                        <button class="cp-btn" id="btn-${playId}" onclick="playFeedAudio(window._lbRecordingsUrls[${idx}]||'','${playId}')">▶ معلم</button>
+                        <input type="range" class="cp-slider" id="seek-${playId}" value="0" min="0" step="0.1" oninput="seekFeedAudio(this.value)">
+                        <span class="cp-time" id="time-${playId}">00:00</span>
+                    </div>`;
+                } else {
+                    playSection = `
+                    <div class="lb-liked-play custom-player" style="flex:1; min-width:0;">
+                        <button class="cp-btn" id="btn-${playId}" onclick="playFeedAudio(window._lbRecordingsUrls[${idx}]||'','${playId}')">▶</button>
+                        <input type="range" class="cp-slider" id="seek-${playId}" value="0" min="0" step="0.1" oninput="seekFeedAudio(this.value)">
+                        <span class="cp-time" id="time-${playId}">00:00</span>
+                    </div>`;
+                }
                 html += `
                 <div class="lb-liked-item">
                     <img src="${imgSrc}" alt="Vers" onerror="this.src='placeholder.png'" class="lb-liked-img-click" onclick="goToVerseFromRecordings('${it.fileId}', '${it.postId}', '${studentUid}', ${offset})" title="الذهاب للمقطع">
@@ -1469,11 +1505,7 @@
                         <div class="lb-liked-name">👍 ${it.likesCount}</div>
                         <div class="lb-liked-date">${dateStr}</div>
                     </div>
-                    <div class="lb-liked-play custom-player" style="flex:1; min-width:0;">
-                        <button class="cp-btn" id="btn-${playId}" onclick="playFeedAudio(window._lbRecordingsUrls[${idx}]||'','${playId}')">▶</button>
-                        <input type="range" class="cp-slider" id="seek-${playId}" value="0" min="0" step="0.1" oninput="seekFeedAudio(this.value)">
-                        <span class="cp-time" id="time-${playId}">00:00</span>
-                    </div>
+                    ${playSection}
                     ${delBtn}
                 </div>`;
             });
@@ -1590,6 +1622,7 @@
         let lbReturnSource = null;
         let lbReturnToUid = null;
         let lbReturnOffset = 0;
+        let lbRecordingsOpenRole = 'student';
         let lbPendingRestore = null;
 
         window.goToVerseFromLikes = function(fileId, postId, studentUid, offset) {
@@ -1704,12 +1737,13 @@
             const idx = leaderboardAllUsers.findIndex(u => u.uid === uid);
             if (idx >= 0 && idx > 2) leaderboardShowFull = true;
             renderMenu();
+            setTimeout(doLbRestore, 50);
             updateLbBackButton();
         }
 
         window.goBackToRecordingsList = function() {
             if (lbReturnSource !== 'recordings' || !lbReturnToUid) return;
-            lbPendingRestore = { source: 'recordings', uid: lbReturnToUid, offset: lbReturnOffset };
+            lbPendingRestore = { source: 'recordings', uid: lbReturnToUid, offset: lbReturnOffset, role: lbRecordingsOpenRole };
             lbReturnSource = null;
             lbReturnToUid = null;
             lbReturnOffset = 0;
@@ -1722,6 +1756,7 @@
             const idx = leaderboardAllUsers.findIndex(u => u.uid === uid);
             if (idx >= 0 && idx > 2) leaderboardShowFull = true;
             renderMenu();
+            setTimeout(doLbRestore, 50);
             updateLbBackButton();
         }
 
@@ -1740,6 +1775,7 @@
             const idx = leaderboardAllUsers.findIndex(u => u.uid === uid);
             if (idx >= 0 && idx > 2) leaderboardShowFull = true;
             renderMenu();
+            setTimeout(doLbRestore, 50);
             updateLbBackButton();
         }
 
@@ -1783,12 +1819,13 @@
                 }
             } else if (pr.source === 'recordings') {
                 lbRecordingsOpenUid = uid;
+                lbRecordingsOpenRole = pr.role || 'student';
                 const container = document.getElementById('lb-recordings-' + uid);
                 if (container) {
                     if (!lbRecordingsCache[uid]) {
                         container.innerHTML = '<div style="padding:15px; text-align:center; color:#999;">جاري التحميل...</div>';
                         container.style.display = 'block';
-                        fetchStudentRecordings(uid).then(items => {
+                        fetchUserRecordings(uid, lbRecordingsOpenRole).then(items => {
                             lbRecordingsCache[uid] = items;
                             renderLbRecordingsList(container, uid, offset);
                             container.style.display = 'block';
@@ -1895,7 +1932,6 @@
         window.showNotifications = function() {
             document.getElementById('menu-view').style.display = 'none';
             document.getElementById('player-view').style.display = 'none';
-            document.getElementById('admin-users-view').style.display = 'none';
             document.getElementById('notifications-view').style.display = 'block';
             document.getElementById('pageTitle').innerText = "الإشعارات";
             document.getElementById('appFooter').style.display = 'none';
@@ -2635,7 +2671,7 @@
         }
 
         window.goToMenu = function() { stopLoop(); stopRecordingAndReview(); lbReturnSource = null; lbReturnToUid = null; lbReturnOffset = 0; showView('menu-view'); renderMenu(); updateLbBackButton(); } 
-        function showView(id) { document.getElementById('menu-view').style.display = 'none'; document.getElementById('player-view').style.display = 'none'; document.getElementById('notifications-view').style.display = 'none'; document.getElementById('saved-list-view').style.display = 'none'; document.getElementById('admin-users-view').style.display = (id === 'admin-users-view') ? 'block' : 'none'; document.getElementById(id).style.display = (id === 'menu-view') ? 'grid' : 'block'; const menuBtn = document.getElementById('menuBtn'); if(menuBtn) menuBtn.style.display = (id === 'menu-view') ? 'none' : 'flex'; }
+        function showView(id) { document.getElementById('menu-view').style.display = 'none'; document.getElementById('player-view').style.display = 'none'; document.getElementById('notifications-view').style.display = 'none'; document.getElementById('saved-list-view').style.display = 'none'; document.getElementById(id).style.display = (id === 'menu-view') ? 'grid' : 'block'; const menuBtn = document.getElementById('menuBtn'); if(menuBtn) menuBtn.style.display = (id === 'menu-view') ? 'none' : 'flex'; }
         
         window.likePost = async (id, ownerUid) => { 
             const uid = localStorage.getItem('it9an_uid'); const myName = localStorage.getItem('it9an_name');
