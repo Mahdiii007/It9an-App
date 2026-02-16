@@ -731,7 +731,19 @@
         const feedAudioEl = document.getElementById('feedAudio');
         let feedAudioContext = null;
         let feedGainNode = null;
-        const FEED_AUDIO_GAIN = 2.2;
+        const FEED_AUDIO_GAIN = 1.8;
+
+        function initFeedAudioGain() {
+            if (feedAudioContext) return;
+            try {
+                feedAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const source = feedAudioContext.createMediaElementSource(feedAudioEl);
+                feedGainNode = feedAudioContext.createGain();
+                feedGainNode.gain.value = FEED_AUDIO_GAIN;
+                source.connect(feedGainNode);
+                feedGainNode.connect(feedAudioContext.destination);
+            } catch (e) { console.log('Feed gain init:', e); }
+        }
 
         function pauseFeedAudio() {
             if (!feedAudioEl.paused) {
@@ -790,21 +802,14 @@
             currentFeedAudioId = null;
         });
 
-        window.playFeedAudio = function(url, id) {
+        window.playFeedAudio = async function(url, id) {
             stopLoop();
             if (!url) return;
 
-            if (!feedAudioContext) {
-                try {
-                    feedAudioContext = new (window.AudioContext || window.webkitAudioContext)();
-                    const source = feedAudioContext.createMediaElementSource(feedAudioEl);
-                    feedGainNode = feedAudioContext.createGain();
-                    feedGainNode.gain.value = FEED_AUDIO_GAIN;
-                    source.connect(feedGainNode);
-                    feedGainNode.connect(feedAudioContext.destination);
-                } catch (e) { console.log('Feed audio gain setup:', e); }
+            initFeedAudioGain();
+            if (feedAudioContext && feedAudioContext.state === 'suspended') {
+                await feedAudioContext.resume();
             }
-            if (feedAudioContext && feedAudioContext.state === 'suspended') feedAudioContext.resume();
 
             if (currentFeedAudioId === id) {
                 if (feedAudioEl.paused) {
@@ -3046,4 +3051,3 @@
     </script>
 </body>
 </html>
-
