@@ -880,6 +880,13 @@
                 await window.deleteObject(fileRef);
             } catch(e) { console.log("File gone:", e); }
         }
+        async function deleteSavedRecordingsForPost(postId) {
+            try {
+                const q = window.query(window.collection(window.db, "savedRecordings"), window.where("postId", "==", postId));
+                const snap = await window.getDocs(q);
+                for(const d of snap.docs) await window.deleteDoc(d.ref);
+            } catch(e) { console.log("savedRecordings cleanup:", e); }
+        }
 
         // --- LOGIN LOGIC ---
         async function checkLogin() {
@@ -1115,6 +1122,7 @@
                         const notifQ1 = window.query(window.collection(window.db, "notifications"), window.where("postId", "==", doc.id));
                         const notifSnap1 = await window.getDocs(notifQ1);
                         for(const nd of notifSnap1.docs) await window.deleteDoc(window.doc(window.db, "notifications", nd.id));
+                        await deleteSavedRecordingsForPost(doc.id);
                         if(data.audioUrl) await cleanupAudioFile(data.audioUrl);
                         if(data.replies) for(let r of data.replies) if(r.audioUrl) await cleanupAudioFile(r.audioUrl);
                         await window.deleteDoc(doc.ref);
@@ -1145,6 +1153,7 @@
                         const notifQ2 = window.query(window.collection(window.db, "notifications"), window.where("postId", "==", doc.id));
                         const notifSnap2 = await window.getDocs(notifQ2);
                         for(const nd of notifSnap2.docs) await window.deleteDoc(window.doc(window.db, "notifications", nd.id));
+                        await deleteSavedRecordingsForPost(doc.id);
                         if(data.audioUrl) await cleanupAudioFile(data.audioUrl);
                         await window.deleteDoc(doc.ref);
                     } else if(data.replies && data.replies.some(r => r.uid === uid)) {
@@ -1412,6 +1421,7 @@
             const items = lbRecordingsCache[studentUid] || [];
             const toShow = items.slice(0, offset + LB_RECORDINGS_PAGE);
             const hasMore = items.length > toShow.length;
+            const isAdmin = localStorage.getItem('it9an_uid') === 'admin_super';
             let html = '';
             window._lbRecordingsUrls = [];
             toShow.forEach((it, idx) => {
@@ -1419,6 +1429,7 @@
                 const playId = 'lbr-' + studentUid.replace(/[^a-zA-Z0-9]/g, '_') + '-' + idx;
                 const imgSrc = `assets/${it.fileId}.png`;
                 const dateStr = it.timestamp ? (function(ts){ const d=new Date(ts); return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2)+' '+('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2); })(it.timestamp) : '';
+                const delBtn = isAdmin ? `<button class="delete-btn" style="flex-shrink:0;" onclick="deletePostFromLeaderboard('${it.postId}', '${studentUid}')" title="حذف">🗑️</button>` : '';
                 html += `
                 <div class="lb-liked-item">
                     <img src="${imgSrc}" alt="Vers" onerror="this.src='placeholder.png'" class="lb-liked-img-click" onclick="goToVerseFromRecordings('${it.fileId}', '${it.postId}', '${studentUid}', ${offset})" title="الذهاب للمقطع">
@@ -1431,6 +1442,7 @@
                         <input type="range" class="cp-slider" id="seek-${playId}" value="0" min="0" step="0.1" oninput="seekFeedAudio(this.value)">
                         <span class="cp-time" id="time-${playId}">00:00</span>
                     </div>
+                    ${delBtn}
                 </div>`;
             });
             if (hasMore) {
@@ -2718,6 +2730,7 @@
                     const notifQ = window.query(window.collection(window.db, "notifications"), window.where("postId", "==", docSnap.id));
                     const notifSnap = await window.getDocs(notifQ);
                     for(const nd of notifSnap.docs) await window.deleteDoc(window.doc(window.db, "notifications", nd.id));
+                    await deleteSavedRecordingsForPost(docSnap.id);
                     if(data.audioUrl) await cleanupAudioFile(data.audioUrl);
                     if(data.replies) {
                         for(let r of data.replies) {
@@ -2781,6 +2794,7 @@
                     const notifQ = window.query(window.collection(window.db, "notifications"), window.where("postId", "==", docSnap.id));
                     const notifSnap = await window.getDocs(notifQ);
                     for(const nd of notifSnap.docs) await window.deleteDoc(window.doc(window.db, "notifications", nd.id));
+                    await deleteSavedRecordingsForPost(docSnap.id);
                     if(data.replies) {
                         for(const r of data.replies) {
                             if(r.uid) {
@@ -2797,6 +2811,45 @@
                 loadLeaderboard();
                 alert("تم الحذف");
             }
+        }
+
+        window.deletePostFromLeaderboard = async function(postId, authorUid) {
+            if(!confirm("حذف هذه التسجيل؟ سيتم حذف الردود أيضاً.")) return;
+            try {
+                const docRef = window.doc(window.db, "posts", postId);
+                const docSnap = await window.getDoc(docRef);
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    if(data.replies) {
+                        for(const r of data.replies) {
+                            if(r.uid) {
+                                const rLikes = (r.likes && r.likes.length) || 0;
+                                try { await window.updateDoc(window.doc(window.db, "users", r.uid), { totalRepliesCount: window.increment(-1), totalLikes: window.increment(-rLikes) }); } catch(e){}
+                            }
+                            if(r.audioUrl) await cleanupAudioFile(r.audioUrl);
+                        }
+                    }
+                    const notifQ = window.query(window.collection(window.db, "notifications"), window.where("postId", "==", postId));
+                    const notifSnap = await window.getDocs(notifQ);
+                    for(const nd of notifSnap.docs) await window.deleteDoc(window.doc(window.db, "notifications", nd.id));
+                    await deleteSavedRecordingsForPost(postId);
+                    if(data.audioUrl) await cleanupAudioFile(data.audioUrl);
+                    await window.deleteDoc(docRef);
+                    if(authorUid) {
+                        const userRef = window.doc(window.db, "users", authorUid);
+                        try { await window.updateDoc(userRef, { postsCount: window.increment(-1) }); } catch(e){}
+                    }
+                    const likesCount = (data.likes && data.likes.length) ? data.likes.length : 0;
+                    if(authorUid && likesCount > 0) { try { await window.updateDoc(window.doc(window.db, "users", authorUid), { totalLikes: window.increment(-likesCount) }); } catch(e){} }
+                    if(lbRecordingsCache[authorUid]) {
+                        lbRecordingsCache[authorUid] = lbRecordingsCache[authorUid].filter(it => it.postId !== postId);
+                        const container = document.getElementById('lb-recordings-' + authorUid);
+                        if(container) renderLbRecordingsList(container, authorUid, 0);
+                    }
+                    loadLeaderboard();
+                    alert("تم الحذف بنجاح");
+                }
+            } catch(e) { console.error(e); alert("خطأ في الحذف"); }
         }
 
         window.deletePost = async function(postId, authorUid) {
@@ -2818,6 +2871,7 @@
                         const notifQ = window.query(window.collection(window.db, "notifications"), window.where("postId", "==", postId));
                         const notifSnap = await window.getDocs(notifQ);
                         for(const nd of notifSnap.docs) await window.deleteDoc(window.doc(window.db, "notifications", nd.id));
+                        await deleteSavedRecordingsForPost(postId);
                         if(data.audioUrl) await cleanupAudioFile(data.audioUrl);
                         await window.deleteDoc(docRef);
                         if(authorUid) {
