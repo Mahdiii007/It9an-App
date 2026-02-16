@@ -648,7 +648,7 @@
         });
 
         let currentLessonIdx = null, currentGlobalFileId = null, currentLocalVers = null;
-        let unsubscribeFeed = null, unsubscribeViews = null;
+        let unsubscribeFeed = null, unsubscribeViews = null, unsubscribeLeaderboard = null;
         let isPlaying = false, isPaused = false, repeatsLeft = 0, pauseInterval = null, pauseSecondsLeft = 0;
         let verseRepeatsPlayed = 0; 
 
@@ -1218,10 +1218,12 @@
         let leaderboardAllUsers = [];
         let leaderboardShowFull = false;
 
-        function renderLeaderboardItems(users, showAll, myUid) {
-            lbLikesOpenUid = null;
-            lbRecordingsOpenUid = null;
-            lbViewsOpenUid = null;
+        function renderLeaderboardItems(users, showAll, myUid, preserveOpen) {
+            if (!preserveOpen) {
+                lbLikesOpenUid = null;
+                lbRecordingsOpenUid = null;
+                lbViewsOpenUid = null;
+            }
             const list = document.getElementById('leaderboard-list');
             const btn = document.getElementById('lbShowMoreBtn');
             list.innerHTML = "";
@@ -1254,6 +1256,23 @@
                     <div class="lb-likes-list" id="lb-likes-${u.uid}" style="display:none;"></div>
                 </li>`;
             });
+            if (preserveOpen) {
+                const openViews = document.getElementById('lb-views-' + lbViewsOpenUid);
+                if (lbViewsOpenUid && openViews) {
+                    openViews.style.display = 'block';
+                    renderLbViewsList(openViews, lbViewsOpenUid, lbViewsOpenOffset);
+                }
+                const openRec = document.getElementById('lb-recordings-' + lbRecordingsOpenUid);
+                if (lbRecordingsOpenUid && openRec) {
+                    openRec.style.display = 'block';
+                    renderLbRecordingsList(openRec, lbRecordingsOpenUid, lbRecordingsOpenOffset);
+                }
+                const openLike = document.getElementById('lb-likes-' + lbLikesOpenUid);
+                if (lbLikesOpenUid && openLike) {
+                    openLike.style.display = 'block';
+                    renderLbLikesList(openLike, lbLikesOpenUid, lbLikesOpenOffset);
+                }
+            }
         }
 
         window.toggleLeaderboardFull = function() {
@@ -1261,13 +1280,17 @@
             renderLeaderboardItems(leaderboardAllUsers, leaderboardShowFull, localStorage.getItem('it9an_uid'));
         }
 
-        function loadLeaderboard() {
-            lbLikesCache = {};
-            lbRecordingsCache = {};
-            lbViewsCache = {};
+        function loadLeaderboard(onComplete) {
+            if (unsubscribeLeaderboard) unsubscribeLeaderboard();
+            if (!lbPendingRestore) {
+                lbLikesCache = {};
+                lbRecordingsCache = {};
+                lbViewsCache = {};
+            }
             const q = window.query(window.collection(window.db, "users"), window.where("role", "==", "student"));
             const myUid = localStorage.getItem('it9an_uid');
-            window.getDocs(q).then(snap => {
+            let firstSnapshot = true;
+            const cb = (snap) => {
                 let users = [];
                 snap.forEach(doc => users.push({ ...doc.data(), uid: doc.data().uid || doc.id }));
                 users.sort((a,b) => {
@@ -1276,13 +1299,19 @@
                     return sumB - sumA;
                 });
                 leaderboardAllUsers = users;
-                renderLeaderboardItems(users, leaderboardShowFull, myUid);
-            });
+                renderLeaderboardItems(users, leaderboardShowFull, myUid, !firstSnapshot);
+                if (onComplete && firstSnapshot) { onComplete(); onComplete = null; }
+                firstSnapshot = false;
+            };
+            unsubscribeLeaderboard = window.onSnapshot(q, cb);
         }
 
         let lbLikesOpenUid = null;
         let lbRecordingsOpenUid = null;
         let lbViewsOpenUid = null;
+        let lbLikesOpenOffset = 0;
+        let lbRecordingsOpenOffset = 0;
+        let lbViewsOpenOffset = 0;
         let lbLikesCache = {};
         let lbRecordingsCache = {};
         let lbViewsCache = {};
@@ -1307,6 +1336,7 @@
             lbLikesOpenUid = null;
             lbRecordingsOpenUid = null;
             lbViewsOpenUid = studentUid;
+            lbViewsOpenOffset = 0;
             if (!lbViewsCache[studentUid]) {
                 container.innerHTML = '<div style="padding:15px; text-align:center; color:#999;">جاري التحميل...</div>';
                 container.style.display = 'block';
@@ -1366,6 +1396,7 @@
         }
 
         window.loadMoreLbViews = function(studentUid, offset) {
+            lbViewsOpenOffset = offset;
             const container = document.getElementById('lb-views-' + studentUid);
             if (container) renderLbViewsList(container, studentUid, offset);
         }
@@ -1387,6 +1418,7 @@
             if (prevLike) prevLike.style.display = 'none';
             lbLikesOpenUid = null;
             lbRecordingsOpenUid = studentUid;
+            lbRecordingsOpenOffset = 0;
             if (!lbRecordingsCache[studentUid]) {
                 container.innerHTML = '<div style="padding:15px; text-align:center; color:#999;">جاري التحميل...</div>';
                 container.style.display = 'block';
@@ -1453,6 +1485,7 @@
         }
 
         window.loadMoreLbRecordings = function(studentUid, offset) {
+            lbRecordingsOpenOffset = offset;
             const container = document.getElementById('lb-recordings-' + studentUid);
             if (container) renderLbRecordingsList(container, studentUid, offset);
         }
@@ -1474,6 +1507,7 @@
             const prev = document.getElementById('lb-likes-' + lbLikesOpenUid);
             if (prev) prev.style.display = 'none';
             lbLikesOpenUid = studentUid;
+            lbLikesOpenOffset = 0;
             if (!lbLikesCache[studentUid]) {
                 container.innerHTML = '<div style="padding:15px; text-align:center; color:#999;">جاري التحميل...</div>';
                 container.style.display = 'block';
@@ -1548,6 +1582,7 @@
         }
 
         window.loadMoreLbLikes = function(studentUid, offset) {
+            lbLikesOpenOffset = offset;
             const container = document.getElementById('lb-likes-' + studentUid);
             if (container) renderLbLikesList(container, studentUid, offset);
         }
@@ -1555,6 +1590,7 @@
         let lbReturnSource = null;
         let lbReturnToUid = null;
         let lbReturnOffset = 0;
+        let lbPendingRestore = null;
 
         window.goToVerseFromLikes = function(fileId, postId, studentUid, offset) {
             let foundIndex = -1, foundVerse = 1;
@@ -1655,8 +1691,7 @@
 
         window.goBackToLikesList = function() {
             if (lbReturnSource !== 'likes' || !lbReturnToUid) return;
-            const uid = lbReturnToUid;
-            const offset = lbReturnOffset;
+            lbPendingRestore = { source: 'likes', uid: lbReturnToUid, offset: lbReturnOffset };
             lbReturnSource = null;
             lbReturnToUid = null;
             lbReturnOffset = 0;
@@ -1665,10 +1700,69 @@
             stopLoop();
             showView('menu-view');
             document.getElementById('appFooter').style.display = 'none';
+            const uid = lbPendingRestore.uid;
             const idx = leaderboardAllUsers.findIndex(u => u.uid === uid);
             if (idx >= 0 && idx > 2) leaderboardShowFull = true;
             renderMenu();
-            setTimeout(() => {
+            updateLbBackButton();
+        }
+
+        window.goBackToRecordingsList = function() {
+            if (lbReturnSource !== 'recordings' || !lbReturnToUid) return;
+            lbPendingRestore = { source: 'recordings', uid: lbReturnToUid, offset: lbReturnOffset };
+            lbReturnSource = null;
+            lbReturnToUid = null;
+            lbReturnOffset = 0;
+            activePostFilter = null;
+            highlightedPostId = null;
+            stopLoop();
+            showView('menu-view');
+            document.getElementById('appFooter').style.display = 'none';
+            const uid = lbPendingRestore.uid;
+            const idx = leaderboardAllUsers.findIndex(u => u.uid === uid);
+            if (idx >= 0 && idx > 2) leaderboardShowFull = true;
+            renderMenu();
+            updateLbBackButton();
+        }
+
+        window.goBackToViewsList = function() {
+            if (lbReturnSource !== 'views' || !lbReturnToUid) return;
+            lbPendingRestore = { source: 'views', uid: lbReturnToUid, offset: lbReturnOffset };
+            lbReturnSource = null;
+            lbReturnToUid = null;
+            lbReturnOffset = 0;
+            activePostFilter = null;
+            highlightedPostId = null;
+            stopLoop();
+            showView('menu-view');
+            document.getElementById('appFooter').style.display = 'none';
+            const uid = lbPendingRestore.uid;
+            const idx = leaderboardAllUsers.findIndex(u => u.uid === uid);
+            if (idx >= 0 && idx > 2) leaderboardShowFull = true;
+            renderMenu();
+            updateLbBackButton();
+        }
+
+        window.goBackToLbList = function() {
+            if (lbReturnSource === 'likes') goBackToLikesList();
+            else if (lbReturnSource === 'recordings') goBackToRecordingsList();
+            else if (lbReturnSource === 'views') goBackToViewsList();
+        }
+
+        function doLbRestore() {
+            const pr = lbPendingRestore;
+            if (!pr) return;
+            lbPendingRestore = null;
+            const uid = pr.uid;
+            const offset = pr.offset || 0;
+            const scrollToEl = (el) => {
+                if (el) {
+                    requestAnimationFrame(() => {
+                        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    });
+                }
+            };
+            if (pr.source === 'likes') {
                 lbLikesOpenUid = uid;
                 const container = document.getElementById('lb-likes-' + uid);
                 if (container) {
@@ -1679,34 +1773,15 @@
                             lbLikesCache[uid] = items;
                             renderLbLikesList(container, uid, offset);
                             container.style.display = 'block';
+                            scrollToEl(container);
                         });
                     } else {
                         renderLbLikesList(container, uid, offset);
                         container.style.display = 'block';
+                        scrollToEl(container);
                     }
                 }
-                const el = document.getElementById('lb-likes-' + uid);
-                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            }, 100);
-            updateLbBackButton();
-        }
-
-        window.goBackToRecordingsList = function() {
-            if (lbReturnSource !== 'recordings' || !lbReturnToUid) return;
-            const uid = lbReturnToUid;
-            const offset = lbReturnOffset;
-            lbReturnSource = null;
-            lbReturnToUid = null;
-            lbReturnOffset = 0;
-            activePostFilter = null;
-            highlightedPostId = null;
-            stopLoop();
-            showView('menu-view');
-            document.getElementById('appFooter').style.display = 'none';
-            const idx = leaderboardAllUsers.findIndex(u => u.uid === uid);
-            if (idx >= 0 && idx > 2) leaderboardShowFull = true;
-            renderMenu();
-            setTimeout(() => {
+            } else if (pr.source === 'recordings') {
                 lbRecordingsOpenUid = uid;
                 const container = document.getElementById('lb-recordings-' + uid);
                 if (container) {
@@ -1717,34 +1792,15 @@
                             lbRecordingsCache[uid] = items;
                             renderLbRecordingsList(container, uid, offset);
                             container.style.display = 'block';
+                            scrollToEl(container);
                         });
                     } else {
                         renderLbRecordingsList(container, uid, offset);
                         container.style.display = 'block';
+                        scrollToEl(container);
                     }
                 }
-                const el = document.getElementById('lb-recordings-' + uid);
-                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            }, 100);
-            updateLbBackButton();
-        }
-
-        window.goBackToViewsList = function() {
-            if (lbReturnSource !== 'views' || !lbReturnToUid) return;
-            const uid = lbReturnToUid;
-            const offset = lbReturnOffset;
-            lbReturnSource = null;
-            lbReturnToUid = null;
-            lbReturnOffset = 0;
-            activePostFilter = null;
-            highlightedPostId = null;
-            stopLoop();
-            showView('menu-view');
-            document.getElementById('appFooter').style.display = 'none';
-            const idx = leaderboardAllUsers.findIndex(u => u.uid === uid);
-            if (idx >= 0 && idx > 2) leaderboardShowFull = true;
-            renderMenu();
-            setTimeout(() => {
+            } else if (pr.source === 'views') {
                 lbViewsOpenUid = uid;
                 const container = document.getElementById('lb-views-' + uid);
                 if (container) {
@@ -1755,22 +1811,15 @@
                             lbViewsCache[uid] = items;
                             renderLbViewsList(container, uid, offset);
                             container.style.display = 'block';
+                            scrollToEl(container);
                         });
                     } else {
                         renderLbViewsList(container, uid, offset);
                         container.style.display = 'block';
+                        scrollToEl(container);
                     }
                 }
-                const el = document.getElementById('lb-views-' + uid);
-                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            }, 100);
-            updateLbBackButton();
-        }
-
-        window.goBackToLbList = function() {
-            if (lbReturnSource === 'likes') goBackToLikesList();
-            else if (lbReturnSource === 'recordings') goBackToRecordingsList();
-            else if (lbReturnSource === 'views') goBackToViewsList();
+            }
         }
 
         function updateLbBackButton() {
@@ -1896,11 +1945,11 @@
             if(uid === 'admin_super') {
                 document.getElementById('adminMenuPanel').style.display = 'block';
                 document.getElementById('leaderboard-section').style.display = 'block';
-                loadLeaderboard();
+                loadLeaderboard(lbPendingRestore ? doLbRestore : undefined);
             } else {
                 document.getElementById('adminMenuPanel').style.display = 'none';
                 document.getElementById('leaderboard-section').style.display = 'block';
-                loadLeaderboard(); 
+                loadLeaderboard(lbPendingRestore ? doLbRestore : undefined);
             }
 
             activePostFilter = null; 
@@ -1946,7 +1995,7 @@
                 const isActive = (globalId === currentGlobalFileId);
                 const div = document.createElement('div');
                 div.className = 'verse-list-item' + (isActive ? ' active' : '');
-                div.innerHTML = `<img src="assets/${globalId}.png" alt="Vers ${v}" onerror="this.style.display='none'"><span>المقطع ${v}</span>`;
+                div.innerHTML = `<span>المقطع ${v}</span><img src="assets/${globalId}.png" alt="Vers ${v}" onerror="this.style.display='none'">`;
                 div.onclick = () => { activePostFilter = null; highlightedPostId = null; playVers(globalId, v); hideVerseList(); };
                 grid.appendChild(div);
             }
