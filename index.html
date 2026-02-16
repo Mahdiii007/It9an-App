@@ -729,6 +729,22 @@
         // --- GLOBAL FEED PLAYER LOGIC ---
         let currentFeedAudioId = null;
         const feedAudioEl = document.getElementById('feedAudio');
+        let feedAudioContext = null;
+        let feedGainNode = null;
+        const FEED_AUDIO_GAIN = 2.2;
+
+        function pauseFeedAudio() {
+            if (!feedAudioEl.paused) {
+                feedAudioEl.pause();
+            }
+            if (currentFeedAudioId) {
+                const btn = document.getElementById('btn-' + currentFeedAudioId);
+                if (btn) btn.innerText = "▶";
+                const seek = document.getElementById('seek-' + currentFeedAudioId);
+                if (seek) seek.value = 0;
+                currentFeedAudioId = null;
+            }
+        }
 
         feedAudioEl.addEventListener('timeupdate', () => {
             if(currentFeedAudioId && feedAudioEl.duration) {
@@ -775,7 +791,20 @@
         });
 
         window.playFeedAudio = function(url, id) {
-            stopLoop(); // Stop Main Quran Audio
+            stopLoop();
+            if (!url) return;
+
+            if (!feedAudioContext) {
+                try {
+                    feedAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    const source = feedAudioContext.createMediaElementSource(feedAudioEl);
+                    feedGainNode = feedAudioContext.createGain();
+                    feedGainNode.gain.value = FEED_AUDIO_GAIN;
+                    source.connect(feedGainNode);
+                    feedGainNode.connect(feedAudioContext.destination);
+                } catch (e) { console.log('Feed audio gain setup:', e); }
+            }
+            if (feedAudioContext && feedAudioContext.state === 'suspended') feedAudioContext.resume();
 
             if (currentFeedAudioId === id) {
                 if (feedAudioEl.paused) {
@@ -1636,6 +1665,7 @@
         let lbPendingRestore = null;
 
         window.goToVerseFromLikes = function(fileId, postId, studentUid, offset) {
+            pauseFeedAudio();
             let foundIndex = -1, foundVerse = 1;
             for (let i = 0; i < KURS_DATEN.length; i++) {
                 const start = KURS_DATEN[i].startGlobalId;
@@ -1668,6 +1698,7 @@
         }
 
         window.goToVerseFromViews = function(fileId, studentUid, offset) {
+            pauseFeedAudio();
             let foundIndex = -1, foundVerse = 1;
             for (let i = 0; i < KURS_DATEN.length; i++) {
                 const start = KURS_DATEN[i].startGlobalId;
@@ -1701,6 +1732,7 @@
         }
 
         window.goToVerseFromRecordings = function(fileId, postId, studentUid, offset) {
+            pauseFeedAudio();
             let foundIndex = -1, foundVerse = 1;
             for (let i = 0; i < KURS_DATEN.length; i++) {
                 const start = KURS_DATEN[i].startGlobalId;
@@ -2064,6 +2096,7 @@
         }
 
         async function playVers(globalId, localVersNum, isAuto = false) {
+            pauseFeedAudio();
             currentGlobalFileId = globalId; currentLocalVers = localVersNum;
             showView('player-view');
             updateLbBackButton();
@@ -2607,6 +2640,7 @@
                 isPlaying = true; isPaused = false; document.getElementById('playBtn').innerText = "⏸";
                 if (pauseSecondsLeft > 0) { startPauseCountdown(pauseSecondsLeft); } 
                 else if (audioEl.currentTime > 0 && audioEl.currentTime < audioEl.duration) {
+                    pauseFeedAudio();
                     document.getElementById('statusDisplay').innerText = `تلاوة ${verseRepeatsPlayed + 1} من ${parseInt(document.getElementById('globalRepeats').value)}`; 
                     audioEl.play().catch(e => { stopLoop(); });
                 } else {
@@ -2617,6 +2651,7 @@
         
         function playCycle() {
             if(!isPlaying) return;
+            pauseFeedAudio();
             const target = parseInt(document.getElementById('globalRepeats').value);
             document.getElementById('statusDisplay').innerText = `تلاوة ${verseRepeatsPlayed + 1} من ${target}`;
             audioEl.play().catch(e => { stopLoop(); });
@@ -2677,6 +2712,7 @@
         function stopLoop() { 
             isPlaying = false; isPaused = false; pauseSecondsLeft = 0; clearInterval(pauseInterval); 
             audioEl.pause(); audioEl.currentTime = 0; 
+            pauseFeedAudio();
             document.getElementById('playBtn').innerText = "▶"; document.getElementById('statusDisplay').innerText = "جاهز للتلاوة"; 
         }
 
