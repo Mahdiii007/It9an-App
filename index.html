@@ -523,6 +523,7 @@
             <button class="btn-admin-reset" onclick="resetAllNotifications()">🔔 تصفير كل الإشعارات</button>
             <button class="btn-admin-reset" onclick="resetAllViews()">👁️ تصفير كل المشاهدات</button>
             <button class="btn-admin-reset" onclick="resetAllLikes()">👍 تصفير كل الإعجابات</button>
+            <button class="btn-admin-reset" onclick="deleteAllTeacherReplies()">↩️ حذف كل ردود المعلمين</button>
             <button class="btn-admin-reset btn-admin-delete-all" onclick="deleteAllPostsGlobal()">🗑️ حذف كل التسجيلات</button>
         </div>
     </div>
@@ -2997,6 +2998,34 @@
             }
         }
 
+        window.deleteAllTeacherReplies = async function() {
+            if(!confirm("هل أنت متأكد من حذف جميع ردود المعلمين؟ سيتم الاحتفاظ بتسجيلات الطلاب.")) return;
+            try {
+                const q = window.query(window.collection(window.db, "posts"));
+                const querySnapshot = await window.getDocs(q);
+                let removed = 0;
+                for(const docSnap of querySnapshot.docs) {
+                    const data = docSnap.data();
+                    if(!data.replies || data.replies.length === 0) continue;
+                    const teacherReplies = data.replies.filter(r => r.role === 'teacher');
+                    if(teacherReplies.length === 0) continue;
+                    for(const r of teacherReplies) {
+                        if(r.uid) {
+                            const rLikes = (r.likes && r.likes.length) || 0;
+                            try { await window.updateDoc(window.doc(window.db, "users", r.uid), { totalRepliesCount: window.increment(-1), totalLikes: window.increment(-rLikes) }); } catch(e){}
+                        }
+                        if(r.audioUrl) await cleanupAudioFile(r.audioUrl);
+                        removed++;
+                    }
+                    const newReplies = data.replies.filter(r => r.role !== 'teacher');
+                    await window.updateDoc(window.doc(window.db, "posts", docSnap.id), { replies: newReplies });
+                }
+                loadLeaderboard();
+                if(localStorage.getItem('it9an_uid')==='admin_super') loadTeachersLeaderboard();
+                alert("تم حذف " + removed + " رد معلم");
+            } catch(e) { alert("خطأ: " + (e.message || e)); }
+        }
+
         window.deleteAllPostsGlobal = async function() {
             if(confirm("⚠️ تحذير خطير: هل أنت متأكد من حذف جميع التسجيلات في التطبيق؟ لا يمكن التراجع!")) {
                 const q = window.query(window.collection(window.db, "posts"));
@@ -3201,5 +3230,4 @@
     </script>
 </body>
 </html>
-
 
