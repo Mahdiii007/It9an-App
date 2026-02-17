@@ -1122,6 +1122,10 @@
                     } else if(data.replies && data.replies.some(r => r.uid === uid)) {
                         const toRemove = data.replies.filter(r => r.uid === uid);
                         for(const r of toRemove) {
+                            if(r.uid) {
+                                const rLikes = (r.likes && r.likes.length) || 0;
+                                try { await window.updateDoc(window.doc(window.db, "users", r.uid), { totalRepliesCount: window.increment(-1), totalLikes: window.increment(-rLikes) }); } catch(e){}
+                            }
                             if(r.audioUrl) await cleanupAudioFile(r.audioUrl);
                             const nq = window.query(window.collection(window.db, "notifications"), window.where("postId", "==", doc.id), window.where("type", "==", "reply"));
                             const ns = await window.getDocs(nq);
@@ -2163,6 +2167,7 @@
                 document.getElementById('adminMenuPanel').style.display = 'block';
                 document.getElementById('leaderboard-section').style.display = 'block';
                 loadAdminMessagesList();
+                loadTeachersLeaderboard();
                 loadLeaderboard(lbPendingRestore ? doLbRestore : undefined);
             } else {
                 document.getElementById('adminMenuPanel').style.display = 'none';
@@ -3013,9 +3018,10 @@
                 const uq = window.query(window.collection(window.db, "users"));
                 const usnap = await window.getDocs(uq);
                 for(const udoc of usnap.docs) {
-                    await window.updateDoc(udoc.ref, { postsCount: 0, totalLikes: 0 });
+                    await window.updateDoc(udoc.ref, { postsCount: 0, totalLikes: 0, totalRepliesCount: 0 });
                 }
                 loadLeaderboard();
+                if(localStorage.getItem('it9an_uid')==='admin_super') loadTeachersLeaderboard();
                 alert("تم حذف جميع البيانات");
             }
         }
@@ -3118,6 +3124,7 @@
                         if(container) renderLbRecordingsList(container, authorUid, 0);
                     }
                     loadLeaderboard();
+                    if(localStorage.getItem('it9an_uid')==='admin_super') loadTeachersLeaderboard();
                     alert("تم الحذف بنجاح");
                 }
             } catch(e) { console.error(e); alert("خطأ في الحذف"); }
@@ -3151,7 +3158,8 @@
                         }
                         var likesCount = (data.likes && data.likes.length) ? data.likes.length : 0;
                         if(authorUid && likesCount > 0) { try { await window.updateDoc(window.doc(window.db, "users", authorUid), { totalLikes: window.increment(-likesCount) }); } catch(e){} }
-                        loadLeaderboard();
+                    loadLeaderboard();
+                        if(localStorage.getItem('it9an_uid')==='admin_super') loadTeachersLeaderboard();
                         alert("تم الحذف بنجاح");
                     }
                 } catch(e) { alert("خطأ في الحذف"); }
@@ -3178,6 +3186,7 @@
                         if(authorUid && replyLikes > 0) { try { await window.updateDoc(window.doc(window.db, "users", authorUid), { totalLikes: window.increment(-replyLikes) }); } catch(e){} }
                         if(authorUid) { try { await window.updateDoc(window.doc(window.db, "users", authorUid), { totalRepliesCount: window.increment(-1) }); } catch(e){} }
                         loadLeaderboard();
+                        if(localStorage.getItem('it9an_uid')==='admin_super') loadTeachersLeaderboard();
                         alert("تم الحذف");
                     }
                 } catch(e) { alert("خطأ"); }
@@ -3186,4 +3195,5 @@
     </script>
 </body>
 </html>
+
 
