@@ -9,7 +9,8 @@
     <style>
         /* --- MODERN ISLAMIC THEME --- */
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        html { overflow-x: hidden; }
+        html { overflow-x: hidden; width: 100%; }
+        html, body { max-width: 100vw; overflow-x: hidden; }
         
         :root { 
             --primary: #0f4c3a; --primary-light: #1a6b54; 
@@ -34,11 +35,11 @@
             z-index: 5000; display: flex; flex-direction: column; justify-content: center; align-items: center; 
         }
         .login-card {
-            background: rgba(255,255,255,0.95); padding: 30px; 
+            background: rgba(255,255,255,0.95); padding: 30px 15px; 
             border-radius: 20px; border: 2px solid var(--gold);
-            text-align: center; width: 90%; max-width: 380px;
+            text-align: center; width: 90%; max-width: min(380px, calc(100vw - 30px));
             box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            max-height: 90vh; overflow-y: auto; /* Scrollbar logic */
+            max-height: 90vh; overflow-y: auto; overflow-x: hidden;
         }
         .login-title { color: var(--primary); margin: 0 0 10px 0; font-size: 32px; font-weight: bold; }
         .login-subtitle { color: #555; margin: 0 0 20px 0; font-size: 18px; line-height: 1.6; }
@@ -80,6 +81,7 @@
             padding: 10px 5px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); 
             display: flex; justify-content: center; align-items: center; 
             gap: 15px; height: 80px; border-bottom: 2px solid var(--gold);
+            width: 100%; max-width: 100%; overflow-x: hidden;
         }
         .header-btn {
             background: rgba(255,255,255,0.1); border: 1px solid var(--gold); color: var(--gold-light);
@@ -111,16 +113,18 @@
         }
 
         /* --- MENU & NOTIFICATIONS --- */
-        .menu-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; padding: 25px; max-width: 100%; margin: 0 auto; }
+        #menu-view { width: 100%; max-width: 100%; overflow-x: hidden; }
+        .menu-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; padding: 25px 10px; max-width: 100%; margin: 0 auto; }
         .menu-item { background: var(--surface); border-radius: 18px; overflow: hidden; cursor: pointer; box-shadow: var(--shadow); display: flex; flex-direction: column; }
         .menu-item-title { text-align: center; padding: 12px 5px; font-weight: bold; color: var(--primary); border-bottom: 1px solid #eee; background: #fdfdfd; font-size: 18px; }
         .menu-item img { width: 100%; height: auto; display: block; padding: 15px; }
         
-        #notifications-view { display: none; padding: 20px; max-width: 600px; margin: 0 auto; }
+        #notifications-view { display: none; padding: 15px 10px; width: 100%; max-width: 100%; margin: 0 auto; overflow-x: hidden; }
         .notif-card { 
-            background: white; padding: 20px; margin-bottom: 15px; border-radius: 12px; 
+            background: white; padding: 20px 12px; margin-bottom: 15px; border-radius: 12px; 
             box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-right: 5px solid var(--primary); 
             display: flex; justify-content: space-between; align-items: center; cursor: pointer;
+            max-width: 100%; overflow-x: hidden;
         }
         .notif-text { font-size: 16px; color: var(--text); font-weight: bold; }
         .notif-time { font-size: 13px; color: #888; margin-top: 6px; }
@@ -143,26 +147,27 @@
         .user-card .lb-score, .user-card .lb-likes { padding: 2px 6px; font-size: 11px; }
 
         /* --- LEADERBOARD (TOP 3) --- */
-        #leaderboard-section { width: 100%; padding: 15px 20px; margin-bottom: 15px; }
+        #leaderboard-section { width: 100%; max-width: 100%; padding: 15px 12px; margin-bottom: 15px; overflow-x: hidden; }
         .leaderboard-card {
             background: linear-gradient(135deg, #fffcf2 0%, #ffffff 100%);
-            border: 2px solid var(--gold); border-radius: 20px; padding: 20px;
+            border: 2px solid var(--gold); border-radius: 20px; padding: 20px 10px;
             box-shadow: 0 6px 20px rgba(212, 175, 55, 0.2); text-align: center;
+            max-width: 100%; overflow-x: hidden;
         }
         .lb-title { color: var(--primary); font-weight: bold; font-size: 22px; margin-bottom: 15px; display: flex; align-items: center; justify-content: center; gap: 10px; }
         .lb-list { list-style: none; padding: 0; margin: 0; text-align: right; }
         .lb-item-wrapper { border-bottom: 1px solid #eee; }
         .lb-item-wrapper:last-child { border-bottom: none; }
         .lb-item { 
-            padding: 14px; display: flex; justify-content: space-between; font-size: 18px; 
+            padding: 14px 10px; display: flex; justify-content: space-between; font-size: 18px; 
             align-items: center;
         }
         .lb-item-wrapper.lb-item-top3 .lb-item { background: linear-gradient(90deg, rgba(212, 175, 55, 0.25), rgba(212, 175, 55, 0.1)); border-radius: 8px; margin-bottom: 4px; }
         .lb-item-wrapper.lb-item-me .lb-item { background: linear-gradient(90deg, rgba(192, 57, 43, 0.25), rgba(192, 57, 43, 0.1)); border-radius: 8px; border: 1px solid rgba(192, 57, 43, 0.4); }
         .lb-likes-click { cursor: pointer; }
         .lb-likes-click:hover { opacity: 0.9; }
-        .lb-likes-list { padding: 10px 14px; background: #f9f9f9; border-radius: 0 0 10px 10px; border: 1px solid #eee; border-top: none; }
-        .lb-liked-item { display: flex; align-items: center; gap: 10px; padding: 10px; background: white; border-radius: 10px; margin-bottom: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.06); border: 1px solid #eee; }
+        .lb-likes-list { padding: 10px 10px; background: #f9f9f9; border-radius: 0 0 10px 10px; border: 1px solid #eee; border-top: none; max-width: 100%; overflow-x: hidden; }
+        .lb-liked-item { display: flex; align-items: center; gap: 10px; padding: 10px; background: white; border-radius: 10px; margin-bottom: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.06); border: 1px solid #eee; max-width: 100%; overflow-x: hidden; }
         .lb-liked-item:last-of-type { margin-bottom: 0; }
         .lb-liked-item img { width: 45px; height: 45px; object-fit: cover; border-radius: 6px; flex-shrink: 0; }
         .lb-liked-img-click { cursor: pointer; }
@@ -186,7 +191,7 @@
         .lb-motivation { margin-top: 15px; font-size: 16px; color: var(--primary); font-style: italic; font-weight: bold; }
 
         /* --- PLAYER --- */
-        #player-view { display: none; padding: 15px; width: 100%; max-width: 600px; margin: 0 auto; overflow-x: hidden; }
+        #player-view { display: none; padding: 15px 10px; width: 100%; max-width: 100%; margin: 0 auto; overflow-x: hidden; }
         
         .verse-section { width: 100%; max-width: 100%; box-sizing: border-box; overflow-x: hidden; }
         
@@ -228,8 +233,8 @@
         .nav-btn:active { background: var(--gold-light); }
         .arrow-icon { direction: ltr; display: inline-block; }
 
-        #verse-list-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; max-width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 3000; overflow-x: hidden; overflow-y: auto; padding: 10px; box-sizing: border-box; }
-        .verse-list-content { background: var(--surface); border-radius: 15px; padding: 15px; width: 100%; max-width: 100%; margin: 0 auto; box-sizing: border-box; }
+        #verse-list-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; max-width: 100vw; height: 100%; background: rgba(0,0,0,0.7); z-index: 3000; overflow-x: hidden; overflow-y: auto; padding: 10px; box-sizing: border-box; }
+        .verse-list-content { background: var(--surface); border-radius: 15px; padding: 15px; width: 100%; max-width: calc(100vw - 20px); margin: 0 auto; box-sizing: border-box; }
         .verse-list-title { text-align: center; font-weight: bold; color: var(--primary); margin-bottom: 15px; font-size: 18px; }
         .verse-list-grid { display: flex; flex-direction: column; gap: 12px; }
         .verse-list-item { background: var(--surface); border-radius: 12px; overflow: hidden; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border: 2px solid transparent; display: flex; flex-direction: column; width: 100%; }
@@ -251,7 +256,8 @@
         /* ADMIN PANEL */
         .admin-panel {
             background: #fff5f5; border: 2px solid var(--red); border-radius: 15px;
-            padding: 20px; margin: 20px auto; text-align: center; display: none; width: 95%; max-width: 600px;
+            padding: 20px 10px; margin: 20px auto; text-align: center; display: none;
+            width: 100%; max-width: 100%; overflow-x: hidden; box-sizing: border-box;
         }
         .admin-title { color: var(--red); font-weight: bold; margin-bottom: 15px; font-size: 18px; border-bottom: 1px solid rgba(192, 57, 43, 0.2); padding-bottom: 8px; }
         .admin-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
@@ -286,17 +292,20 @@
         .cp-time { font-size: 11px; color: #666; font-family: monospace; min-width: 36px; font-weight: bold; }
 
         @media (max-width: 480px) {
-            .feed-msg, .reply-box { padding: 8px 10px; }
-            .feed-msg .feed-row1, .feed-msg .feed-row2, .reply-row1, .reply-row2 { gap: 6px; }
+            #leaderboard-section { padding: 15px 8px; }
+            .leaderboard-card { padding: 20px 8px; }
+            .lb-item { padding: 14px 8px; }
+            .menu-grid { padding: 25px 8px; gap: 20px; }
+            .feed-msg, .reply-box { padding: 10px 12px; }
+            .feed-msg .feed-row1, .feed-msg .feed-row2, .reply-row1, .reply-row2 { gap: 8px; }
             .feed-msg .feed-player-wrap, .reply-player-wrap { min-width: 0; width: 100%; }
-            .custom-player { padding: 5px 8px; }
-            .cp-btn { width: 26px; height: 26px; font-size: 11px; }
-            .cp-time { min-width: 32px; font-size: 10px; }
-            #recording-ui { width: 95%; padding: 10px 14px; bottom: 180px; }
+            .custom-player { padding: 6px 10px; }
+            #recording-ui { width: 95%; padding: 12px 14px; bottom: 180px; }
             .rec-timer { font-size: 22px; }
-            .recording-row { gap: 12px; }
-            .settings-box { padding: 8px 10px; gap: 10px; flex-wrap: wrap; }
-            .nav-btn { min-height: 48px; min-width: 100px; font-size: 16px; padding: 12px; }
+            .recording-row { gap: 20px; }
+            .settings-box { padding: 10px 15px; gap: 10px; flex-wrap: wrap; }
+            .nav-btn { min-height: 48px; min-width: 100px; font-size: 18px; padding: 12px; }
+            .admin-panel { padding: 20px 8px; }
         }
 
         /* FEED & STATS */
@@ -309,9 +318,9 @@
         }
         .view-counter:active { background: rgba(0,0,0,0.1); transform: scale(0.98); }
         
-        .feed-container { min-height: 100px; }
+        .feed-container { min-height: 100px; width: 100%; max-width: 100%; overflow-x: hidden; }
         
-        .feed-msg { padding: 10px 12px; border-radius: 12px; margin-bottom: 12px; position: relative; transition: transform 0.2s; }
+        .feed-msg { padding: 10px 12px; border-radius: 12px; margin-bottom: 12px; position: relative; transition: transform 0.2s; max-width: 100%; overflow-x: hidden; }
         .feed-msg.highlighted { border: 2px solid var(--gold); background: #fffffa; animation: flash 1s; }
         @keyframes flash { 0% { background: var(--gold-light); } 100% { background: #fffffa; } }
 
@@ -461,11 +470,7 @@
             
             <input type="number" id="birthYear" class="login-input latin-input" placeholder="سنة الميلاد" oninput="if(this.value.length>4) this.value=this.value.slice(0,4);">
 
-            <select id="userRole" class="login-input login-select">
-                <option value="student">طالب</option>
-                <option value="teacher">معلم</option>
-            </select>
-            <input type="password" id="pinInput" class="login-input" placeholder="كلمة المرور">
+            <input type="text" id="pinInput" class="login-input" placeholder="كلمة المرور" autocomplete="off">
             <button onclick="checkLogin()" class="login-btn">دخول</button>
             
             <div class="login-spacer"></div>
@@ -487,14 +492,32 @@
         <button class="login-btn" onclick="goToMenu()">عودة</button>
     </div>
 
-    <div id="saved-list-view" style="display:none; padding: 20px; max-width: 600px; margin: 0 auto;">
+    <div id="saved-list-view" style="display:none; padding: 15px 10px; width: 100%; max-width: 100%; margin: 0 auto; overflow-x: hidden;">
         <h3 style="text-align:center; color:var(--primary); font-size:24px;">📌 للمشاهدة لاحقاً</h3>
         <div id="savedList" class="feed-container"></div>
         <button class="login-btn" onclick="goToMenu()">عودة</button>
     </div>
 
+    <div id="admin-message-view" style="display:none; padding: 15px 10px; width: 100%; max-width: 100%; margin: 0 auto; overflow-x: hidden;">
+        <div id="adminMessageContent" style="background:white; padding:20px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.08); margin-bottom:15px; white-space:pre-wrap; font-size:18px; line-height:1.6;"></div>
+        <div style="display:flex; align-items:center; gap:15px; margin-bottom:20px;">
+            <button id="adminMsgLikeBtn" class="login-btn" style="width:auto; padding:10px 20px;" onclick="likeAdminMessage()">👍 أعجبني</button>
+            <span id="adminMsgLikeCount" style="color:#888; font-size:14px;"></span>
+        </div>
+        <button class="login-btn" onclick="closeAdminMessageView()">عودة</button>
+    </div>
+
     <div id="adminMenuPanel" class="admin-panel" style="display:none; margin-top: 15px;">
         <div class="admin-title">🛠️ إدارة التطبيق (شامل)</div>
+
+        <div class="admin-message-send" style="margin-bottom:15px;">
+            <textarea id="adminMessageText" class="login-input" placeholder="رسالة للجميع (عربي أو إنجليزي)..." rows="3" style="width:100%; resize:vertical; margin-bottom:8px;"></textarea>
+            <button class="btn-admin-reset" onclick="sendAdminMessage()">📤 إرسال رسالة للجميع</button>
+        </div>
+        <div class="admin-messages-list" style="margin-bottom:15px;">
+            <div class="admin-title" style="font-size:14px;">الرسائل المرسلة</div>
+            <div id="adminMessagesListContainer" style="max-height:200px; overflow-y:auto;"></div>
+        </div>
 
         <div class="admin-actions">
             <button class="btn-admin-reset" onclick="resetAllNotifications()">🔔 تصفير كل الإشعارات</button>
@@ -616,7 +639,6 @@
 
     <script>
         const STUDENT_PIN = "1234";
-        const TEACHER_PIN = "7777";
         const ADMIN_PIN = "1879";
         const TEACHER_LOTFI_PIN = "9898"; 
 
@@ -930,7 +952,7 @@
             const first = document.getElementById('firstName').value.trim();
             const last = document.getElementById('lastName').value.trim();
             const year = document.getElementById('birthYear').value.trim();
-            const role = document.getElementById('userRole').value;
+            const role = "student";
 
             // VALIDATION
             const latinRegex = /^[a-zA-Z\s]+$/;
@@ -943,11 +965,12 @@
                 return;
             }
 
-            let isPinValid = false;
-            if (role === 'student' && pin === STUDENT_PIN) isPinValid = true;
-            if (role === 'teacher' && pin === TEACHER_PIN) isPinValid = true;
+            if (pin !== STUDENT_PIN) {
+                alert("بيانات الدخول غير صحيحة");
+                return;
+            }
 
-            if(isPinValid) {
+            {
                 const fullNameRaw = first + " " + last;
                 const uniqueID = generateUserId(fullNameRaw, role, year);
                 
@@ -1008,7 +1031,7 @@
                 updateUIForRole(); 
                 listenForNotifications();
                 renderMenu();
-            } else { alert("بيانات الدخول غير صحيحة"); }
+            }
         }
         
         function updateUIForRole() {
@@ -1936,10 +1959,15 @@
                     let text = "";
                     if(n.type === 'new_recording') text = `🎤 تسجيل جديد من ${n.senderName}`;
                     if(n.type === 'reply') text = `✍️ رد جديد من ${n.senderName}`;
+                    if(n.type === 'admin_message') text = `📩 رسالة من المسؤول`;
                     let notifDateStr = formatDateTime(n.timestamp);
+                    const fileId = n.fileId || '';
+                    const postId = n.postId || '';
+                    const messageId = n.messageId || '';
+                    const onClick = n.type === 'admin_message' ? `openFromAdminMessageNotif('${n.id}', '${messageId}')` : `openFromNotif('${n.id}', '${fileId}', '${postId}')`;
 
                     list.innerHTML += `
-                    <div class="notif-card" onclick="openFromNotif('${n.id}', '${n.fileId}', '${n.postId}')">
+                    <div class="notif-card" onclick="${onClick}">
                         <div>
                             <div class="notif-text">${text}</div>
                             <div class="notif-time">${notifDateStr || 'اضغط للذهاب للمقطع'}</div>
@@ -1964,6 +1992,11 @@
             document.getElementById('pageTitle').innerText = "الإشعارات";
             document.getElementById('appFooter').style.display = 'none';
             const menuBtn = document.getElementById('menuBtn'); if(menuBtn) menuBtn.style.display = 'flex';
+        }
+
+        window.openFromAdminMessageNotif = async function(notifId, messageId) {
+            try { await window.deleteDoc(window.doc(window.db, "notifications", notifId)); } catch(e){}
+            showAdminMessageView(messageId);
         }
 
         window.openFromNotif = async function(notifId, fileId, postId) {
@@ -1997,6 +2030,126 @@
             renderPosts(div, userRole, myUid, savedIdsForFeed);
         }
 
+        let currentAdminMessageId = null;
+        let adminMessageViewUnsub = null;
+        function renderAdminMessageContent(d, isAdmin, myUid) {
+            document.getElementById('adminMessageContent').innerText = d.text || '';
+            const likes = d.likes || [];
+            const likesCount = likes.length;
+            const isLiked = likes.some(l => (typeof l === 'object' ? l.uid === myUid : l === myUid));
+            document.getElementById('adminMsgLikeCount').innerText = likesCount + ' إعجاب';
+            document.getElementById('adminMsgLikeCount').style.cursor = (isAdmin && likesCount > 0) ? 'pointer' : 'default';
+            document.getElementById('adminMsgLikeCount').onclick = (isAdmin && likesCount > 0) ? () => showAdminMessageLikersById(currentAdminMessageId) : null;
+            document.getElementById('adminMsgLikeBtn').innerText = isLiked ? '👍 تم الإعجاب' : '👍 أعجبني';
+            document.getElementById('adminMsgLikeBtn').style.display = (isAdmin ? 'none' : 'block');
+        }
+        window.showAdminMessageView = async function(messageId) {
+            currentAdminMessageId = messageId;
+            if (adminMessageViewUnsub) adminMessageViewUnsub();
+            document.getElementById('menu-view').style.display = 'none';
+            document.getElementById('player-view').style.display = 'none';
+            document.getElementById('notifications-view').style.display = 'none';
+            document.getElementById('admin-message-view').style.display = 'block';
+            document.getElementById('appFooter').style.display = 'none';
+            const menuBtn = document.getElementById('menuBtn'); if(menuBtn) menuBtn.style.display = 'flex';
+            document.getElementById('pageTitle').innerText = "رسالة من المسؤول";
+            const isAdmin = localStorage.getItem('it9an_uid') === 'admin_super';
+            const myUid = localStorage.getItem('it9an_uid');
+            const msgRef = window.doc(window.db, "adminMessages", messageId);
+            adminMessageViewUnsub = window.onSnapshot(msgRef, (snap) => {
+                if (snap.exists()) renderAdminMessageContent(snap.data(), isAdmin, myUid);
+            });
+        }
+        window.closeAdminMessageView = function() { if (adminMessageViewUnsub) adminMessageViewUnsub(); adminMessageViewUnsub = null; currentAdminMessageId = null; showView('menu-view'); renderMenu(); }
+        window.likeAdminMessage = async function() {
+            if (!currentAdminMessageId) return;
+            const uid = localStorage.getItem('it9an_uid');
+            const myName = localStorage.getItem('it9an_name');
+            if (!uid || uid === 'admin_super') return;
+            const msgRef = window.doc(window.db, "adminMessages", currentAdminMessageId);
+            const snap = await window.getDoc(msgRef);
+            if (!snap.exists()) return;
+            let likes = snap.data().likes || [];
+            const isLiked = likes.some(l => (typeof l === 'object' ? l.uid === uid : l === uid));
+            if (isLiked) {
+                likes = likes.filter(l => (typeof l === 'object' ? l.uid !== uid : l !== uid));
+            } else {
+                likes.push({ uid, name: myName, timestamp: Date.now() });
+            }
+            await window.updateDoc(msgRef, { likes });
+            document.getElementById('adminMsgLikeBtn').innerText = !isLiked ? '👍 تم الإعجاب' : '👍 أعجبني';
+            document.getElementById('adminMsgLikeCount').innerText = likes.length + ' إعجاب';
+        }
+        window.sendAdminMessage = async function() {
+            const uid = localStorage.getItem('it9an_uid');
+            if (uid !== 'admin_super') return;
+            const text = document.getElementById('adminMessageText').value.trim();
+            if (!text) { alert('اكتب الرسالة أولاً'); return; }
+            try {
+                const msgRef = await window.addDoc(window.collection(window.db, "adminMessages"), {
+                    text, timestamp: window.serverTimestamp(), senderUid: 'admin_super', likes: []
+                });
+                const msgId = msgRef.id;
+                const usersSnap = await window.getDocs(window.query(window.collection(window.db, "users")));
+                let hasTeacher = false;
+                for (const u of usersSnap.docs) {
+                    const uData = u.data();
+                    const toUid = uData.uid || u.id;
+                    const role = uData.role || 'student';
+                    if (toUid === 'admin_super') continue;
+                    if (role === 'teacher') {
+                        hasTeacher = true;
+                    } else {
+                        await window.addDoc(window.collection(window.db, "notifications"), {
+                            to: toUid, type: 'admin_message', messageId: msgId, timestamp: window.serverTimestamp()
+                        });
+                    }
+                }
+                if (hasTeacher) {
+                    await window.addDoc(window.collection(window.db, "notifications"), {
+                        to: 'teachers', type: 'admin_message', messageId: msgId, timestamp: window.serverTimestamp()
+                    });
+                }
+                document.getElementById('adminMessageText').value = '';
+                loadAdminMessagesList();
+                alert('تم إرسال الرسالة');
+            } catch (e) { alert('خطأ: ' + e.message); }
+        }
+        let adminMessagesUnsub = null;
+        function loadAdminMessagesList() {
+            const container = document.getElementById('adminMessagesListContainer');
+            if (!container) return;
+            const uid = localStorage.getItem('it9an_uid');
+            if (uid !== 'admin_super') return;
+            if (adminMessagesUnsub) adminMessagesUnsub();
+            const q = window.query(window.collection(window.db, "adminMessages"), window.orderBy("timestamp", "desc"));
+            adminMessagesUnsub = window.onSnapshot(q, (snap) => {
+                container.innerHTML = '';
+                if (snap.empty) { container.innerHTML = '<div style="color:#999; padding:10px; font-size:14px;">لا توجد رسائل بعد</div>'; return; }
+                snap.forEach(doc => {
+                    const d = doc.data();
+                    const text = (d.text || '').slice(0, 50) + ((d.text || '').length > 50 ? '...' : '');
+                    const likesCount = (d.likes || []).length;
+                    const dateStr = d.timestamp && d.timestamp.seconds ? new Date(d.timestamp.seconds * 1000).toLocaleDateString('ar-EG') : '';
+                    const msgId = doc.id;
+                    container.innerHTML += `
+                    <div class="notif-card" style="margin-bottom:8px; padding:12px;">
+                        <div style="flex:1; min-width:0;" onclick="showAdminMessageView('${msgId}')">
+                            <div class="notif-text" style="font-size:14px;">${(text || '').replace(/</g,'&lt;')}</div>
+                            <div class="notif-time">${dateStr}</div>
+                        </div>
+                        <span class="lb-likes lb-likes-click" onclick="event.stopPropagation(); showAdminMessageLikersById('${msgId}')" style="cursor:pointer; padding:4px 8px;">👍 ${likesCount}</span>
+                    </div>`;
+                });
+            });
+        }
+        window.showAdminMessageLikersById = async function(msgId) {
+            const snap = await window.getDoc(window.doc(window.db, "adminMessages", msgId));
+            const likes = snap.exists() ? (snap.data().likes || []) : [];
+            const names = likes.map(l => (typeof l === 'object' ? l.name : l) || 'مستخدم').join('\n');
+            alert(names || 'لا أحد');
+        }
+
         function renderMenu() {
             const grid = document.getElementById('lesson-grid'); 
             grid.innerHTML = ""; showView('menu-view');
@@ -2009,6 +2162,7 @@
             if(uid === 'admin_super') {
                 document.getElementById('adminMenuPanel').style.display = 'block';
                 document.getElementById('leaderboard-section').style.display = 'block';
+                loadAdminMessagesList();
                 loadLeaderboard(lbPendingRestore ? doLbRestore : undefined);
             } else {
                 document.getElementById('adminMenuPanel').style.display = 'none';
@@ -2703,7 +2857,7 @@
         }
 
         window.goToMenu = function() { stopLoop(); stopRecordingAndReview(); lbReturnSource = null; lbReturnToUid = null; lbReturnOffset = 0; showView('menu-view'); renderMenu(); updateLbBackButton(); } 
-        function showView(id) { document.getElementById('menu-view').style.display = 'none'; document.getElementById('player-view').style.display = 'none'; document.getElementById('notifications-view').style.display = 'none'; document.getElementById('saved-list-view').style.display = 'none'; document.getElementById(id).style.display = (id === 'menu-view') ? 'grid' : 'block'; const menuBtn = document.getElementById('menuBtn'); if(menuBtn) menuBtn.style.display = (id === 'menu-view') ? 'none' : 'flex'; }
+        function showView(id) { document.getElementById('menu-view').style.display = 'none'; document.getElementById('player-view').style.display = 'none'; document.getElementById('notifications-view').style.display = 'none'; document.getElementById('saved-list-view').style.display = 'none'; document.getElementById('admin-message-view').style.display = 'none'; document.getElementById(id).style.display = (id === 'menu-view') ? 'grid' : 'block'; const menuBtn = document.getElementById('menuBtn'); if(menuBtn) menuBtn.style.display = (id === 'menu-view') ? 'none' : 'flex'; }
         
         window.likePost = async (id, ownerUid) => { 
             const uid = localStorage.getItem('it9an_uid'); const myName = localStorage.getItem('it9an_name');
@@ -3032,5 +3186,4 @@
     </script>
 </body>
 </html>
-
 
