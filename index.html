@@ -3020,9 +3020,14 @@
                     const newReplies = data.replies.filter(r => r.role !== 'teacher');
                     await window.updateDoc(window.doc(window.db, "posts", docSnap.id), { replies: newReplies });
                 }
+                const tq = window.query(window.collection(window.db, "users"), window.where("role", "==", "teacher"));
+                const tsnap = await window.getDocs(tq);
+                for(const tdoc of tsnap.docs) {
+                    try { await window.updateDoc(tdoc.ref, { totalRepliesCount: 0, totalLikes: 0 }); } catch(e){}
+                }
                 loadLeaderboard();
                 if(localStorage.getItem('it9an_uid')==='admin_super') loadTeachersLeaderboard();
-                alert("تم حذف " + removed + " رد معلم");
+                alert("تم حذف " + removed + " رد معلم. تم تصفير أعداد المعلمين.");
             } catch(e) { alert("خطأ: " + (e.message || e)); }
         }
 
