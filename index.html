@@ -3017,8 +3017,14 @@
                 }
                 const uq = window.query(window.collection(window.db, "users"));
                 const usnap = await window.getDocs(uq);
+                const resetData = { postsCount: 0, totalLikes: 0, totalRepliesCount: 0 };
                 for(const udoc of usnap.docs) {
-                    await window.updateDoc(udoc.ref, { postsCount: 0, totalLikes: 0, totalRepliesCount: 0 });
+                    try { await window.updateDoc(udoc.ref, resetData); } catch(e) { console.warn("User reset fehlgeschlagen:", udoc.id, e); }
+                }
+                const tq = window.query(window.collection(window.db, "users"), window.where("role", "==", "teacher"));
+                const tsnap = await window.getDocs(tq);
+                for(const tdoc of tsnap.docs) {
+                    try { await window.updateDoc(tdoc.ref, resetData); } catch(e) { console.warn("Lehrer-Reset fehlgeschlagen:", tdoc.id, e); }
                 }
                 loadLeaderboard();
                 if(localStorage.getItem('it9an_uid')==='admin_super') loadTeachersLeaderboard();
