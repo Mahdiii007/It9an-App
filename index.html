@@ -479,7 +479,7 @@
                 <input type="text" id="firstName" class="login-input latin-input" placeholder="الاسم الأول" oninput="this.value=this.value.replace(/[^a-zA-Z\s]/g,'')">
                 <input type="text" id="lastName" class="login-input latin-input" placeholder="اللقب" oninput="this.value=this.value.replace(/[^a-zA-Z\s]/g,'')">
                 <input type="number" id="birthYear" class="login-input latin-input" placeholder="سنة الميلاد (بعد 1950)" min="1951" max="2030" oninput="if(this.value.length>4) this.value=this.value.slice(0,4);">
-                <input type="text" id="classicPinInput" class="login-input" placeholder="كلمة المرور (1234)" autocomplete="off">
+                <input type="text" id="classicPinInput" class="login-input" placeholder="كلمة المرور" autocomplete="off">
                 <button onclick="checkLoginClassic()" class="login-btn">دخول</button>
                 <div style="margin-top:10px;">
                     <button type="button" class="login-link-btn" onclick="showPinLogin()">← العودة للدخول بالرمز الشخصي</button>
