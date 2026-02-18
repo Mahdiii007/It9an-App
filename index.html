@@ -1536,6 +1536,7 @@
                     })();
                 }
                 renderLeaderboardItems(users, leaderboardShowFull, myUid, !firstSnapshot);
+                if (typeof window.updateHeaderNamePin === 'function') window.updateHeaderNamePin();
                 if (myUid === 'admin_super') {
                     loadTeachersLeaderboard(() => { if (onComplete && firstSnapshot) { onComplete(); onComplete = null; } firstSnapshot = false; });
                     if (!onComplete) firstSnapshot = false;
@@ -2368,6 +2369,26 @@
             alert(names || 'لا أحد');
         }
 
+        window.updateHeaderNamePin = function() {
+            const pt = document.getElementById('pageTitle');
+            if (!pt || document.getElementById('menu-view').style.display !== 'grid') return;
+            const myName = localStorage.getItem('it9an_name') || '';
+            const nameClean = myName.replace(/\s*\(\d{4}\)\s*$/, '').trim();
+            const uid = localStorage.getItem('it9an_uid');
+            let pinHtml = '';
+            if (uid && uid !== 'admin_super') {
+                const u = leaderboardAllUsers.find(x => x.uid === uid) || leaderboardAllTeachers.find(x => x.uid === uid);
+                const pin = (u && u.personalPin) ? u.personalPin : (localStorage.getItem('it9an_pin') || '');
+                const pinStr = pin ? (pin+'').padStart(4,'0') : '';
+                const totalLen = pinStr.length + (nameClean || '').length;
+                const fs = Math.max(17, Math.min(28, 38 - Math.floor(totalLen / 1.2)));
+                if (pin) pinHtml = `<span class="header-pin" title="الرمز الشخصي" style="font-size:${fs}px">${pinStr}</span> `;
+                pt.innerHTML = pinHtml + `<span class="header-user-name-main" style="font-size:${fs}px">${nameClean || ''}</span>`;
+            } else {
+                pt.innerHTML = `<span class="header-user-name-main" style="font-size:26px">${nameClean || ''}</span>`;
+            }
+        };
+
         function renderMenu() {
             const grid = document.getElementById('lesson-grid'); 
             grid.innerHTML = ""; showView('menu-view');
@@ -2380,11 +2401,11 @@
                 const pin = (u && u.personalPin) ? u.personalPin : (localStorage.getItem('it9an_pin') || '');
                 const pinStr = pin ? (pin+'').padStart(4,'0') : '';
                 const totalLen = pinStr.length + (nameClean || '').length;
-                const fs = Math.max(11, Math.min(18, 20 - Math.floor(totalLen / 2)));
+                const fs = Math.max(17, Math.min(28, 38 - Math.floor(totalLen / 1.2)));
                 if (pin) pinHtml = `<span class="header-pin" title="الرمز الشخصي" style="font-size:${fs}px">${pinStr}</span> `;
                 document.getElementById('pageTitle').innerHTML = pinHtml + `<span class="header-user-name-main" style="font-size:${fs}px">${nameClean || ''}</span>`;
             } else {
-                document.getElementById('pageTitle').innerHTML = `<span class="header-user-name-main" style="font-size:18px">${nameClean || ''}</span>`;
+                document.getElementById('pageTitle').innerHTML = `<span class="header-user-name-main" style="font-size:26px">${nameClean || ''}</span>`;
             }
             document.getElementById('appFooter').style.display = 'none';
             
@@ -3459,4 +3480,5 @@
     </script>
 </body>
 </html>
+
 
