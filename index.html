@@ -110,7 +110,7 @@
         }
         #pageTitle img { height: 35px; width: auto; display: block; object-fit: contain; flex-shrink: 0; } 
         .header-user-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; font-size: clamp(11px, 2.5vw, 14px); color: var(--primary); margin-right: 8px; }
-        .header-user-name-main { font-size: clamp(11px, 2.5vw, 14px); color: var(--primary); font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; text-align: center; display: block; min-width: 0; flex: 1; }
+        .header-user-name-main { color: var(--primary); font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; text-align: center; display: block; min-width: 0; flex: 1; }
         .title-text-maktaa { 
             font-size: clamp(14px, 4vw, 18px); color: var(--primary); font-weight: bold; 
             border-right: 2px solid #ddd; padding-right: 10px; margin-right: 5px; white-space: nowrap;
@@ -186,7 +186,7 @@
         .lb-rank { font-weight: bold; color: var(--gold); font-size: 22px; flex-shrink: 0; }
         .lb-pin { font-family: monospace; font-size: 14px; color: #666; background: #f0f0f0; padding: 2px 6px; border-radius: 4px; flex-shrink: 0; }
         .lb-name { font-weight: bold; color: #333; font-size: clamp(16px, 3.5vw, 20px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
-        .header-pin { font-family: monospace; font-size: clamp(11px, 2.5vw, 14px); color: var(--primary); background: rgba(15,76,58,0.1); padding: 2px 6px; border-radius: 6px; margin-left: 6px; flex-shrink: 0; }
+        .header-pin { font-family: monospace; color: var(--primary); background: rgba(15,76,58,0.1); padding: 2px 6px; border-radius: 6px; margin-left: 6px; flex-shrink: 0; }
         .lb-stats { display: flex; gap: 8px; flex-shrink: 0; flex-wrap: nowrap; }
         .lb-score, .lb-likes { 
             background: var(--primary); color: white; padding: 5px 8px; border-radius: 10px; 
@@ -2378,9 +2378,14 @@
             if (uid && uid !== 'admin_super') {
                 const u = leaderboardAllUsers.find(x => x.uid === uid) || leaderboardAllTeachers.find(x => x.uid === uid);
                 const pin = (u && u.personalPin) ? u.personalPin : (localStorage.getItem('it9an_pin') || '');
-                if (pin) pinHtml = `<span class="header-pin" title="الرمز الشخصي">${(pin+'').padStart(4,'0')}</span> `;
+                const pinStr = pin ? (pin+'').padStart(4,'0') : '';
+                const totalLen = pinStr.length + (nameClean || '').length;
+                const fs = Math.max(11, Math.min(18, 20 - Math.floor(totalLen / 2)));
+                if (pin) pinHtml = `<span class="header-pin" title="الرمز الشخصي" style="font-size:${fs}px">${pinStr}</span> `;
+                document.getElementById('pageTitle').innerHTML = pinHtml + `<span class="header-user-name-main" style="font-size:${fs}px">${nameClean || ''}</span>`;
+            } else {
+                document.getElementById('pageTitle').innerHTML = `<span class="header-user-name-main" style="font-size:18px">${nameClean || ''}</span>`;
             }
-            document.getElementById('pageTitle').innerHTML = pinHtml + `<span class="header-user-name-main">${nameClean || ''}</span>`; 
             document.getElementById('appFooter').style.display = 'none';
             
             if(uid === 'admin_super') {
