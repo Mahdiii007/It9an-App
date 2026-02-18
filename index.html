@@ -93,7 +93,7 @@
             font-weight: bold; display: flex; align-items: center; gap: 5px; white-space: nowrap;
         }
         
-        .notif-container { position: relative; cursor: pointer; display: flex; align-items: center; }
+        .notif-container { position: relative; cursor: pointer; display: flex; align-items: center; flex-shrink: 0; }
         .notif-icon { font-size: 28px; color: var(--gold-light); }
         .notif-badge { 
             position: absolute; top: -5px; right: -5px; 
@@ -103,14 +103,14 @@
         }
 
         #pageTitle {
-            background: var(--surface); padding: 5px 20px; border-radius: 30px; 
-            display: flex; align-items: center; justify-content: center; gap: 10px;
+            background: var(--surface); padding: 5px 12px; border-radius: 30px; 
+            display: flex; align-items: center; justify-content: center; gap: 8px;
             height: 50px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); border: 2px solid var(--gold);
-            cursor: default; overflow: hidden; white-space: nowrap; max-width: 60%;
+            cursor: default; overflow: hidden; white-space: nowrap; flex: 1; min-width: 0; max-width: 78%;
         }
         #pageTitle img { height: 35px; width: auto; display: block; object-fit: contain; flex-shrink: 0; } 
-        .header-user-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; font-size: clamp(12px, 3vw, 16px); color: var(--primary); margin-right: 8px; }
-        .header-user-name-main { font-size: 22px; color: var(--primary); font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; text-align: center; display: block; }
+        .header-user-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; font-size: clamp(11px, 2.5vw, 14px); color: var(--primary); margin-right: 8px; }
+        .header-user-name-main { font-size: clamp(11px, 2.5vw, 14px); color: var(--primary); font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; text-align: center; display: block; min-width: 0; flex: 1; }
         .title-text-maktaa { 
             font-size: clamp(14px, 4vw, 18px); color: var(--primary); font-weight: bold; 
             border-right: 2px solid #ddd; padding-right: 10px; margin-right: 5px; white-space: nowrap;
@@ -186,7 +186,7 @@
         .lb-rank { font-weight: bold; color: var(--gold); font-size: 22px; flex-shrink: 0; }
         .lb-pin { font-family: monospace; font-size: 14px; color: #666; background: #f0f0f0; padding: 2px 6px; border-radius: 4px; flex-shrink: 0; }
         .lb-name { font-weight: bold; color: #333; font-size: clamp(16px, 3.5vw, 20px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
-        .header-pin { font-family: monospace; font-size: 14px; color: var(--primary); background: rgba(15,76,58,0.1); padding: 2px 8px; border-radius: 6px; margin-left: 6px; }
+        .header-pin { font-family: monospace; font-size: clamp(11px, 2.5vw, 14px); color: var(--primary); background: rgba(15,76,58,0.1); padding: 2px 6px; border-radius: 6px; margin-left: 6px; flex-shrink: 0; }
         .lb-stats { display: flex; gap: 8px; flex-shrink: 0; flex-wrap: nowrap; }
         .lb-score, .lb-likes { 
             background: var(--primary); color: white; padding: 5px 8px; border-radius: 10px; 
