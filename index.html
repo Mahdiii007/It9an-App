@@ -2160,7 +2160,7 @@
                 if (role === 'teacher') {
                     notifs = notifs.filter(n => !(n.clearedBy || []).includes(uid));
                 }
-                notifs.sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+                notifs.sort((a,b) => (a.timestamp?.seconds || 0) - (b.timestamp?.seconds || 0));
 
                 if (notifs.length === 0) {
                     list.innerHTML = "<div style='text-align:center; padding:20px; color:#999; font-size:16px;'>لا توجد إشعارات</div>";
