@@ -1062,7 +1062,7 @@
                         }
                         if(ud.name) finalDisplayName = ud.name;
                         const updates = { lastLogin: window.serverTimestamp() };
-                        if (!ud.personalPin) {
+                        if (!(ud.personalPin || '').toString().trim()) {
                             const allPins = await getAllPersonalPins();
                             updates.personalPin = generatePersonalPin(allPins);
                         }
@@ -1103,7 +1103,7 @@
                             finalDisplayName = data.name || (data.baseName || '') + (data.year ? ' (' + data.year + ')' : '');
                             const updates = { lastLogin: window.serverTimestamp() };
                             if (!data.normalizedName) updates.normalizedName = normalizedName;
-                            if (!data.personalPin) {
+                            if (!(data.personalPin || '').toString().trim()) {
                                 const allPins = await getAllPersonalPins();
                                 updates.personalPin = generatePersonalPin(allPins);
                             }
@@ -1525,9 +1525,13 @@
                     (async () => {
                         const allPins = users.map(u => u.personalPin).filter(Boolean);
                         for (const u of needPin) {
-                            const pin = generatePersonalPin(allPins);
-                            allPins.push(pin);
-                            try { await window.updateDoc(window.doc(window.db, "users", u.uid), { personalPin: pin }); } catch(e){}
+                            try {
+                                const fresh = await window.getDoc(window.doc(window.db, "users", u.uid));
+                                if (fresh.exists() && (fresh.data().personalPin || '').toString().length >= 4) continue;
+                                const pin = generatePersonalPin(allPins);
+                                allPins.push(pin);
+                                await window.updateDoc(window.doc(window.db, "users", u.uid), { personalPin: pin });
+                            } catch(e){}
                         }
                     })();
                 }
@@ -3450,5 +3454,4 @@
     </script>
 </body>
 </html>
-
 
