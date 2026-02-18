@@ -64,6 +64,10 @@
         input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
         input[type=number] { -moz-appearance: textfield; }
 
+        .login-link-btn {
+            background: none; border: none; color: var(--primary); cursor: pointer;
+            font-size: 13px; text-decoration: underline; padding: 5px;
+        }
         .login-btn {
             margin-top: 15px; padding: 15px 40px; font-weight: bold; font-size: 20px; 
             border: none; border-radius: 30px; width: 100%;
@@ -180,7 +184,9 @@
         .lb-show-more-btn { display: block; width: 100%; margin-top: 12px; padding: 10px; background: var(--primary); color: white; border: none; border-radius: 10px; font-size: 15px; font-family: 'Amiri'; font-weight: bold; cursor: pointer; }
         .lb-show-more-btn:active { opacity: 0.9; }
         .lb-rank { font-weight: bold; color: var(--gold); font-size: 22px; flex-shrink: 0; }
+        .lb-pin { font-family: monospace; font-size: 14px; color: #666; background: #f0f0f0; padding: 2px 6px; border-radius: 4px; flex-shrink: 0; }
         .lb-name { font-weight: bold; color: #333; font-size: clamp(16px, 3.5vw, 20px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+        .header-pin { font-family: monospace; font-size: 14px; color: var(--primary); background: rgba(15,76,58,0.1); padding: 2px 8px; border-radius: 6px; margin-left: 6px; }
         .lb-stats { display: flex; gap: 8px; flex-shrink: 0; flex-wrap: nowrap; }
         .lb-score, .lb-likes { 
             background: var(--primary); color: white; padding: 5px 8px; border-radius: 10px; 
@@ -453,27 +459,32 @@
 
     <div id="login-screen">
         <div class="login-card">
-            <div class="login-title">تطبيق إتقان</div>
-            <div class="login-subtitle">
-                "خيركم من تعلم القرآن وعلمه"<br>
-                <strong>مرحباً بك في رحلة الإتقان</strong>
+            <div id="login-pin-mode">
+                <div class="login-title">تطبيق إتقان</div>
+                <div class="login-subtitle">
+                    "خيركم من تعلم القرآن وعلمه"<br>
+                    <strong>مرحباً بك في رحلة الإتقان</strong>
+                </div>
+                <input type="text" id="pinInput" class="login-input" placeholder="الرمز الشخصي" autocomplete="off" maxlength="4" inputmode="numeric" oninput="this.value=this.value.replace(/\D/g,'')">
+                <button onclick="checkLoginWithPin()" class="login-btn">دخول</button>
+                <div style="margin-top:15px; font-size:13px; color:#666; text-align:center;">
+                    <button type="button" class="login-link-btn" onclick="showClassicLogin()">إذا لم يكن لديك رمز شخصي أو نسيت رمزك، انقر هنا</button>
+                </div>
             </div>
-
-            <div class="login-note">
-                ⚠️ <strong>تنبيه هام:</strong><br>
-                لضمان حفظ تقدمك، يرجى دائماً كتابة الاسم وسنة الميلاد <b>بنفس الطريقة تماماً</b> عند كل دخول.<br>
-                <span style="color:#c0392b; font-weight:bold; display:block; margin-top:5px;">يجب استخدام الأحرف اللاتينية فقط (A–Z)</span>
+            <div id="login-classic-mode" style="display:none;">
+                <div class="login-title">تسجيل / دخول بالاسم</div>
+                <div class="login-note" style="font-size:12px; margin-bottom:10px;">
+                    لضمان حفظ تقدمك، استخدم الأحرف اللاتينية فقط (A–Z)
+                </div>
+                <input type="text" id="firstName" class="login-input latin-input" placeholder="الاسم الأول" oninput="this.value=this.value.replace(/[^a-zA-Z\s]/g,'')">
+                <input type="text" id="lastName" class="login-input latin-input" placeholder="اللقب" oninput="this.value=this.value.replace(/[^a-zA-Z\s]/g,'')">
+                <input type="number" id="birthYear" class="login-input latin-input" placeholder="سنة الميلاد (بعد 1950)" min="1951" max="2030" oninput="if(this.value.length>4) this.value=this.value.slice(0,4);">
+                <input type="text" id="classicPinInput" class="login-input" placeholder="كلمة المرور (1234)" autocomplete="off">
+                <button onclick="checkLoginClassic()" class="login-btn">دخول</button>
+                <div style="margin-top:10px;">
+                    <button type="button" class="login-link-btn" onclick="showPinLogin()">← العودة للدخول بالرمز الشخصي</button>
+                </div>
             </div>
-
-            <input type="text" id="firstName" class="login-input latin-input" placeholder="الاسم الأول" oninput="this.value=this.value.replace(/[^a-zA-Z\s]/g,'')">
-            <input type="text" id="lastName" class="login-input latin-input" placeholder="اللقب" oninput="this.value=this.value.replace(/[^a-zA-Z\s]/g,'')">
-            
-            <input type="number" id="birthYear" class="login-input latin-input" placeholder="سنة الميلاد (بعد 1950)" min="1951" max="2030" oninput="if(this.value.length>4) this.value=this.value.slice(0,4);">
-
-            <input type="text" id="pinInput" class="login-input" placeholder="كلمة المرور" autocomplete="off">
-            <button onclick="checkLogin()" class="login-btn">دخول</button>
-            
-            <div class="login-spacer"></div>
         </div>
     </div>
 
@@ -641,7 +652,38 @@
     <script>
         const STUDENT_PIN = "1234";
         const ADMIN_PIN = "1879";
-        const TEACHER_LOTFI_PIN = "9898"; 
+        const TEACHER_LOTFI_PIN = "9898";
+        const RESERVED_PINS = ["9898", "1879"];
+
+        function generatePersonalPin(existingPins) {
+            const used = new Set([...RESERVED_PINS, ...(existingPins || [])]);
+            let pin;
+            for (let i = 0; i < 100; i++) {
+                pin = String(Math.floor(Math.random() * 10000)).padStart(4, '0');
+                if (!used.has(pin)) return pin;
+            }
+            return String(Math.floor(1000 + Math.random() * 8000)); // fallback
+        }
+
+        async function getAllPersonalPins() {
+            const q = window.query(window.collection(window.db, "users"), window.where("role", "==", "student"));
+            const snap = await window.getDocs(q);
+            return snap.docs.map(d => d.data().personalPin).filter(Boolean);
+        }
+
+        window.showClassicLogin = function() {
+            document.getElementById('login-pin-mode').style.display = 'none';
+            document.getElementById('login-classic-mode').style.display = 'block';
+            document.getElementById('pinInput').value = '';
+        }
+        window.showPinLogin = function() {
+            document.getElementById('login-classic-mode').style.display = 'none';
+            document.getElementById('login-pin-mode').style.display = 'block';
+            document.getElementById('firstName').value = '';
+            document.getElementById('lastName').value = '';
+            document.getElementById('birthYear').value = '';
+            document.getElementById('classicPinInput').value = '';
+        } 
 
         const VERS_PRO_LEKTION = [ 8, 15, 9, 15, 16 ];
         const KURS_DATEN = VERS_PRO_LEKTION.map((anzahl, index) => {
@@ -907,10 +949,12 @@
         }
 
         // --- LOGIN LOGIC ---
-        async function checkLogin() {
-            const pin = document.getElementById('pinInput').value;
-            
+        async function checkLoginWithPin() {
+            const pin = document.getElementById('pinInput').value.trim();
+            if (!pin || pin.length !== 4) { alert("الرجاء إدخال رمز من 4 أرقام"); return; }
             if (pin === TEACHER_LOTFI_PIN) {
+                const ok = confirm("هل أنت Lotfi Fakhfakh المولود سنة 1967؟");
+                if (!ok) return;
                 const first = "Lotfi", last = "Fakhfakh", year = "1967", role = "teacher";
                 const fullNameRaw = first + " " + last;
                 const uniqueID = generateUserId(fullNameRaw, role, year);
@@ -926,30 +970,50 @@
                         await window.setDoc(userRef, { name: finalDisplayName, baseName: finalDisplayName, role, uid: uniqueID, year, lastLogin: window.serverTimestamp(), postsCount: 0, totalLikes: 0, totalVerseViews: 0, totalRepliesCount: 0, blocked: false });
                     }
                 } catch(e) { console.log("Login Error", e); }
-                localStorage.setItem('it9an_uid', uniqueID);
-                localStorage.setItem('it9an_auth', 'true');
-                localStorage.setItem('it9an_name', finalDisplayName);
-                localStorage.setItem('it9an_role', role);
-                document.getElementById('login-screen').style.display = 'none';
-                updateUIForRole();
-                listenForNotifications();
-                renderMenu();
+                doLoginSuccess(uniqueID, finalDisplayName, role, true, null);
                 return;
             }
-
             if (pin === ADMIN_PIN) {
-                localStorage.setItem('it9an_uid', 'admin_super');
-                localStorage.setItem('it9an_auth', 'true');
-                localStorage.setItem('it9an_name', 'المسؤول');
-                localStorage.setItem('it9an_role', 'teacher');
-                localStorage.setItem('it9an_hidden', 'true'); 
-                document.getElementById('login-screen').style.display = 'none';
-                updateUIForRole(); 
-                listenForNotifications();
-                renderMenu();
+                const ok = confirm("هل أنت المسؤول؟");
+                if (!ok) return;
+                localStorage.setItem('it9an_hidden', 'true');
+                doLoginSuccess('admin_super', 'المسؤول', 'teacher', true, null);
                 return;
             }
+            const q = window.query(window.collection(window.db, "users"), window.where("personalPin", "==", pin));
+            const snap = await window.getDocs(q);
+            if (snap.empty) { alert("الرمز غير موجود"); return; }
+            const doc = snap.docs[0];
+            const data = doc.data();
+            if (data.blocked) { alert("عذراً، تم حظر هذا الحساب."); return; }
+            const dispName = data.baseName || data.name || '';
+            const year = data.year || '';
+            const confirmMsg = "هل أنت " + dispName + (year ? " المولود سنة " + year : "") + "؟";
+            if (!confirm(confirmMsg)) return;
+            const updates = { lastLogin: window.serverTimestamp() };
+            if (!data.normalizedName && data.baseName) {
+                const parts = (data.baseName || '').trim().split(/\s+/).map(s => s.toLowerCase()).sort();
+                if (parts.length >= 2) updates.normalizedName = parts.join('_');
+            }
+            try { await window.updateDoc(doc.ref, updates); } catch(e){}
+            doLoginSuccess(doc.id, data.name || dispName + (year ? ' (' + year + ')' : ''), data.role || 'student', false, data.personalPin || updates.personalPin);
+        }
 
+        function doLoginSuccess(uid, name, role, hideScreen, personalPin) {
+            localStorage.setItem('it9an_uid', uid);
+            localStorage.setItem('it9an_auth', 'true');
+            localStorage.setItem('it9an_name', name);
+            localStorage.setItem('it9an_role', role);
+            if (personalPin) localStorage.setItem('it9an_pin', personalPin);
+            else localStorage.removeItem('it9an_pin');
+            document.getElementById('login-screen').style.display = 'none';
+            updateUIForRole();
+            listenForNotifications();
+            renderMenu();
+        }
+
+        async function checkLoginClassic() {
+            const pin = document.getElementById('classicPinInput').value;
             const first = document.getElementById('firstName').value.trim();
             const last = document.getElementById('lastName').value.trim();
             const year = document.getElementById('birthYear').value.trim();
@@ -984,18 +1048,25 @@
                 let finalDisplayName = toTitleCase(first) + " " + toTitleCase(last);
                 let baseNameOnly = finalDisplayName;
                 let actualUid = uniqueID;
+                let createdNew = false;
 
                 try {
                     const userSnap = await window.getDoc(userRef);
                     
                     if(userSnap.exists()) {
                         // LOGIN: User exists (exact match)
-                        if(userSnap.data().blocked) {
+                        const ud = userSnap.data();
+                        if(ud.blocked) {
                             alert("عذراً، تم حظر هذا الحساب. يرجى مراجعة المعلم.");
                             return;
                         }
-                        if(userSnap.data().name) finalDisplayName = userSnap.data().name;
-                        await window.updateDoc(userRef, { lastLogin: window.serverTimestamp() });
+                        if(ud.name) finalDisplayName = ud.name;
+                        const updates = { lastLogin: window.serverTimestamp() };
+                        if (!ud.personalPin) {
+                            const allPins = await getAllPersonalPins();
+                            updates.personalPin = generatePersonalPin(allPins);
+                        }
+                        await window.updateDoc(userRef, updates);
 
                     } else {
                         // Check if same person with swapped first/last (normalizedName + year)
@@ -1032,6 +1103,10 @@
                             finalDisplayName = data.name || (data.baseName || '') + (data.year ? ' (' + data.year + ')' : '');
                             const updates = { lastLogin: window.serverTimestamp() };
                             if (!data.normalizedName) updates.normalizedName = normalizedName;
+                            if (!data.personalPin) {
+                                const allPins = await getAllPersonalPins();
+                                updates.personalPin = generatePersonalPin(allPins);
+                            }
                             await window.updateDoc(existingDoc.ref, updates);
                         } else {
                             // NEW REGISTRATION
@@ -1050,12 +1125,15 @@
                                  finalDisplayName = `${baseNameOnly} (${year})`;
                             }
 
+                            const allPins = await getAllPersonalPins();
+                            const newPersonalPin = generatePersonalPin(allPins);
                             await window.setDoc(userRef, {
                                 name: finalDisplayName,
                                 baseName: baseNameOnly,
                                 firstName: first,
                                 lastName: last,
                                 normalizedName: normalizedName,
+                                personalPin: newPersonalPin,
                                 role: role,
                                 uid: uniqueID,
                                 year: year,
@@ -1066,19 +1144,19 @@
                                 totalRepliesCount: 0,
                                 blocked: false 
                             });
+                            createdNew = true;
                         }
                     }
                 } catch(e) { console.log("Login Check Error", e); }
 
-                localStorage.setItem('it9an_uid', actualUid);
-                localStorage.setItem('it9an_auth', 'true');
-                localStorage.setItem('it9an_name', finalDisplayName);
-                localStorage.setItem('it9an_role', role);
-                localStorage.removeItem('it9an_hidden'); 
-                document.getElementById('login-screen').style.display = 'none';
-                updateUIForRole(); 
-                listenForNotifications();
-                renderMenu();
+                let loginPin = null;
+                try {
+                    const ur = await window.getDoc(window.doc(window.db, "users", actualUid));
+                    if (ur.exists()) loginPin = ur.data().personalPin || null;
+                } catch(e){}
+                localStorage.removeItem('it9an_hidden');
+                doLoginSuccess(actualUid, finalDisplayName, role, true, loginPin);
+                if (createdNew && loginPin) alert("تم تسجيلك بنجاح. رمزك الشخصي: " + loginPin + " - احفظه!");
             }
         }
         
@@ -1312,12 +1390,14 @@
                 const blockBtnClass = isBlocked ? "btn-action btn-block blocked" : "btn-action btn-block";
                 const lbDisplayName = (u.displayNameOnly === true) ? (u.baseName || (u.name ? u.name.replace(/\s*\(\d{4}\)\s*$/, '').trim() : '') || u.name) : (u.name || '');
                 const yearToggleTitle = u.displayNameOnly === true ? 'إظهار السنة' : 'إخفاء السنة';
+                const pinBadge = isAdmin ? `<span class="lb-pin" title="الرمز الشخصي">${u.personalPin ? String(u.personalPin).padStart(4,'0') : '—'}</span>` : '';
                 const adminBtns = isAdmin ? `<button class="delete-btn" onclick="deleteUser('${u.uid}')" title="حذف">🗑️</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="renameUser('${u.uid}')" title="تعديل الاسم">✏️</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="swapFirstLastName('${u.uid}')" title="تبديل الاسم الأول واللقب">🔄</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="toggleDisplayYear('${u.uid}')" title="${yearToggleTitle}">📅</button><button class="${blockBtnClass}" style="padding:4px 10px; font-size:12px;" onclick="toggleBlockUser('${u.uid}', ${isBlocked})">${blockBtnText}</button>` : '';
                 list.innerHTML += `
                 <li class="${cls}">
                     <div class="lb-item">
                         <div style="display:flex; align-items:center; gap:4px; flex-shrink: 1; min-width: 0;">
                             ${adminBtns}
+                            ${pinBadge}
                             <span class="lb-rank">#${rank}</span>
                             <span class="lb-name">${lbDisplayName}</span>
                         </div>
@@ -1440,6 +1520,17 @@
                     return sumB - sumA;
                 });
                 leaderboardAllUsers = users;
+                const needPin = users.filter(u => !u.personalPin);
+                if (needPin.length > 0) {
+                    (async () => {
+                        const allPins = users.map(u => u.personalPin).filter(Boolean);
+                        for (const u of needPin) {
+                            const pin = generatePersonalPin(allPins);
+                            allPins.push(pin);
+                            try { await window.updateDoc(window.doc(window.db, "users", u.uid), { personalPin: pin }); } catch(e){}
+                        }
+                    })();
+                }
                 renderLeaderboardItems(users, leaderboardShowFull, myUid, !firstSnapshot);
                 if (myUid === 'admin_super') {
                     loadTeachersLeaderboard(() => { if (onComplete && firstSnapshot) { onComplete(); onComplete = null; } firstSnapshot = false; });
@@ -2278,10 +2369,16 @@
             grid.innerHTML = ""; showView('menu-view');
             const myName = localStorage.getItem('it9an_name') || '';
             const nameClean = myName.replace(/\s*\(\d{4}\)\s*$/, '').trim();
-            document.getElementById('pageTitle').innerHTML = `<span class="header-user-name-main">${nameClean || ''}</span>`; 
+            const uid = localStorage.getItem('it9an_uid');
+            let pinHtml = '';
+            if (uid && uid !== 'admin_super') {
+                const u = leaderboardAllUsers.find(x => x.uid === uid) || leaderboardAllTeachers.find(x => x.uid === uid);
+                const pin = (u && u.personalPin) ? u.personalPin : (localStorage.getItem('it9an_pin') || '');
+                if (pin) pinHtml = `<span class="header-pin" title="الرمز الشخصي">${(pin+'').padStart(4,'0')}</span> `;
+            }
+            document.getElementById('pageTitle').innerHTML = pinHtml + `<span class="header-user-name-main">${nameClean || ''}</span>`; 
             document.getElementById('appFooter').style.display = 'none';
             
-            const uid = localStorage.getItem('it9an_uid');
             if(uid === 'admin_super') {
                 document.getElementById('adminMenuPanel').style.display = 'block';
                 document.getElementById('leaderboard-section').style.display = 'block';
