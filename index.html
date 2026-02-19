@@ -430,7 +430,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, query, where, orderBy, onSnapshot, serverTimestamp, doc, setDoc, updateDoc, increment, arrayUnion, arrayRemove, deleteDoc, getDoc, getDocs, enableIndexedDbPersistence, limit, deleteField } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, query, where, orderBy, onSnapshot, serverTimestamp, doc, setDoc, updateDoc, increment, arrayUnion, arrayRemove, deleteDoc, getDoc, getDocs, getDocsFromServer, enableIndexedDbPersistence, limit, deleteField } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
         const firebaseConfig = {
@@ -451,7 +451,7 @@
         window.where = where; window.orderBy = orderBy; window.onSnapshot = onSnapshot; 
         window.serverTimestamp = serverTimestamp; window.ref = ref; 
         window.uploadBytes = uploadBytes; window.getDownloadURL = getDownloadURL;
-        window.doc = doc; window.setDoc = setDoc; window.updateDoc = updateDoc; window.increment = increment; window.arrayUnion = arrayUnion; window.arrayRemove = arrayRemove; window.deleteDoc = deleteDoc; window.getDoc = getDoc; window.getDocs = getDocs; window.deleteField = deleteField; 
+        window.doc = doc; window.setDoc = setDoc; window.updateDoc = updateDoc; window.increment = increment; window.arrayUnion = arrayUnion; window.arrayRemove = arrayRemove; window.deleteDoc = deleteDoc; window.getDoc = getDoc; window.getDocs = getDocs; window.getDocsFromServer = getDocsFromServer; window.deleteField = deleteField; 
         window.deleteObject = deleteObject; window.limit = limit;
     </script>
 </head>
@@ -550,12 +550,12 @@
                 <button id="lbShowMoreBtn" class="lb-show-more-btn" onclick="showMoreLeaderboardStudents()" style="display:none;">عرض المزيد (+10)</button>
                 <button id="lbShowTop3Btn" class="lb-show-more-btn" style="display:none; margin-top:8px; background:#888;" onclick="showTop3Only()">عرض Top 3 فقط</button>
                 <button id="lbSyncNamesBtn" class="btn-action" style="display:none; margin-top:8px; padding:6px 12px;" onclick="syncAllUserNames()" title="تحديث الأسماء في جميع التسجيلات والإعجابات والمشاهدات">🔄 مزامنة الأسماء</button>
-                <button class="btn-action lb-refresh-btn" style="margin-top:8px; padding:6px 12px;" onclick="refreshStudentsLeaderboard()" title="تحديث القائمة">🔄 تحديث</button>
+                <button id="lbRefreshStudentsBtn" class="btn-action lb-refresh-btn" style="margin-top:8px; padding:6px 12px;" onclick="refreshStudentsLeaderboard()" title="تحديث القائمة">🔄 تحديث</button>
             </div>
             <div id="teachersLeaderboard" class="leaderboard-card" style="margin-top:15px;">
                 <div class="lb-title">🏆 أفضل المعلمين</div>
                 <ul id="leaderboard-teachers-list" class="lb-list"></ul>
-                <button class="btn-action lb-refresh-btn" style="margin-top:8px; padding:6px 12px;" onclick="refreshTeachersLeaderboard()" title="تحديث القائمة">🔄 تحديث</button>
+                <button id="lbRefreshTeachersBtn" class="btn-action lb-refresh-btn" style="margin-top:8px; padding:6px 12px;" onclick="refreshTeachersLeaderboard()" title="تحديث القائمة">🔄 تحديث</button>
             </div>
         </div>
         <button class="verse-list-btn" style="margin: 15px 0;" onclick="showSavedList()">📌 للمشاهدة لاحقاً</button>
@@ -1505,12 +1505,84 @@
             renderLeaderboardItems(leaderboardAllUsers, leaderboardVisibleCount, localStorage.getItem('it9an_uid'));
         }
 
-        window.refreshStudentsLeaderboard = function() {
-            loadLeaderboard();
+        window.refreshStudentsLeaderboard = async function() {
+            const btn = document.getElementById('lbRefreshStudentsBtn');
+            if (btn) { btn.disabled = true; btn.innerText = 'جاري التحديث...'; }
+            try {
+                const q = window.query(window.collection(window.db, "users"), window.where("role", "==", "student"));
+                const snap = await window.getDocsFromServer(q);
+                let users = [];
+                snap.forEach(doc => users.push({ ...doc.data(), uid: doc.data().uid || doc.id }));
+                users.sort((a,b) => {
+                    const sumA = (a.totalVerseViews || 0) + (a.postsCount || 0) + (a.totalLikes || 0);
+                    const sumB = (b.totalVerseViews || 0) + (b.postsCount || 0) + (b.totalLikes || 0);
+                    return sumB - sumA;
+                });
+                leaderboardAllUsers = users;
+                const myUid = localStorage.getItem('it9an_uid');
+                renderLeaderboardItems(users, leaderboardVisibleCount, myUid, true);
+                if (typeof window.updateHeaderNamePin === 'function') window.updateHeaderNamePin();
+            } catch(e) { console.warn("refreshStudentsLeaderboard:", e); alert("خطأ في التحديث"); }
+            finally { if (btn) { btn.disabled = false; btn.innerText = '🔄 تحديث'; } }
         }
 
-        window.refreshTeachersLeaderboard = function() {
-            loadTeachersLeaderboard();
+        window.refreshTeachersLeaderboard = async function() {
+            const btn = document.getElementById('lbRefreshTeachersBtn');
+            if (btn) { btn.disabled = true; btn.innerText = 'جاري التحديث...'; }
+            try {
+                const q = window.query(window.collection(window.db, "users"), window.where("role", "==", "teacher"));
+                const snap = await window.getDocsFromServer(q);
+                let teachers = [];
+                snap.forEach(doc => teachers.push({ ...doc.data(), uid: doc.data().uid || doc.id }));
+                teachers.sort((a,b) => (b.totalRepliesCount || 0) - (a.totalRepliesCount || 0));
+                leaderboardAllTeachers = teachers;
+                const list = document.getElementById('leaderboard-teachers-list');
+                const myUid = localStorage.getItem('it9an_uid');
+                const isAdmin = myUid === 'admin_super';
+                if (!list) return;
+                list.innerHTML = "";
+                if (teachers.length === 0) { list.innerHTML = "<li style='text-align:center; color:#999; padding:10px;'>لا يوجد معلمون</li>"; return; }
+                teachers.forEach((u, i) => {
+                    adminUserRoles[u.uid] = 'teacher';
+                    const rank = i + 1;
+                    const isBlocked = u.blocked === true;
+                    const blockBtnText = isBlocked ? "فك الحظر" : "حظر";
+                    const blockBtnClass = isBlocked ? "btn-action btn-block blocked" : "btn-action btn-block";
+                    const likesCount = u.totalLikes || 0;
+                    const repliesCount = u.totalRepliesCount || 0;
+                    const lbDisplayNameT = (u.displayNameOnly === true) ? (u.baseName || (u.name ? u.name.replace(/\s*\(\d{4}\)\s*$/, '').trim() : '') || u.name) : (u.name || '');
+                    const yearToggleTitleT = u.displayNameOnly === true ? 'إظهار السنة' : 'إخفاء السنة';
+                    const adminBtnsT = isAdmin ? `<button class="delete-btn" onclick="deleteUser('${u.uid}')" title="حذف">🗑️</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="renameUser('${u.uid}')" title="تعديل الاسم">✏️</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="swapFirstLastName('${u.uid}')" title="تبديل الاسم الأول واللقب">🔄</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="toggleDisplayYear('${u.uid}')" title="${yearToggleTitleT}">📅</button><button class="${blockBtnClass}" style="padding:4px 10px; font-size:12px;" onclick="toggleBlockUser('${u.uid}', ${isBlocked})">${blockBtnText}</button>` : '';
+                    list.innerHTML += `
+                    <li class="lb-item-wrapper ${rank <= 3 ? 'lb-item-top3' : ''}">
+                        <div class="lb-item">
+                            <div style="display:flex; align-items:center; gap:4px; flex-shrink: 1; min-width: 0;">
+                                ${adminBtnsT}
+                                <span class="lb-rank">#${rank}</span>
+                                <span class="lb-name">${lbDisplayNameT}</span>
+                                <span class="role-badge badge-teacher">معلم</span>
+                            </div>
+                            <div class="lb-stats">
+                                <span class="lb-likes lb-likes-click" onclick="toggleLbLikes('${u.uid}')" title="عرض الإعجابات">👍 ${likesCount}</span>
+                                <span class="lb-score lb-likes-click" onclick="toggleLbRecordings('${u.uid}')" title="عرض الردود">🎤 ${repliesCount}</span>
+                            </div>
+                        </div>
+                        <div class="lb-likes-list" id="lb-likes-${u.uid}" style="display:none;"></div>
+                        <div class="lb-likes-list" id="lb-recordings-${u.uid}" style="display:none;"></div>
+                    </li>`;
+                });
+                const isTeacherLikesOpen = lbLikesOpenUid && leaderboardAllTeachers.some(t => t.uid === lbLikesOpenUid);
+                const isTeacherRecOpen = lbRecordingsOpenUid && leaderboardAllTeachers.some(t => t.uid === lbRecordingsOpenUid);
+                if (isTeacherLikesOpen) {
+                    const container = document.getElementById('lb-likes-' + lbLikesOpenUid);
+                    if (container) { container.style.display = 'block'; renderLbLikesList(container, lbLikesOpenUid, lbLikesOpenOffset); }
+                }
+                if (isTeacherRecOpen) {
+                    const container = document.getElementById('lb-recordings-' + lbRecordingsOpenUid);
+                    if (container) { container.style.display = 'block'; renderLbRecordingsList(container, lbRecordingsOpenUid, lbRecordingsOpenOffset); }
+                }
+            } catch(e) { console.warn("refreshTeachersLeaderboard:", e); alert("خطأ في التحديث"); }
+            finally { if (btn) { btn.disabled = false; btn.innerText = '🔄 تحديث'; } }
         }
 
         window.syncAllUserNames = async function() {
