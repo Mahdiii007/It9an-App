@@ -550,10 +550,12 @@
                 <button id="lbShowMoreBtn" class="lb-show-more-btn" onclick="showMoreLeaderboardStudents()" style="display:none;">عرض المزيد (+10)</button>
                 <button id="lbShowTop3Btn" class="lb-show-more-btn" style="display:none; margin-top:8px; background:#888;" onclick="showTop3Only()">عرض Top 3 فقط</button>
                 <button id="lbSyncNamesBtn" class="btn-action" style="display:none; margin-top:8px; padding:6px 12px;" onclick="syncAllUserNames()" title="تحديث الأسماء في جميع التسجيلات والإعجابات والمشاهدات">🔄 مزامنة الأسماء</button>
+                <button class="btn-action lb-refresh-btn" style="margin-top:8px; padding:6px 12px;" onclick="refreshStudentsLeaderboard()" title="تحديث القائمة">🔄 تحديث</button>
             </div>
-            <div id="adminTeachersLeaderboard" class="leaderboard-card" style="margin-top:15px; display:none;">
+            <div id="teachersLeaderboard" class="leaderboard-card" style="margin-top:15px;">
                 <div class="lb-title">🏆 أفضل المعلمين</div>
                 <ul id="leaderboard-teachers-list" class="lb-list"></ul>
+                <button class="btn-action lb-refresh-btn" style="margin-top:8px; padding:6px 12px;" onclick="refreshTeachersLeaderboard()" title="تحديث القائمة">🔄 تحديث</button>
             </div>
         </div>
         <button class="verse-list-btn" style="margin: 15px 0;" onclick="showSavedList()">📌 للمشاهدة لاحقاً</button>
@@ -1503,6 +1505,14 @@
             renderLeaderboardItems(leaderboardAllUsers, leaderboardVisibleCount, localStorage.getItem('it9an_uid'));
         }
 
+        window.refreshStudentsLeaderboard = function() {
+            loadLeaderboard();
+        }
+
+        window.refreshTeachersLeaderboard = function() {
+            loadTeachersLeaderboard();
+        }
+
         window.syncAllUserNames = async function() {
             if (localStorage.getItem('it9an_uid') !== 'admin_super') return;
             const syncBtn = document.getElementById('lbSyncNamesBtn');
@@ -1524,11 +1534,11 @@
         let unsubscribeTeachersLeaderboard = null;
 
         function loadTeachersLeaderboard(onFirstRender) {
-            const panel = document.getElementById('adminTeachersLeaderboard');
+            const panel = document.getElementById('teachersLeaderboard');
             const list = document.getElementById('leaderboard-teachers-list');
             if (!panel || !list) { if (onFirstRender) onFirstRender(); return; }
             const myUid = localStorage.getItem('it9an_uid');
-            if (myUid !== 'admin_super') { panel.style.display = 'none'; if (onFirstRender) onFirstRender(); return; }
+            const isAdmin = myUid === 'admin_super';
             panel.style.display = 'block';
             if (unsubscribeTeachersLeaderboard) unsubscribeTeachersLeaderboard();
             let firstSnap = true;
@@ -1551,15 +1561,12 @@
                     const repliesCount = u.totalRepliesCount || 0;
                     const lbDisplayNameT = (u.displayNameOnly === true) ? (u.baseName || (u.name ? u.name.replace(/\s*\(\d{4}\)\s*$/, '').trim() : '') || u.name) : (u.name || '');
                     const yearToggleTitleT = u.displayNameOnly === true ? 'إظهار السنة' : 'إخفاء السنة';
+                    const adminBtnsT = isAdmin ? `<button class="delete-btn" onclick="deleteUser('${u.uid}')" title="حذف">🗑️</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="renameUser('${u.uid}')" title="تعديل الاسم">✏️</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="swapFirstLastName('${u.uid}')" title="تبديل الاسم الأول واللقب">🔄</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="toggleDisplayYear('${u.uid}')" title="${yearToggleTitleT}">📅</button><button class="${blockBtnClass}" style="padding:4px 10px; font-size:12px;" onclick="toggleBlockUser('${u.uid}', ${isBlocked})">${blockBtnText}</button>` : '';
                     list.innerHTML += `
                     <li class="lb-item-wrapper ${rank <= 3 ? 'lb-item-top3' : ''}">
                         <div class="lb-item">
                             <div style="display:flex; align-items:center; gap:4px; flex-shrink: 1; min-width: 0;">
-                                <button class="delete-btn" onclick="deleteUser('${u.uid}')" title="حذف">🗑️</button>
-                                <button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="renameUser('${u.uid}')" title="تعديل الاسم">✏️</button>
-                                <button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="swapFirstLastName('${u.uid}')" title="تبديل الاسم الأول واللقب">🔄</button>
-                                <button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="toggleDisplayYear('${u.uid}')" title="${yearToggleTitleT}">📅</button>
-                                <button class="${blockBtnClass}" style="padding:4px 10px; font-size:12px;" onclick="toggleBlockUser('${u.uid}', ${isBlocked})">${blockBtnText}</button>
+                                ${adminBtnsT}
                                 <span class="lb-rank">#${rank}</span>
                                 <span class="lb-name">${lbDisplayNameT}</span>
                                 <span class="role-badge badge-teacher">معلم</span>
@@ -1624,13 +1631,8 @@
                 }
                 renderLeaderboardItems(users, leaderboardVisibleCount, myUid, !firstSnapshot);
                 if (typeof window.updateHeaderNamePin === 'function') window.updateHeaderNamePin();
-                if (myUid === 'admin_super') {
-                    loadTeachersLeaderboard(() => { if (onComplete && firstSnapshot) { onComplete(); onComplete = null; } firstSnapshot = false; });
-                    if (!onComplete) firstSnapshot = false;
-                } else {
-                    if (onComplete && firstSnapshot) { onComplete(); onComplete = null; }
-                    firstSnapshot = false;
-                }
+                loadTeachersLeaderboard(() => { if (onComplete && firstSnapshot) { onComplete(); onComplete = null; } firstSnapshot = false; });
+                if (!onComplete) firstSnapshot = false;
             };
             unsubscribeLeaderboard = window.onSnapshot(q, cb);
         }
@@ -2527,7 +2529,6 @@
                 document.getElementById('adminMenuPanel').style.display = 'block';
                 document.getElementById('leaderboard-section').style.display = 'block';
                 loadAdminMessagesList();
-                loadTeachersLeaderboard();
                 loadLeaderboard(lbPendingRestore ? doLbRestore : undefined);
             } else {
                 document.getElementById('adminMenuPanel').style.display = 'none';
