@@ -3152,7 +3152,9 @@
             if(ui.style.display === 'flex') { stopRecordingAndReview(); } 
             else {
                 try {
-                    let dur = audioEl.duration; if(!dur || isNaN(dur)) dur = 15; maxRecDuration = Math.ceil(dur * 2);
+                    let dur = audioEl.duration; if(!dur || isNaN(dur)) dur = 15;
+                    const role = localStorage.getItem('it9an_role');
+                    maxRecDuration = (replyTargetId && role === 'teacher') ? 180 : Math.ceil(dur * 2);
                     const audioConstraints = { echoCancellation: false, noiseSuppression: false, autoGainControl: false, sampleRate: 48000, channelCount: 1 };
                     const stream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints });
                     let options = { audioBitsPerSecond: 128000 };
