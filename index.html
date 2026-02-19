@@ -426,6 +426,7 @@
         .btn-rec.recording { animation: pulse 1s infinite; background: white; color: var(--red); border: 2px solid var(--red); }
         .btn-play { background: var(--primary); border: 4px solid #fff; box-shadow: 0 4px 15px rgba(15, 76, 58, 0.3); }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+        @keyframes fadeOut { 0% { opacity: 1; } 70% { opacity: 1; } 100% { opacity: 0; } }
     </style>
 
     <script type="module">
@@ -445,7 +446,7 @@
         const app = initializeApp(firebaseConfig);
         window.db = getFirestore(app); window.storage = getStorage(app);
         
-        enableIndexedDbPersistence(window.db).catch((err) => { console.log("Persistence error:", err.code); });
+        try { enableIndexedDbPersistence(window.db).catch((err) => { console.log("Persistence error:", err.code); }); } catch(e){}
 
         window.collection = collection; window.addDoc = addDoc; window.query = query; 
         window.where = where; window.orderBy = orderBy; window.onSnapshot = onSnapshot; 
@@ -1505,10 +1506,33 @@
             renderLeaderboardItems(leaderboardAllUsers, leaderboardVisibleCount, localStorage.getItem('it9an_uid'));
         }
 
+        async function refreshOpenSubLists() {
+            if (lbRecordingsOpenUid) {
+                const role = lbRecordingsOpenRole || adminUserRoles[lbRecordingsOpenUid] || 'student';
+                const items = await fetchUserRecordings(lbRecordingsOpenUid, role, true);
+                lbRecordingsCache[lbRecordingsOpenUid] = items;
+                const container = document.getElementById('lb-recordings-' + lbRecordingsOpenUid);
+                if (container) renderLbRecordingsList(container, lbRecordingsOpenUid, lbRecordingsOpenOffset);
+            }
+            if (lbLikesOpenUid) {
+                const items = await fetchLikedRecordings(lbLikesOpenUid, true);
+                lbLikesCache[lbLikesOpenUid] = items;
+                const container = document.getElementById('lb-likes-' + lbLikesOpenUid);
+                if (container) renderLbLikesList(container, lbLikesOpenUid, lbLikesOpenOffset);
+            }
+            if (lbViewsOpenUid) {
+                const items = await fetchStudentViewedVerses(lbViewsOpenUid, true);
+                lbViewsCache[lbViewsOpenUid] = items;
+                const container = document.getElementById('lb-views-' + lbViewsOpenUid);
+                if (container) renderLbViewsList(container, lbViewsOpenUid, lbViewsOpenOffset);
+            }
+        }
+
         window.refreshStudentsLeaderboard = async function() {
             const btn = document.getElementById('lbRefreshStudentsBtn');
             if (btn) { btn.disabled = true; btn.innerText = 'جاري التحديث...'; }
             try {
+                lbRecordingsCache = {}; lbLikesCache = {}; lbViewsCache = {};
                 const q = window.query(window.collection(window.db, "users"), window.where("role", "==", "student"));
                 const snap = await window.getDocsFromServer(q);
                 let users = [];
@@ -1522,6 +1546,7 @@
                 const myUid = localStorage.getItem('it9an_uid');
                 renderLeaderboardItems(users, leaderboardVisibleCount, myUid, true);
                 if (typeof window.updateHeaderNamePin === 'function') window.updateHeaderNamePin();
+                await refreshOpenSubLists();
             } catch(e) { console.warn("refreshStudentsLeaderboard:", e); alert("خطأ في التحديث"); }
             finally { if (btn) { btn.disabled = false; btn.innerText = '🔄 تحديث'; } }
         }
@@ -1529,6 +1554,7 @@
         window.refreshTeachersLeaderboard = async function() {
             const btn = document.getElementById('lbRefreshTeachersBtn');
             if (btn) { btn.disabled = true; btn.innerText = 'جاري التحديث...'; }
+            lastTeachersRefreshTime = Date.now();
             try {
                 const [usersSnap, postsSnap] = await Promise.all([
                     window.getDocsFromServer(window.query(window.collection(window.db, "users"), window.where("role", "==", "teacher"))),
@@ -1584,16 +1610,23 @@
                         <div class="lb-likes-list" id="lb-recordings-${u.uid}" style="display:none;"></div>
                     </li>`;
                 });
+                lbRecordingsCache = {}; lbLikesCache = {}; lbViewsCache = {};
+                await refreshOpenSubLists();
                 const isTeacherLikesOpen = lbLikesOpenUid && leaderboardAllTeachers.some(t => t.uid === lbLikesOpenUid);
                 const isTeacherRecOpen = lbRecordingsOpenUid && leaderboardAllTeachers.some(t => t.uid === lbRecordingsOpenUid);
                 if (isTeacherLikesOpen) {
                     const container = document.getElementById('lb-likes-' + lbLikesOpenUid);
-                    if (container) { container.style.display = 'block'; renderLbLikesList(container, lbLikesOpenUid, lbLikesOpenOffset); }
+                    if (container) container.style.display = 'block';
                 }
                 if (isTeacherRecOpen) {
                     const container = document.getElementById('lb-recordings-' + lbRecordingsOpenUid);
-                    if (container) { container.style.display = 'block'; renderLbRecordingsList(container, lbRecordingsOpenUid, lbRecordingsOpenOffset); }
+                    if (container) container.style.display = 'block';
                 }
+                const toast = document.createElement('div');
+                toast.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--primary);color:white;padding:10px 20px;border-radius:10px;font-size:14px;z-index:9999;animation:fadeOut 2s forwards;';
+                toast.textContent = 'تم التحديث';
+                document.body.appendChild(toast);
+                setTimeout(() => toast.remove(), 2000);
             } catch(e) { console.warn("refreshTeachersLeaderboard:", e); alert("خطأ في التحديث"); }
             finally { if (btn) { btn.disabled = false; btn.innerText = '🔄 تحديث'; } }
         }
@@ -1617,6 +1650,7 @@
 
         let leaderboardAllTeachers = [];
         let unsubscribeTeachersLeaderboard = null;
+        let lastTeachersRefreshTime = 0;
 
         function loadTeachersLeaderboard(onFirstRender) {
             const panel = document.getElementById('teachersLeaderboard');
@@ -1630,6 +1664,7 @@
             const q = window.query(window.collection(window.db, "users"), window.where("role", "==", "teacher"));
             unsubscribeTeachersLeaderboard = window.onSnapshot(q, (snap) => {
                 if (document.hidden) return;
+                if (Date.now() - lastTeachersRefreshTime < 15000) return;
                 let teachers = [];
                 snap.forEach(doc => teachers.push({ ...doc.data(), uid: doc.data().uid || doc.id }));
                 teachers.sort((a,b) => (b.totalRepliesCount || 0) - (a.totalRepliesCount || 0));
@@ -1764,9 +1799,9 @@
             container.style.display = 'block';
         }
 
-        async function fetchStudentViewedVerses(studentUid) {
+        async function fetchStudentViewedVerses(studentUid, fromServer) {
             const q = window.query(window.collection(window.db, "stats"));
-            const snap = await window.getDocs(q);
+            const snap = fromServer ? await window.getDocsFromServer(q) : await window.getDocs(q);
             const all = [];
             snap.forEach(docSnap => {
                 const id = docSnap.id;
@@ -1848,9 +1883,9 @@
             container.style.display = 'block';
         }
 
-        async function fetchStudentRecordings(studentUid) {
+        async function fetchStudentRecordings(studentUid, fromServer) {
             const q = window.query(window.collection(window.db, "posts"), window.where("uid", "==", studentUid));
-            const snap = await window.getDocs(q);
+            const snap = fromServer ? await window.getDocsFromServer(q) : await window.getDocs(q);
             const all = [];
             snap.forEach(docSnap => {
                 const data = docSnap.data();
@@ -1868,10 +1903,11 @@
             return all;
         }
 
-        async function fetchUserRecordings(uid, role) {
+        async function fetchUserRecordings(uid, role, fromServer) {
+            const getFn = fromServer ? window.getDocsFromServer : window.getDocs;
             if (role === 'teacher') {
                 const q = window.query(window.collection(window.db, "posts"));
-                const snap = await window.getDocs(q);
+                const snap = await getFn(q);
                 const all = [];
                 snap.forEach(docSnap => {
                     const data = docSnap.data();
@@ -1890,7 +1926,7 @@
                 all.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
                 return all;
             }
-            const items = await fetchStudentRecordings(uid);
+            const items = await fetchStudentRecordings(uid, fromServer);
             return items.map(it => ({ ...it, type: 'post', authorUid: uid }));
         }
 
@@ -1991,9 +2027,9 @@
             container.style.display = 'block';
         }
 
-        async function fetchLikedRecordings(studentUid) {
+        async function fetchLikedRecordings(studentUid, fromServer) {
             const q = window.query(window.collection(window.db, "posts"));
-            const snap = await window.getDocs(q);
+            const snap = fromServer ? await window.getDocsFromServer(q) : await window.getDocs(q);
             const all = [];
             snap.forEach(docSnap => {
                 const data = docSnap.data();
