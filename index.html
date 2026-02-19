@@ -2306,7 +2306,16 @@
         }
 
         window.openFromNotif = async function(notifId, fileId, postId) {
-
+            if (postId) {
+                try {
+                    const postSnap = await window.getDoc(window.doc(window.db, "posts", postId));
+                    if (!postSnap.exists()) {
+                        await window.deleteDoc(window.doc(window.db, "notifications", notifId));
+                        alert("تم حذف التسجيل من قبل الطالب. تم إزالة الإشعار.");
+                        return;
+                    }
+                } catch(e) { console.warn(e); }
+            }
             let foundIndex = -1;
             let foundVerse = 1;
             for(let i=0; i<KURS_DATEN.length; i++) {
