@@ -709,6 +709,7 @@
         let savedIdsForFeed = new Set();
         let highlightedPostId = null;
         let activePostFilter = null;
+        let activePostFilterNotifId = null;
 
         let ffmpegInstance = null;
         function showFfmpegLoadModal() {
@@ -2306,38 +2307,53 @@
         }
 
         window.openFromNotif = async function(notifId, fileId, postId) {
-            if (postId) {
-                try {
-                    const postSnap = await window.getDoc(window.doc(window.db, "posts", postId));
-                    if (!postSnap.exists()) {
-                        await window.deleteDoc(window.doc(window.db, "notifications", notifId));
-                        alert("تم حذف التسجيل من قبل الطالب. تم إزالة الإشعار.");
-                        return;
-                    }
-                } catch(e) { console.warn(e); }
+            const fid = parseInt(String(fileId || ''), 10);
+            if (!postId || !fileId || isNaN(fid)) {
+                try { await window.deleteDoc(window.doc(window.db, "notifications", notifId)); } catch(e){}
+                alert("إشعار غير صالح. تم إزالة الإشعار.");
+                return;
             }
+            try {
+                const postSnap = await window.getDoc(window.doc(window.db, "posts", postId));
+                if (!postSnap.exists()) {
+                    await window.deleteDoc(window.doc(window.db, "notifications", notifId));
+                    alert("تم حذف التسجيل من قبل الطالب. تم إزالة الإشعار.");
+                    return;
+                }
+                const postData = postSnap.data();
+                const postFileId = postData.fileId ? String(postData.fileId).trim() : '';
+                if (postFileId && postFileId !== String(fid)) {
+                    await window.deleteDoc(window.doc(window.db, "notifications", notifId));
+                    alert("التسجيل لم يعد في هذا المقطع. تم إزالة الإشعار.");
+                    return;
+                }
+            } catch(e) { console.warn(e); }
             let foundIndex = -1;
             let foundVerse = 1;
             for(let i=0; i<KURS_DATEN.length; i++) {
                 let start = KURS_DATEN[i].startGlobalId;
                 let end = start + KURS_DATEN[i].verse - 1;
-                if(fileId >= start && fileId <= end) {
+                if(fid >= start && fid <= end) {
                     foundIndex = i;
-                    foundVerse = fileId - start + 1;
+                    foundVerse = fid - start + 1;
                     break;
                 }
             }
-
-            if(foundIndex !== -1) {
-                currentLessonIdx = foundIndex;
-                highlightedPostId = postId;
-                activePostFilter = postId; 
-                playVers(parseInt(fileId), foundVerse);
+            if(foundIndex === -1) {
+                try { await window.deleteDoc(window.doc(window.db, "notifications", notifId)); } catch(e){}
+                alert("إشعار غير صالح. تم إزالة الإشعار.");
+                return;
             }
+            currentLessonIdx = foundIndex;
+            highlightedPostId = postId;
+            activePostFilter = postId;
+            activePostFilterNotifId = notifId;
+            playVers(fid, foundVerse);
         }
 
         window.clearFilter = function() {
             activePostFilter = null;
+            activePostFilterNotifId = null;
             highlightedPostId = null;
             const div = document.getElementById('community-feed');
             const userRole = localStorage.getItem('it9an_role');
@@ -2530,7 +2546,7 @@
 
         function startLesson(index) {
             currentLessonIdx = index;
-            activePostFilter = null; highlightedPostId = null;
+            activePostFilter = null; activePostFilterNotifId = null; highlightedPostId = null;
             playVers(KURS_DATEN[index].startGlobalId, 1);
         }
 
@@ -2540,7 +2556,7 @@
         // Right Button in visual -> onclick="prevVers()" (Previous Verse)
         
         window.nextVers = function() {
-            activePostFilter = null; highlightedPostId = null;
+            activePostFilter = null; activePostFilterNotifId = null; highlightedPostId = null;
             const currentLesson = KURS_DATEN[currentLessonIdx];
             
             if(currentLocalVers < currentLesson.verse) {
@@ -2563,7 +2579,7 @@
                 const div = document.createElement('div');
                 div.className = 'verse-list-item' + (isActive ? ' active' : '');
                 div.innerHTML = `<span>المقطع ${v}</span><img src="assets/${globalId}.png" alt="Vers ${v}" onerror="this.style.display='none'">`;
-                div.onclick = () => { activePostFilter = null; highlightedPostId = null; playVers(globalId, v); hideVerseList(); };
+                div.onclick = () => { activePostFilter = null; activePostFilterNotifId = null; highlightedPostId = null; playVers(globalId, v); hideVerseList(); };
                 grid.appendChild(div);
             }
             document.getElementById('verse-list-modal').style.display = 'block';
@@ -2571,7 +2587,7 @@
         window.hideVerseList = function() { document.getElementById('verse-list-modal').style.display = 'none'; }
 
         window.prevVers = function() { 
-            activePostFilter = null; highlightedPostId = null; 
+            activePostFilter = null; activePostFilterNotifId = null; highlightedPostId = null; 
             const currentLesson = KURS_DATEN[currentLessonIdx];
             
             if(currentLocalVers > 1) {
@@ -2680,6 +2696,15 @@
                         });
                     } else {
                         allLoadedPosts.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+                        if (activePostFilterNotifId) {
+                            try {
+                                await window.deleteDoc(window.doc(window.db, "notifications", activePostFilterNotifId));
+                                alert("التسجيل لم يعد متوفراً. تم إزالة الإشعار.");
+                            } catch(e){}
+                            activePostFilterNotifId = null;
+                            activePostFilter = null;
+                            highlightedPostId = null;
+                        }
                     }
                 } else {
                     allLoadedPosts.sort((a, b) => {
