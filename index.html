@@ -548,6 +548,7 @@
                     <li style="text-align:center; color:#999; padding:10px;">جاري التحميل...</li>
                 </ul>
                 <button id="lbShowMoreBtn" class="lb-show-more-btn" onclick="toggleLeaderboardFull()" style="display:none;">عرض بقية الطلاب</button>
+                <button id="lbSyncNamesBtn" class="btn-action" style="display:none; margin-top:8px; padding:6px 12px;" onclick="syncAllUserNames()" title="تحديث الأسماء في جميع التسجيلات والإعجابات والمشاهدات">🔄 مزامنة الأسماء</button>
             </div>
             <div id="adminTeachersLeaderboard" class="leaderboard-card" style="margin-top:15px; display:none;">
                 <div class="lb-title">🏆 أفضل المعلمين</div>
@@ -1317,6 +1318,7 @@
             try {
                 const userRef = window.doc(window.db, "users", uid);
                 await window.updateDoc(userRef, { name: displayName, baseName: baseNameOnly, firstName, lastName, year: y });
+                await updateUserNameEverywhere(uid, displayName);
                 loadLeaderboard();
                 if(localStorage.getItem('it9an_uid')==='admin_super') loadTeachersLeaderboard();
                 alert("تم تعديل الاسم بنجاح");
@@ -1327,8 +1329,11 @@
             const u = leaderboardAllUsers.find(x => x.uid === uid) || leaderboardAllTeachers.find(x => x.uid === uid);
             if(!u) return;
             const newVal = u.displayNameOnly !== true;
+            const baseNameOnly = u.baseName || (u.name ? u.name.replace(/\s*\(\d{4}\)\s*$/, '').trim() : '') || u.name || '';
+            const newDisplayName = newVal ? baseNameOnly : baseNameOnly + " (" + (u.year || '') + ")";
             try {
                 await window.updateDoc(window.doc(window.db, "users", uid), { displayNameOnly: newVal });
+                await updateUserNameEverywhere(uid, newDisplayName);
                 loadLeaderboard();
                 if(localStorage.getItem('it9an_uid')==='admin_super') loadTeachersLeaderboard();
                 alert(newVal ? "تم إخفاء السنة" : "تم إظهار السنة");
@@ -1353,17 +1358,64 @@
             const displayName = (u.displayNameOnly === true) ? baseNameOnly : baseNameOnly + " (" + (u.year || '') + ")";
             try {
                 await window.updateDoc(window.doc(window.db, "users", uid), { firstName: newFirst, lastName: newLast, baseName: baseNameOnly, name: displayName });
+                await updateUserNameEverywhere(uid, displayName);
                 loadLeaderboard();
                 if(localStorage.getItem('it9an_uid')==='admin_super') loadTeachersLeaderboard();
                 alert("تم تبديل الاسم الأول واللقب");
             } catch(e) { alert("خطأ: " + (e.message || e)); }
         }
 
+        async function updateUserNameEverywhere(uid, newName) {
+            try {
+                const postsQ = window.query(window.collection(window.db, "posts"));
+                const postsSnap = await window.getDocs(postsQ);
+                for (const docSnap of postsSnap.docs) {
+                    const data = docSnap.data();
+                    const ref = docSnap.ref;
+                    const updates = {};
+                    if (data.uid === uid) updates.name = newName;
+                    let likesChanged = false;
+                    const newLikes = (data.likes || []).map(l => {
+                        const lu = typeof l === 'object' ? l.uid : l;
+                        if (lu === uid) { likesChanged = true; return typeof l === 'object' ? { ...l, name: newName } : { uid: uid, name: newName, timestamp: Date.now() }; }
+                        return l;
+                    });
+                    if (likesChanged) updates.likes = newLikes;
+                    let repliesUpdated = false;
+                    const newReplies = (data.replies || []).map(r => {
+                        if (r.uid === uid) { repliesUpdated = true; return { ...r, name: newName }; }
+                        let rLikesChanged = false;
+                        const rNewLikes = (r.likes || []).map(l => {
+                            const lu = typeof l === 'object' ? l.uid : l;
+                            if (lu === uid) { rLikesChanged = true; return typeof l === 'object' ? { ...l, name: newName } : { uid: uid, name: newName, timestamp: Date.now() }; }
+                            return l;
+                        });
+                        if (rLikesChanged) { repliesUpdated = true; return { ...r, likes: rNewLikes }; }
+                        return r;
+                    });
+                    if (repliesUpdated) updates.replies = newReplies;
+                    if (Object.keys(updates).length > 0) await window.updateDoc(ref, updates);
+                }
+                const statsQ = window.query(window.collection(window.db, "stats"));
+                const statsSnap = await window.getDocs(statsQ);
+                for (const docSnap of statsSnap.docs) {
+                    const data = docSnap.data();
+                    const viewers = data.viewers || {};
+                    if (viewers[uid]) {
+                        await window.updateDoc(docSnap.ref, { [`viewers.${uid}.name`]: newName });
+                    }
+                }
+                if (lbRecordingsCache[uid]) delete lbRecordingsCache[uid];
+                if (lbLikesCache[uid]) delete lbLikesCache[uid];
+                if (lbViewsCache[uid]) delete lbViewsCache[uid];
+            } catch(e) { console.warn("updateUserNameEverywhere:", e); }
+        }
+
         // --- LEADERBOARD (TOP 3) ---
         let leaderboardAllUsers = [];
-        let leaderboardShowFull = false;
+        let leaderboardVisibleCount = 3;
 
-        function renderLeaderboardItems(users, showAll, myUid, preserveOpen) {
+        function renderLeaderboardItems(users, visibleCount, myUid, preserveOpen) {
             if (!preserveOpen) {
                 lbLikesOpenUid = null;
                 lbRecordingsOpenUid = null;
@@ -1374,8 +1426,10 @@
             const isAdmin = myUid === 'admin_super';
             list.innerHTML = "";
             if(users.length === 0) { list.innerHTML = "<li style='text-align:center; color:#999; padding:10px;'>لا يوجد طلاب بعد</li>"; if(btn) btn.style.display = 'none'; return; }
-            const toShow = showAll ? users : users.slice(0, 3);
-            if(btn) { btn.style.display = users.length > 3 ? 'block' : 'none'; btn.innerText = showAll ? 'عرض Top 3 فقط' : 'عرض بقية الطلاب'; }
+            const toShow = users.slice(0, visibleCount);
+            if(btn) { btn.style.display = users.length > visibleCount ? 'block' : 'none'; btn.innerText = visibleCount <= 3 ? 'عرض المزيد (+10)' : 'عرض Top 3 فقط'; }
+            const syncBtn = document.getElementById('lbSyncNamesBtn');
+            if(syncBtn) syncBtn.style.display = isAdmin ? 'block' : 'none';
             toShow.forEach((u, i) => {
                 adminUserRoles[u.uid] = 'student';
                 const rank = i + 1;
@@ -1432,9 +1486,30 @@
         }
 
         window.toggleLeaderboardFull = function() {
-            leaderboardShowFull = !leaderboardShowFull;
-            renderLeaderboardItems(leaderboardAllUsers, leaderboardShowFull, localStorage.getItem('it9an_uid'));
+            if (leaderboardVisibleCount > 3) {
+                leaderboardVisibleCount = 3;
+            } else {
+                leaderboardVisibleCount = Math.min(leaderboardVisibleCount + 10, leaderboardAllUsers.length);
+            }
+            renderLeaderboardItems(leaderboardAllUsers, leaderboardVisibleCount, localStorage.getItem('it9an_uid'));
         }
+
+        window.syncAllUserNames = async function() {
+            if (localStorage.getItem('it9an_uid') !== 'admin_super') return;
+            const syncBtn = document.getElementById('lbSyncNamesBtn');
+            if (syncBtn) { syncBtn.disabled = true; syncBtn.innerText = 'جاري المزامنة...'; }
+            try {
+                const allUsers = [...leaderboardAllUsers, ...leaderboardAllTeachers];
+                for (const u of allUsers) {
+                    const displayName = (u.displayNameOnly === true) ? (u.baseName || (u.name ? u.name.replace(/\s*\(\d{4}\)\s*$/, '').trim() : '') || u.name) : (u.name || '');
+                    if (displayName) await updateUserNameEverywhere(u.uid, displayName);
+                }
+                loadLeaderboard();
+                if (localStorage.getItem('it9an_uid') === 'admin_super') loadTeachersLeaderboard();
+                alert("تم مزامنة الأسماء بنجاح");
+            } catch (e) { alert("خطأ: " + (e.message || e)); }
+            if (syncBtn) { syncBtn.disabled = false; syncBtn.innerText = '🔄 مزامنة الأسماء'; }
+        };
 
         let leaderboardAllTeachers = [];
         let unsubscribeTeachersLeaderboard = null;
@@ -1450,6 +1525,7 @@
             let firstSnap = true;
             const q = window.query(window.collection(window.db, "users"), window.where("role", "==", "teacher"));
             unsubscribeTeachersLeaderboard = window.onSnapshot(q, (snap) => {
+                if (document.hidden) return;
                 let teachers = [];
                 snap.forEach(doc => teachers.push({ ...doc.data(), uid: doc.data().uid || doc.id }));
                 teachers.sort((a,b) => (b.totalRepliesCount || 0) - (a.totalRepliesCount || 0));
@@ -1471,6 +1547,7 @@
                         <div class="lb-item">
                             <div style="display:flex; align-items:center; gap:4px; flex-shrink: 1; min-width: 0;">
                                 <button class="delete-btn" onclick="deleteUser('${u.uid}')" title="حذف">🗑️</button>
+                                <button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="renameUser('${u.uid}')" title="تعديل الاسم">✏️</button>
                                 <button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="swapFirstLastName('${u.uid}')" title="تبديل الاسم الأول واللقب">🔄</button>
                                 <button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="toggleDisplayYear('${u.uid}')" title="${yearToggleTitleT}">📅</button>
                                 <button class="${blockBtnClass}" style="padding:4px 10px; font-size:12px;" onclick="toggleBlockUser('${u.uid}', ${isBlocked})">${blockBtnText}</button>
@@ -1512,6 +1589,7 @@
             const myUid = localStorage.getItem('it9an_uid');
             let firstSnapshot = true;
             const cb = (snap) => {
+                if (document.hidden) return;
                 let users = [];
                 snap.forEach(doc => users.push({ ...doc.data(), uid: doc.data().uid || doc.id }));
                 users.sort((a,b) => {
@@ -1535,7 +1613,7 @@
                         }
                     })();
                 }
-                renderLeaderboardItems(users, leaderboardShowFull, myUid, !firstSnapshot);
+                renderLeaderboardItems(users, leaderboardVisibleCount, myUid, !firstSnapshot);
                 if (typeof window.updateHeaderNamePin === 'function') window.updateHeaderNamePin();
                 if (myUid === 'admin_super') {
                     loadTeachersLeaderboard(() => { if (onComplete && firstSnapshot) { onComplete(); onComplete = null; } firstSnapshot = false; });
@@ -2005,7 +2083,7 @@
             document.getElementById('appFooter').style.display = 'none';
             const uid = lbPendingRestore.uid;
             const idx = leaderboardAllUsers.findIndex(u => u.uid === uid);
-            if (idx >= 0 && idx > 2) leaderboardShowFull = true;
+            if (idx >= 0 && idx > 2) leaderboardVisibleCount = Math.max(leaderboardVisibleCount, idx + 1);
             renderMenu();
             setTimeout(doLbRestore, 50);
             updateLbBackButton();
@@ -2024,7 +2102,7 @@
             document.getElementById('appFooter').style.display = 'none';
             const uid = lbPendingRestore.uid;
             const idx = leaderboardAllUsers.findIndex(u => u.uid === uid);
-            if (idx >= 0 && idx > 2) leaderboardShowFull = true;
+            if (idx >= 0 && idx > 2) leaderboardVisibleCount = Math.max(leaderboardVisibleCount, idx + 1);
             renderMenu();
             setTimeout(doLbRestore, 50);
             updateLbBackButton();
@@ -2043,7 +2121,7 @@
             document.getElementById('appFooter').style.display = 'none';
             const uid = lbPendingRestore.uid;
             const idx = leaderboardAllUsers.findIndex(u => u.uid === uid);
-            if (idx >= 0 && idx > 2) leaderboardShowFull = true;
+            if (idx >= 0 && idx > 2) leaderboardVisibleCount = Math.max(leaderboardVisibleCount, idx + 1);
             renderMenu();
             setTimeout(doLbRestore, 50);
             updateLbBackButton();
@@ -2155,6 +2233,7 @@
 
             if(notifUnsubscribe) notifUnsubscribe();
             notifUnsubscribe = window.onSnapshot(q, (snap) => {
+                if (document.hidden) return;
                 const list = document.getElementById('notifList');
                 const badge = document.getElementById('notifBadge');
                 list.innerHTML = "";
@@ -2276,6 +2355,7 @@
             const myUid = localStorage.getItem('it9an_uid');
             const msgRef = window.doc(window.db, "adminMessages", messageId);
             adminMessageViewUnsub = window.onSnapshot(msgRef, (snap) => {
+                if (document.hidden) return;
                 if (snap.exists()) renderAdminMessageContent(snap.data(), isAdmin, myUid);
             });
         }
@@ -2343,6 +2423,7 @@
             if (adminMessagesUnsub) adminMessagesUnsub();
             const q = window.query(window.collection(window.db, "adminMessages"), window.orderBy("timestamp", "desc"));
             adminMessagesUnsub = window.onSnapshot(q, (snap) => {
+                if (document.hidden) return;
                 container.innerHTML = '';
                 if (snap.empty) { container.innerHTML = '<div style="color:#999; padding:10px; font-size:14px;">لا توجد رسائل بعد</div>'; return; }
                 snap.forEach(doc => {
@@ -2526,7 +2607,8 @@
             const statRef = window.doc(window.db, "stats", "file_" + globalId);
             
             if(unsubscribeViews) unsubscribeViews();
-            unsubscribeViews = window.onSnapshot(statRef, (snap) => { 
+            unsubscribeViews = window.onSnapshot(statRef, (snap) => {
+                if (document.hidden) return;
                 if(snap.exists()) {
                     const d = snap.data();
                     const viewersObj = d.viewers && typeof d.viewers === 'object' && !Array.isArray(d.viewers) ? d.viewers : {};
@@ -2565,6 +2647,7 @@
             const q = window.query(window.collection(window.db, "posts"), window.where("fileId", "==", idString));
             
             unsubscribeFeed = window.onSnapshot(q, async (snap) => {
+                if (document.hidden) return;
                 const scrollY = window.scrollY;
                 if(snap.empty) { div.innerHTML = "<div style='text-align:center; color:#999; font-size:16px; padding:20px;'>لا توجد مشاركات حتى الآن</div>"; return; }
                 allLoadedPosts = [];
@@ -3477,6 +3560,83 @@
                 } catch(e) { alert("خطأ"); }
             }
         }
+
+        // --- ENERGIEEFFIZIENZ: Bei Hintergrund pausieren, Listener stoppen ---
+        function pauseAllAudio() {
+            try {
+                const mainA = document.getElementById('mainAudio');
+                const feedA = document.getElementById('feedAudio');
+                const reviewA = document.getElementById('reviewAudio');
+                if (mainA && !mainA.paused) mainA.pause();
+                if (feedA && !feedA.paused) feedA.pause();
+                if (reviewA && !reviewA.paused) reviewA.pause();
+                pauseFeedAudio();
+            } catch(e) {}
+        }
+        function clearAllIntervals() {
+            if (pauseInterval) { clearInterval(pauseInterval); pauseInterval = null; }
+            if (recInterval) { clearInterval(recInterval); recInterval = null; }
+        }
+        function unsubscribeAllListeners() {
+            try {
+                if (unsubscribeViews) { unsubscribeViews(); unsubscribeViews = null; }
+                if (unsubscribeFeed) { unsubscribeFeed(); unsubscribeFeed = null; }
+                if (unsubscribeLeaderboard) { unsubscribeLeaderboard(); unsubscribeLeaderboard = null; }
+                if (unsubscribeTeachersLeaderboard) { unsubscribeTeachersLeaderboard(); unsubscribeTeachersLeaderboard = null; }
+                if (notifUnsubscribe) { notifUnsubscribe(); notifUnsubscribe = null; }
+                if (adminMessageViewUnsub) { adminMessageViewUnsub(); adminMessageViewUnsub = null; }
+                if (adminMessagesUnsub) { adminMessagesUnsub(); adminMessagesUnsub = null; }
+            } catch(e) {}
+        }
+        function restoreListenersOnVisible() {
+            const uid = localStorage.getItem('it9an_uid');
+            if (!uid) return;
+            loadLeaderboard(undefined);
+            if (uid === 'admin_super') {
+                loadTeachersLeaderboard();
+                loadAdminMessagesList();
+            } else {
+                listenForNotifications();
+            }
+            const playerView = document.getElementById('player-view');
+            if (playerView && playerView.style.display !== 'none' && currentGlobalFileId != null) {
+                if (unsubscribeViews) unsubscribeViews();
+                const statRef = window.doc(window.db, "stats", "file_" + currentGlobalFileId);
+                unsubscribeViews = window.onSnapshot(statRef, (snap) => {
+                    if (document.hidden) return;
+                    if (snap.exists()) {
+                        const d = snap.data();
+                        const viewersObj = d.viewers && typeof d.viewers === 'object' && !Array.isArray(d.viewers) ? d.viewers : {};
+                        window.currentViewersData = { viewers: viewersObj, totalRepetitions: d.totalRepetitions || 0 };
+                        document.getElementById('viewCount').innerText = d.totalRepetitions || 0;
+                    } else {
+                        window.currentViewersData = { viewers: {}, totalRepetitions: 0 };
+                        document.getElementById('viewCount').innerText = 0;
+                    }
+                });
+                loadFeed(currentGlobalFileId);
+            }
+            const adminMsgView = document.getElementById('admin-message-view');
+            if (adminMsgView && adminMsgView.style.display !== 'none' && currentAdminMessageId) {
+                const isAdmin = uid === 'admin_super';
+                const myUid = uid;
+                const msgRef = window.doc(window.db, "adminMessages", currentAdminMessageId);
+                if (adminMessageViewUnsub) adminMessageViewUnsub();
+                adminMessageViewUnsub = window.onSnapshot(msgRef, (snap) => {
+                    if (document.hidden) return;
+                    if (snap.exists()) renderAdminMessageContent(snap.data(), isAdmin, myUid);
+                });
+            }
+        }
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                pauseAllAudio();
+                clearAllIntervals();
+                unsubscribeAllListeners();
+            } else {
+                restoreListenersOnVisible();
+            }
+        });
     </script>
 </body>
 </html>
