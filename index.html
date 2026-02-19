@@ -1530,10 +1530,23 @@
             const btn = document.getElementById('lbRefreshTeachersBtn');
             if (btn) { btn.disabled = true; btn.innerText = 'جاري التحديث...'; }
             try {
-                const q = window.query(window.collection(window.db, "users"), window.where("role", "==", "teacher"));
-                const snap = await window.getDocsFromServer(q);
+                const [usersSnap, postsSnap] = await Promise.all([
+                    window.getDocsFromServer(window.query(window.collection(window.db, "users"), window.where("role", "==", "teacher"))),
+                    window.getDocsFromServer(window.query(window.collection(window.db, "posts")))
+                ]);
+                const replyCountByUid = {};
+                postsSnap.forEach(pDoc => {
+                    const data = pDoc.data();
+                    (data.replies || []).forEach(r => {
+                        if (r.uid) replyCountByUid[r.uid] = (replyCountByUid[r.uid] || 0) + 1;
+                    });
+                });
                 let teachers = [];
-                snap.forEach(doc => teachers.push({ ...doc.data(), uid: doc.data().uid || doc.id }));
+                usersSnap.forEach(doc => {
+                    const d = doc.data();
+                    const uid = d.uid || doc.id;
+                    teachers.push({ ...d, uid, totalRepliesCount: replyCountByUid[uid] ?? 0 });
+                });
                 teachers.sort((a,b) => (b.totalRepliesCount || 0) - (a.totalRepliesCount || 0));
                 leaderboardAllTeachers = teachers;
                 const list = document.getElementById('leaderboard-teachers-list');
