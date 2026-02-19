@@ -547,7 +547,8 @@
                 <ul id="leaderboard-list" class="lb-list">
                     <li style="text-align:center; color:#999; padding:10px;">جاري التحميل...</li>
                 </ul>
-                <button id="lbShowMoreBtn" class="lb-show-more-btn" onclick="toggleLeaderboardFull()" style="display:none;">عرض بقية الطلاب</button>
+                <button id="lbShowMoreBtn" class="lb-show-more-btn" onclick="showMoreLeaderboardStudents()" style="display:none;">عرض المزيد (+10)</button>
+                <button id="lbShowTop3Btn" class="lb-show-more-btn" style="display:none; margin-top:8px; background:#888;" onclick="showTop3Only()">عرض Top 3 فقط</button>
                 <button id="lbSyncNamesBtn" class="btn-action" style="display:none; margin-top:8px; padding:6px 12px;" onclick="syncAllUserNames()" title="تحديث الأسماء في جميع التسجيلات والإعجابات والمشاهدات">🔄 مزامنة الأسماء</button>
             </div>
             <div id="adminTeachersLeaderboard" class="leaderboard-card" style="margin-top:15px; display:none;">
@@ -1422,12 +1423,19 @@
                 lbViewsOpenUid = null;
             }
             const list = document.getElementById('leaderboard-list');
-            const btn = document.getElementById('lbShowMoreBtn');
             const isAdmin = myUid === 'admin_super';
             list.innerHTML = "";
-            if(users.length === 0) { list.innerHTML = "<li style='text-align:center; color:#999; padding:10px;'>لا يوجد طلاب بعد</li>"; if(btn) btn.style.display = 'none'; return; }
+            if(users.length === 0) {
+                list.innerHTML = "<li style='text-align:center; color:#999; padding:10px;'>لا يوجد طلاب بعد</li>";
+                const sm = document.getElementById('lbShowMoreBtn'); const st = document.getElementById('lbShowTop3Btn');
+                if(sm) sm.style.display = 'none'; if(st) st.style.display = 'none';
+                return;
+            }
             const toShow = users.slice(0, visibleCount);
-            if(btn) { btn.style.display = users.length > visibleCount ? 'block' : 'none'; btn.innerText = visibleCount <= 3 ? 'عرض المزيد (+10)' : 'عرض Top 3 فقط'; }
+            const showMoreBtn = document.getElementById('lbShowMoreBtn');
+            const showTop3Btn = document.getElementById('lbShowTop3Btn');
+            if(showMoreBtn) showMoreBtn.style.display = users.length > visibleCount ? 'block' : 'none';
+            if(showTop3Btn) showTop3Btn.style.display = visibleCount > 3 ? 'block' : 'none';
             const syncBtn = document.getElementById('lbSyncNamesBtn');
             if(syncBtn) syncBtn.style.display = isAdmin ? 'block' : 'none';
             toShow.forEach((u, i) => {
@@ -1485,12 +1493,12 @@
             }
         }
 
-        window.toggleLeaderboardFull = function() {
-            if (leaderboardVisibleCount > 3) {
-                leaderboardVisibleCount = 3;
-            } else {
-                leaderboardVisibleCount = Math.min(leaderboardVisibleCount + 10, leaderboardAllUsers.length);
-            }
+        window.showMoreLeaderboardStudents = function() {
+            leaderboardVisibleCount = Math.min(leaderboardVisibleCount + 10, leaderboardAllUsers.length);
+            renderLeaderboardItems(leaderboardAllUsers, leaderboardVisibleCount, localStorage.getItem('it9an_uid'));
+        }
+        window.showTop3Only = function() {
+            leaderboardVisibleCount = 3;
             renderLeaderboardItems(leaderboardAllUsers, leaderboardVisibleCount, localStorage.getItem('it9an_uid'));
         }
 
@@ -3640,5 +3648,4 @@
     </script>
 </body>
 </html>
-
 
