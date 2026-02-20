@@ -808,12 +808,24 @@
         }
         async function transcodeToMp4(blob) {
             const ffmpeg = await loadFfmpeg();
-            const ext = blob.type.includes('ogg') ? 'ogg' : 'webm';
+            const ext = blob.type.includes('ogg') ? 'ogg' : (blob.type.includes('mp4') ? 'mp4' : 'webm');
             await ffmpeg.writeFile('input.' + ext, new Uint8Array(await blob.arrayBuffer()));
             await ffmpeg.exec(['-i', 'input.' + ext, '-c:a', 'aac', '-b:a', '128k', '-ar', '48000', '-ac', '1', 'output.mp4']);
             const data = await ffmpeg.readFile('output.mp4');
             try { await ffmpeg.deleteFile('input.' + ext); await ffmpeg.deleteFile('output.mp4'); } catch(e){}
             return new Blob([data], { type: 'audio/mp4' });
+        }
+        async function ensureMonoAndNormalize(blob) {
+            if (!blob || blob.size === 0) return blob;
+            try {
+                const ffmpeg = await loadFfmpeg();
+                const ext = blob.type.includes('ogg') ? 'ogg' : (blob.type.includes('mp4') ? 'mp4' : 'webm');
+                await ffmpeg.writeFile('input.' + ext, new Uint8Array(await blob.arrayBuffer()));
+                await ffmpeg.exec(['-i', 'input.' + ext, '-c:a', 'aac', '-b:a', '128k', '-ar', '48000', '-ac', '1', 'output.mp4']);
+                const data = await ffmpeg.readFile('output.mp4');
+                try { await ffmpeg.deleteFile('input.' + ext); await ffmpeg.deleteFile('output.mp4'); } catch(e){}
+                return new Blob([data], { type: 'audio/mp4' });
+            } catch(e) { console.warn('Mono/Normalize failed:', e); return blob; }
         }
 
         // --- GLOBAL FEED PLAYER LOGIC ---
@@ -3357,16 +3369,8 @@
 
             try {
                 let blobToUpload = currentBlob;
-                const needsTranscode = blobToUpload.type.includes('webm') || blobToUpload.type.includes('ogg');
-                if (needsTranscode) {
-                    document.getElementById('statusDisplay').innerText = "جاري تحويل الصيغة...";
-                    try {
-                        blobToUpload = await transcodeToMp4(currentBlob);
-                    } catch (e) {
-                        console.error(e);
-                        alert("فشل تحويل الصيغة. سيتم الإرسال بالصيغة الأصلية.");
-                    }
-                }
+                document.getElementById('statusDisplay').innerText = "جاري تحويل الصيغة...";
+                blobToUpload = await ensureMonoAndNormalize(currentBlob);
                 document.getElementById('statusDisplay').innerText = "جاري الإرسال...";
                 let ext = 'webm'; if (blobToUpload.type.includes('mp4')) ext = 'mp4'; else if (blobToUpload.type.includes('ogg')) ext = 'ogg';
                 const refS = window.ref(window.storage, `uploads/${Date.now()}_${uid}.${ext}`);
