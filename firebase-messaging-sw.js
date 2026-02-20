@@ -1,5 +1,5 @@
 /* PWA Service Worker: Push (Ton+Vibration) + sparsames Offline-Caching */
-const CACHE_NAME = 'it9an-v2';
+const CACHE_NAME = 'it9an-v1';
 const CACHE_MAX_AGE = 24 * 60 * 60 * 1000;
 
 self.addEventListener('install', (e) => {
@@ -74,4 +74,3 @@ self.addEventListener('notificationclick', (e) => {
     else if (self.clients.openWindow) self.clients.openWindow(url);
   }));
 });
-
