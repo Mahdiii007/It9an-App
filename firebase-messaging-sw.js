@@ -74,3 +74,5 @@ self.addEventListener('notificationclick', (e) => {
     else if (self.clients.openWindow) self.clients.openWindow(url);
   }));
 });
+
+
