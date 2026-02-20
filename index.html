@@ -3262,13 +3262,24 @@
                     maxRecDuration = (replyTargetId && role === 'teacher') ? 180 : Math.ceil(dur * 2);
                     const audioConstraints = { echoCancellation: false, noiseSuppression: false, autoGainControl: false, sampleRate: 48000, channelCount: 1 };
                     rawStream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints });
-                    // iPhone/Safari ignoriert channelCount und liefert oft Stereo (leiser, schlechtere Qualität).
-                    // Web Audio API erzwingt Mono-Ausgabe für bessere Aufnahmequalität.
+                    // iPhone/iPad Safari ignoriert channelCount – liefert oft Stereo (leiser, schlechtere Qualität).
+                    // Explizites L+R-Mix via ChannelSplitter/ChannelMerger erzwingt Mono auf allen Geräten.
                     recCtx = new (window.AudioContext || window.webkitAudioContext)();
                     if (recCtx.state === 'suspended') await recCtx.resume();
                     const sourceNode = recCtx.createMediaStreamSource(rawStream);
-                    const destNode = new MediaStreamAudioDestinationNode(recCtx, { channelCount: 1, channelCountMode: 'explicit' });
-                    sourceNode.connect(destNode);
+                    const splitter = recCtx.createChannelSplitter(2);
+                    const merger = recCtx.createChannelMerger(1);
+                    const gainL = recCtx.createGain();
+                    const gainR = recCtx.createGain();
+                    gainL.gain.value = 0.5;
+                    gainR.gain.value = 0.5;
+                    sourceNode.connect(splitter);
+                    splitter.connect(gainL, 0);
+                    splitter.connect(gainR, 1);
+                    gainL.connect(merger, 0, 0);
+                    gainR.connect(merger, 0, 0);
+                    const destNode = recCtx.createMediaStreamDestination();
+                    merger.connect(destNode);
                     const stream = destNode.stream;
                     let options = { audioBitsPerSecond: 128000 };
                     // MP4/AAC zuerst: spielt auf iPhone/Mac/Safari flüssig. WebM/Opus verursacht Ruckler auf Safari.
