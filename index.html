@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>تطبيق إتقان</title>
+    <meta name="theme-color" content="#0f4c3a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="إتقان">
+    <link rel="manifest" href="manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap" rel="stylesheet">
     
     <style>
@@ -433,6 +438,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, addDoc, query, where, orderBy, onSnapshot, serverTimestamp, doc, setDoc, updateDoc, increment, arrayUnion, arrayRemove, deleteDoc, getDoc, getDocs, getDocsFromServer, enableIndexedDbPersistence, limit, deleteField } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+        import { getMessaging, getToken, isSupported } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDoZLFvGknKztMIFAtS2-AgX6DYw4fssUA",
@@ -444,6 +450,7 @@
         };
 
         const app = initializeApp(firebaseConfig);
+        window.firebaseApp = app;
         window.db = getFirestore(app); window.storage = getStorage(app);
         
         try { enableIndexedDbPersistence(window.db).catch((err) => { console.log("Persistence error:", err.code); }); } catch(e){}
@@ -454,6 +461,7 @@
         window.uploadBytes = uploadBytes; window.getDownloadURL = getDownloadURL;
         window.doc = doc; window.setDoc = setDoc; window.updateDoc = updateDoc; window.increment = increment; window.arrayUnion = arrayUnion; window.arrayRemove = arrayRemove; window.deleteDoc = deleteDoc; window.getDoc = getDoc; window.getDocs = getDocs; window.getDocsFromServer = getDocsFromServer; window.deleteField = deleteField; 
         window.deleteObject = deleteObject; window.limit = limit;
+        window.getMessaging = getMessaging; window.getToken = getToken; window.isSupportedFcm = isSupported;
     </script>
 </head>
 <body>
@@ -986,6 +994,10 @@
                 doLoginSuccess('admin_super', 'المسؤول', 'teacher', true, null);
                 return;
             }
+            if (pin === "0000") {
+                doLoginSuccess('guest', 'ضيف', 'guest', true, null);
+                return;
+            }
             const q = window.query(window.collection(window.db, "users"), window.where("personalPin", "==", pin));
             const snap = await window.getDocs(q);
             if (snap.empty) { alert("الرمز غير موجود"); return; }
@@ -1014,8 +1026,9 @@
             else localStorage.removeItem('it9an_pin');
             document.getElementById('login-screen').style.display = 'none';
             updateUIForRole();
-            listenForNotifications();
+            if (uid !== 'guest') listenForNotifications();
             renderMenu();
+            if (uid && uid !== 'admin_super' && uid !== 'guest') requestPushPermissionAndSaveToken(uid, role);
         }
 
         async function checkLoginClassic() {
@@ -1177,6 +1190,11 @@
             if (uid === 'admin_super') {
                 if(notifContainer) notifContainer.style.display = 'none';
                 recBtn.style.display = 'flex';
+            } else if (uid === 'guest' || role === 'guest') {
+                if(notifContainer) notifContainer.style.display = 'none';
+                recBtn.style.display = 'none';
+                if(adminMenuPanel) adminMenuPanel.style.display = 'none';
+                if(adminPlayerPanel) adminPlayerPanel.style.display = 'none';
             } else {
                 if(notifContainer) notifContainer.style.display = 'flex';
                 if (role === 'student') {
@@ -1419,6 +1437,7 @@
         // --- LEADERBOARD (TOP 3) ---
         let leaderboardAllUsers = [];
         let leaderboardVisibleCount = 3;
+        let lastStudentsRefreshTime = 0;
 
         function renderLeaderboardItems(users, visibleCount, myUid, preserveOpen) {
             if (!preserveOpen) {
@@ -1531,6 +1550,7 @@
         window.refreshStudentsLeaderboard = async function() {
             const btn = document.getElementById('lbRefreshStudentsBtn');
             if (btn) { btn.disabled = true; btn.innerText = 'جاري التحديث...'; }
+            lastStudentsRefreshTime = Date.now();
             try {
                 lbRecordingsCache = {}; lbLikesCache = {}; lbViewsCache = {};
                 const q = window.query(window.collection(window.db, "users"), window.where("role", "==", "student"));
@@ -1547,6 +1567,26 @@
                 renderLeaderboardItems(users, leaderboardVisibleCount, myUid, true);
                 if (typeof window.updateHeaderNamePin === 'function') window.updateHeaderNamePin();
                 await refreshOpenSubLists();
+                const isStudentViewsOpen = lbViewsOpenUid && leaderboardAllUsers.some(u => u.uid === lbViewsOpenUid);
+                const isStudentRecOpen = lbRecordingsOpenUid && leaderboardAllUsers.some(u => u.uid === lbRecordingsOpenUid);
+                const isStudentLikesOpen = lbLikesOpenUid && leaderboardAllUsers.some(u => u.uid === lbLikesOpenUid);
+                if (isStudentViewsOpen) {
+                    const container = document.getElementById('lb-views-' + lbViewsOpenUid);
+                    if (container) container.style.display = 'block';
+                }
+                if (isStudentRecOpen) {
+                    const container = document.getElementById('lb-recordings-' + lbRecordingsOpenUid);
+                    if (container) container.style.display = 'block';
+                }
+                if (isStudentLikesOpen) {
+                    const container = document.getElementById('lb-likes-' + lbLikesOpenUid);
+                    if (container) container.style.display = 'block';
+                }
+                const toast = document.createElement('div');
+                toast.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--primary);color:white;padding:10px 20px;border-radius:10px;font-size:14px;z-index:9999;animation:fadeOut 2s forwards;';
+                toast.textContent = 'تم التحديث';
+                document.body.appendChild(toast);
+                setTimeout(() => toast.remove(), 2000);
             } catch(e) { console.warn("refreshStudentsLeaderboard:", e); alert("خطأ في التحديث"); }
             finally { if (btn) { btn.disabled = false; btn.innerText = '🔄 تحديث'; } }
         }
@@ -1726,6 +1766,7 @@
             let firstSnapshot = true;
             const cb = (snap) => {
                 if (document.hidden) return;
+                if (Date.now() - lastStudentsRefreshTime < 15000) return;
                 let users = [];
                 snap.forEach(doc => users.push({ ...doc.data(), uid: doc.data().uid || doc.id }));
                 users.sort((a,b) => {
@@ -2349,6 +2390,20 @@
             }
         }
 
+        // --- PUSH NOTIFICATIONS (FCM) ---
+        const FCM_VAPID_KEY = 'SEK7Z7XWL_GB4vbWzqQNKLoJyy6gSwHaBoJdftZrIFg';
+        async function requestPushPermissionAndSaveToken(uid, role) {
+            if (!window.isSupportedFcm || !(await window.isSupportedFcm())) return;
+            try {
+                const perm = await Notification.requestPermission();
+                if (perm !== 'granted') return;
+                const messaging = window.getMessaging(window.firebaseApp);
+                const token = await window.getToken(messaging, { vapidKey: FCM_VAPID_KEY });
+                if (!token) return;
+                await window.setDoc(window.doc(window.db, 'fcmTokens', uid), { token, uid, role, updatedAt: window.serverTimestamp() }, { merge: true });
+            } catch(e) { console.warn('FCM:', e); }
+        }
+
         // --- NOTIFICATIONS ---
         let notifUnsubscribe = null;
         function listenForNotifications() {
@@ -2495,7 +2550,7 @@
             document.getElementById('adminMsgLikeCount').style.cursor = (isAdmin && likesCount > 0) ? 'pointer' : 'default';
             document.getElementById('adminMsgLikeCount').onclick = (isAdmin && likesCount > 0) ? () => showAdminMessageLikersById(currentAdminMessageId) : null;
             document.getElementById('adminMsgLikeBtn').innerText = isLiked ? '👍 تم الإعجاب' : '👍 أعجبني';
-            document.getElementById('adminMsgLikeBtn').style.display = (isAdmin ? 'none' : 'block');
+            document.getElementById('adminMsgLikeBtn').style.display = (isAdmin || myUid === 'guest' ? 'none' : 'block');
         }
         window.showAdminMessageView = async function(messageId) {
             currentAdminMessageId = messageId;
@@ -2520,7 +2575,7 @@
             if (!currentAdminMessageId) return;
             const uid = localStorage.getItem('it9an_uid');
             const myName = localStorage.getItem('it9an_name');
-            if (!uid || uid === 'admin_super') return;
+            if (!uid || uid === 'admin_super' || uid === 'guest') return;
             const msgRef = window.doc(window.db, "adminMessages", currentAdminMessageId);
             const snap = await window.getDoc(msgRef);
             if (!snap.exists()) return;
@@ -2889,11 +2944,12 @@
                     mainLikerNames = d.likes.map(l => typeof l === 'object' ? (l.name || 'مستخدم') : 'مستخدم');
                 }
                 const isMyMainPost = (d.uid === myUid);
+                const isGuest = (myUid === 'guest');
                 let mainLikeClass = mainIsLikedByMe ? 'liked' : '';
                 let mainLikeAction = `likePost('${d.id}', '${d.uid}')`; // Pass owner UID
                 let mainCursor = 'pointer';
                 let mainLockedClass = '';
-                if (isMyMainPost) { mainLikeAction = ''; mainLockedClass = 'locked'; mainCursor = 'not-allowed'; mainLikeClass += ' disabled'; }
+                if (isMyMainPost || isGuest) { mainLikeAction = ''; mainLockedClass = 'locked'; mainCursor = 'not-allowed'; mainLikeClass += ' disabled'; }
 
                 let deleteBtnHtml = "";
                 // MODIFIED: Show delete button if Admin OR Teacher OR Own Post (already handled by logic but button hidden)
@@ -2929,7 +2985,7 @@
                         let rLikeAction = `likeReply('${d.id}', ${r.timestamp}, '${r.uid}')`;
                         let rNamesStr = rLikerNames.join('|||');
                         let rLockedClass = '';
-                        if (isMyReply) { rLikeAction = ''; rLockedClass = 'locked'; rLikeClass += ' disabled'; }
+                        if (isMyReply || isGuest) { rLikeAction = ''; rLockedClass = 'locked'; rLikeClass += ' disabled'; }
 
                         let rDeleteBtn = "";
                         if (isAdmin || isTeacher) {
@@ -2978,7 +3034,7 @@
                 let replyBtnHtml = (userRole === 'teacher' || isAdmin) ? `<button class="reply-btn" onclick="startReply('${d.id}')">↩️ الرد</button>` : "<div></div>";
                 let postDateStr = formatDateTime(d.timestamp);
                 const isSaved = savedIds.has(d.id);
-                const saveBtnHtml = (myUid && myUid !== 'admin_super') ? `<button class="save-btn ${isSaved ? 'saved' : ''}" onclick="toggleSaveForLater('${d.id}', ${isSaved})" title="${isSaved ? 'إزالة من القائمة' : 'حفظ للمشاهدة لاحقاً'}">${isSaved ? '📌' : '📎'}</button>` : '';
+                const saveBtnHtml = (myUid && myUid !== 'admin_super' && myUid !== 'guest') ? `<button class="save-btn ${isSaved ? 'saved' : ''}" onclick="toggleSaveForLater('${d.id}', ${isSaved})" title="${isSaved ? 'إزالة من القائمة' : 'حفظ للمشاهدة لاحقاً'}">${isSaved ? '📌' : '📎'}</button>` : '';
 
                 let delBtn = deleteBtnHtml ? `<div class="feed-delete-wrap">${deleteBtnHtml}</div>` : '';
                 htmlContent += `
@@ -3027,7 +3083,7 @@
 
         window.toggleSaveForLater = async function(postId, isSaved) {
             const myUid = localStorage.getItem('it9an_uid');
-            if (!myUid || myUid === 'admin_super') return;
+            if (!myUid || myUid === 'admin_super' || myUid === 'guest') return;
             try {
                 const col = window.collection(window.db, "savedRecordings");
                 if (isSaved) {
@@ -3301,7 +3357,9 @@
                 const myName = localStorage.getItem('it9an_name');
                 const isHidden = localStorage.getItem('it9an_hidden') === 'true';
                 if(uid && uid !== 'admin_super') {
-                    try { await window.updateDoc(window.doc(window.db, "users", uid), { totalVerseViews: window.increment(1) }); } catch(e){}
+                    if(uid !== 'guest') {
+                        try { await window.updateDoc(window.doc(window.db, "users", uid), { totalVerseViews: window.increment(1) }); } catch(e){}
+                    }
                     try {
                         const sRef = window.doc(window.db, "stats", "file_" + currentGlobalFileId);
                         await window.setDoc(sRef, {}, { merge: true });
@@ -3309,7 +3367,8 @@
                         if(verseRepeatsPlayed === 0) updates.verseViewCount = window.increment(1);
                         updates[`viewers.${uid}.count`] = window.increment(1);
                         updates[`viewers.${uid}.lastViewed`] = window.serverTimestamp();
-                        if(myName && !isHidden) updates[`viewers.${uid}.name`] = myName;
+                        if(uid === 'guest') updates[`viewers.${uid}.name`] = 'ضيف';
+                        else if(myName && !isHidden) updates[`viewers.${uid}.name`] = myName;
                         await window.updateDoc(sRef, updates);
                     } catch(e){}
                 }
@@ -3362,7 +3421,7 @@
         window.likePost = async (id, ownerUid) => { 
             const uid = localStorage.getItem('it9an_uid'); const myName = localStorage.getItem('it9an_name');
             const myRole = localStorage.getItem('it9an_role');
-            if(!uid) return; 
+            if(!uid || uid === 'guest') return; 
             const postRef = window.doc(window.db, "posts", id);
             const docSnap = await window.getDoc(postRef);
             if (docSnap.exists()) {
@@ -3405,7 +3464,7 @@
 
         window.likeReply = async (postId, replyTimestamp, ownerUid) => {
             const uid = localStorage.getItem('it9an_uid'); const myName = localStorage.getItem('it9an_name');
-            if(!uid) return;
+            if(!uid || uid === 'guest') return;
             const postRef = window.doc(window.db, "posts", postId);
             const docSnap = await window.getDoc(postRef);
             if (docSnap.exists()) {
@@ -3803,6 +3862,27 @@
                 restoreListenersOnVisible();
             }
         });
+
+        /* CLOUD FUNCTION (Firebase) für Push-Versand - in functions/index.js deployen:
+        const functions = require('firebase-functions'); const admin = require('firebase-admin'); admin.initializeApp();
+        exports.sendPushOnNotif = functions.firestore.document('notifications/{id}').onCreate(async (snap, ctx) => {
+          const d = snap.data(); const to = d.to;
+          const tokens = []; 
+          if (to === 'teachers') {
+            const q = admin.firestore().collection('fcmTokens').where('role','==','teacher');
+            (await q.get()).forEach(t => { if (t.data().token) tokens.push(t.data().token); });
+          } else {
+            const t = await admin.firestore().collection('fcmTokens').doc(to).get();
+            if (t.exists && t.data().token) tokens.push(t.data().token);
+          }
+          if (tokens.length === 0) return;
+          let title = 'تطبيق إتقان'; let body = 'إشعار جديد';
+          if (d.type === 'reply') body = 'رد جديد من ' + (d.senderName || '');
+          if (d.type === 'new_recording') body = 'تسجيل جديد من ' + (d.senderName || '');
+          if (d.type === 'admin_message') body = 'رسالة من المسؤول';
+          await admin.messaging().sendEachForMulticast({ tokens, notification: { title, body }, webpush: { notification: { vibrate: [200,100,200], requireInteraction: false } }, android: { priority: 'high', notification: { sound: 'default', defaultVibrateTimings: true } }, apns: { payload: { aps: { sound: 'default', contentAvailable: true } } } });
+        });
+        */
     </script>
 </body>
 </html>
