@@ -564,11 +564,11 @@
     <div id="menu-view">
         <div id="app-stats-card" class="leaderboard-card" style="margin-bottom:15px;">
             <div class="lb-title">📊 إحصائيات التطبيق</div>
-            <div id="appStatsContent" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; padding:8px 0; font-size:15px;">
-                <div style="text-align:center; padding:8px; background:#f0f7f4; border-radius:8px;"><span id="statRepetitions">—</span><br><span style="font-size:12px; color:#666;">إجمالي التكرارات</span></div>
-                <div style="text-align:center; padding:8px; background:#f0f7f4; border-radius:8px;"><span id="statTeacherReplies">—</span><br><span style="font-size:12px; color:#666;">ردود المعلمين</span></div>
-                <div style="text-align:center; padding:8px; background:#f0f7f4; border-radius:8px;"><span id="statStudents">—</span><br><span style="font-size:12px; color:#666;">عدد الطلاب</span></div>
-                <div style="text-align:center; padding:8px; background:#f0f7f4; border-radius:8px;"><span id="statTeachers">—</span><br><span style="font-size:12px; color:#666;">عدد المعلمين</span></div>
+            <div id="appStatsContent" style="display:flex; flex-wrap:wrap; justify-content:space-around; align-items:center; gap:8px; padding:10px 0; font-size:15px;">
+                <span title="إجمالي التكرارات">👁️ <span id="statRepetitions">—</span></span>
+                <span title="ردود المعلمين">🎤 <span id="statTeacherReplies">—</span></span>
+                <span title="عدد الطلاب">🎓 <span id="statStudents">—</span></span>
+                <span title="عدد المعلمين">👨‍🏫 <span id="statTeachers">—</span></span>
             </div>
         </div>
         <div id="leaderboard-section">
@@ -1802,10 +1802,10 @@
                 statsSnap.forEach(d => { totalRepetitions += (d.data().totalRepetitions || 0); });
                 let totalTeacherReplies = 0;
                 postsSnap.forEach(p => { (p.data().replies || []).forEach(r => { if (r.role === 'teacher') totalTeacherReplies++; }); });
-                document.getElementById('statRepetitions').innerText = totalRepetitions.toLocaleString('ar-EG');
-                document.getElementById('statTeacherReplies').innerText = totalTeacherReplies.toLocaleString('ar-EG');
-                document.getElementById('statStudents').innerText = studentsSnap.size.toLocaleString('ar-EG');
-                document.getElementById('statTeachers').innerText = teachersSnap.size.toLocaleString('ar-EG');
+                document.getElementById('statRepetitions').innerText = String(totalRepetitions);
+                document.getElementById('statTeacherReplies').innerText = String(totalTeacherReplies);
+                document.getElementById('statStudents').innerText = String(studentsSnap.size);
+                document.getElementById('statTeachers').innerText = String(teachersSnap.size);
             } catch(e) { console.warn("loadAppStats:", e); }
         }
 
