@@ -577,6 +577,7 @@
             </div>
         </div>
         <button class="verse-list-btn" style="margin: 15px 0;" onclick="showSavedList()">📌 للمشاهدة لاحقاً</button>
+        <button id="pushEnableBtn" class="verse-list-btn" style="margin: 0 0 15px 0; display:none; background:var(--primary); color:white;" onclick="enablePushNotifications()">🔔 تفعيل الإشعارات على الشاشة</button>
         <div class="menu-grid" id="lesson-grid"></div>
     </div>
 
@@ -2402,17 +2403,38 @@
         }
 
         // --- PUSH NOTIFICATIONS (FCM) ---
-        const FCM_VAPID_KEY = 'SEK7Z7XWL_GB4vbWzqQNKLoJyy6gSwHaBoJdftZrIFg';
-        async function requestPushPermissionAndSaveToken(uid, role) {
-            if (!window.isSupportedFcm || !(await window.isSupportedFcm())) return;
+        const FCM_VAPID_KEY = 'BKl57KGTMjrbUmQq2lYI3gJDqQZMb1F0DePQJEBIjaHPHJBGqbYg2OqQxuPUyuoBc4590EZM5i66I7SLfn35hwc';
+        async function requestPushPermissionAndSaveToken(uid, role, showResult) {
+            if (!window.isSupportedFcm || !(await window.isSupportedFcm())) {
+                if (showResult) alert('المتصفح لا يدعم الإشعارات. استخدم Chrome أو Safari وأضف التطبيق للشاشة الرئيسية.');
+                return false;
+            }
             try {
                 const perm = await Notification.requestPermission();
-                if (perm !== 'granted') return;
+                if (perm !== 'granted') {
+                    if (showResult) alert('تم رفض الإشعارات. فعّل الإشعارات من إعدادات المتصفح.');
+                    return false;
+                }
                 const messaging = window.getMessaging(window.firebaseApp);
                 const token = await window.getToken(messaging, { vapidKey: FCM_VAPID_KEY });
-                if (!token) return;
+                if (!token) {
+                    if (showResult) alert('فشل الحصول على رمز الإشعارات. تأكد أن firebase-messaging-sw.js في نفس المجلد.');
+                    return false;
+                }
                 await window.setDoc(window.doc(window.db, 'fcmTokens', uid), { token, uid, role, updatedAt: window.serverTimestamp() }, { merge: true });
-            } catch(e) { console.warn('FCM:', e); }
+                if (showResult) alert('تم تفعيل الإشعارات بنجاح.');
+                return true;
+            } catch(e) {
+                console.warn('FCM:', e);
+                if (showResult) alert('خطأ: ' + (e.message || e));
+                return false;
+            }
+        }
+        window.enablePushNotifications = function() {
+            const uid = localStorage.getItem('it9an_uid');
+            const role = localStorage.getItem('it9an_role');
+            if (!uid || uid === 'admin_super' || uid === 'guest') return;
+            requestPushPermissionAndSaveToken(uid, role, true);
         }
 
         // --- NOTIFICATIONS ---
@@ -2724,11 +2746,14 @@
             if(uid === 'admin_super') {
                 document.getElementById('adminMenuPanel').style.display = 'block';
                 document.getElementById('leaderboard-section').style.display = 'block';
+                document.getElementById('pushEnableBtn').style.display = 'none';
                 loadAdminMessagesList();
                 loadLeaderboard(lbPendingRestore ? doLbRestore : undefined);
             } else {
                 document.getElementById('adminMenuPanel').style.display = 'none';
                 document.getElementById('leaderboard-section').style.display = 'block';
+                const pushBtn = document.getElementById('pushEnableBtn');
+                if (pushBtn) pushBtn.style.display = (role === 'teacher') ? 'block' : 'none';
                 loadLeaderboard(lbPendingRestore ? doLbRestore : undefined);
             }
 
@@ -3906,3 +3931,4 @@
     </script>
 </body>
 </html>
+
