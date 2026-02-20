@@ -566,7 +566,7 @@
             <div class="lb-title">📊 إحصائيات التطبيق</div>
             <div id="appStatsContent" style="display:flex; flex-wrap:wrap; justify-content:space-around; align-items:center; gap:8px; padding:10px 0; font-size:15px;">
                 <span title="إجمالي التكرارات">👁️ <span id="statRepetitions">—</span></span>
-                <span title="ردود المعلمين">🎤 <span id="statTeacherReplies">—</span></span>
+                <span title="تسجيلات الطلاب">🎤 <span id="statStudentRecordings">—</span></span>
                 <span title="عدد الطلاب">🎓 <span id="statStudents">—</span></span>
                 <span title="عدد المعلمين">👨‍🏫 <span id="statTeachers">—</span></span>
             </div>
@@ -1800,10 +1800,10 @@
                 ]);
                 let totalRepetitions = 0;
                 statsSnap.forEach(d => { totalRepetitions += (d.data().totalRepetitions || 0); });
-                let totalTeacherReplies = 0;
-                postsSnap.forEach(p => { (p.data().replies || []).forEach(r => { if (r.role === 'teacher') totalTeacherReplies++; }); });
+                let totalStudentRecordings = 0;
+                postsSnap.forEach(p => { if (p.data().role === 'student') totalStudentRecordings++; });
                 document.getElementById('statRepetitions').innerText = String(totalRepetitions);
-                document.getElementById('statTeacherReplies').innerText = String(totalTeacherReplies);
+                document.getElementById('statStudentRecordings').innerText = String(totalStudentRecordings);
                 document.getElementById('statStudents').innerText = String(studentsSnap.size);
                 document.getElementById('statTeachers').innerText = String(teachersSnap.size);
             } catch(e) { console.warn("loadAppStats:", e); }
