@@ -956,62 +956,25 @@
 
         (function checkAppVersion() {
             if (localStorage.getItem('it9an_version') !== APP_VERSION) {
-                ['it9an_uid','it9an_auth','it9an_name','it9an_role','it9an_pin','it9an_lastActivity'].forEach(k => localStorage.removeItem(k));
+                ['it9an_uid','it9an_auth','it9an_name','it9an_role','it9an_pin'].forEach(k => localStorage.removeItem(k));
                 localStorage.setItem('it9an_version', APP_VERSION);
             }
         })();
 
-        const INACTIVITY_MS = 15 * 60 * 1000; /* 15 Minuten Inaktivität → Logout */
-        function updateLastActivity() { localStorage.setItem('it9an_lastActivity', String(Date.now())); }
-        async function checkForNewVersionAndUpdate() {
-            try {
-                if (sessionStorage.getItem('it9an_reloadGuard')) return;
-                const base = (window.location.pathname || '/').replace(/\/$/, '') || '/';
-                const path = base.endsWith('.html') ? base : ((base === '/') ? '/index.html' : base + '/index.html');
-                const url = window.location.origin + path + '?v=' + Date.now();
-                const ctrl = new AbortController();
-                const t = setTimeout(() => ctrl.abort(), 8000);
-                const r = await fetch(url, { cache: 'no-store', signal: ctrl.signal });
-                clearTimeout(t);
-                if (!r.ok) return;
-                const html = await r.text();
-                const m = html.match(/APP_VERSION\s*=\s*['"]([^'"]+)['"]/);
-                const serverVersion = (m && m[1] && /^[\w.-]+$/.test(m[1])) ? m[1] : null;
-                if (!serverVersion || serverVersion === APP_VERSION) return;
-                sessionStorage.setItem('it9an_reloadGuard', '1');
-                setTimeout(() => sessionStorage.removeItem('it9an_reloadGuard'), 15000);
-                if ('caches' in window) {
-                    const keys = await caches.keys();
-                    await Promise.all(keys.map((k) => caches.delete(k)));
-                }
-                const reg = await navigator.serviceWorker?.getRegistration();
-                if (reg?.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
-                window.location.reload();
-            } catch (e) { /* offline, Timeout oder Fehler – nichts tun */ }
-        }
-        function doLogout() {
-            ['it9an_uid','it9an_auth','it9an_name','it9an_role','it9an_pin','it9an_lastActivity'].forEach(k => localStorage.removeItem(k));
-            document.getElementById('login-screen').style.display = 'flex';
-            checkForNewVersionAndUpdate();
-        }
+        /* Bei Refresh: Session löschen → PIN-Eingabe erforderlich */
+        (function clearSessionOnLoad() {
+            ['it9an_uid','it9an_auth','it9an_name','it9an_role','it9an_pin'].forEach(k => localStorage.removeItem(k));
+        })();
+
         function checkSessionAndRestore() {
             const uid = localStorage.getItem('it9an_uid');
-            const last = parseInt(localStorage.getItem('it9an_lastActivity') || '0', 10);
             if (!uid || uid === 'guest') return false;
-            if (Date.now() - last > INACTIVITY_MS) { doLogout(); return false; }
             document.getElementById('login-screen').style.display = 'none';
             updateUIForRole();
             if (uid !== 'guest') listenForNotifications();
             renderMenu();
             return true;
         }
-        setInterval(() => {
-            const uid = localStorage.getItem('it9an_uid');
-            if (!uid || uid === 'guest') return;
-            const last = parseInt(localStorage.getItem('it9an_lastActivity') || '0', 10);
-            if (Date.now() - last > INACTIVITY_MS) doLogout();
-        }, 60000);
-        ['click','keydown','touchstart','scroll'].forEach(ev => document.addEventListener(ev, () => { if (localStorage.getItem('it9an_uid')) updateLastActivity(); }, { passive: true }));
 
         // --- NEW ID GENERATOR WITH YEAR ---
         function generateUserId(fullName, role, year) {
@@ -1104,7 +1067,6 @@
             localStorage.setItem('it9an_role', role);
             if (personalPin) localStorage.setItem('it9an_pin', personalPin);
             else localStorage.removeItem('it9an_pin');
-            updateLastActivity();
             document.getElementById('login-screen').style.display = 'none';
             updateUIForRole();
             if (uid !== 'guest') listenForNotifications();
@@ -1788,17 +1750,14 @@
             let firstSnap = true;
             const q = window.query(window.collection(window.db, "users"), window.where("role", "==", "teacher"));
             unsubscribeTeachersLeaderboard = window.onSnapshot(q, (snap) => {
-                const isFirst = firstSnap;
-                if (document.hidden && !isFirst) return;
-                if (isFirst) firstSnap = false;
-                if (Date.now() - lastTeachersRefreshTime < 15000 && !isFirst) { return; }
-                if (Date.now() - lastTeachersRefreshTime < 15000 && isFirst && onFirstRender) { onFirstRender(); }
+                if (document.hidden) return;
+                if (Date.now() - lastTeachersRefreshTime < 15000) { if (onFirstRender && firstSnap) { onFirstRender(); firstSnap = false; } return; }
                 let teachers = [];
                 snap.forEach(doc => teachers.push({ ...doc.data(), uid: doc.data().uid || doc.id }));
                 teachers.sort((a,b) => (b.totalRepliesCount || 0) - (a.totalRepliesCount || 0));
                 leaderboardAllTeachers = teachers;
                 list.innerHTML = "";
-                if (teachers.length === 0) { list.innerHTML = "<li style='text-align:center; color:#999; padding:10px;'>لا يوجد معلمون</li>"; if (onFirstRender && isFirst) { onFirstRender(); } return; }
+                if (teachers.length === 0) { list.innerHTML = "<li style='text-align:center; color:#999; padding:10px;'>لا يوجد معلمون</li>"; if (onFirstRender && firstSnap) { onFirstRender(); firstSnap = false; } return; }
                 teachers.forEach((u, i) => {
                     adminUserRoles[u.uid] = 'teacher';
                     const rank = i + 1;
@@ -1838,7 +1797,7 @@
                     const container = document.getElementById('lb-recordings-' + lbRecordingsOpenUid);
                     if (container) { container.style.display = 'block'; renderLbRecordingsList(container, lbRecordingsOpenUid, lbRecordingsOpenOffset); }
                 }
-                if (onFirstRender && isFirst) { onFirstRender(); }
+                if (onFirstRender && firstSnap) { onFirstRender(); firstSnap = false; }
             });
         }
 
@@ -1855,19 +1814,10 @@
             const q = window.query(window.collection(window.db, "users"), window.where("role", "==", "student"));
             const myUid = localStorage.getItem('it9an_uid');
             let firstSnapshot = true;
-            const lbList = document.getElementById('leaderboard-list');
-            const lbTimeout = setTimeout(() => {
-                if (firstSnapshot && lbList && lbList.innerHTML.includes('جاري التحميل')) {
-                    lbList.innerHTML = "<li style='text-align:center; color:#c0392b; padding:15px;'>تحقق من الاتصال بالإنترنت وأعد تحميل الصفحة</li>";
-                    lbDone.students = true;
-                    checkLbComplete();
-                }
-            }, 15000);
             const cb = (snap) => {
-                const isFirst = firstSnapshot;
-                if (document.hidden && !isFirst) return;
-                if (isFirst) firstSnapshot = false;
-                if (Date.now() - lastStudentsRefreshTime < 15000 && !isFirst) return;
+                if (document.hidden) return;
+                const skipRender = Date.now() - lastStudentsRefreshTime < 15000;
+                if (skipRender) { if (firstSnapshot) { lbDone.students = true; checkLbComplete(); firstSnapshot = false; } return; }
                 let users = [];
                 snap.forEach(doc => users.push({ ...doc.data(), uid: doc.data().uid || doc.id }));
                 users.sort((a,b) => {
@@ -1891,20 +1841,12 @@
                         }
                     })();
                 }
-                clearTimeout(lbTimeout);
                 renderLeaderboardItems(users, leaderboardVisibleCount, myUid, !firstSnapshot);
                 if (typeof window.updateHeaderNamePin === 'function') window.updateHeaderNamePin();
                 if (firstSnapshot) { lbDone.students = true; checkLbComplete(); }
                 firstSnapshot = false;
             };
-            unsubscribeLeaderboard = window.onSnapshot(q, cb, (err) => {
-                clearTimeout(lbTimeout);
-                if (lbList && firstSnapshot) {
-                    lbList.innerHTML = "<li style='text-align:center; color:#c0392b; padding:15px;'>خطأ في التحميل. تحقق من الاتصال.</li>";
-                    lbDone.students = true;
-                    checkLbComplete();
-                }
-            });
+            unsubscribeLeaderboard = window.onSnapshot(q, cb);
         }
 
         let adminUserRoles = {};
@@ -2559,7 +2501,6 @@
             }
 
             if(notifUnsubscribe) notifUnsubscribe();
-            let notifFirstSnap = true;
             notifUnsubscribe = window.onSnapshot(q, (snap) => {
                 let unreadCount = 0;
                 let notifs = [];
@@ -2576,9 +2517,7 @@
                     else badge.style.display = 'none';
                 }
 
-                const isFirstNotif = notifFirstSnap;
-                if (notifFirstSnap) notifFirstSnap = false;
-                if (document.hidden && !isFirstNotif) return;
+                if (document.hidden) return;
                 const list = document.getElementById('notifList');
                 list.innerHTML = "";
 
@@ -2727,11 +2666,8 @@
             const isAdmin = localStorage.getItem('it9an_uid') === 'admin_super';
             const myUid = localStorage.getItem('it9an_uid');
             const msgRef = window.doc(window.db, "adminMessages", messageId);
-            let adminMsgFirstSnap = true;
             adminMessageViewUnsub = window.onSnapshot(msgRef, (snap) => {
-                const isFirst = adminMsgFirstSnap;
-                if (adminMsgFirstSnap) adminMsgFirstSnap = false;
-                if (document.hidden && !isFirst) return;
+                if (document.hidden) return;
                 if (snap.exists()) renderAdminMessageContent(snap.data(), isAdmin, myUid);
             });
         }
@@ -2798,11 +2734,8 @@
             if (uid !== 'admin_super') return;
             if (adminMessagesUnsub) adminMessagesUnsub();
             const q = window.query(window.collection(window.db, "adminMessages"), window.orderBy("timestamp", "desc"));
-            let adminListFirstSnap = true;
             adminMessagesUnsub = window.onSnapshot(q, (snap) => {
-                const isFirst = adminListFirstSnap;
-                if (adminListFirstSnap) adminListFirstSnap = false;
-                if (document.hidden && !isFirst) return;
+                if (document.hidden) return;
                 container.innerHTML = '';
                 if (snap.empty) { container.innerHTML = '<div style="color:#999; padding:10px; font-size:14px;">لا توجد رسائل بعد</div>'; return; }
                 snap.forEach(doc => {
@@ -2989,11 +2922,8 @@
             const statRef = window.doc(window.db, "stats", "file_" + globalId);
             
             if(unsubscribeViews) unsubscribeViews();
-            let viewsFirstSnap = true;
             unsubscribeViews = window.onSnapshot(statRef, (snap) => {
-                const isFirstViews = viewsFirstSnap;
-                if (viewsFirstSnap) viewsFirstSnap = false;
-                if (document.hidden && !isFirstViews) return;
+                if (document.hidden) return;
                 if(snap.exists()) {
                     const d = snap.data();
                     const viewersObj = d.viewers && typeof d.viewers === 'object' && !Array.isArray(d.viewers) ? d.viewers : {};
@@ -3031,11 +2961,8 @@
             const myUid = localStorage.getItem('it9an_uid');
             const q = window.query(window.collection(window.db, "posts"), window.where("fileId", "==", idString));
             
-            let feedFirstSnap = true;
             unsubscribeFeed = window.onSnapshot(q, async (snap) => {
-                const isFirstFeed = feedFirstSnap;
-                if (feedFirstSnap) feedFirstSnap = false;
-                if (document.hidden && !isFirstFeed) return;
+                if (document.hidden) return;
                 const scrollY = window.scrollY;
                 if(snap.empty) { div.innerHTML = "<div style='text-align:center; color:#999; font-size:16px; padding:20px;'>لا توجد مشاركات حتى الآن</div>"; return; }
                 allLoadedPosts = [];
@@ -3997,11 +3924,8 @@
             if (playerView && playerView.style.display !== 'none' && currentGlobalFileId != null) {
                 if (unsubscribeViews) unsubscribeViews();
                 const statRef = window.doc(window.db, "stats", "file_" + currentGlobalFileId);
-                let restoreViewsFirst = true;
                 unsubscribeViews = window.onSnapshot(statRef, (snap) => {
-                    const isFirst = restoreViewsFirst;
-                    if (restoreViewsFirst) restoreViewsFirst = false;
-                    if (document.hidden && !isFirst) return;
+                    if (document.hidden) return;
                     if (snap.exists()) {
                         const d = snap.data();
                         const viewersObj = d.viewers && typeof d.viewers === 'object' && !Array.isArray(d.viewers) ? d.viewers : {};
@@ -4020,11 +3944,8 @@
                 const myUid = uid;
                 const msgRef = window.doc(window.db, "adminMessages", currentAdminMessageId);
                 if (adminMessageViewUnsub) adminMessageViewUnsub();
-                let restoreAdminMsgFirst = true;
                 adminMessageViewUnsub = window.onSnapshot(msgRef, (snap) => {
-                    const isFirst = restoreAdminMsgFirst;
-                    if (restoreAdminMsgFirst) restoreAdminMsgFirst = false;
-                    if (document.hidden && !isFirst) return;
+                    if (document.hidden) return;
                     if (snap.exists()) renderAdminMessageContent(snap.data(), isAdmin, myUid);
                 });
             }
