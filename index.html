@@ -1788,14 +1788,17 @@
             let firstSnap = true;
             const q = window.query(window.collection(window.db, "users"), window.where("role", "==", "teacher"));
             unsubscribeTeachersLeaderboard = window.onSnapshot(q, (snap) => {
-                if (document.hidden) return;
-                if (Date.now() - lastTeachersRefreshTime < 15000) { if (onFirstRender && firstSnap) { onFirstRender(); firstSnap = false; } return; }
+                const isFirst = firstSnap;
+                if (document.hidden && !isFirst) return;
+                if (isFirst) firstSnap = false;
+                if (Date.now() - lastTeachersRefreshTime < 15000 && !isFirst) { return; }
+                if (Date.now() - lastTeachersRefreshTime < 15000 && isFirst && onFirstRender) { onFirstRender(); }
                 let teachers = [];
                 snap.forEach(doc => teachers.push({ ...doc.data(), uid: doc.data().uid || doc.id }));
                 teachers.sort((a,b) => (b.totalRepliesCount || 0) - (a.totalRepliesCount || 0));
                 leaderboardAllTeachers = teachers;
                 list.innerHTML = "";
-                if (teachers.length === 0) { list.innerHTML = "<li style='text-align:center; color:#999; padding:10px;'>لا يوجد معلمون</li>"; if (onFirstRender && firstSnap) { onFirstRender(); firstSnap = false; } return; }
+                if (teachers.length === 0) { list.innerHTML = "<li style='text-align:center; color:#999; padding:10px;'>لا يوجد معلمون</li>"; if (onFirstRender && isFirst) { onFirstRender(); } return; }
                 teachers.forEach((u, i) => {
                     adminUserRoles[u.uid] = 'teacher';
                     const rank = i + 1;
@@ -1835,7 +1838,7 @@
                     const container = document.getElementById('lb-recordings-' + lbRecordingsOpenUid);
                     if (container) { container.style.display = 'block'; renderLbRecordingsList(container, lbRecordingsOpenUid, lbRecordingsOpenOffset); }
                 }
-                if (onFirstRender && firstSnap) { onFirstRender(); firstSnap = false; }
+                if (onFirstRender && isFirst) { onFirstRender(); }
             });
         }
 
@@ -1852,10 +1855,19 @@
             const q = window.query(window.collection(window.db, "users"), window.where("role", "==", "student"));
             const myUid = localStorage.getItem('it9an_uid');
             let firstSnapshot = true;
+            const lbList = document.getElementById('leaderboard-list');
+            const lbTimeout = setTimeout(() => {
+                if (firstSnapshot && lbList && lbList.innerHTML.includes('جاري التحميل')) {
+                    lbList.innerHTML = "<li style='text-align:center; color:#c0392b; padding:15px;'>تحقق من الاتصال بالإنترنت وأعد تحميل الصفحة</li>";
+                    lbDone.students = true;
+                    checkLbComplete();
+                }
+            }, 15000);
             const cb = (snap) => {
-                if (document.hidden) return;
-                const skipRender = Date.now() - lastStudentsRefreshTime < 15000;
-                if (skipRender) { if (firstSnapshot) { lbDone.students = true; checkLbComplete(); firstSnapshot = false; } return; }
+                const isFirst = firstSnapshot;
+                if (document.hidden && !isFirst) return;
+                if (isFirst) firstSnapshot = false;
+                if (Date.now() - lastStudentsRefreshTime < 15000 && !isFirst) return;
                 let users = [];
                 snap.forEach(doc => users.push({ ...doc.data(), uid: doc.data().uid || doc.id }));
                 users.sort((a,b) => {
@@ -1879,12 +1891,20 @@
                         }
                     })();
                 }
+                clearTimeout(lbTimeout);
                 renderLeaderboardItems(users, leaderboardVisibleCount, myUid, !firstSnapshot);
                 if (typeof window.updateHeaderNamePin === 'function') window.updateHeaderNamePin();
                 if (firstSnapshot) { lbDone.students = true; checkLbComplete(); }
                 firstSnapshot = false;
             };
-            unsubscribeLeaderboard = window.onSnapshot(q, cb);
+            unsubscribeLeaderboard = window.onSnapshot(q, cb, (err) => {
+                clearTimeout(lbTimeout);
+                if (lbList && firstSnapshot) {
+                    lbList.innerHTML = "<li style='text-align:center; color:#c0392b; padding:15px;'>خطأ في التحميل. تحقق من الاتصال.</li>";
+                    lbDone.students = true;
+                    checkLbComplete();
+                }
+            });
         }
 
         let adminUserRoles = {};
@@ -2539,6 +2559,7 @@
             }
 
             if(notifUnsubscribe) notifUnsubscribe();
+            let notifFirstSnap = true;
             notifUnsubscribe = window.onSnapshot(q, (snap) => {
                 let unreadCount = 0;
                 let notifs = [];
@@ -2555,7 +2576,9 @@
                     else badge.style.display = 'none';
                 }
 
-                if (document.hidden) return;
+                const isFirstNotif = notifFirstSnap;
+                if (notifFirstSnap) notifFirstSnap = false;
+                if (document.hidden && !isFirstNotif) return;
                 const list = document.getElementById('notifList');
                 list.innerHTML = "";
 
@@ -2704,8 +2727,11 @@
             const isAdmin = localStorage.getItem('it9an_uid') === 'admin_super';
             const myUid = localStorage.getItem('it9an_uid');
             const msgRef = window.doc(window.db, "adminMessages", messageId);
+            let adminMsgFirstSnap = true;
             adminMessageViewUnsub = window.onSnapshot(msgRef, (snap) => {
-                if (document.hidden) return;
+                const isFirst = adminMsgFirstSnap;
+                if (adminMsgFirstSnap) adminMsgFirstSnap = false;
+                if (document.hidden && !isFirst) return;
                 if (snap.exists()) renderAdminMessageContent(snap.data(), isAdmin, myUid);
             });
         }
@@ -2772,8 +2798,11 @@
             if (uid !== 'admin_super') return;
             if (adminMessagesUnsub) adminMessagesUnsub();
             const q = window.query(window.collection(window.db, "adminMessages"), window.orderBy("timestamp", "desc"));
+            let adminListFirstSnap = true;
             adminMessagesUnsub = window.onSnapshot(q, (snap) => {
-                if (document.hidden) return;
+                const isFirst = adminListFirstSnap;
+                if (adminListFirstSnap) adminListFirstSnap = false;
+                if (document.hidden && !isFirst) return;
                 container.innerHTML = '';
                 if (snap.empty) { container.innerHTML = '<div style="color:#999; padding:10px; font-size:14px;">لا توجد رسائل بعد</div>'; return; }
                 snap.forEach(doc => {
@@ -2960,8 +2989,11 @@
             const statRef = window.doc(window.db, "stats", "file_" + globalId);
             
             if(unsubscribeViews) unsubscribeViews();
+            let viewsFirstSnap = true;
             unsubscribeViews = window.onSnapshot(statRef, (snap) => {
-                if (document.hidden) return;
+                const isFirstViews = viewsFirstSnap;
+                if (viewsFirstSnap) viewsFirstSnap = false;
+                if (document.hidden && !isFirstViews) return;
                 if(snap.exists()) {
                     const d = snap.data();
                     const viewersObj = d.viewers && typeof d.viewers === 'object' && !Array.isArray(d.viewers) ? d.viewers : {};
@@ -2999,8 +3031,11 @@
             const myUid = localStorage.getItem('it9an_uid');
             const q = window.query(window.collection(window.db, "posts"), window.where("fileId", "==", idString));
             
+            let feedFirstSnap = true;
             unsubscribeFeed = window.onSnapshot(q, async (snap) => {
-                if (document.hidden) return;
+                const isFirstFeed = feedFirstSnap;
+                if (feedFirstSnap) feedFirstSnap = false;
+                if (document.hidden && !isFirstFeed) return;
                 const scrollY = window.scrollY;
                 if(snap.empty) { div.innerHTML = "<div style='text-align:center; color:#999; font-size:16px; padding:20px;'>لا توجد مشاركات حتى الآن</div>"; return; }
                 allLoadedPosts = [];
@@ -3962,8 +3997,11 @@
             if (playerView && playerView.style.display !== 'none' && currentGlobalFileId != null) {
                 if (unsubscribeViews) unsubscribeViews();
                 const statRef = window.doc(window.db, "stats", "file_" + currentGlobalFileId);
+                let restoreViewsFirst = true;
                 unsubscribeViews = window.onSnapshot(statRef, (snap) => {
-                    if (document.hidden) return;
+                    const isFirst = restoreViewsFirst;
+                    if (restoreViewsFirst) restoreViewsFirst = false;
+                    if (document.hidden && !isFirst) return;
                     if (snap.exists()) {
                         const d = snap.data();
                         const viewersObj = d.viewers && typeof d.viewers === 'object' && !Array.isArray(d.viewers) ? d.viewers : {};
@@ -3982,8 +4020,11 @@
                 const myUid = uid;
                 const msgRef = window.doc(window.db, "adminMessages", currentAdminMessageId);
                 if (adminMessageViewUnsub) adminMessageViewUnsub();
+                let restoreAdminMsgFirst = true;
                 adminMessageViewUnsub = window.onSnapshot(msgRef, (snap) => {
-                    if (document.hidden) return;
+                    const isFirst = restoreAdminMsgFirst;
+                    if (restoreAdminMsgFirst) restoreAdminMsgFirst = false;
+                    if (document.hidden && !isFirst) return;
                     if (snap.exists()) renderAdminMessageContent(snap.data(), isAdmin, myUid);
                 });
             }
