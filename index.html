@@ -3266,7 +3266,7 @@
                     }
                     const audioConstraints = isIOS ? { audio: true } : { 
                         echoCancellation: false, noiseSuppression: false, autoGainControl: false, 
-                        sampleRate: { ideal: 48000 }, channelCount: 1 
+                        sampleRate: 48000, channelCount: 1 
                     };
                     rawStream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints });
                     // iPhone/iPad Safari ignoriert channelCount – liefert oft Stereo (leiser, schlechtere Qualität).
@@ -3286,12 +3286,12 @@
                     gainL.connect(merger, 0, 0);
                     gainR.connect(merger, 0, 0);
                     const gainBoost = recCtx.createGain();
-                    gainBoost.gain.value = isIOS ? 2.0 : 1.0;
+                    gainBoost.gain.value = 1.0;
                     merger.connect(gainBoost);
                     const destNode = recCtx.createMediaStreamDestination();
                     gainBoost.connect(destNode);
                     const stream = destNode.stream;
-                    let options = { audioBitsPerSecond: isIOS ? 192000 : 128000 };
+                    let options = { audioBitsPerSecond: 128000 };
                     // MP4/AAC zuerst: spielt auf iPhone/Mac/Safari flüssig. WebM/Opus verursacht Ruckler auf Safari.
                     if (MediaRecorder.isTypeSupported('audio/mp4;codecs=mp4a.40.2')) options.mimeType = 'audio/mp4;codecs=mp4a.40.2'; 
                     else if (MediaRecorder.isTypeSupported('audio/mp4')) options.mimeType = 'audio/mp4';
