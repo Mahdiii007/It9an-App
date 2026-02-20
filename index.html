@@ -2531,21 +2531,21 @@
         window.openFromNotif = async function(notifId, fileId, postId) {
             const fid = parseInt(String(fileId || ''), 10);
             if (!postId || !fileId || isNaN(fid)) {
-                try { await window.deleteDoc(window.doc(window.db, "notifications", notifId)); } catch(e){}
+                if (notifId) try { await window.deleteDoc(window.doc(window.db, "notifications", notifId)); } catch(e){}
                 alert("إشعار غير صالح. تم إزالة الإشعار.");
                 return;
             }
             try {
                 const postSnap = await window.getDoc(window.doc(window.db, "posts", postId));
                 if (!postSnap.exists()) {
-                    await window.deleteDoc(window.doc(window.db, "notifications", notifId));
+                    if (notifId) await window.deleteDoc(window.doc(window.db, "notifications", notifId));
                     alert("تم حذف التسجيل من قبل الطالب. تم إزالة الإشعار.");
                     return;
                 }
                 const postData = postSnap.data();
                 const postFileId = postData.fileId ? String(postData.fileId).trim() : '';
                 if (postFileId && postFileId !== String(fid)) {
-                    await window.deleteDoc(window.doc(window.db, "notifications", notifId));
+                    if (notifId) await window.deleteDoc(window.doc(window.db, "notifications", notifId));
                     alert("التسجيل لم يعد في هذا المقطع. تم إزالة الإشعار.");
                     return;
                 }
@@ -2562,14 +2562,14 @@
                 }
             }
             if(foundIndex === -1) {
-                try { await window.deleteDoc(window.doc(window.db, "notifications", notifId)); } catch(e){}
+                if (notifId) try { await window.deleteDoc(window.doc(window.db, "notifications", notifId)); } catch(e){}
                 alert("إشعار غير صالح. تم إزالة الإشعار.");
                 return;
             }
             currentLessonIdx = foundIndex;
             highlightedPostId = postId;
             activePostFilter = postId;
-            activePostFilterNotifId = notifId;
+            activePostFilterNotifId = notifId || null;
             playVers(fid, foundVerse);
         }
 
@@ -2767,6 +2767,18 @@
                 div.innerHTML = `<div class="menu-item-title">الدرس ${index + 1}</div><img src="assets/T${lek.id}.png" loading="lazy" onerror="this.style.display='none'">`;
                 div.onclick = () => startLesson(index); grid.appendChild(div);
             });
+            checkPushNotificationParams();
+        }
+
+        function checkPushNotificationParams() {
+            const params = new URLSearchParams(window.location.search);
+            const postId = params.get('postId');
+            const fileId = params.get('fileId');
+            const notifId = params.get('notifId') || '';
+            if (postId && fileId) {
+                history.replaceState({}, '', window.location.pathname + (window.location.hash || ''));
+                openFromNotif(notifId, fileId, postId);
+            }
         }
 
         function startLesson(index) {
