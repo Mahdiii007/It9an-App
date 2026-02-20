@@ -562,6 +562,15 @@
     </div>
 
     <div id="menu-view">
+        <div id="app-stats-card" class="leaderboard-card" style="margin-bottom:15px;">
+            <div class="lb-title">📊 إحصائيات التطبيق</div>
+            <div id="appStatsContent" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; padding:8px 0; font-size:15px;">
+                <div style="text-align:center; padding:8px; background:#f0f7f4; border-radius:8px;"><span id="statRepetitions">—</span><br><span style="font-size:12px; color:#666;">إجمالي التكرارات</span></div>
+                <div style="text-align:center; padding:8px; background:#f0f7f4; border-radius:8px;"><span id="statTeacherReplies">—</span><br><span style="font-size:12px; color:#666;">ردود المعلمين</span></div>
+                <div style="text-align:center; padding:8px; background:#f0f7f4; border-radius:8px;"><span id="statStudents">—</span><br><span style="font-size:12px; color:#666;">عدد الطلاب</span></div>
+                <div style="text-align:center; padding:8px; background:#f0f7f4; border-radius:8px;"><span id="statTeachers">—</span><br><span style="font-size:12px; color:#666;">عدد المعلمين</span></div>
+            </div>
+        </div>
         <div id="leaderboard-section">
             <div class="leaderboard-card">
                 <div class="lb-title">🏆 المتصدرون الثلاثة (Top 3)</div>
@@ -1781,6 +1790,25 @@
             });
         }
 
+        async function loadAppStats() {
+            try {
+                const [statsSnap, postsSnap, studentsSnap, teachersSnap] = await Promise.all([
+                    window.getDocs(window.query(window.collection(window.db, "stats"))),
+                    window.getDocs(window.query(window.collection(window.db, "posts"))),
+                    window.getDocs(window.query(window.collection(window.db, "users"), window.where("role", "==", "student"))),
+                    window.getDocs(window.query(window.collection(window.db, "users"), window.where("role", "==", "teacher")))
+                ]);
+                let totalRepetitions = 0;
+                statsSnap.forEach(d => { totalRepetitions += (d.data().totalRepetitions || 0); });
+                let totalTeacherReplies = 0;
+                postsSnap.forEach(p => { (p.data().replies || []).forEach(r => { if (r.role === 'teacher') totalTeacherReplies++; }); });
+                document.getElementById('statRepetitions').innerText = totalRepetitions.toLocaleString('ar-EG');
+                document.getElementById('statTeacherReplies').innerText = totalTeacherReplies.toLocaleString('ar-EG');
+                document.getElementById('statStudents').innerText = studentsSnap.size.toLocaleString('ar-EG');
+                document.getElementById('statTeachers').innerText = teachersSnap.size.toLocaleString('ar-EG');
+            } catch(e) { console.warn("loadAppStats:", e); }
+        }
+
         function loadLeaderboard(onComplete) {
             if (unsubscribeLeaderboard) unsubscribeLeaderboard();
             if (!lbPendingRestore) {
@@ -2766,6 +2794,7 @@
                 document.getElementById('pushEnableBtn').style.display = 'none';
                 loadAdminMessagesList();
                 loadLeaderboard(lbPendingRestore ? doLbRestore : undefined);
+                loadAppStats();
             } else {
                 document.getElementById('adminMenuPanel').style.display = 'none';
                 document.getElementById('leaderboard-section').style.display = 'block';
@@ -2773,6 +2802,7 @@
                 const pushBtn = document.getElementById('pushEnableBtn');
                 if (pushBtn) pushBtn.style.display = (role === 'teacher' || role === 'student') ? 'block' : 'none';
                 loadLeaderboard(lbPendingRestore ? doLbRestore : undefined);
+                loadAppStats();
             }
 
             activePostFilter = null; 
