@@ -47,6 +47,10 @@ messaging.onBackgroundMessage((payload) => {
   const data = payload.data || {};
   const title = notif.title || 'تطبيق إتقان';
   const body = notif.body || 'إشعار جديد';
+  const badgeCount = parseInt(data.badge || '1', 10) || 1;
+  if ('setAppBadge' in navigator) {
+    try { navigator.setAppBadge(badgeCount); } catch(e) {}
+  }
   const options = {
     body: body,
     icon: './index.html',
@@ -56,7 +60,7 @@ messaging.onBackgroundMessage((payload) => {
     requireInteraction: false,
     silent: false,
     vibrate: [200, 100, 200, 100, 200],
-    data: { url: data.url || '', postId: data.postId || '', fileId: data.fileId || '' }
+    data: { url: data.url || '', postId: data.postId || '', fileId: data.fileId || '', badge: String(badgeCount) }
   };
   return self.registration.showNotification(title, options);
 });
