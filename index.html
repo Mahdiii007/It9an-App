@@ -2756,7 +2756,7 @@
                 document.getElementById('leaderboard-section').style.display = 'block';
                 const role = localStorage.getItem('it9an_role');
                 const pushBtn = document.getElementById('pushEnableBtn');
-                if (pushBtn) pushBtn.style.display = (role === 'teacher') ? 'block' : 'none';
+                if (pushBtn) pushBtn.style.display = (role === 'teacher' || role === 'student') ? 'block' : 'none';
                 loadLeaderboard(lbPendingRestore ? doLbRestore : undefined);
             }
 
