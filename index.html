@@ -941,7 +941,30 @@
             }
         });
 
-        if(localStorage.getItem('it9an_auth') === 'true') { localStorage.removeItem('it9an_auth'); }
+        const INACTIVITY_MS = 60 * 60 * 1000;
+        function updateLastActivity() { localStorage.setItem('it9an_lastActivity', String(Date.now())); }
+        function doLogout() {
+            ['it9an_uid','it9an_auth','it9an_name','it9an_role','it9an_pin','it9an_lastActivity'].forEach(k => localStorage.removeItem(k));
+            document.getElementById('login-screen').style.display = 'flex';
+        }
+        function checkSessionAndRestore() {
+            const uid = localStorage.getItem('it9an_uid');
+            const last = parseInt(localStorage.getItem('it9an_lastActivity') || '0', 10);
+            if (!uid || uid === 'guest') return false;
+            if (Date.now() - last > INACTIVITY_MS) { doLogout(); return false; }
+            document.getElementById('login-screen').style.display = 'none';
+            updateUIForRole();
+            if (uid !== 'guest') listenForNotifications();
+            renderMenu();
+            return true;
+        }
+        setInterval(() => {
+            const uid = localStorage.getItem('it9an_uid');
+            if (!uid || uid === 'guest') return;
+            const last = parseInt(localStorage.getItem('it9an_lastActivity') || '0', 10);
+            if (Date.now() - last > INACTIVITY_MS) doLogout();
+        }, 60000);
+        ['click','keydown','touchstart','scroll'].forEach(ev => document.addEventListener(ev, () => { if (localStorage.getItem('it9an_uid')) updateLastActivity(); }, { passive: true }));
 
         // --- NEW ID GENERATOR WITH YEAR ---
         function generateUserId(fullName, role, year) {
@@ -1034,11 +1057,14 @@
             localStorage.setItem('it9an_role', role);
             if (personalPin) localStorage.setItem('it9an_pin', personalPin);
             else localStorage.removeItem('it9an_pin');
+            updateLastActivity();
             document.getElementById('login-screen').style.display = 'none';
             updateUIForRole();
             if (uid !== 'guest') listenForNotifications();
             renderMenu();
             if (uid && uid !== 'admin_super' && uid !== 'guest') requestPushPermissionAndSaveToken(uid, role);
+            const pending = sessionStorage.getItem('it9an_pendingOpen');
+            if (pending) { sessionStorage.removeItem('it9an_pendingOpen'); try { const p = JSON.parse(pending); openToPostFromParams(p.fileId, p.postId); } catch(e){} }
         }
 
         async function checkLoginClassic() {
@@ -2573,6 +2599,28 @@
             playVers(fid, foundVerse);
         }
 
+        window.openToPostFromParams = async function(fileId, postId) {
+            const fid = parseInt(String(fileId || ''), 10);
+            if (!postId || !fileId || isNaN(fid)) return;
+            try {
+                const postSnap = await window.getDoc(window.doc(window.db, "posts", postId));
+                if (!postSnap.exists()) return;
+                const postData = postSnap.data();
+                const postFileId = postData.fileId ? String(postData.fileId).trim() : '';
+                if (postFileId && postFileId !== String(fid)) return;
+            } catch(e) { return; }
+            let foundIndex = -1, foundVerse = 1;
+            for(let i=0; i<KURS_DATEN.length; i++) {
+                let start = KURS_DATEN[i].startGlobalId, end = start + KURS_DATEN[i].verse - 1;
+                if(fid >= start && fid <= end) { foundIndex = i; foundVerse = fid - start + 1; break; }
+            }
+            if (foundIndex === -1) return;
+            currentLessonIdx = foundIndex;
+            highlightedPostId = postId;
+            activePostFilter = postId;
+            playVers(fid, foundVerse);
+        }
+
         window.clearFilter = function() {
             activePostFilter = null;
             activePostFilterNotifId = null;
@@ -3910,6 +3958,20 @@
                 restoreListenersOnVisible();
             }
         });
+
+        (function initSessionAndPushOpen() {
+            const params = new URLSearchParams(window.location.search);
+            const postId = params.get('postId');
+            const fileId = params.get('fileId');
+            if (postId && fileId && window.history && window.history.replaceState) {
+                window.history.replaceState({}, '', window.location.pathname + window.location.hash);
+            }
+            if (checkSessionAndRestore()) {
+                if (postId && fileId) setTimeout(() => openToPostFromParams(fileId, postId), 300);
+            } else if (postId && fileId) {
+                sessionStorage.setItem('it9an_pendingOpen', JSON.stringify({ postId, fileId }));
+            }
+        })();
 
         /* CLOUD FUNCTION (Firebase) für Push-Versand - in functions/index.js deployen:
         const functions = require('firebase-functions'); const admin = require('firebase-admin'); admin.initializeApp();
