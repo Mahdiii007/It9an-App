@@ -964,7 +964,7 @@
         /* Bei jedem Seitenladen (Refresh) Session löschen → PIN-Eingabe erforderlich */
         (function clearSessionOnLoad() {
             ['it9an_uid','it9an_auth','it9an_name','it9an_role','it9an_pin','it9an_lastActivity'].forEach(k => localStorage.removeItem(k));
-            setTimeout(() => checkForNewVersionAndUpdate(), 2000);
+            /* Keine Versionsprüfung beim Load – verhindert Loading-Loops. Prüfung nur bei Inaktivitäts-Logout. */
         })();
 
         const INACTIVITY_MS = 15 * 60 * 1000; /* 15 Minuten Inaktivität → Logout */
@@ -972,24 +972,28 @@
         async function checkForNewVersionAndUpdate() {
             try {
                 if (sessionStorage.getItem('it9an_reloadGuard')) return;
-                const url = (window.location.pathname.endsWith('/') ? window.location.pathname + 'index.html' : window.location.pathname || '/index.html') + '?v=' + Date.now();
-                const r = await fetch(url, { cache: 'no-store' });
+                const base = (window.location.pathname || '/').replace(/\/$/, '') || '/';
+                const path = base.endsWith('.html') ? base : ((base === '/') ? '/index.html' : base + '/index.html');
+                const url = window.location.origin + path + '?v=' + Date.now();
+                const ctrl = new AbortController();
+                const t = setTimeout(() => ctrl.abort(), 8000);
+                const r = await fetch(url, { cache: 'no-store', signal: ctrl.signal });
+                clearTimeout(t);
                 if (!r.ok) return;
                 const html = await r.text();
                 const m = html.match(/APP_VERSION\s*=\s*['"]([^'"]+)['"]/);
-                const serverVersion = m ? m[1] : null;
-                if (serverVersion && serverVersion !== APP_VERSION) {
-                    sessionStorage.setItem('it9an_reloadGuard', '1');
-                    setTimeout(() => sessionStorage.removeItem('it9an_reloadGuard'), 10000);
-                    if ('caches' in window) {
-                        const keys = await caches.keys();
-                        await Promise.all(keys.map((k) => caches.delete(k)));
-                    }
-                    const reg = await navigator.serviceWorker?.getRegistration();
-                    if (reg?.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
-                    window.location.reload();
+                const serverVersion = (m && m[1] && /^[\w.-]+$/.test(m[1])) ? m[1] : null;
+                if (!serverVersion || serverVersion === APP_VERSION) return;
+                sessionStorage.setItem('it9an_reloadGuard', '1');
+                setTimeout(() => sessionStorage.removeItem('it9an_reloadGuard'), 15000);
+                if ('caches' in window) {
+                    const keys = await caches.keys();
+                    await Promise.all(keys.map((k) => caches.delete(k)));
                 }
-            } catch (e) { /* offline oder Fehler – nichts tun */ }
+                const reg = await navigator.serviceWorker?.getRegistration();
+                if (reg?.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+                window.location.reload();
+            } catch (e) { /* offline, Timeout oder Fehler – nichts tun */ }
         }
         function doLogout() {
             ['it9an_uid','it9an_auth','it9an_name','it9an_role','it9an_pin','it9an_lastActivity'].forEach(k => localStorage.removeItem(k));
@@ -4010,8 +4014,17 @@
             if (checkSessionAndRestore()) {
                 showView('menu-view');
                 if (postId && fileId) setTimeout(() => openToPostFromParams(fileId, postId), 300);
-            } else if (postId && fileId) {
-                sessionStorage.setItem('it9an_pendingOpen', JSON.stringify({ postId, fileId }));
+            } else {
+                document.getElementById('login-screen').style.display = 'flex';
+                document.getElementById('menu-view').style.display = 'none';
+                document.getElementById('player-view').style.display = 'none';
+                document.getElementById('notifications-view').style.display = 'none';
+                document.getElementById('saved-list-view').style.display = 'none';
+                document.getElementById('admin-message-view').style.display = 'none';
+                const menuBtn = document.getElementById('menuBtn');
+                if (menuBtn) menuBtn.style.display = 'none';
+                if (document.getElementById('appFooter')) document.getElementById('appFooter').style.display = 'none';
+                if (postId && fileId) sessionStorage.setItem('it9an_pendingOpen', JSON.stringify({ postId, fileId }));
             }
         })();
 
