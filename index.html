@@ -1716,7 +1716,7 @@
             const q = window.query(window.collection(window.db, "users"), window.where("role", "==", "teacher"));
             unsubscribeTeachersLeaderboard = window.onSnapshot(q, (snap) => {
                 if (document.hidden) return;
-                if (Date.now() - lastTeachersRefreshTime < 15000) return;
+                if (Date.now() - lastTeachersRefreshTime < 15000) { if (onFirstRender && firstSnap) { onFirstRender(); firstSnap = false; } return; }
                 let teachers = [];
                 snap.forEach(doc => teachers.push({ ...doc.data(), uid: doc.data().uid || doc.id }));
                 teachers.sort((a,b) => (b.totalRepliesCount || 0) - (a.totalRepliesCount || 0));
@@ -1773,12 +1773,16 @@
                 lbRecordingsCache = {};
                 lbViewsCache = {};
             }
+            let lbDone = { students: false, teachers: false };
+            const checkLbComplete = () => { if (lbDone.students && lbDone.teachers && onComplete) { onComplete(); onComplete = null; } };
+            loadTeachersLeaderboard(() => { lbDone.teachers = true; checkLbComplete(); });
             const q = window.query(window.collection(window.db, "users"), window.where("role", "==", "student"));
             const myUid = localStorage.getItem('it9an_uid');
             let firstSnapshot = true;
             const cb = (snap) => {
                 if (document.hidden) return;
-                if (Date.now() - lastStudentsRefreshTime < 15000) return;
+                const skipRender = Date.now() - lastStudentsRefreshTime < 15000;
+                if (skipRender) { if (firstSnapshot) { lbDone.students = true; checkLbComplete(); firstSnapshot = false; } return; }
                 let users = [];
                 snap.forEach(doc => users.push({ ...doc.data(), uid: doc.data().uid || doc.id }));
                 users.sort((a,b) => {
@@ -1804,8 +1808,8 @@
                 }
                 renderLeaderboardItems(users, leaderboardVisibleCount, myUid, !firstSnapshot);
                 if (typeof window.updateHeaderNamePin === 'function') window.updateHeaderNamePin();
-                loadTeachersLeaderboard(() => { if (onComplete && firstSnapshot) { onComplete(); onComplete = null; } firstSnapshot = false; });
-                if (!onComplete) firstSnapshot = false;
+                if (firstSnapshot) { lbDone.students = true; checkLbComplete(); }
+                firstSnapshot = false;
             };
             unsubscribeLeaderboard = window.onSnapshot(q, cb);
         }
@@ -2470,15 +2474,18 @@
                 notifs.sort((a,b) => (a.timestamp?.seconds || 0) - (b.timestamp?.seconds || 0));
                 unreadCount = notifs.length;
                 updateAppIconBadge(unreadCount);
+                const badge = document.getElementById('notifBadge');
+                if (badge) {
+                    if (unreadCount > 0) { badge.innerText = unreadCount; badge.style.display = 'flex'; }
+                    else badge.style.display = 'none';
+                }
 
                 if (document.hidden) return;
                 const list = document.getElementById('notifList');
-                const badge = document.getElementById('notifBadge');
                 list.innerHTML = "";
 
                 if (notifs.length === 0) {
                     list.innerHTML = "<div style='text-align:center; padding:20px; color:#999; font-size:16px;'>لا توجد إشعارات</div>";
-                    badge.style.display = 'none';
                     return;
                 }
 
@@ -2502,13 +2509,6 @@
                         <div style="font-size:24px;">👈</div>
                     </div>`;
                 });
-
-                if(unreadCount > 0) {
-                    badge.innerText = unreadCount;
-                    badge.style.display = 'flex';
-                } else {
-                    badge.style.display = 'none';
-                }
             });
         }
 
@@ -2752,6 +2752,7 @@
             } else {
                 document.getElementById('adminMenuPanel').style.display = 'none';
                 document.getElementById('leaderboard-section').style.display = 'block';
+                const role = localStorage.getItem('it9an_role');
                 const pushBtn = document.getElementById('pushEnableBtn');
                 if (pushBtn) pushBtn.style.display = (role === 'teacher') ? 'block' : 'none';
                 loadLeaderboard(lbPendingRestore ? doLbRestore : undefined);
