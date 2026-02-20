@@ -474,8 +474,10 @@
                     "خيركم من تعلم القرآن وعلمه"<br>
                     <strong>مرحباً بك في رحلة الإتقان</strong>
                 </div>
-                <input type="text" id="pinInput" class="login-input" placeholder="الرمز الشخصي" autocomplete="off" maxlength="4" inputmode="numeric" oninput="this.value=this.value.replace(/\D/g,'')">
-                <button onclick="checkLoginWithPin()" class="login-btn">دخول</button>
+                <form onsubmit="event.preventDefault();checkLoginWithPin();return false;">
+                    <input type="text" id="pinInput" class="login-input" placeholder="الرمز الشخصي" autocomplete="off" maxlength="4" inputmode="numeric" oninput="this.value=this.value.replace(/\D/g,'')">
+                    <button type="submit" id="pinLoginBtn" class="login-btn">دخول</button>
+                </form>
                 <div style="margin-top:15px; font-size:13px; color:#666; text-align:center;">
                     <button type="button" class="login-link-btn" onclick="showClassicLogin()">إذا لم يكن لديك رمز شخصي أو نسيت رمزك، انقر هنا</button>
                 </div>
@@ -485,11 +487,13 @@
                 <div class="login-note" style="font-size:12px; margin-bottom:10px;">
                     لضمان حفظ تقدمك، استخدم الأحرف اللاتينية فقط (A–Z)
                 </div>
-                <input type="text" id="firstName" class="login-input latin-input" placeholder="الاسم الأول" oninput="this.value=this.value.replace(/[^a-zA-Z\s]/g,'')">
-                <input type="text" id="lastName" class="login-input latin-input" placeholder="اللقب" oninput="this.value=this.value.replace(/[^a-zA-Z\s]/g,'')">
-                <input type="number" id="birthYear" class="login-input latin-input" placeholder="سنة الميلاد" oninput="if(this.value.length>4) this.value=this.value.slice(0,4);">
-                <input type="text" id="classicPinInput" class="login-input" placeholder="كلمة المرور" autocomplete="off">
-                <button onclick="checkLoginClassic()" class="login-btn">دخول</button>
+                <form onsubmit="event.preventDefault();checkLoginClassic();return false;">
+                    <input type="text" id="firstName" class="login-input latin-input" placeholder="الاسم الأول" oninput="this.value=this.value.replace(/[^a-zA-Z\s]/g,'')">
+                    <input type="text" id="lastName" class="login-input latin-input" placeholder="اللقب" oninput="this.value=this.value.replace(/[^a-zA-Z\s]/g,'')">
+                    <input type="number" id="birthYear" class="login-input latin-input" placeholder="سنة الميلاد" oninput="if(this.value.length>4) this.value=this.value.slice(0,4);">
+                    <input type="text" id="classicPinInput" class="login-input" placeholder="كلمة المرور" autocomplete="off">
+                    <button type="submit" class="login-btn">دخول</button>
+                </form>
                 <div style="margin-top:10px;">
                     <button type="button" class="login-link-btn" onclick="showPinLogin()">← العودة للدخول بالرمز الشخصي</button>
                 </div>
@@ -974,11 +978,16 @@
 
         // --- LOGIN LOGIC ---
         async function checkLoginWithPin() {
-            const pin = document.getElementById('pinInput').value.trim();
+            if (!window.db) { alert("جاري التحميل، يرجى الانتظار لحظة ثم حاول مرة أخرى"); return; }
+            const pinInput = document.getElementById('pinInput');
+            const btn = document.getElementById('pinLoginBtn');
+            const pin = (pinInput && pinInput.value) ? pinInput.value.trim() : '';
             if (!pin || pin.length !== 4) { alert("الرجاء إدخال رمز من 4 أرقام"); return; }
+            if (btn) { btn.disabled = true; btn.innerText = "جاري..."; }
+            try {
             if (pin === TEACHER_LOTFI_PIN) {
                 const ok = confirm("هل أنت Lotfi Fakhfakh المولود سنة 1967؟");
-                if (!ok) return;
+                if (!ok) { if (btn) { btn.disabled = false; btn.innerText = "دخول"; } return; }
                 const first = "Lotfi", last = "Fakhfakh", year = "1967", role = "teacher";
                 const fullNameRaw = first + " " + last;
                 const uniqueID = generateUserId(fullNameRaw, role, year);
@@ -999,7 +1008,7 @@
             }
             if (pin === ADMIN_PIN) {
                 const ok = confirm("هل أنت المسؤول؟");
-                if (!ok) return;
+                if (!ok) { if (btn) { btn.disabled = false; btn.innerText = "دخول"; } return; }
                 localStorage.setItem('it9an_hidden', 'true');
                 doLoginSuccess('admin_super', 'المسؤول', 'teacher', true, null);
                 return;
@@ -1010,14 +1019,14 @@
             }
             const q = window.query(window.collection(window.db, "users"), window.where("personalPin", "==", pin));
             const snap = await window.getDocs(q);
-            if (snap.empty) { alert("الرمز غير موجود"); return; }
+            if (snap.empty) { alert("الرمز غير موجود"); if (btn) { btn.disabled = false; btn.innerText = "دخول"; } return; }
             const doc = snap.docs[0];
             const data = doc.data();
-            if (data.blocked) { alert("عذراً، تم حظر هذا الحساب."); return; }
+            if (data.blocked) { alert("عذراً، تم حظر هذا الحساب."); if (btn) { btn.disabled = false; btn.innerText = "دخول"; } return; }
             const dispName = data.baseName || data.name || '';
             const year = data.year || '';
             const confirmMsg = "هل أنت " + dispName + (year ? " المولود سنة " + year : "") + "؟";
-            if (!confirm(confirmMsg)) return;
+            if (!confirm(confirmMsg)) { if (btn) { btn.disabled = false; btn.innerText = "دخول"; } return; }
             const updates = { lastLogin: window.serverTimestamp() };
             if (!data.normalizedName && data.baseName) {
                 const parts = (data.baseName || '').trim().split(/\s+/).map(s => s.toLowerCase()).sort();
@@ -1025,6 +1034,12 @@
             }
             try { await window.updateDoc(doc.ref, updates); } catch(e){}
             doLoginSuccess(doc.id, data.name || dispName + (year ? ' (' + year + ')' : ''), data.role || 'student', false, data.personalPin || updates.personalPin);
+            } catch(e) {
+                console.error("Login error:", e);
+                alert("خطأ: " + (e.message || "جاري التحميل، حاول مرة أخرى"));
+            } finally {
+                if (btn) { btn.disabled = false; btn.innerText = "دخول"; }
+            }
         }
 
         function doLoginSuccess(uid, name, role, hideScreen, personalPin) {
