@@ -43,22 +43,22 @@ firebase.initializeApp({
 const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage((payload) => {
-  const notif = payload.notification || {};
   const data = payload.data || {};
-  const title = notif.title || 'تطبيق إتقان';
-  const body = notif.body || 'إشعار جديد';
+  const title = data.title || 'تطبيق إتقان';
+  const body = data.body || 'إشعار جديد';
   const badgeCount = parseInt(data.badge || '1', 10) || 1;
+  const tag = data.tag || 'it9an-' + (data.postId || Date.now());
   if ('setAppBadge' in navigator) {
     try { navigator.setAppBadge(badgeCount); } catch(e) {}
   }
+  const iconUrl = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect fill='%230f4c3a' width='192' height='192' rx='24'/%3E%3Ctext x='96' y='120' font-size='100' text-anchor='middle' fill='%23d4af37' font-family='serif'%3Eٱ%3C/text%3E%3C/svg%3E";
   const options = {
-    body: body,
-    icon: './index.html',
-    badge: './index.html',
-    tag: data.tag || 'it9an-' + (data.postId || Date.now()),
+    body,
+    icon: iconUrl,
+    badge: iconUrl,
+    tag,
     renotify: true,
     requireInteraction: false,
-    silent: false,
     vibrate: [200, 100, 200, 100, 200],
     data: { url: data.url || '', postId: data.postId || '', fileId: data.fileId || '', badge: String(badgeCount) }
   };
@@ -74,5 +74,3 @@ self.addEventListener('notificationclick', (e) => {
     else if (self.clients.openWindow) self.clients.openWindow(url);
   }));
 });
-
-
