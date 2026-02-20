@@ -52,6 +52,12 @@ messaging.onBackgroundMessage((payload) => {
     try { navigator.setAppBadge(badgeCount); } catch(e) {}
   }
   const iconUrl = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect fill='%230f4c3a' width='192' height='192' rx='24'/%3E%3Ctext x='96' y='120' font-size='100' text-anchor='middle' fill='%23d4af37' font-family='serif'%3Eٱ%3C/text%3E%3C/svg%3E";
+  const urlParams = new URLSearchParams();
+  if (data.postId) urlParams.set('postId', data.postId);
+  if (data.fileId) urlParams.set('fileId', data.fileId);
+  if (data.notifId) urlParams.set('notifId', data.notifId);
+  if (data.replyTimestamp) urlParams.set('replyTimestamp', data.replyTimestamp);
+  const url = urlParams.toString() ? './index.html?' + urlParams.toString() : './index.html';
   const options = {
     body,
     icon: iconUrl,
@@ -60,7 +66,7 @@ messaging.onBackgroundMessage((payload) => {
     renotify: true,
     requireInteraction: false,
     vibrate: [200, 100, 200, 100, 200],
-    data: { url: data.url || '', postId: data.postId || '', fileId: data.fileId || '', badge: String(badgeCount) }
+    data: { url, postId: data.postId || '', fileId: data.fileId || '', notifId: data.notifId || '', replyTimestamp: data.replyTimestamp || '', badge: String(badgeCount) }
   };
   return self.registration.showNotification(title, options);
 });
@@ -68,7 +74,7 @@ messaging.onBackgroundMessage((payload) => {
 self.addEventListener('notificationclick', (e) => {
   e.notification.close();
   const d = e.notification.data || {};
-  const url = d.url || (d.postId ? './index.html?postId=' + d.postId + '&fileId=' + (d.fileId || '') : './index.html');
+  const url = d.url || './index.html';
   e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((c) => {
     if (c.length) { c[0].focus(); if (c[0].navigate) c[0].navigate(url); }
     else if (self.clients.openWindow) self.clients.openWindow(url);
