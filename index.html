@@ -1199,9 +1199,11 @@
             if (uid === 'admin_super') {
                 if(notifContainer) notifContainer.style.display = 'none';
                 recBtn.style.display = 'flex';
+                updateAppIconBadge(0);
             } else if (uid === 'guest' || role === 'guest') {
                 if(notifContainer) notifContainer.style.display = 'none';
                 recBtn.style.display = 'none';
+                updateAppIconBadge(0);
                 if(adminMenuPanel) adminMenuPanel.style.display = 'none';
                 if(adminPlayerPanel) adminPlayerPanel.style.display = 'none';
             } else {
@@ -2415,6 +2417,14 @@
 
         // --- NOTIFICATIONS ---
         let notifUnsubscribe = null;
+        function updateAppIconBadge(count) {
+            if ('setAppBadge' in navigator) {
+                try {
+                    if (count > 0) navigator.setAppBadge(count);
+                    else navigator.clearAppBadge();
+                } catch(e) {}
+            }
+        }
         function listenForNotifications() {
             const uid = localStorage.getItem('it9an_uid');
             const role = localStorage.getItem('it9an_role');
@@ -2429,11 +2439,6 @@
 
             if(notifUnsubscribe) notifUnsubscribe();
             notifUnsubscribe = window.onSnapshot(q, (snap) => {
-                if (document.hidden) return;
-                const list = document.getElementById('notifList');
-                const badge = document.getElementById('notifBadge');
-                list.innerHTML = "";
-                
                 let unreadCount = 0;
                 let notifs = [];
                 snap.forEach(doc => notifs.push({id: doc.id, ...doc.data()}));
@@ -2441,6 +2446,13 @@
                     notifs = notifs.filter(n => !(n.clearedBy || []).includes(uid));
                 }
                 notifs.sort((a,b) => (a.timestamp?.seconds || 0) - (b.timestamp?.seconds || 0));
+                unreadCount = notifs.length;
+                updateAppIconBadge(unreadCount);
+
+                if (document.hidden) return;
+                const list = document.getElementById('notifList');
+                const badge = document.getElementById('notifBadge');
+                list.innerHTML = "";
 
                 if (notifs.length === 0) {
                     list.innerHTML = "<div style='text-align:center; padding:20px; color:#999; font-size:16px;'>لا توجد إشعارات</div>";
@@ -2449,7 +2461,6 @@
                 }
 
                 notifs.forEach(n => {
-                    unreadCount++;
                     let text = "";
                     if(n.type === 'new_recording') text = `🎤 تسجيل جديد من ${n.senderName}`;
                     if(n.type === 'reply') text = `✍️ رد جديد من ${n.senderName}`;
