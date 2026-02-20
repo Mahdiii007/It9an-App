@@ -440,7 +440,7 @@
         import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
         import { getMessaging, getToken, isSupported } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging.js";
 
-        const APP_VERSION = '2'; /* Bei neuem Deploy erhöhen. Auch CACHE_NAME in firebase-messaging-sw.js anpassen! Session bleibt erhalten. */
+        const APP_VERSION = '1';
         const firebaseConfig = {
             apiKey: "AIzaSyDoZLFvGknKztMIFAtS2-AgX6DYw4fssUA",
             authDomain: "it9an-neu.firebaseapp.com",
@@ -953,18 +953,6 @@
                 clearInterval(pauseInterval); pauseSecondsLeft = 0; checkNextStep();
             }
         });
-
-        (function checkAppVersion() {
-            if (localStorage.getItem('it9an_version') !== APP_VERSION) {
-                ['it9an_uid','it9an_auth','it9an_name','it9an_role','it9an_pin'].forEach(k => localStorage.removeItem(k));
-                localStorage.setItem('it9an_version', APP_VERSION);
-            }
-        })();
-
-        /* Bei Refresh: Session löschen → PIN-Eingabe erforderlich */
-        (function clearSessionOnLoad() {
-            ['it9an_uid','it9an_auth','it9an_name','it9an_role','it9an_pin'].forEach(k => localStorage.removeItem(k));
-        })();
 
         function checkSessionAndRestore() {
             const uid = localStorage.getItem('it9an_uid');
