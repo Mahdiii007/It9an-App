@@ -3255,12 +3255,21 @@
             const statusText = document.getElementById('recText');
             if(ui.style.display === 'flex') { stopRecordingAndReview(); } 
             else {
+                let rawStream = null, recCtx = null;
                 try {
                     let dur = audioEl.duration; if(!dur || isNaN(dur)) dur = 15;
                     const role = localStorage.getItem('it9an_role');
                     maxRecDuration = (replyTargetId && role === 'teacher') ? 180 : Math.ceil(dur * 2);
                     const audioConstraints = { echoCancellation: false, noiseSuppression: false, autoGainControl: false, sampleRate: 48000, channelCount: 1 };
-                    const stream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints });
+                    rawStream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints });
+                    // iPhone/Safari ignoriert channelCount und liefert oft Stereo (leiser, schlechtere Qualität).
+                    // Web Audio API erzwingt Mono-Ausgabe für bessere Aufnahmequalität.
+                    recCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    if (recCtx.state === 'suspended') await recCtx.resume();
+                    const sourceNode = recCtx.createMediaStreamSource(rawStream);
+                    const destNode = new MediaStreamAudioDestinationNode(recCtx, { channelCount: 1, channelCountMode: 'explicit' });
+                    sourceNode.connect(destNode);
+                    const stream = destNode.stream;
                     let options = { audioBitsPerSecond: 128000 };
                     // MP4/AAC zuerst: spielt auf iPhone/Mac/Safari flüssig. WebM/Opus verursacht Ruckler auf Safari.
                     if (MediaRecorder.isTypeSupported('audio/mp4;codecs=mp4a.40.2')) options.mimeType = 'audio/mp4;codecs=mp4a.40.2'; 
@@ -3279,13 +3288,19 @@
                         showReviewModal();
                         const recBtn = document.getElementById('recBtn'); if(recBtn) recBtn.classList.remove('recording');
                         clearInterval(recInterval); ui.style.display = 'none';
-                        stream.getTracks().forEach(track => track.stop());
+                        rawStream.getTracks().forEach(track => track.stop());
+                        try { recCtx.close(); } catch(e) {}
                     };
                     mediaRecorder.start(200); 
                     const recBtn = document.getElementById('recBtn'); if(recBtn && recBtn.style.display !== 'none') recBtn.classList.add('recording');
                     ui.style.display = 'flex'; recSeconds = 0; document.getElementById('recTimer').innerText = "00:00";
                     recInterval = setInterval(() => { recSeconds++; let m = Math.floor(recSeconds / 60); let s = recSeconds % 60; document.getElementById('recTimer').innerText = (m<10?"0"+m:m)+":"+(s<10?"0"+s:s); if(recSeconds >= maxRecDuration) stopRecordingAndReview(); }, 1000);
-                } catch(e) { alert("خطأ في الميكروفون"); replyTargetId = null; }
+                } catch(e) { 
+                    alert("خطأ في الميكروفون"); 
+                    replyTargetId = null; 
+                    if (rawStream) rawStream.getTracks().forEach(t => t.stop());
+                    if (recCtx) try { recCtx.close(); } catch(e2) {}
+                }
             }
         }
 
