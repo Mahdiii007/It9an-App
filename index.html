@@ -961,12 +961,6 @@
             }
         })();
 
-        /* Bei jedem Seitenladen (Refresh) Session löschen → PIN-Eingabe erforderlich */
-        (function clearSessionOnLoad() {
-            ['it9an_uid','it9an_auth','it9an_name','it9an_role','it9an_pin','it9an_lastActivity'].forEach(k => localStorage.removeItem(k));
-            /* Keine Versionsprüfung beim Load – verhindert Loading-Loops. Prüfung nur bei Inaktivitäts-Logout. */
-        })();
-
         const INACTIVITY_MS = 15 * 60 * 1000; /* 15 Minuten Inaktivität → Logout */
         function updateLastActivity() { localStorage.setItem('it9an_lastActivity', String(Date.now())); }
         async function checkForNewVersionAndUpdate() {
@@ -4014,17 +4008,8 @@
             if (checkSessionAndRestore()) {
                 showView('menu-view');
                 if (postId && fileId) setTimeout(() => openToPostFromParams(fileId, postId), 300);
-            } else {
-                document.getElementById('login-screen').style.display = 'flex';
-                document.getElementById('menu-view').style.display = 'none';
-                document.getElementById('player-view').style.display = 'none';
-                document.getElementById('notifications-view').style.display = 'none';
-                document.getElementById('saved-list-view').style.display = 'none';
-                document.getElementById('admin-message-view').style.display = 'none';
-                const menuBtn = document.getElementById('menuBtn');
-                if (menuBtn) menuBtn.style.display = 'none';
-                if (document.getElementById('appFooter')) document.getElementById('appFooter').style.display = 'none';
-                if (postId && fileId) sessionStorage.setItem('it9an_pendingOpen', JSON.stringify({ postId, fileId }));
+            } else if (postId && fileId) {
+                sessionStorage.setItem('it9an_pendingOpen', JSON.stringify({ postId, fileId }));
             }
         })();
 
