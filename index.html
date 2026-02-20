@@ -964,13 +964,14 @@
         /* Bei jedem Seitenladen (Refresh) Session löschen → PIN-Eingabe erforderlich */
         (function clearSessionOnLoad() {
             ['it9an_uid','it9an_auth','it9an_name','it9an_role','it9an_pin','it9an_lastActivity'].forEach(k => localStorage.removeItem(k));
-            checkForNewVersionAndUpdate();
+            setTimeout(() => checkForNewVersionAndUpdate(), 2000);
         })();
 
         const INACTIVITY_MS = 15 * 60 * 1000; /* 15 Minuten Inaktivität → Logout */
         function updateLastActivity() { localStorage.setItem('it9an_lastActivity', String(Date.now())); }
         async function checkForNewVersionAndUpdate() {
             try {
+                if (sessionStorage.getItem('it9an_reloadGuard')) return;
                 const url = (window.location.pathname.endsWith('/') ? window.location.pathname + 'index.html' : window.location.pathname || '/index.html') + '?v=' + Date.now();
                 const r = await fetch(url, { cache: 'no-store' });
                 if (!r.ok) return;
@@ -978,6 +979,8 @@
                 const m = html.match(/APP_VERSION\s*=\s*['"]([^'"]+)['"]/);
                 const serverVersion = m ? m[1] : null;
                 if (serverVersion && serverVersion !== APP_VERSION) {
+                    sessionStorage.setItem('it9an_reloadGuard', '1');
+                    setTimeout(() => sessionStorage.removeItem('it9an_reloadGuard'), 10000);
                     if ('caches' in window) {
                         const keys = await caches.keys();
                         await Promise.all(keys.map((k) => caches.delete(k)));
