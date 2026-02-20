@@ -2419,8 +2419,10 @@
                     if (showResult) alert('تم رفض الإشعارات. فعّل الإشعارات من إعدادات المتصفح.');
                     return false;
                 }
+                const swUrl = new URL('firebase-messaging-sw.js', window.location.href).href;
+                const registration = await navigator.serviceWorker.register(swUrl);
                 const messaging = window.getMessaging(window.firebaseApp);
-                const token = await window.getToken(messaging, { vapidKey: FCM_VAPID_KEY });
+                const token = await window.getToken(messaging, { vapidKey: FCM_VAPID_KEY, serviceWorkerRegistration: registration });
                 if (!token) {
                     if (showResult) alert('فشل الحصول على رمز الإشعارات. تأكد أن firebase-messaging-sw.js في نفس المجلد.');
                     return false;
