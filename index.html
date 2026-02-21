@@ -122,7 +122,7 @@
         }
 
         /* --- MENU & NOTIFICATIONS --- */
-        #menu-view { width: 100%; max-width: 100%; overflow-x: hidden; }
+        #menu-view { width: 100%; max-width: 100%; overflow-x: hidden; padding: 15px 12px 0 12px; }
         .menu-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; padding: 25px 10px; max-width: 100%; margin: 0 auto; }
         .menu-item { background: var(--surface); border-radius: 18px; overflow: hidden; cursor: pointer; box-shadow: var(--shadow); display: flex; flex-direction: column; }
         .menu-item-title { text-align: center; padding: 12px 5px; font-weight: bold; color: var(--primary); border-bottom: 1px solid #eee; background: #fdfdfd; font-size: 18px; }
@@ -156,8 +156,7 @@
         .user-card .lb-score, .user-card .lb-likes { padding: 2px 6px; font-size: 11px; }
 
         /* --- LEADERBOARD (TOP 3) --- */
-        #leaderboard-section { width: 100%; max-width: 100%; padding: 15px 12px; margin-bottom: 15px; overflow-x: hidden; }
-        #app-stats-card { margin-left: 12px; margin-right: 12px; }
+        #leaderboard-section { width: 100%; max-width: 100%; padding: 15px 0; margin-bottom: 15px; overflow-x: hidden; }
         .leaderboard-card {
             background: linear-gradient(135deg, #fffcf2 0%, #ffffff 100%);
             border: 2px solid var(--gold); border-radius: 20px; padding: 20px 10px;
@@ -213,7 +212,7 @@
         
         .verse-section { width: 100%; max-width: 100%; box-sizing: border-box; overflow-x: hidden; }
         
-        .verse-list-btn { width: 100%; padding: 10px; margin-bottom: 8px; background: var(--gold); color: var(--primary); border: 2px solid var(--primary); border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; font-family: 'Amiri'; }
+        .verse-list-btn { width: 100%; padding: 10px; margin-bottom: 8px; background: var(--gold); color: var(--primary); border: 2px solid var(--primary); border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; font-family: 'Amiri'; overflow: hidden; box-sizing: border-box; }
         .lessons-main-btn { font-size: 18px; padding: 14px; }
         .lb-back-btn { background: var(--primary); color: var(--gold-light); border-color: var(--gold); }
         .verse-list-btn:active { opacity: 0.9; }
@@ -311,7 +310,8 @@
         .cp-time { font-size: 11px; color: #666; font-family: monospace; min-width: 36px; font-weight: bold; }
 
         @media (max-width: 480px) {
-            #leaderboard-section { padding: 15px 8px; }
+            #menu-view { padding: 15px 8px 0 8px; }
+            #leaderboard-section { padding: 15px 0; }
             .leaderboard-card { padding: 20px 8px; }
             .lb-item { padding: 14px 8px; }
             .menu-grid { padding: 25px 8px; gap: 20px; }
