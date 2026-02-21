@@ -157,6 +157,7 @@
 
         /* --- LEADERBOARD (TOP 3) --- */
         #leaderboard-section { width: 100%; max-width: 100%; padding: 15px 12px; margin-bottom: 15px; overflow-x: hidden; }
+        #app-stats-card { margin-left: 12px; margin-right: 12px; }
         .leaderboard-card {
             background: linear-gradient(135deg, #fffcf2 0%, #ffffff 100%);
             border: 2px solid var(--gold); border-radius: 20px; padding: 20px 10px;
@@ -181,6 +182,8 @@
         .lb-liked-item img { width: 45px; height: 45px; object-fit: cover; border-radius: 6px; flex-shrink: 0; }
         .lb-liked-img-click { cursor: pointer; }
         .lb-liked-img-click:hover { opacity: 0.85; }
+        .lb-verse-goto-btn { flex-shrink: 0; padding: 8px 12px; font-size: 13px; font-weight: bold; background: var(--gold); color: var(--primary); border: 2px solid var(--primary); border-radius: 8px; cursor: pointer; font-family: 'Amiri'; white-space: nowrap; }
+        .lb-verse-goto-btn:hover { opacity: 0.9; }
         .lb-liked-item .lb-liked-info { flex: 1; min-width: 0; }
         .lb-liked-item .lb-liked-name { font-weight: bold; color: var(--primary); font-size: 14px; }
         .lb-liked-item .lb-liked-date { font-size: 12px; color: #888; }
@@ -188,6 +191,10 @@
         .lb-load-more-likes { display: block; width: 100%; margin-top: 10px; padding: 10px; background: var(--primary); color: white; border: none; border-radius: 10px; font-size: 14px; font-family: 'Amiri'; font-weight: bold; cursor: pointer; }
         .lb-show-more-btn { display: block; width: 100%; margin-top: 12px; padding: 10px; background: var(--primary); color: white; border: none; border-radius: 10px; font-size: 15px; font-family: 'Amiri'; font-weight: bold; cursor: pointer; }
         .lb-show-more-btn:active { opacity: 0.9; }
+        .lb-refresh-btn { display: block; width: 100%; margin-top: 12px; padding: 10px; background: var(--primary); color: white; border: 2px solid var(--gold); border-radius: 10px; font-size: 15px; font-family: 'Amiri'; font-weight: bold; cursor: pointer; box-shadow: 0 2px 8px rgba(15, 76, 58, 0.2); }
+        .lb-refresh-btn:hover { opacity: 0.95; }
+        .lb-refresh-btn:active { opacity: 0.9; }
+        .lb-refresh-btn:disabled { opacity: 0.6; cursor: not-allowed; }
         .lb-rank { font-weight: bold; color: var(--gold); font-size: 22px; flex-shrink: 0; }
         .lb-pin { font-family: monospace; font-size: 14px; color: #666; background: #f0f0f0; padding: 2px 6px; border-radius: 4px; flex-shrink: 0; }
         .lb-name { font-weight: bold; color: #333; font-size: clamp(16px, 3.5vw, 20px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
@@ -207,6 +214,7 @@
         .verse-section { width: 100%; max-width: 100%; box-sizing: border-box; overflow-x: hidden; }
         
         .verse-list-btn { width: 100%; padding: 10px; margin-bottom: 8px; background: var(--gold); color: var(--primary); border: 2px solid var(--primary); border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; font-family: 'Amiri'; }
+        .lessons-main-btn { font-size: 18px; padding: 14px; }
         .lb-back-btn { background: var(--primary); color: var(--gold-light); border-color: var(--gold); }
         .verse-list-btn:active { opacity: 0.9; }
         
@@ -562,6 +570,8 @@
     </div>
 
     <div id="menu-view">
+        <button class="verse-list-btn lessons-main-btn" onclick="showLessonsView()" style="margin-bottom:15px;">📚 جميع الدروس</button>
+        <button class="verse-list-btn" style="margin: 0 0 15px 0;" onclick="showSavedList()">📌 للمشاهدة لاحقاً</button>
         <div id="app-stats-card" class="leaderboard-card" style="margin-bottom:15px;">
             <div class="lb-title">📊 إحصائيات التطبيق</div>
             <div id="appStatsContent" style="display:flex; flex-wrap:wrap; justify-content:space-around; align-items:center; gap:8px; padding:10px 0; font-size:15px;">
@@ -580,17 +590,22 @@
                 </ul>
                 <button id="lbShowMoreBtn" class="lb-show-more-btn" onclick="showMoreLeaderboardStudents()" style="display:none;">عرض المزيد (+10)</button>
                 <button id="lbShowTop3Btn" class="lb-show-more-btn" style="display:none; margin-top:8px; background:#888;" onclick="showTop3Only()">عرض Top 3 فقط</button>
-                <button id="lbSyncNamesBtn" class="btn-action" style="display:none; margin-top:8px; padding:6px 12px;" onclick="syncAllUserNames()" title="تحديث الأسماء في جميع التسجيلات والإعجابات والمشاهدات">🔄 مزامنة الأسماء</button>
-                <button id="lbRefreshStudentsBtn" class="btn-action lb-refresh-btn" style="margin-top:8px; padding:6px 12px;" onclick="refreshStudentsLeaderboard()" title="تحديث القائمة">🔄 تحديث</button>
+                <button id="lbSyncNamesBtn" class="btn-action lb-refresh-btn" style="display:none; margin-top:8px;" onclick="syncAllUserNames()" title="تحديث الأسماء في جميع التسجيلات والإعجابات والمشاهدات">🔄 مزامنة الأسماء</button>
+                <button id="lbRefreshStudentsBtn" class="btn-action lb-refresh-btn" style="margin-top:8px;" onclick="refreshStudentsLeaderboard()" title="تحديث القائمة">🔄 تحديث</button>
             </div>
             <div id="teachersLeaderboard" class="leaderboard-card" style="margin-top:15px;">
                 <div class="lb-title">🏆 أفضل المعلمين</div>
                 <ul id="leaderboard-teachers-list" class="lb-list"></ul>
-                <button id="lbRefreshTeachersBtn" class="btn-action lb-refresh-btn" style="margin-top:8px; padding:6px 12px;" onclick="refreshTeachersLeaderboard()" title="تحديث القائمة">🔄 تحديث</button>
+                <button id="lbRefreshTeachersBtn" class="btn-action lb-refresh-btn" style="margin-top:8px;" onclick="refreshTeachersLeaderboard()" title="تحديث القائمة">🔄 تحديث</button>
             </div>
         </div>
-        <button class="verse-list-btn" style="margin: 15px 0;" onclick="showSavedList()">📌 للمشاهدة لاحقاً</button>
-        <button id="pushEnableBtn" class="verse-list-btn" style="margin: 0 0 15px 0; display:none; background:var(--primary); color:white;" onclick="enablePushNotifications()">🔔 تفعيل الإشعارات على الشاشة</button>
+        <button id="pushEnableBtn" class="verse-list-btn" style="margin: 15px 0 8px 0; display:none; background:var(--primary); color:white;" onclick="enablePushNotifications()">🔔 تفعيل الإشعارات على الشاشة</button>
+        <button id="microEnableBtn" class="verse-list-btn" style="margin: 0 0 15px 0; display:none; background:var(--primary); color:white;" onclick="enableMicrophonePermission()">🎤 تفعيل الميكروفون للتسجيل</button>
+    </div>
+
+    <div id="lessons-view" style="display:none; padding: 15px 10px; width: 100%; max-width: 100%; margin: 0 auto; overflow-x: hidden;">
+        <button class="verse-list-btn lb-back-btn" onclick="goToMenu()" style="margin-bottom:15px;">↩️ العودة للقائمة</button>
+        <h3 style="text-align:center; color:var(--primary); font-size:22px; margin-bottom:15px;">📚 جميع الدروس</h3>
         <div class="menu-grid" id="lesson-grid"></div>
     </div>
 
@@ -727,6 +742,17 @@
             for(let i=0; i<index; i++) startId += VERS_PRO_LEKTION[i];
             return { id: index + 1, verse: anzahl, startGlobalId: startId };
         });
+        function getLessonVerseFromFileId(fileId) {
+            const fid = parseInt(fileId, 10);
+            for (let i = 0; i < KURS_DATEN.length; i++) {
+                const start = KURS_DATEN[i].startGlobalId;
+                const end = start + KURS_DATEN[i].verse - 1;
+                if (fid >= start && fid <= end) {
+                    return { lesson: i + 1, verse: fid - start + 1 };
+                }
+            }
+            return { lesson: 0, verse: fid };
+        }
 
         let currentLessonIdx = null, currentGlobalFileId = null, currentLocalVers = null;
         let unsubscribeFeed = null, unsubscribeViews = null, unsubscribeLeaderboard = null;
@@ -1559,6 +1585,7 @@
         window.showTop3Only = function() {
             leaderboardVisibleCount = 3;
             renderLeaderboardItems(leaderboardAllUsers, leaderboardVisibleCount, localStorage.getItem('it9an_uid'));
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         async function refreshOpenSubLists() {
@@ -1849,7 +1876,12 @@
                         }
                     })();
                 }
-                renderLeaderboardItems(users, leaderboardVisibleCount, myUid, !firstSnapshot);
+                if (lbPendingRestore) {
+                    if (lbPendingRestore.source === 'likes') { lbLikesOpenUid = lbPendingRestore.uid; lbLikesOpenOffset = lbPendingRestore.offset || 0; }
+                    else if (lbPendingRestore.source === 'recordings') { lbRecordingsOpenUid = lbPendingRestore.uid; lbRecordingsOpenOffset = lbPendingRestore.offset || 0; lbRecordingsOpenRole = lbPendingRestore.role || 'student'; }
+                    else if (lbPendingRestore.source === 'views') { lbViewsOpenUid = lbPendingRestore.uid; lbViewsOpenOffset = lbPendingRestore.offset || 0; }
+                }
+                renderLeaderboardItems(users, leaderboardVisibleCount, myUid, !!lbPendingRestore || !firstSnapshot);
                 if (typeof window.updateHeaderNamePin === 'function') window.updateHeaderNamePin();
                 if (firstSnapshot) { lbDone.students = true; checkLbComplete(); }
                 firstSnapshot = false;
@@ -1931,10 +1963,11 @@
             const hasMore = items.length > toShow.length;
             let html = '';
             toShow.forEach((it) => {
-                const imgSrc = `assets/${it.fileId}.png`;
+                const lv = getLessonVerseFromFileId(it.fileId);
+                const btnText = `← مقطع ${lv.verse} درس ${lv.lesson}`;
                 html += `
                 <div class="lb-liked-item">
-                    <img src="${imgSrc}" alt="Vers" onerror="this.src='placeholder.png'" class="lb-liked-img-click" onclick="goToVerseFromViews('${it.fileId}', '${studentUid}', ${offset})" title="الذهاب للمقطع">
+                    <button class="lb-verse-goto-btn" onclick="goToVerseFromViews('${it.fileId}', '${studentUid}', ${offset})" title="الذهاب للمقطع">${btnText}</button>
                     <div class="lb-liked-info">
                         <div class="lb-liked-name">🔄 ${it.repetitions} تكرار</div>
                     </div>
@@ -2043,7 +2076,8 @@
                 window._lbRecordingsMainUrls.push(it.mainAudioUrl || '');
                 const playId = 'lbr-' + studentUid.replace(/[^a-zA-Z0-9]/g, '_') + '-' + idx;
                 const playIdMain = 'lbr-main-' + studentUid.replace(/[^a-zA-Z0-9]/g, '_') + '-' + idx;
-                const imgSrc = `assets/${it.fileId}.png`;
+                const lv = getLessonVerseFromFileId(it.fileId);
+                const btnText = `← مقطع ${lv.verse} درس ${lv.lesson}`;
                 const dateStr = it.timestamp ? (function(ts){ const d=new Date(ts); return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2)+' '+('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2); })(it.timestamp) : '';
                 const authorUid = it.authorUid || studentUid;
                 let delBtn = '';
@@ -2077,7 +2111,7 @@
                 }
                 html += `
                 <div class="lb-liked-item">
-                    <img src="${imgSrc}" alt="Vers" onerror="this.src='placeholder.png'" class="lb-liked-img-click" onclick="goToVerseFromRecordings('${it.fileId}', '${it.postId}', '${studentUid}', ${offset})" title="الذهاب للمقطع">
+                    <button class="lb-verse-goto-btn" onclick="goToVerseFromRecordings('${it.fileId}', '${it.postId}', '${studentUid}', ${offset})" title="الذهاب للمقطع">${btnText}</button>
                     <div class="lb-liked-info">
                         <div class="lb-liked-name">👍 ${it.likesCount}</div>
                         <div class="lb-liked-date">${dateStr}</div>
@@ -2167,11 +2201,12 @@
             toShow.forEach((it, idx) => {
                 window._lbLikedUrls.push(it.audioUrl || '');
                 const playId = 'lb-' + studentUid.replace(/[^a-zA-Z0-9]/g, '_') + '-' + idx;
-                const imgSrc = `assets/${it.fileId}.png`;
+                const lv = getLessonVerseFromFileId(it.fileId);
+                const btnText = `← مقطع ${lv.verse} درس ${lv.lesson}`;
                 const dateStr = it.timestamp ? (function(ts){ const d=new Date(ts); return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2)+' '+('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2); })(it.timestamp) : '';
                 html += `
                 <div class="lb-liked-item">
-                    <img src="${imgSrc}" alt="Vers" onerror="this.src='placeholder.png'" class="lb-liked-img-click" onclick="goToVerseFromLikes('${it.fileId}', '${it.postId}', '${studentUid}', ${offset})" title="الذهاب للمقطع">
+                    <button class="lb-verse-goto-btn" onclick="goToVerseFromLikes('${it.fileId}', '${it.postId}', '${studentUid}', ${offset})" title="الذهاب للمقطع">${btnText}</button>
                     <div class="lb-liked-info">
                         <div class="lb-liked-name">${(it.likerName || '').replace(/</g,'&lt;')}</div>
                         <div class="lb-liked-date">${dateStr}</div>
@@ -2317,7 +2352,6 @@
             const idx = leaderboardAllUsers.findIndex(u => u.uid === uid);
             if (idx >= 0 && idx > 2) leaderboardVisibleCount = Math.max(leaderboardVisibleCount, idx + 1);
             renderMenu();
-            setTimeout(doLbRestore, 50);
             updateLbBackButton();
         }
 
@@ -2336,7 +2370,6 @@
             const idx = leaderboardAllUsers.findIndex(u => u.uid === uid);
             if (idx >= 0 && idx > 2) leaderboardVisibleCount = Math.max(leaderboardVisibleCount, idx + 1);
             renderMenu();
-            setTimeout(doLbRestore, 50);
             updateLbBackButton();
         }
 
@@ -2355,7 +2388,6 @@
             const idx = leaderboardAllUsers.findIndex(u => u.uid === uid);
             if (idx >= 0 && idx > 2) leaderboardVisibleCount = Math.max(leaderboardVisibleCount, idx + 1);
             renderMenu();
-            setTimeout(doLbRestore, 50);
             updateLbBackButton();
         }
 
@@ -2484,6 +2516,21 @@
             const role = localStorage.getItem('it9an_role');
             if (!uid || uid === 'admin_super' || uid === 'guest') return;
             requestPushPermissionAndSaveToken(uid, role, true);
+        }
+
+        window.enableMicrophonePermission = async function() {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                alert('المتصفح لا يدعم الوصول للميكروفون.');
+                return;
+            }
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                stream.getTracks().forEach(t => t.stop());
+                alert('تم تفعيل الميكروفون بنجاح. يمكنك التسجيل الآن.');
+            } catch (e) {
+                console.warn('Microphone:', e);
+                alert('تم رفض الميكروفون. فعّل الوصول من إعدادات المتصفح أو الموقع.');
+            }
         }
 
         // --- NOTIFICATIONS ---
@@ -2769,8 +2816,7 @@
         };
 
         function renderMenu() {
-            const grid = document.getElementById('lesson-grid'); 
-            grid.innerHTML = ""; showView('menu-view');
+            showView('menu-view');
             const myName = localStorage.getItem('it9an_name') || '';
             const nameClean = myName.replace(/\s*\(\d{4}\)\s*$/, '').trim();
             const uid = localStorage.getItem('it9an_uid');
@@ -2792,6 +2838,7 @@
                 document.getElementById('adminMenuPanel').style.display = 'block';
                 document.getElementById('leaderboard-section').style.display = 'block';
                 document.getElementById('pushEnableBtn').style.display = 'none';
+                document.getElementById('microEnableBtn').style.display = 'none';
                 loadAdminMessagesList();
                 loadLeaderboard(lbPendingRestore ? doLbRestore : undefined);
                 loadAppStats();
@@ -2799,19 +2846,16 @@
                 document.getElementById('adminMenuPanel').style.display = 'none';
                 document.getElementById('leaderboard-section').style.display = 'block';
                 const role = localStorage.getItem('it9an_role');
+                const showPermBtns = (role === 'teacher' || role === 'student');
                 const pushBtn = document.getElementById('pushEnableBtn');
-                if (pushBtn) pushBtn.style.display = (role === 'teacher' || role === 'student') ? 'block' : 'none';
+                const microBtn = document.getElementById('microEnableBtn');
+                if (pushBtn) pushBtn.style.display = showPermBtns ? 'block' : 'none';
+                if (microBtn) microBtn.style.display = showPermBtns ? 'block' : 'none';
                 loadLeaderboard(lbPendingRestore ? doLbRestore : undefined);
                 loadAppStats();
             }
 
             activePostFilter = null; 
-
-            KURS_DATEN.forEach((lek, index) => {
-                let div = document.createElement('div'); div.className = 'menu-item';
-                div.innerHTML = `<div class="menu-item-title">الدرس ${index + 1}</div><img src="assets/T${lek.id}.png" loading="lazy" onerror="this.style.display='none'">`;
-                div.onclick = () => startLesson(index); grid.appendChild(div);
-            });
             checkPushNotificationParams();
         }
 
@@ -2825,6 +2869,22 @@
                 openFromNotif(notifId, fileId, postId);
             }
         }
+
+        window.showLessonsView = function() {
+            const grid = document.getElementById('lesson-grid');
+            if (!grid) return;
+            grid.innerHTML = '';
+            KURS_DATEN.forEach((lek, index) => {
+                const div = document.createElement('div');
+                div.className = 'menu-item';
+                div.innerHTML = `<div class="menu-item-title">الدرس ${index + 1}</div><img src="assets/T${lek.id}.png" loading="lazy" onerror="this.style.display='none'">`;
+                div.onclick = () => startLesson(index);
+                grid.appendChild(div);
+            });
+            showView('lessons-view');
+            document.getElementById('pageTitle').innerText = 'جميع الدروس';
+            document.getElementById('appFooter').style.display = 'none';
+        };
 
         function startLesson(index) {
             currentLessonIdx = index;
@@ -3139,7 +3199,7 @@
                 let replyBtnHtml = (userRole === 'teacher' || isAdmin) ? `<button class="reply-btn" onclick="startReply('${d.id}')">↩️ الرد</button>` : "<div></div>";
                 let postDateStr = formatDateTime(d.timestamp);
                 const isSaved = savedIds.has(d.id);
-                const saveBtnHtml = (myUid && myUid !== 'admin_super' && myUid !== 'guest') ? `<button class="save-btn ${isSaved ? 'saved' : ''}" onclick="toggleSaveForLater('${d.id}', ${isSaved})" title="${isSaved ? 'إزالة من القائمة' : 'حفظ للمشاهدة لاحقاً'}">${isSaved ? '📌' : '📎'}</button>` : '';
+                const saveBtnHtml = (myUid && myUid !== 'admin_super' && myUid !== 'guest') ? `<button class="save-btn ${isSaved ? 'saved' : ''}" onclick="toggleSaveForLater('${d.id}', ${isSaved})" title="${isSaved ? 'إزالة من القائمة' : 'حفظ للمشاهدة لاحقاً'}">📌</button>` : '';
 
                 let delBtn = deleteBtnHtml ? `<div class="feed-delete-wrap">${deleteBtnHtml}</div>` : '';
                 htmlContent += `
@@ -3556,8 +3616,15 @@
             document.getElementById('playBtn').innerText = "▶"; document.getElementById('statusDisplay').innerText = "جاهز للتلاوة"; 
         }
 
-        window.goToMenu = function() { stopLoop(); stopRecordingAndReview(); lbReturnSource = null; lbReturnToUid = null; lbReturnOffset = 0; showView('menu-view'); renderMenu(); updateLbBackButton(); } 
-        function showView(id) { document.getElementById('menu-view').style.display = 'none'; document.getElementById('player-view').style.display = 'none'; document.getElementById('notifications-view').style.display = 'none'; document.getElementById('saved-list-view').style.display = 'none'; document.getElementById('admin-message-view').style.display = 'none'; document.getElementById(id).style.display = (id === 'menu-view') ? 'grid' : 'block'; const menuBtn = document.getElementById('menuBtn'); if(menuBtn) menuBtn.style.display = (id === 'menu-view') ? 'none' : 'flex'; }
+        window.goToMenu = function() { stopLoop(); stopRecordingAndReview();
+            if (lbReturnSource && lbReturnToUid) {
+                if (lbReturnSource === 'likes') lbPendingRestore = { source: 'likes', uid: lbReturnToUid, offset: lbReturnOffset };
+                else if (lbReturnSource === 'recordings') lbPendingRestore = { source: 'recordings', uid: lbReturnToUid, offset: lbReturnOffset, role: lbRecordingsOpenRole };
+                else if (lbReturnSource === 'views') lbPendingRestore = { source: 'views', uid: lbReturnToUid, offset: lbReturnOffset };
+            }
+            lbReturnSource = null; lbReturnToUid = null; lbReturnOffset = 0; showView('menu-view'); renderMenu(); updateLbBackButton();
+        } 
+        function showView(id) { document.getElementById('menu-view').style.display = 'none'; document.getElementById('player-view').style.display = 'none'; document.getElementById('notifications-view').style.display = 'none'; document.getElementById('saved-list-view').style.display = 'none'; document.getElementById('lessons-view').style.display = 'none'; document.getElementById('admin-message-view').style.display = 'none'; document.getElementById(id).style.display = (id === 'menu-view') ? 'grid' : 'block'; const menuBtn = document.getElementById('menuBtn'); if(menuBtn) menuBtn.style.display = (id === 'menu-view') ? 'none' : 'flex'; }
         
         window.likePost = async (id, ownerUid) => { 
             const uid = localStorage.getItem('it9an_uid'); const myName = localStorage.getItem('it9an_name');
