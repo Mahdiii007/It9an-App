@@ -1088,6 +1088,7 @@
             updateUIForRole();
             if (uid !== 'guest') listenForNotifications();
             renderMenu();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
             if (uid && uid !== 'admin_super' && uid !== 'guest') requestPushPermissionAndSaveToken(uid, role);
         }
 
@@ -3025,7 +3026,6 @@
             
             unsubscribeFeed = window.onSnapshot(q, async (snap) => {
                 if (document.hidden) return;
-                const scrollY = window.scrollY;
                 if(snap.empty) { div.innerHTML = "<div style='text-align:center; color:#999; font-size:16px; padding:20px;'>لا توجد مشاركات حتى الآن</div>"; return; }
                 allLoadedPosts = [];
                 snap.forEach(doc => { allLoadedPosts.push({ id: doc.id, ...doc.data() }); });
@@ -3076,7 +3076,7 @@
                         if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     }, 150);
                 } else {
-                    window.scrollTo(0, scrollY);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
                 }
             });
         }
