@@ -2611,6 +2611,7 @@
             document.getElementById('pageTitle').innerText = "الإشعارات";
             document.getElementById('appFooter').style.display = 'none';
             const menuBtn = document.getElementById('menuBtn'); if(menuBtn) menuBtn.style.display = 'flex';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         window.openFromAdminMessageNotif = async function(notifId, messageId) {
@@ -2696,6 +2697,7 @@
             document.getElementById('appFooter').style.display = 'none';
             const menuBtn = document.getElementById('menuBtn'); if(menuBtn) menuBtn.style.display = 'flex';
             document.getElementById('pageTitle').innerText = "رسالة من المسؤول";
+            window.scrollTo({ top: 0, behavior: 'smooth' });
             const isAdmin = localStorage.getItem('it9an_uid') === 'admin_super';
             const myUid = localStorage.getItem('it9an_uid');
             const msgRef = window.doc(window.db, "adminMessages", messageId);
@@ -3068,7 +3070,14 @@
                 }
                 renderPosts(div, userRole, myUid, savedIdsForFeed);
                 
-                if(!activePostFilter) window.scrollTo(0, scrollY);
+                if (activePostFilter) {
+                    setTimeout(() => {
+                        const el = document.getElementById('post-' + activePostFilter);
+                        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }, 150);
+                } else {
+                    window.scrollTo(0, scrollY);
+                }
             });
         }
 
@@ -3624,7 +3633,7 @@
             }
             lbReturnSource = null; lbReturnToUid = null; lbReturnOffset = 0; showView('menu-view'); renderMenu(); updateLbBackButton();
         } 
-        function showView(id) { document.getElementById('menu-view').style.display = 'none'; document.getElementById('player-view').style.display = 'none'; document.getElementById('notifications-view').style.display = 'none'; document.getElementById('saved-list-view').style.display = 'none'; document.getElementById('lessons-view').style.display = 'none'; document.getElementById('admin-message-view').style.display = 'none'; document.getElementById(id).style.display = (id === 'menu-view') ? 'grid' : 'block'; const menuBtn = document.getElementById('menuBtn'); if(menuBtn) menuBtn.style.display = (id === 'menu-view') ? 'none' : 'flex'; }
+        function showView(id) { document.getElementById('menu-view').style.display = 'none'; document.getElementById('player-view').style.display = 'none'; document.getElementById('notifications-view').style.display = 'none'; document.getElementById('saved-list-view').style.display = 'none'; document.getElementById('lessons-view').style.display = 'none'; document.getElementById('admin-message-view').style.display = 'none'; document.getElementById(id).style.display = (id === 'menu-view') ? 'grid' : 'block'; const menuBtn = document.getElementById('menuBtn'); if(menuBtn) menuBtn.style.display = (id === 'menu-view') ? 'none' : 'flex'; const skipScroll = (id === 'menu-view' && lbPendingRestore) || (id === 'player-view' && activePostFilter); if (!skipScroll) window.scrollTo({ top: 0, behavior: 'smooth' }); }
         
         window.likePost = async (id, ownerUid) => { 
             const uid = localStorage.getItem('it9an_uid'); const myName = localStorage.getItem('it9an_name');
