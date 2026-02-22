@@ -190,7 +190,9 @@
         .lb-liked-item .lb-liked-play { flex-shrink: 0; }
         .lb-player-mini { background: transparent !important; border: none !important; padding: 0 !important; }
         .lb-player-mini .cp-btn { margin: 0; }
-        .lb-player-mini .cp-btn-student, .lb-player-mini .cp-btn-teacher { width: auto; min-width: 36px; padding: 0 10px; font-size: 13px; white-space: nowrap; }
+        .lb-player-stack { display: flex; flex-direction: column; align-items: center; gap: 4px; background: transparent !important; border: none !important; padding: 0 !important; }
+        .lb-player-stack .cp-btn { margin: 0; }
+        .lb-player-label { font-size: 12px; color: var(--primary); font-weight: bold; }
         .lb-load-more-likes { display: block; width: 100%; margin-top: 10px; padding: 10px; background: var(--primary); color: white; border: none; border-radius: 10px; font-size: 14px; font-family: 'Amiri'; font-weight: bold; cursor: pointer; }
         .lb-show-more-btn { display: block; width: 100%; margin-top: 12px; padding: 10px; background: var(--primary); color: white; border: none; border-radius: 10px; font-size: 15px; font-family: 'Amiri'; font-weight: bold; cursor: pointer; }
         .lb-show-more-btn:active { opacity: 0.9; }
@@ -2100,11 +2102,13 @@
                 let playSection = '';
                 if (it.type === 'reply' && it.mainAudioUrl) {
                     playSection = `
-                    <div class="lb-liked-play custom-player lb-player-mini" style="flex:1; min-width:0;" title="تسجيل الطالب">
-                        <button class="cp-btn cp-btn-student" id="btn-${playIdMain}" onclick="playFeedAudio(window._lbRecordingsMainUrls[${idx}]||'','${playIdMain}')">▶ تسجيل الطالب</button>
+                    <div class="lb-liked-play lb-player-stack" style="flex:1; min-width:0;">
+                        <button class="cp-btn" id="btn-${playIdMain}" onclick="playFeedAudio(window._lbRecordingsMainUrls[${idx}]||'','${playIdMain}')">▶</button>
+                        <span class="lb-player-label">الطالب</span>
                     </div>
-                    <div class="lb-liked-play custom-player lb-player-mini" style="flex:1; min-width:0;" title="رد المعلم">
-                        <button class="cp-btn cp-btn-teacher" id="btn-${playId}" onclick="playFeedAudio(window._lbRecordingsUrls[${idx}]||'','${playId}')">▶ رد المعلم</button>
+                    <div class="lb-liked-play lb-player-stack" style="flex:1; min-width:0;">
+                        <button class="cp-btn" id="btn-${playId}" onclick="playFeedAudio(window._lbRecordingsUrls[${idx}]||'','${playId}')">▶</button>
+                        <span class="lb-player-label">المعلم</span>
                     </div>`;
                 } else {
                     playSection = `
