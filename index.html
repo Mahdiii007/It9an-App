@@ -219,6 +219,10 @@
         .verse-section { width: 100%; max-width: 100%; box-sizing: border-box; overflow-x: hidden; }
         
         .verse-list-btn { width: 100%; padding: 10px; margin-bottom: 8px; background: var(--gold); color: var(--primary); border: 2px solid var(--primary); border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; font-family: 'Amiri'; overflow: hidden; box-sizing: border-box; }
+        .setup-step-btn { width: 100%; padding: 12px 10px; margin-bottom: 8px; background: var(--primary); color: white; border: 2px solid var(--gold); border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; font-family: 'Amiri'; overflow: hidden; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; }
+        .setup-step-btn .step-main { font-size: 16px; }
+        .setup-step-btn .step-note { font-size: 12px; font-weight: normal; opacity: 0.9; }
+        .setup-step-btn:active { opacity: 0.9; }
         .lessons-main-btn { font-size: 18px; padding: 14px; }
         .lb-back-btn { background: var(--primary); color: var(--gold-light); border-color: var(--gold); }
         .verse-list-btn:active { opacity: 0.9; }
@@ -605,8 +609,9 @@
                 <button id="lbRefreshTeachersBtn" class="btn-action lb-refresh-btn" style="margin-top:8px;" onclick="refreshTeachersLeaderboard()" title="تحديث القائمة">🔄 تحديث</button>
             </div>
         </div>
-        <button id="pushEnableBtn" class="verse-list-btn" style="margin: 15px 0 8px 0; display:none; background:var(--primary); color:white;" onclick="enablePushNotifications()">🔔 تفعيل الإشعارات على الشاشة</button>
-        <button id="microEnableBtn" class="verse-list-btn" style="margin: 0 0 15px 0; display:none; background:var(--primary); color:white;" onclick="enableMicrophonePermission()">🎤 تفعيل الميكروفون للتسجيل</button>
+        <button id="addToHomeBtn" class="setup-step-btn" style="margin: 15px 0 8px 0; display:none;" onclick="handleAddToHomeScreen()"><span class="step-main">📱 1. إضافة إلى الشاشة الرئيسية</span><span class="step-note">تثبيت التطبيق على الشاشة الرئيسية</span></button>
+        <button id="pushEnableBtn" class="setup-step-btn" style="margin: 0 0 8px 0; display:none;" onclick="enablePushNotifications()"><span class="step-main">🔔 2. تفعيل الإشعارات على الشاشة</span><span class="step-note">تفعيل الإشعارات في التطبيق وليس في المتصفح</span></button>
+        <button id="microEnableBtn" class="setup-step-btn" style="margin: 0 0 15px 0; display:none;" onclick="enableMicrophonePermission()"><span class="step-main">🎤 3. تفعيل الميكروفون للتسجيل</span><span class="step-note">تفعيل الميكروفون في التطبيق وليس في المتصفح</span></button>
     </div>
 
     <div id="lessons-view" style="display:none; padding: 15px 10px; width: 100%; max-width: 100%; margin: 0 auto; overflow-x: hidden;">
@@ -650,6 +655,14 @@
                 <div class="verse-list-title">اختر الآية</div>
                 <div id="verse-list-grid" class="verse-list-grid"></div>
                 <button class="verse-list-btn" style="margin-top:15px;" onclick="hideVerseList()">إغلاق</button>
+            </div>
+        </div>
+        
+        <div id="install-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:3000; overflow-y:auto; padding:15px; box-sizing:border-box;" onclick="if(event.target===this) hideInstallModal()">
+            <div class="verse-list-content" onclick="event.stopPropagation()" style="max-width:400px;">
+                <div class="verse-list-title">📱 إضافة إلى الشاشة الرئيسية</div>
+                <div id="install-modal-body" style="text-align:right; line-height:1.8; font-size:17px; color:#333; margin:15px 0;"></div>
+                <button class="verse-list-btn" style="margin-top:15px; width:100%;" onclick="hideInstallModal()">فهمت</button>
             </div>
         </div>
         
@@ -2581,6 +2594,28 @@
             }
         }
 
+        let deferredInstallPrompt = null;
+        window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredInstallPrompt = e; });
+        window.hideInstallModal = function() { document.getElementById('install-modal').style.display = 'none'; }
+        window.handleAddToHomeScreen = function() {
+            if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true) {
+                return;
+            }
+            if (deferredInstallPrompt) {
+                deferredInstallPrompt.prompt();
+                deferredInstallPrompt.userChoice.then((r) => { deferredInstallPrompt = null; });
+                return;
+            }
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+            const body = document.getElementById('install-modal-body');
+            if (isIOS) {
+                body.innerHTML = '<strong>iPhone / iPad (Safari):</strong><br>1. اضغط زر المشاركة (□⬆) أسفل الشاشة<br>2. اختر «إضافة إلى الشاشة الرئيسية»<br>3. اضغط «إضافة»<br><br><strong>Android (Chrome):</strong><br>اضغط القائمة (⋮) → «إضافة إلى الشاشة الرئيسية» أو «تثبيت التطبيق»';
+            } else {
+                body.innerHTML = '<strong>Android (Chrome / Edge):</strong><br>اضغط القائمة (⋮) → «إضافة إلى الشاشة الرئيسية» أو «تثبيت التطبيق»<br><br><strong>iPhone (Safari):</strong><br>المشاركة (□⬆) → «إضافة إلى الشاشة الرئيسية» → «إضافة»';
+            }
+            document.getElementById('install-modal').style.display = 'block';
+        }
+
         // --- NOTIFICATIONS ---
         let notifUnsubscribe = null;
         function updateAppIconBadge(count) {
@@ -2887,6 +2922,7 @@
             if(uid === 'admin_super') {
                 document.getElementById('adminMenuPanel').style.display = 'block';
                 document.getElementById('leaderboard-section').style.display = 'block';
+                document.getElementById('addToHomeBtn').style.display = 'none';
                 document.getElementById('pushEnableBtn').style.display = 'none';
                 document.getElementById('microEnableBtn').style.display = 'none';
                 loadAdminMessagesList();
@@ -2897,8 +2933,11 @@
                 document.getElementById('leaderboard-section').style.display = 'block';
                 const role = localStorage.getItem('it9an_role');
                 const showPermBtns = (role === 'teacher' || role === 'student');
+                const addToHomeBtn = document.getElementById('addToHomeBtn');
                 const pushBtn = document.getElementById('pushEnableBtn');
                 const microBtn = document.getElementById('microEnableBtn');
+                const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+                if (addToHomeBtn) addToHomeBtn.style.display = (showPermBtns && !isStandalone) ? 'block' : 'none';
                 if (pushBtn) pushBtn.style.display = showPermBtns ? 'block' : 'none';
                 if (microBtn) microBtn.style.display = showPermBtns ? 'block' : 'none';
                 loadLeaderboard(lbPendingRestore ? doLbRestore : undefined);
