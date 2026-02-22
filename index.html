@@ -101,10 +101,11 @@
         .notif-container { position: relative; cursor: pointer; display: flex; align-items: center; flex-shrink: 0; }
         .notif-icon { font-size: 28px; color: var(--gold-light); }
         .notif-badge { 
-            position: absolute; top: -5px; right: -5px; 
+            position: absolute; top: -6px; right: -6px; 
             background: var(--red); color: white; border-radius: 50%; 
-            width: 20px; height: 20px; font-size: 12px; 
+            min-width: 24px; height: 24px; padding: 0 6px; font-size: 14px; font-weight: bold;
             display: none; align-items: center; justify-content: center; border: 2px solid white;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
         }
 
         #pageTitle {
@@ -187,6 +188,7 @@
         .lb-liked-item .lb-liked-name { font-weight: bold; color: var(--primary); font-size: 14px; }
         .lb-liked-item .lb-liked-date { font-size: 12px; color: #888; }
         .lb-liked-item .lb-liked-play { flex-shrink: 0; }
+        .lb-player-mini .cp-btn { margin: 0; }
         .lb-load-more-likes { display: block; width: 100%; margin-top: 10px; padding: 10px; background: var(--primary); color: white; border: none; border-radius: 10px; font-size: 14px; font-family: 'Amiri'; font-weight: bold; cursor: pointer; }
         .lb-show-more-btn { display: block; width: 100%; margin-top: 12px; padding: 10px; background: var(--primary); color: white; border: none; border-radius: 10px; font-size: 15px; font-family: 'Amiri'; font-weight: bold; cursor: pointer; }
         .lb-show-more-btn:active { opacity: 0.9; }
@@ -1407,6 +1409,7 @@
                 await updateUserNameEverywhere(uid, displayName);
                 loadLeaderboard();
                 if(localStorage.getItem('it9an_uid')==='admin_super') loadTeachersLeaderboard();
+                await refreshOpenSubLists();
                 alert("تم تعديل الاسم بنجاح");
             } catch(e) { alert("خطأ: " + (e.message || e)); }
         }
@@ -1422,6 +1425,7 @@
                 await updateUserNameEverywhere(uid, newDisplayName);
                 loadLeaderboard();
                 if(localStorage.getItem('it9an_uid')==='admin_super') loadTeachersLeaderboard();
+                await refreshOpenSubLists();
                 alert(newVal ? "تم إخفاء السنة" : "تم إظهار السنة");
             } catch(e) { alert("خطأ: " + (e.message || e)); }
         }
@@ -1447,6 +1451,7 @@
                 await updateUserNameEverywhere(uid, displayName);
                 loadLeaderboard();
                 if(localStorage.getItem('it9an_uid')==='admin_super') loadTeachersLeaderboard();
+                await refreshOpenSubLists();
                 alert("تم تبديل الاسم الأول واللقب");
             } catch(e) { alert("خطأ: " + (e.message || e)); }
         }
@@ -1492,7 +1497,7 @@
                     }
                 }
                 if (lbRecordingsCache[uid]) delete lbRecordingsCache[uid];
-                if (lbLikesCache[uid]) delete lbLikesCache[uid];
+                lbLikesCache = {};
                 if (lbViewsCache[uid]) delete lbViewsCache[uid];
             } catch(e) { console.warn("updateUserNameEverywhere:", e); }
         }
@@ -1966,9 +1971,10 @@
             toShow.forEach((it) => {
                 const lv = getLessonVerseFromFileId(it.fileId);
                 const btnText = `← مقطع ${lv.verse} درس ${lv.lesson}`;
+                const scrollId = it.fileId + '-' + (it.repetitions || 0);
                 html += `
-                <div class="lb-liked-item">
-                    <button class="lb-verse-goto-btn" onclick="goToVerseFromViews('${it.fileId}', '${studentUid}', ${offset})" title="الذهاب للمقطع">${btnText}</button>
+                <div class="lb-liked-item" data-lb-scroll-id="${scrollId}">
+                    <button class="lb-verse-goto-btn" onclick="goToVerseFromViews('${it.fileId}', '${studentUid}', ${offset}, '${scrollId}')" title="الذهاب للمقطع">${btnText}</button>
                     <div class="lb-liked-info">
                         <div class="lb-liked-name">🔄 ${it.repetitions} تكرار</div>
                     </div>
@@ -2092,26 +2098,20 @@
                 let playSection = '';
                 if (it.type === 'reply' && it.mainAudioUrl) {
                     playSection = `
-                    <div class="lb-liked-play custom-player" style="flex:1; min-width:0;" title="تسجيل الطالب">
+                    <div class="lb-liked-play custom-player lb-player-mini" style="flex:1; min-width:0;" title="تسجيل الطالب">
                         <button class="cp-btn" id="btn-${playIdMain}" onclick="playFeedAudio(window._lbRecordingsMainUrls[${idx}]||'','${playIdMain}')">▶ طالب</button>
-                        <input type="range" class="cp-slider" id="seek-${playIdMain}" value="0" min="0" step="0.1" oninput="seekFeedAudio(this.value)">
-                        <span class="cp-time" id="time-${playIdMain}">00:00</span>
                     </div>
-                    <div class="lb-liked-play custom-player" style="flex:1; min-width:0;" title="رد المعلم">
+                    <div class="lb-liked-play custom-player lb-player-mini" style="flex:1; min-width:0;" title="رد المعلم">
                         <button class="cp-btn" id="btn-${playId}" onclick="playFeedAudio(window._lbRecordingsUrls[${idx}]||'','${playId}')">▶ معلم</button>
-                        <input type="range" class="cp-slider" id="seek-${playId}" value="0" min="0" step="0.1" oninput="seekFeedAudio(this.value)">
-                        <span class="cp-time" id="time-${playId}">00:00</span>
                     </div>`;
                 } else {
                     playSection = `
-                    <div class="lb-liked-play custom-player" style="flex:1; min-width:0;">
+                    <div class="lb-liked-play custom-player lb-player-mini" style="flex:1; min-width:0;">
                         <button class="cp-btn" id="btn-${playId}" onclick="playFeedAudio(window._lbRecordingsUrls[${idx}]||'','${playId}')">▶</button>
-                        <input type="range" class="cp-slider" id="seek-${playId}" value="0" min="0" step="0.1" oninput="seekFeedAudio(this.value)">
-                        <span class="cp-time" id="time-${playId}">00:00</span>
                     </div>`;
                 }
                 html += `
-                <div class="lb-liked-item">
+                <div class="lb-liked-item" data-lb-scroll-id="${it.postId}">
                     <button class="lb-verse-goto-btn" onclick="goToVerseFromRecordings('${it.fileId}', '${it.postId}', '${studentUid}', ${offset})" title="الذهاب للمقطع">${btnText}</button>
                     <div class="lb-liked-info">
                         <div class="lb-liked-name">👍 ${it.likesCount}</div>
@@ -2206,16 +2206,14 @@
                 const btnText = `← مقطع ${lv.verse} درس ${lv.lesson}`;
                 const dateStr = it.timestamp ? (function(ts){ const d=new Date(ts); return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2)+' '+('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2); })(it.timestamp) : '';
                 html += `
-                <div class="lb-liked-item">
+                <div class="lb-liked-item" data-lb-scroll-id="${it.postId}">
                     <button class="lb-verse-goto-btn" onclick="goToVerseFromLikes('${it.fileId}', '${it.postId}', '${studentUid}', ${offset})" title="الذهاب للمقطع">${btnText}</button>
                     <div class="lb-liked-info">
                         <div class="lb-liked-name">${(it.likerName || '').replace(/</g,'&lt;')}</div>
                         <div class="lb-liked-date">${dateStr}</div>
                     </div>
-                    <div class="lb-liked-play custom-player" style="flex:1; min-width:0;">
+                    <div class="lb-liked-play custom-player lb-player-mini" style="flex:1; min-width:0;">
                         <button class="cp-btn" id="btn-${playId}" onclick="playFeedAudio(window._lbLikedUrls[${idx}]||'','${playId}')">▶</button>
-                        <input type="range" class="cp-slider" id="seek-${playId}" value="0" min="0" step="0.1" oninput="seekFeedAudio(this.value)">
-                        <span class="cp-time" id="time-${playId}">00:00</span>
                     </div>
                 </div>`;
             });
@@ -2235,6 +2233,7 @@
         let lbReturnSource = null;
         let lbReturnToUid = null;
         let lbReturnOffset = 0;
+        let lbReturnScrollToId = null;
         let lbRecordingsOpenRole = 'student';
         let lbPendingRestore = null;
 
@@ -2254,6 +2253,7 @@
                 lbReturnSource = 'likes';
                 lbReturnToUid = studentUid || null;
                 lbReturnOffset = offset || 0;
+                lbReturnScrollToId = postId || null;
                 currentLessonIdx = foundIndex;
                 highlightedPostId = postId;
                 activePostFilter = postId;
@@ -2271,7 +2271,7 @@
             }
         }
 
-        window.goToVerseFromViews = function(fileId, studentUid, offset) {
+        window.goToVerseFromViews = function(fileId, studentUid, offset, scrollToId) {
             pauseFeedAudio();
             let foundIndex = -1, foundVerse = 1;
             for (let i = 0; i < KURS_DATEN.length; i++) {
@@ -2287,7 +2287,7 @@
                 lbReturnSource = 'views';
                 lbReturnToUid = studentUid || null;
                 lbReturnOffset = offset || 0;
-                currentLessonIdx = foundIndex;
+                lbReturnScrollToId = scrollToId || null;
                 highlightedPostId = null;
                 activePostFilter = null;
                 const openEl = lbLikesOpenUid ? document.getElementById('lb-likes-' + lbLikesOpenUid) : null;
@@ -2321,6 +2321,7 @@
                 lbReturnSource = 'recordings';
                 lbReturnToUid = studentUid || null;
                 lbReturnOffset = offset || 0;
+                lbReturnScrollToId = postId || null;
                 currentLessonIdx = foundIndex;
                 highlightedPostId = postId;
                 activePostFilter = postId;
@@ -2340,10 +2341,11 @@
 
         window.goBackToLikesList = function() {
             if (lbReturnSource !== 'likes' || !lbReturnToUid) return;
-            lbPendingRestore = { source: 'likes', uid: lbReturnToUid, offset: lbReturnOffset };
+            lbPendingRestore = { source: 'likes', uid: lbReturnToUid, offset: lbReturnOffset, scrollToId: highlightedPostId || lbReturnScrollToId };
             lbReturnSource = null;
             lbReturnToUid = null;
             lbReturnOffset = 0;
+            lbReturnScrollToId = null;
             activePostFilter = null;
             highlightedPostId = null;
             stopLoop();
@@ -2358,10 +2360,11 @@
 
         window.goBackToRecordingsList = function() {
             if (lbReturnSource !== 'recordings' || !lbReturnToUid) return;
-            lbPendingRestore = { source: 'recordings', uid: lbReturnToUid, offset: lbReturnOffset, role: lbRecordingsOpenRole };
+            lbPendingRestore = { source: 'recordings', uid: lbReturnToUid, offset: lbReturnOffset, role: lbRecordingsOpenRole, scrollToId: highlightedPostId || lbReturnScrollToId };
             lbReturnSource = null;
             lbReturnToUid = null;
             lbReturnOffset = 0;
+            lbReturnScrollToId = null;
             activePostFilter = null;
             highlightedPostId = null;
             stopLoop();
@@ -2376,10 +2379,11 @@
 
         window.goBackToViewsList = function() {
             if (lbReturnSource !== 'views' || !lbReturnToUid) return;
-            lbPendingRestore = { source: 'views', uid: lbReturnToUid, offset: lbReturnOffset };
+            lbPendingRestore = { source: 'views', uid: lbReturnToUid, offset: lbReturnOffset, scrollToId: lbReturnScrollToId };
             lbReturnSource = null;
             lbReturnToUid = null;
             lbReturnOffset = 0;
+            lbReturnScrollToId = null;
             activePostFilter = null;
             highlightedPostId = null;
             stopLoop();
@@ -2404,11 +2408,20 @@
             lbPendingRestore = null;
             const uid = pr.uid;
             const offset = pr.offset || 0;
-            const scrollToEl = (el) => {
-                if (el) {
-                    requestAnimationFrame(() => {
-                        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    });
+            const scrollToId = pr.scrollToId;
+            const scrollToClicked = (container) => {
+                let el = null;
+                if (scrollToId && container) {
+                    const items = container.querySelectorAll('[data-lb-scroll-id]');
+                    for (const it of items) {
+                        if (it.getAttribute('data-lb-scroll-id') === scrollToId) { el = it; break; }
+                    }
+                }
+                const target = el || container;
+                if (target) {
+                    setTimeout(() => {
+                        target.scrollIntoView({ behavior: 'smooth', block: el ? 'center' : 'start' });
+                    }, 100);
                 }
             };
             if (pr.source === 'likes') {
@@ -2422,12 +2435,12 @@
                             lbLikesCache[uid] = items;
                             renderLbLikesList(container, uid, offset);
                             container.style.display = 'block';
-                            scrollToEl(container);
+                            scrollToClicked(container);
                         });
                     } else {
                         renderLbLikesList(container, uid, offset);
                         container.style.display = 'block';
-                        scrollToEl(container);
+                        scrollToClicked(container);
                     }
                 }
             } else if (pr.source === 'recordings') {
@@ -2442,12 +2455,12 @@
                             lbRecordingsCache[uid] = items;
                             renderLbRecordingsList(container, uid, offset);
                             container.style.display = 'block';
-                            scrollToEl(container);
+                            scrollToClicked(container);
                         });
                     } else {
                         renderLbRecordingsList(container, uid, offset);
                         container.style.display = 'block';
-                        scrollToEl(container);
+                        scrollToClicked(container);
                     }
                 }
             } else if (pr.source === 'views') {
@@ -2461,12 +2474,12 @@
                             lbViewsCache[uid] = items;
                             renderLbViewsList(container, uid, offset);
                             container.style.display = 'block';
-                            scrollToEl(container);
+                            scrollToClicked(container);
                         });
                     } else {
                         renderLbViewsList(container, uid, offset);
                         container.style.display = 'block';
-                        scrollToEl(container);
+                        scrollToClicked(container);
                     }
                 }
             }
@@ -2949,6 +2962,7 @@
             pauseFeedAudio();
             currentGlobalFileId = globalId; currentLocalVers = localVersNum;
             showView('player-view');
+            if (!activePostFilter) window.scrollTo({ top: 0, behavior: 'smooth' });
             updateLbBackButton();
             document.getElementById('appFooter').style.display = 'flex';
             
@@ -3627,11 +3641,12 @@
 
         window.goToMenu = function() { stopLoop(); stopRecordingAndReview();
             if (lbReturnSource && lbReturnToUid) {
-                if (lbReturnSource === 'likes') lbPendingRestore = { source: 'likes', uid: lbReturnToUid, offset: lbReturnOffset };
-                else if (lbReturnSource === 'recordings') lbPendingRestore = { source: 'recordings', uid: lbReturnToUid, offset: lbReturnOffset, role: lbRecordingsOpenRole };
-                else if (lbReturnSource === 'views') lbPendingRestore = { source: 'views', uid: lbReturnToUid, offset: lbReturnOffset };
+                const scrollId = highlightedPostId || lbReturnScrollToId;
+                if (lbReturnSource === 'likes') lbPendingRestore = { source: 'likes', uid: lbReturnToUid, offset: lbReturnOffset, scrollToId: scrollId };
+                else if (lbReturnSource === 'recordings') lbPendingRestore = { source: 'recordings', uid: lbReturnToUid, offset: lbReturnOffset, role: lbRecordingsOpenRole, scrollToId: scrollId };
+                else if (lbReturnSource === 'views') lbPendingRestore = { source: 'views', uid: lbReturnToUid, offset: lbReturnOffset, scrollToId: scrollId };
             }
-            lbReturnSource = null; lbReturnToUid = null; lbReturnOffset = 0; showView('menu-view'); renderMenu(); updateLbBackButton();
+            lbReturnSource = null; lbReturnToUid = null; lbReturnOffset = 0; lbReturnScrollToId = null; showView('menu-view'); renderMenu(); updateLbBackButton();
         } 
         function showView(id) { document.getElementById('menu-view').style.display = 'none'; document.getElementById('player-view').style.display = 'none'; document.getElementById('notifications-view').style.display = 'none'; document.getElementById('saved-list-view').style.display = 'none'; document.getElementById('lessons-view').style.display = 'none'; document.getElementById('admin-message-view').style.display = 'none'; document.getElementById(id).style.display = (id === 'menu-view') ? 'grid' : 'block'; const menuBtn = document.getElementById('menuBtn'); if(menuBtn) menuBtn.style.display = (id === 'menu-view') ? 'none' : 'flex'; const skipScroll = (id === 'menu-view' && lbPendingRestore) || (id === 'player-view' && activePostFilter); if (!skipScroll) window.scrollTo({ top: 0, behavior: 'smooth' }); }
         
