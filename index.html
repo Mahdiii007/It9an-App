@@ -711,6 +711,11 @@
         const ADMIN_PIN = "1879";
         const TEACHER_LOTFI_PIN = "9898";
         const RESERVED_PINS = ["9898", "1879"];
+        (function storePushParamsIfNeeded() {
+            const params = new URLSearchParams(window.location.search);
+            const postId = params.get('postId'), fileId = params.get('fileId'), notifId = params.get('notifId') || '';
+            if (postId && fileId) { try { sessionStorage.setItem('it9an_pushParams', JSON.stringify({ postId, fileId, notifId })); } catch(e){} }
+        })();
 
         function generatePersonalPin(existingPins) {
             const used = new Set([...RESERVED_PINS, ...(existingPins || [])]);
@@ -1018,6 +1023,12 @@
         }
 
         // --- LOGIN LOGIC ---
+        function withTimeout(promise, ms, msg) {
+            return Promise.race([
+                promise,
+                new Promise((_, reject) => setTimeout(() => reject(new Error(msg || "جاري التحميل، حاول مرة أخرى")), ms))
+            ]);
+        }
         async function checkLoginWithPin() {
             if (!window.db) { alert("جاري التحميل، يرجى الانتظار لحظة ثم حاول مرة أخرى"); return; }
             const pinInput = document.getElementById('pinInput');
@@ -1035,13 +1046,13 @@
                 const userRef = window.doc(window.db, "users", uniqueID);
                 let finalDisplayName = "Lotfi Fakhfakh";
                 try {
-                    const userSnap = await window.getDoc(userRef);
+                    const userSnap = await withTimeout(window.getDoc(userRef), 15000);
                     if(userSnap.exists()) {
                         if(userSnap.data().blocked) { alert("عذراً، تم حظر هذا الحساب."); return; }
                         if(userSnap.data().name) finalDisplayName = userSnap.data().name;
-                        await window.updateDoc(userRef, { lastLogin: window.serverTimestamp() });
+                        await withTimeout(window.updateDoc(userRef, { lastLogin: window.serverTimestamp() }), 10000);
                     } else {
-                        await window.setDoc(userRef, { name: finalDisplayName, baseName: finalDisplayName, role, uid: uniqueID, year, lastLogin: window.serverTimestamp(), postsCount: 0, totalLikes: 0, totalVerseViews: 0, totalRepliesCount: 0, blocked: false });
+                        await withTimeout(window.setDoc(userRef, { name: finalDisplayName, baseName: finalDisplayName, role, uid: uniqueID, year, lastLogin: window.serverTimestamp(), postsCount: 0, totalLikes: 0, totalVerseViews: 0, totalRepliesCount: 0, blocked: false }), 10000);
                     }
                 } catch(e) { console.log("Login Error", e); }
                 doLoginSuccess(uniqueID, finalDisplayName, role, true, null);
@@ -1059,7 +1070,7 @@
                 return;
             }
             const q = window.query(window.collection(window.db, "users"), window.where("personalPin", "==", pin));
-            const snap = await window.getDocs(q);
+            const snap = await withTimeout(window.getDocs(q), 15000);
             if (snap.empty) { alert("الرمز غير موجود"); if (btn) { btn.disabled = false; btn.innerText = "دخول"; } return; }
             const doc = snap.docs[0];
             const data = doc.data();
@@ -1073,7 +1084,7 @@
                 const parts = (data.baseName || '').trim().split(/\s+/).map(s => s.toLowerCase()).sort();
                 if (parts.length >= 2) updates.normalizedName = parts.join('_');
             }
-            try { await window.updateDoc(doc.ref, updates); } catch(e){}
+            try { await withTimeout(window.updateDoc(doc.ref, updates), 10000); } catch(e){}
             doLoginSuccess(doc.id, data.name || dispName + (year ? ' (' + year + ')' : ''), data.role || 'student', false, data.personalPin || updates.personalPin);
             } catch(e) {
                 console.error("Login error:", e);
@@ -2900,12 +2911,19 @@
 
         function checkPushNotificationParams() {
             const params = new URLSearchParams(window.location.search);
-            const postId = params.get('postId');
-            const fileId = params.get('fileId');
-            const notifId = params.get('notifId') || '';
+            let postId = params.get('postId');
+            let fileId = params.get('fileId');
+            let notifId = params.get('notifId') || '';
+            if (!postId || !fileId) {
+                try {
+                    const stored = sessionStorage.getItem('it9an_pushParams');
+                    if (stored) { const o = JSON.parse(stored); postId = o.postId; fileId = o.fileId; notifId = o.notifId || ''; }
+                } catch(e){}
+            }
             if (postId && fileId) {
+                try { sessionStorage.removeItem('it9an_pushParams'); } catch(e){}
                 history.replaceState({}, '', window.location.pathname + (window.location.hash || ''));
-                openFromNotif(notifId, fileId, postId);
+                setTimeout(() => openFromNotif(notifId, fileId, postId), 150);
             }
         }
 
