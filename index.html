@@ -1052,7 +1052,7 @@
         }
         function getFirstLoginOrCreated(u) {
             if (!u) return null;
-            return u.createdAt || u.lastLogin || null;
+            return u.firstLogin || u.createdAt || u.lastLogin || null;
         }
         function getDisplayNameForAdmin(u) { const base = getDisplayName(u); return (u && u.year) ? (u.year + ' - ' + base) : base; }
         function getDisplayNameForAdminWithDate(u) {
@@ -1118,9 +1118,12 @@
                     if(userSnap.exists()) {
                         if(userSnap.data().blocked) { alert("عذراً، تم حظر هذا الحساب."); return; }
                         if(userSnap.data().name) finalDisplayName = userSnap.data().name;
-                        await withTimeout(window.updateDoc(userRef, { lastLogin: window.serverTimestamp() }), 10000);
+                        const lotfiUp = { lastLogin: window.serverTimestamp() };
+                        if (!userSnap.data().firstLogin) lotfiUp.firstLogin = window.serverTimestamp();
+                        await withTimeout(window.updateDoc(userRef, lotfiUp), 10000);
                     } else {
-                        await withTimeout(window.setDoc(userRef, { name: finalDisplayName, baseName: finalDisplayName, role, uid: uniqueID, year, createdAt: window.serverTimestamp(), lastLogin: window.serverTimestamp(), postsCount: 0, totalLikes: 0, totalVerseViews: 0, totalRepliesCount: 0, blocked: false }), 10000);
+                        const ts = window.serverTimestamp();
+                        await withTimeout(window.setDoc(userRef, { name: finalDisplayName, baseName: finalDisplayName, role, uid: uniqueID, year, firstLogin: ts, createdAt: ts, lastLogin: ts, postsCount: 0, totalLikes: 0, totalVerseViews: 0, totalRepliesCount: 0, blocked: false }), 10000);
                     }
                 } catch(e) { console.log("Login Error", e); }
                 try { localStorage.setItem('it9an_saved_pin', pin); } catch(e){}
@@ -1151,6 +1154,7 @@
             const confirmMsg = "هل أنت " + dispName + (year ? " المولود سنة " + year : "") + "؟";
             if (!confirm(confirmMsg)) { if (btn) { btn.disabled = false; btn.innerText = "دخول"; } return; }
             const updates = { lastLogin: window.serverTimestamp() };
+            if (!data.firstLogin) updates.firstLogin = window.serverTimestamp();
             if (!data.normalizedName && data.baseName) {
                 const parts = (data.baseName || '').trim().split(/\s+/).map(s => s.toLowerCase()).sort();
                 if (parts.length >= 2) updates.normalizedName = parts.join('_');
@@ -1231,6 +1235,7 @@
                         }
                         if(ud.name) finalDisplayName = ud.name;
                         const updates = { lastLogin: window.serverTimestamp() };
+                        if (!ud.firstLogin) updates.firstLogin = window.serverTimestamp();
                         if (!(ud.personalPin || '').toString().trim()) {
                             const allPins = await getAllPersonalPins();
                             updates.personalPin = generatePersonalPin(allPins);
@@ -1284,6 +1289,7 @@
                             actualUid = existingDoc.id;
                             finalDisplayName = data.name || (data.baseName || '') + (data.year ? ' (' + data.year + ')' : '');
                             const updates = { lastLogin: window.serverTimestamp() };
+                            if (!data.firstLogin) updates.firstLogin = window.serverTimestamp();
                             if (!data.normalizedName) updates.normalizedName = normalizedName;
                             if (!(data.personalPin || '').toString().trim()) {
                                 const allPins = await getAllPersonalPins();
@@ -1309,6 +1315,7 @@
 
                             const allPins = await getAllPersonalPins();
                             const newPersonalPin = generatePersonalPin(allPins);
+                            const ts = window.serverTimestamp();
                             await window.setDoc(userRef, {
                                 name: finalDisplayName,
                                 baseName: baseNameOnly,
@@ -1319,8 +1326,9 @@
                                 role: role,
                                 uid: uniqueID,
                                 year: year,
-                                createdAt: window.serverTimestamp(),
-                                lastLogin: window.serverTimestamp(),
+                                firstLogin: ts,
+                                createdAt: ts,
+                                lastLogin: ts,
                                 postsCount: 0,
                                 totalLikes: 0,
                                 totalVerseViews: 0,
