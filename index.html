@@ -111,9 +111,11 @@
         #pageTitle {
             background: var(--surface); padding: 5px 12px; border-radius: 30px; 
             display: flex; align-items: center; justify-content: center; gap: 8px;
-            height: 50px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); border: 2px solid var(--gold);
-            cursor: default; overflow: hidden; white-space: nowrap; flex: 1; min-width: 0; max-width: 78%;
+            min-height: 50px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); border: 2px solid var(--gold);
+            cursor: default; overflow: hidden; flex: 1; min-width: 0; max-width: 78%;
         }
+        #pageTitle.header-name-pin { flex-direction: column; padding: 8px 12px; gap: 4px; overflow: visible; white-space: normal; }
+        #pageTitle .header-pin-row { display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; font-size: 12px; color: #555; }
         #pageTitle img { height: 35px; width: auto; display: block; object-fit: contain; flex-shrink: 0; } 
         .header-user-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; font-size: clamp(11px, 2.5vw, 14px); color: var(--primary); margin-right: 8px; }
         .header-user-name-main { color: var(--primary); font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; text-align: center; display: block; min-width: 0; flex: 1; }
@@ -557,8 +559,22 @@
         <button class="login-btn" onclick="goToMenu()">عودة</button>
     </div>
 
+    <div id="contact-admin-new-view" style="display:none; padding: 15px 10px; width: 100%; max-width: 100%; margin: 0 auto;">
+        <div style="background:white; padding:20px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.08); margin-bottom:15px;">
+            <div style="font-weight:bold; color:var(--primary); margin-bottom:15px; font-size:18px;">📩 تواصل مع المسؤول</div>
+            <div style="color:#555; margin-bottom:15px; font-size:15px;">اكتب مشكلتك أو سؤالك وسيرد عليك المسؤول.</div>
+            <textarea id="contactAdminFirstMsg" class="login-input" placeholder="اكتب رسالتك هنا..." rows="4" style="width:100%; resize:vertical; margin-bottom:12px;"></textarea>
+            <button class="login-btn" style="width:100%;" onclick="sendContactAdminFirstMessage()">📤 إرسال</button>
+        </div>
+        <button class="login-btn" onclick="closeContactAdminNewView()">عودة</button>
+    </div>
     <div id="admin-message-view" style="display:none; padding: 15px 10px; width: 100%; max-width: 100%; margin: 0 auto; overflow-x: hidden;">
         <div id="adminMessageContent" style="background:white; padding:20px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.08); margin-bottom:15px; white-space:pre-wrap; font-size:18px; line-height:1.6;"></div>
+        <div id="adminMsgReplies" style="margin-bottom:15px;"></div>
+        <div id="adminMsgReplyForm" style="display:none; margin-bottom:15px;">
+            <textarea id="adminMsgReplyText" class="login-input" placeholder="اكتب ردك..." rows="2" style="width:100%; resize:vertical; margin-bottom:8px;"></textarea>
+            <button class="login-btn" style="width:100%;" onclick="sendAdminMessageReply()">📤 إرسال الرد</button>
+        </div>
         <div style="display:flex; align-items:center; gap:15px; margin-bottom:20px;">
             <button id="adminMsgLikeBtn" class="login-btn" style="width:auto; padding:10px 20px;" onclick="likeAdminMessage()">👍 أعجبني</button>
             <span id="adminMsgLikeCount" style="color:#888; font-size:14px;"></span>
@@ -590,6 +606,7 @@
     <div id="menu-view">
         <button class="verse-list-btn lessons-main-btn" onclick="showLessonsView()" style="margin-bottom:15px;">📚 جميع الدروس</button>
         <button class="verse-list-btn" style="margin: 0 0 15px 0;" onclick="showSavedList()">📌 للمشاهدة لاحقاً</button>
+        <button id="contactAdminBtn" class="verse-list-btn" style="margin: 0 0 15px 0; display:none; background:var(--primary); color:white; border-color:var(--gold);" onclick="showContactAdminView()">📩 تواصل مع المسؤول</button>
         <div id="app-stats-card" class="leaderboard-card" style="margin-bottom:15px;">
             <div class="lb-title">📊 إحصائيات التطبيق</div>
             <div id="appStatsContent" style="display:flex; flex-wrap:wrap; justify-content:space-around; align-items:center; gap:8px; padding:10px 0; font-size:15px;">
@@ -609,6 +626,7 @@
                 <button id="lbShowMoreBtn" class="lb-show-more-btn" onclick="showMoreLeaderboardStudents()" style="display:none;">عرض المزيد (+10)</button>
                 <button id="lbShowTop3Btn" class="lb-show-more-btn" style="display:none; margin-top:8px; background:#888;" onclick="showTop3Only()">عرض Top 3 فقط</button>
                 <button id="lbSyncNamesBtn" class="btn-action lb-refresh-btn" style="display:none; margin-top:8px;" onclick="syncAllUserNames()" title="تحديث الأسماء في جميع التسجيلات والإعجابات والمشاهدات">🔄 مزامنة الأسماء</button>
+                <button id="lbSortAlphaBtn" class="btn-action lb-refresh-btn" style="display:none; margin-top:8px;" onclick="toggleLeaderboardSort()" title="ترتيب أبجدي">🔤 ترتيب أبجدي</button>
                 <button id="lbRefreshStudentsBtn" class="btn-action lb-refresh-btn" style="margin-top:8px;" onclick="refreshStudentsLeaderboard()" title="تحديث القائمة">🔄 تحديث</button>
             </div>
             <div id="teachersLeaderboard" class="leaderboard-card" style="margin-top:15px;">
@@ -1006,6 +1024,9 @@
 
         if(localStorage.getItem('it9an_auth') === 'true') { localStorage.removeItem('it9an_auth'); }
 
+        function getDisplayName(u) { return (u && (u.baseName || (u.name ? String(u.name).replace(/\s*\(\d{4}\)\s*$/, '').trim() : '') || u.name || '')).trim() || ''; }
+        function getDisplayNameForAdmin(u) { const base = getDisplayName(u); return (u && u.year) ? (u.year + ' - ' + base) : base; }
+        function stripYearFromName(n) { return (n && typeof n === 'string' ? String(n).replace(/\s*\(\d{4}\)\s*$/, '').trim() : n) || ''; }
         // --- NEW ID GENERATOR WITH YEAR ---
         function generateUserId(fullName, role, year) {
             let cleanName = fullName.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
@@ -1232,8 +1253,8 @@
                                          await window.updateDoc(doc.ref, { name: `${data.baseName} (${data.year})` });
                                      }
                                  });
-                                 finalDisplayName = `${baseNameOnly} (${year})`;
                             }
+                            finalDisplayName = `${baseNameOnly} (${year})`;
 
                             const allPins = await getAllPersonalPins();
                             const newPersonalPin = generatePersonalPin(allPins);
@@ -1411,53 +1432,6 @@
             }
         }
 
-        window.renameUser = async function(uid) {
-            const u = leaderboardAllUsers.find(x => x.uid === uid) || leaderboardAllTeachers.find(x => x.uid === uid);
-            const baseName = (u && u.baseName) ? u.baseName : (u && u.name ? u.name.replace(/\s*\(\d{4}\)\s*$/, '').trim() : '');
-            const currentYear = (u && u.year) ? u.year : '';
-            const newName = prompt("الاسم الجديد (مثال: John Doe):", baseName);
-            if(newName === null) return;
-            const trimmed = newName.trim();
-            if(!trimmed) { alert("الرجاء إدخال اسم"); return; }
-            const latinRegex = /^[a-zA-Z\s]+$/;
-            if(!latinRegex.test(trimmed)) { alert("الرجاء استخدام الأحرف اللاتينية فقط (A–Z)"); return; }
-            const newYear = prompt("سنة الميلاد الجديدة (4 أرقام):", currentYear);
-            if(newYear === null) return;
-            const y = newYear.trim();
-            if(y.length !== 4 || isNaN(y)) { alert("يجب أن تكون سنة الميلاد 4 أرقام"); return; }
-            if(parseInt(y, 10) <= 1950) { alert("سنة الميلاد غير صحيحة"); return; }
-            const baseNameOnly = trimmed.replace(/\w\S*/g, t => t.charAt(0).toUpperCase() + t.substr(1).toLowerCase());
-            const parts = baseNameOnly.trim().split(/\s+/);
-            const firstName = parts[0] || '';
-            const lastName = parts.slice(1).join(' ') || parts[0] || '';
-            const displayName = (u.displayNameOnly === true) ? baseNameOnly : baseNameOnly + " (" + y + ")";
-            try {
-                const userRef = window.doc(window.db, "users", uid);
-                await window.updateDoc(userRef, { name: displayName, baseName: baseNameOnly, firstName, lastName, year: y });
-                await updateUserNameEverywhere(uid, displayName);
-                loadLeaderboard();
-                if(localStorage.getItem('it9an_uid')==='admin_super') loadTeachersLeaderboard();
-                await refreshOpenSubLists();
-                alert("تم تعديل الاسم بنجاح");
-            } catch(e) { alert("خطأ: " + (e.message || e)); }
-        }
-
-        window.toggleDisplayYear = async function(uid) {
-            const u = leaderboardAllUsers.find(x => x.uid === uid) || leaderboardAllTeachers.find(x => x.uid === uid);
-            if(!u) return;
-            const newVal = u.displayNameOnly !== true;
-            const baseNameOnly = u.baseName || (u.name ? u.name.replace(/\s*\(\d{4}\)\s*$/, '').trim() : '') || u.name || '';
-            const newDisplayName = newVal ? baseNameOnly : baseNameOnly + " (" + (u.year || '') + ")";
-            try {
-                await window.updateDoc(window.doc(window.db, "users", uid), { displayNameOnly: newVal });
-                await updateUserNameEverywhere(uid, newDisplayName);
-                loadLeaderboard();
-                if(localStorage.getItem('it9an_uid')==='admin_super') loadTeachersLeaderboard();
-                await refreshOpenSubLists();
-                alert(newVal ? "تم إخفاء السنة" : "تم إظهار السنة");
-            } catch(e) { alert("خطأ: " + (e.message || e)); }
-        }
-
         function parseFirstLast(u) {
             if(u.firstName && u.lastName) return { first: u.firstName, last: u.lastName };
             const base = u.baseName || (u.name ? u.name.replace(/\s*\(\d{4}\)\s*$/, '').trim() : '') || '';
@@ -1534,6 +1508,27 @@
         let leaderboardAllUsers = [];
         let leaderboardVisibleCount = 3;
         let lastStudentsRefreshTime = 0;
+        let leaderboardSortBy = 'points';
+        function applyLeaderboardSort(users) {
+            if (leaderboardSortBy === 'alpha') {
+                return [...users].sort((a,b) => (getDisplayName(a) || '').localeCompare(getDisplayName(b) || '', 'ar'));
+            }
+            return users.sort((a,b) => {
+                const sumA = (a.totalVerseViews || 0) + (a.postsCount || 0) + (a.totalLikes || 0);
+                const sumB = (b.totalVerseViews || 0) + (b.postsCount || 0) + (b.totalLikes || 0);
+                return sumB - sumA;
+            });
+        }
+        window.toggleLeaderboardSort = function() {
+            if (localStorage.getItem('it9an_uid') !== 'admin_super') return;
+            leaderboardSortBy = leaderboardSortBy === 'points' ? 'alpha' : 'points';
+            const btn = document.getElementById('lbSortAlphaBtn');
+            if (btn) btn.innerText = leaderboardSortBy === 'alpha' ? '🔢 ترتيب بالنقاط' : '🔤 ترتيب أبجدي';
+            leaderboardAllUsers = applyLeaderboardSort([...leaderboardAllUsers]);
+            renderLeaderboardItems(leaderboardAllUsers, leaderboardVisibleCount, localStorage.getItem('it9an_uid'), true);
+            lastTeachersRefreshTime = 0;
+            loadTeachersLeaderboard();
+        };
 
         function renderLeaderboardItems(users, visibleCount, myUid, preserveOpen) {
             if (!preserveOpen) {
@@ -1557,6 +1552,8 @@
             if(showTop3Btn) showTop3Btn.style.display = visibleCount > 3 ? 'block' : 'none';
             const syncBtn = document.getElementById('lbSyncNamesBtn');
             if(syncBtn) syncBtn.style.display = isAdmin ? 'block' : 'none';
+            const sortBtn = document.getElementById('lbSortAlphaBtn');
+            if(sortBtn) { sortBtn.style.display = isAdmin ? 'block' : 'none'; sortBtn.innerText = leaderboardSortBy === 'alpha' ? '🔢 ترتيب بالنقاط' : '🔤 ترتيب أبجدي'; }
             toShow.forEach((u, i) => {
                 adminUserRoles[u.uid] = 'student';
                 const rank = i + 1;
@@ -1569,10 +1566,9 @@
                 const isBlocked = u.blocked === true;
                 const blockBtnText = isBlocked ? "فك الحظر" : "حظر";
                 const blockBtnClass = isBlocked ? "btn-action btn-block blocked" : "btn-action btn-block";
-                const lbDisplayName = (u.displayNameOnly === true) ? (u.baseName || (u.name ? u.name.replace(/\s*\(\d{4}\)\s*$/, '').trim() : '') || u.name) : (u.name || '');
-                const yearToggleTitle = u.displayNameOnly === true ? 'إظهار السنة' : 'إخفاء السنة';
+                const lbDisplayName = isAdmin ? getDisplayNameForAdmin(u) : getDisplayName(u);
                 const pinBadge = isAdmin ? `<span class="lb-pin" title="الرمز الشخصي">${u.personalPin ? String(u.personalPin).padStart(4,'0') : '—'}</span>` : '';
-                const adminBtns = isAdmin ? `<button class="delete-btn" onclick="deleteUser('${u.uid}')" title="حذف">🗑️</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="renameUser('${u.uid}')" title="تعديل الاسم">✏️</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="swapFirstLastName('${u.uid}')" title="تبديل الاسم الأول واللقب">🔄</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="toggleDisplayYear('${u.uid}')" title="${yearToggleTitle}">📅</button><button class="${blockBtnClass}" style="padding:4px 10px; font-size:12px;" onclick="toggleBlockUser('${u.uid}', ${isBlocked})">${blockBtnText}</button>` : '';
+                const adminBtns = isAdmin ? `<button class="delete-btn" onclick="deleteUser('${u.uid}')" title="حذف">🗑️</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="swapFirstLastName('${u.uid}')" title="تبديل الاسم الأول واللقب">🔄</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="sendPrivateMessageToUser('${u.uid}')" title="رسالة خاصة">✉️</button><button class="${blockBtnClass}" style="padding:4px 10px; font-size:12px;" onclick="toggleBlockUser('${u.uid}', ${isBlocked})">${blockBtnText}</button>` : '';
                 list.innerHTML += `
                 <li class="${cls}">
                     <div class="lb-item">
@@ -1654,14 +1650,9 @@
                 const snap = await window.getDocsFromServer(q);
                 let users = [];
                 snap.forEach(doc => users.push({ ...doc.data(), uid: doc.data().uid || doc.id }));
-                users.sort((a,b) => {
-                    const sumA = (a.totalVerseViews || 0) + (a.postsCount || 0) + (a.totalLikes || 0);
-                    const sumB = (b.totalVerseViews || 0) + (b.postsCount || 0) + (b.totalLikes || 0);
-                    return sumB - sumA;
-                });
-                leaderboardAllUsers = users;
+                leaderboardAllUsers = applyLeaderboardSort(users);
                 const myUid = localStorage.getItem('it9an_uid');
-                renderLeaderboardItems(users, leaderboardVisibleCount, myUid, true);
+                renderLeaderboardItems(leaderboardAllUsers, leaderboardVisibleCount, myUid, true);
                 if (typeof window.updateHeaderNamePin === 'function') window.updateHeaderNamePin();
                 await refreshOpenSubLists();
                 const isStudentViewsOpen = lbViewsOpenUid && leaderboardAllUsers.some(u => u.uid === lbViewsOpenUid);
@@ -1726,9 +1717,8 @@
                     const blockBtnClass = isBlocked ? "btn-action btn-block blocked" : "btn-action btn-block";
                     const likesCount = u.totalLikes || 0;
                     const repliesCount = u.totalRepliesCount || 0;
-                    const lbDisplayNameT = (u.displayNameOnly === true) ? (u.baseName || (u.name ? u.name.replace(/\s*\(\d{4}\)\s*$/, '').trim() : '') || u.name) : (u.name || '');
-                    const yearToggleTitleT = u.displayNameOnly === true ? 'إظهار السنة' : 'إخفاء السنة';
-                    const adminBtnsT = isAdmin ? `<button class="delete-btn" onclick="deleteUser('${u.uid}')" title="حذف">🗑️</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="renameUser('${u.uid}')" title="تعديل الاسم">✏️</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="swapFirstLastName('${u.uid}')" title="تبديل الاسم الأول واللقب">🔄</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="toggleDisplayYear('${u.uid}')" title="${yearToggleTitleT}">📅</button><button class="${blockBtnClass}" style="padding:4px 10px; font-size:12px;" onclick="toggleBlockUser('${u.uid}', ${isBlocked})">${blockBtnText}</button>` : '';
+                    const lbDisplayNameT = isAdmin ? getDisplayNameForAdmin(u) : getDisplayName(u);
+                    const adminBtnsT = isAdmin ? `<button class="delete-btn" onclick="deleteUser('${u.uid}')" title="حذف">🗑️</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="swapFirstLastName('${u.uid}')" title="تبديل الاسم الأول واللقب">🔄</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="sendPrivateMessageToUser('${u.uid}')" title="رسالة خاصة">✉️</button><button class="${blockBtnClass}" style="padding:4px 10px; font-size:12px;" onclick="toggleBlockUser('${u.uid}', ${isBlocked})">${blockBtnText}</button>` : '';
                     list.innerHTML += `
                     <li class="lb-item-wrapper ${rank <= 3 ? 'lb-item-top3' : ''}">
                         <div class="lb-item">
@@ -1773,14 +1763,21 @@
             const syncBtn = document.getElementById('lbSyncNamesBtn');
             if (syncBtn) { syncBtn.disabled = true; syncBtn.innerText = 'جاري المزامنة...'; }
             try {
-                const allUsers = [...leaderboardAllUsers, ...leaderboardAllTeachers];
-                for (const u of allUsers) {
-                    const displayName = (u.displayNameOnly === true) ? (u.baseName || (u.name ? u.name.replace(/\s*\(\d{4}\)\s*$/, '').trim() : '') || u.name) : (u.name || '');
-                    if (displayName) await updateUserNameEverywhere(u.uid, displayName);
+                const usersSnap = await window.getDocs(window.collection(window.db, "users"));
+                let updated = 0;
+                for (const docSnap of usersSnap.docs) {
+                    const d = docSnap.data();
+                    const baseName = (d.baseName || (d.name ? String(d.name).replace(/\s*\(\d{4}\)\s*$/, '').trim() : '') || d.name || '').trim();
+                    if (!baseName) continue;
+                    if (d.name !== baseName) {
+                        await window.updateDoc(docSnap.ref, { name: baseName, displayNameOnly: true });
+                        updated++;
+                    }
+                    await updateUserNameEverywhere(d.uid || docSnap.id, baseName);
                 }
                 loadLeaderboard();
                 if (localStorage.getItem('it9an_uid') === 'admin_super') loadTeachersLeaderboard();
-                alert("تم مزامنة الأسماء بنجاح");
+                alert("تم مزامنة الأسماء بنجاح" + (updated > 0 ? " (" + updated + " مستخدم محدث)" : ""));
             } catch (e) { alert("خطأ: " + (e.message || e)); }
             if (syncBtn) { syncBtn.disabled = false; syncBtn.innerText = '🔄 مزامنة الأسماء'; }
         };
@@ -1804,7 +1801,11 @@
                 if (Date.now() - lastTeachersRefreshTime < 15000) { if (onFirstRender && firstSnap) { onFirstRender(); firstSnap = false; } return; }
                 let teachers = [];
                 snap.forEach(doc => teachers.push({ ...doc.data(), uid: doc.data().uid || doc.id }));
-                teachers.sort((a,b) => (b.totalRepliesCount || 0) - (a.totalRepliesCount || 0));
+                if (leaderboardSortBy === 'alpha' && myUid === 'admin_super') {
+                    teachers.sort((a,b) => (getDisplayName(a) || '').localeCompare(getDisplayName(b) || '', 'ar'));
+                } else {
+                    teachers.sort((a,b) => (b.totalRepliesCount || 0) - (a.totalRepliesCount || 0));
+                }
                 leaderboardAllTeachers = teachers;
                 list.innerHTML = "";
                 if (teachers.length === 0) { list.innerHTML = "<li style='text-align:center; color:#999; padding:10px;'>لا يوجد معلمون</li>"; if (onFirstRender && firstSnap) { onFirstRender(); firstSnap = false; } return; }
@@ -1816,9 +1817,8 @@
                     const blockBtnClass = isBlocked ? "btn-action btn-block blocked" : "btn-action btn-block";
                     const likesCount = u.totalLikes || 0;
                     const repliesCount = u.totalRepliesCount || 0;
-                    const lbDisplayNameT = (u.displayNameOnly === true) ? (u.baseName || (u.name ? u.name.replace(/\s*\(\d{4}\)\s*$/, '').trim() : '') || u.name) : (u.name || '');
-                    const yearToggleTitleT = u.displayNameOnly === true ? 'إظهار السنة' : 'إخفاء السنة';
-                    const adminBtnsT = isAdmin ? `<button class="delete-btn" onclick="deleteUser('${u.uid}')" title="حذف">🗑️</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="renameUser('${u.uid}')" title="تعديل الاسم">✏️</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="swapFirstLastName('${u.uid}')" title="تبديل الاسم الأول واللقب">🔄</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="toggleDisplayYear('${u.uid}')" title="${yearToggleTitleT}">📅</button><button class="${blockBtnClass}" style="padding:4px 10px; font-size:12px;" onclick="toggleBlockUser('${u.uid}', ${isBlocked})">${blockBtnText}</button>` : '';
+                    const lbDisplayNameT = isAdmin ? getDisplayNameForAdmin(u) : getDisplayName(u);
+                    const adminBtnsT = isAdmin ? `<button class="delete-btn" onclick="deleteUser('${u.uid}')" title="حذف">🗑️</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="swapFirstLastName('${u.uid}')" title="تبديل الاسم الأول واللقب">🔄</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="sendPrivateMessageToUser('${u.uid}')" title="رسالة خاصة">✉️</button><button class="${blockBtnClass}" style="padding:4px 10px; font-size:12px;" onclick="toggleBlockUser('${u.uid}', ${isBlocked})">${blockBtnText}</button>` : '';
                     list.innerHTML += `
                     <li class="lb-item-wrapper ${rank <= 3 ? 'lb-item-top3' : ''}">
                         <div class="lb-item">
@@ -1889,13 +1889,8 @@
                 if (skipRender) { if (firstSnapshot) { lbDone.students = true; checkLbComplete(); firstSnapshot = false; } return; }
                 let users = [];
                 snap.forEach(doc => users.push({ ...doc.data(), uid: doc.data().uid || doc.id }));
-                users.sort((a,b) => {
-                    const sumA = (a.totalVerseViews || 0) + (a.postsCount || 0) + (a.totalLikes || 0);
-                    const sumB = (b.totalVerseViews || 0) + (b.postsCount || 0) + (b.totalLikes || 0);
-                    return sumB - sumA;
-                });
-                leaderboardAllUsers = users;
-                const needPin = users.filter(u => !u.personalPin);
+                leaderboardAllUsers = applyLeaderboardSort(users);
+                const needPin = leaderboardAllUsers.filter(u => !u.personalPin);
                 if (needPin.length > 0) {
                     (async () => {
                         const allPins = users.map(u => u.personalPin).filter(Boolean);
@@ -2202,7 +2197,7 @@
                 const fileId = data.fileId || '1';
                 if (data.uid === studentUid && data.likes && data.likes.length) {
                     data.likes.forEach(l => {
-                        const name = typeof l === 'object' ? (l.name || 'مستخدم') : 'مستخدم';
+                        const name = stripYearFromName(typeof l === 'object' ? (l.name || 'مستخدم') : 'مستخدم');
                         const ts = typeof l === 'object' && l.timestamp ? l.timestamp : 0;
                         all.push({ type: 'post', postId, audioUrl: data.audioUrl, fileId, likerName: name, timestamp: ts, playId: postId });
                     });
@@ -2211,7 +2206,7 @@
                     data.replies.forEach((r, idx) => {
                         if (r.uid === studentUid && r.likes && r.likes.length) {
                             r.likes.forEach(l => {
-                                const name = typeof l === 'object' ? (l.name || 'مستخدم') : 'مستخدم';
+                                const name = stripYearFromName(typeof l === 'object' ? (l.name || 'مستخدم') : 'مستخدم');
                                 const ts = typeof l === 'object' && l.timestamp ? l.timestamp : 0;
                                 all.push({ type: 'reply', postId, replyIdx: idx, replyTimestamp: r.timestamp, audioUrl: r.audioUrl, fileId: data.fileId || '1', likerName: name, timestamp: ts, playId: postId + '-reply-' + idx });
                             });
@@ -2638,10 +2633,12 @@
         function listenForNotifications() {
             const uid = localStorage.getItem('it9an_uid');
             const role = localStorage.getItem('it9an_role');
-            if(!uid || uid === 'admin_super') return;
+            if(!uid) return;
 
             let q;
-            if (role === 'teacher') {
+            if (uid === 'admin_super') {
+                q = window.query(window.collection(window.db, "notifications"), window.where("to", "==", "admin_super"));
+            } else if (role === 'teacher') {
                 q = window.query(window.collection(window.db, "notifications"), window.where("to", "==", "teachers"));
             } else {
                 q = window.query(window.collection(window.db, "notifications"), window.where("to", "==", uid));
@@ -2652,7 +2649,7 @@
                 let unreadCount = 0;
                 let notifs = [];
                 snap.forEach(doc => notifs.push({id: doc.id, ...doc.data()}));
-                if (role === 'teacher') {
+                if (role === 'teacher' && uid !== 'admin_super') {
                     notifs = notifs.filter(n => !(n.clearedBy || []).includes(uid));
                 }
                 notifs.sort((a,b) => (a.timestamp?.seconds || 0) - (b.timestamp?.seconds || 0));
@@ -2675,9 +2672,9 @@
 
                 notifs.forEach(n => {
                     let text = "";
-                    if(n.type === 'new_recording') text = `🎤 تسجيل جديد من ${n.senderName}`;
-                    if(n.type === 'reply') text = `✍️ رد جديد من ${n.senderName}`;
-                    if(n.type === 'admin_message') text = `📩 رسالة من المسؤول`;
+                    if(n.type === 'new_recording') text = `🎤 تسجيل جديد من ${stripYearFromName(n.senderName || '')}`;
+                    if(n.type === 'reply') text = `✍️ رد جديد من ${stripYearFromName(n.senderName || '')}`;
+                    if(n.type === 'admin_message') text = n.subtype === 'private_reply' ? `💬 رد من ${stripYearFromName(n.senderName || '')}` : `📩 رسالة من المسؤول`;
                     let notifDateStr = formatDateTime(n.timestamp);
                     const fileId = n.fileId || '';
                     const postId = n.postId || '';
@@ -2700,7 +2697,7 @@
             document.getElementById('menu-view').style.display = 'none';
             document.getElementById('player-view').style.display = 'none';
             document.getElementById('notifications-view').style.display = 'block';
-            document.getElementById('pageTitle').innerText = "الإشعارات";
+            const ptN = document.getElementById('pageTitle'); if (ptN) { ptN.classList.remove('header-name-pin'); ptN.innerText = "الإشعارات"; }
             document.getElementById('appFooter').style.display = 'none';
             const menuBtn = document.getElementById('menuBtn'); if(menuBtn) menuBtn.style.display = 'flex';
             window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -2770,6 +2767,23 @@
         let adminMessageViewUnsub = null;
         function renderAdminMessageContent(d, isAdmin, myUid) {
             document.getElementById('adminMessageContent').innerText = d.text || '';
+            const isPrivate = d.to && d.to !== 'teachers';
+            const canReply = isPrivate && (d.to === myUid || d.senderUid === myUid || isAdmin) && myUid !== 'guest';
+            document.getElementById('adminMsgReplyForm').style.display = canReply ? 'block' : 'none';
+            const replies = d.replies || [];
+            const repliesDiv = document.getElementById('adminMsgReplies');
+            if (replies.length > 0) {
+                repliesDiv.innerHTML = '<div style="font-weight:bold; color:var(--primary); margin-bottom:8px;">الردود:</div>' + replies.map(r => {
+                    const name = stripYearFromName(r.name || 'مستخدم');
+                    const dateStr = r.timestamp ? new Date(r.timestamp).toLocaleString('ar-EG') : '';
+                    const fromAdmin = r.uid === 'admin_super';
+                    return `<div style="background:${fromAdmin ? '#e8f5e9' : '#f5f5f5'}; padding:10px; border-radius:8px; margin-bottom:6px; border-right:4px solid ${fromAdmin ? 'var(--primary)' : '#999'};"><div style="font-weight:bold; font-size:14px;">${name}${fromAdmin ? ' (المسؤول)' : ''}</div><div style="white-space:pre-wrap; margin:6px 0;">${(r.text || '').replace(/</g,'&lt;')}</div><div style="font-size:12px; color:#888;">${dateStr}</div></div>`;
+                }).join('');
+                repliesDiv.style.display = 'block';
+            } else {
+                repliesDiv.innerHTML = '';
+                repliesDiv.style.display = isPrivate ? 'block' : 'none';
+            }
             const likes = d.likes || [];
             const likesCount = likes.length;
             const isLiked = likes.some(l => (typeof l === 'object' ? l.uid === myUid : l === myUid));
@@ -2779,26 +2793,122 @@
             document.getElementById('adminMsgLikeBtn').innerText = isLiked ? '👍 تم الإعجاب' : '👍 أعجبني';
             document.getElementById('adminMsgLikeBtn').style.display = (isAdmin || myUid === 'guest' ? 'none' : 'block');
         }
+        window.sendPrivateMessageToUser = async function(userUid) {
+            if (localStorage.getItem('it9an_uid') !== 'admin_super') return;
+            const userName = getDisplayName(leaderboardAllUsers.find(u => u.uid === userUid) || leaderboardAllTeachers.find(u => u.uid === userUid) || {});
+            const text = prompt('رسالة خاصة إلى ' + (userName || userUid) + ':', '');
+            if (!text || !text.trim()) return;
+            try {
+                const msgRef = await window.addDoc(window.collection(window.db, "adminMessages"), {
+                    text: text.trim(), timestamp: window.serverTimestamp(), senderUid: 'admin_super', likes: [], to: userUid, replies: []
+                });
+                await window.addDoc(window.collection(window.db, "notifications"), {
+                    to: userUid, type: 'admin_message', messageId: msgRef.id, timestamp: window.serverTimestamp()
+                });
+                loadAdminMessagesList();
+                alert('تم إرسال الرسالة');
+            } catch (e) { alert('خطأ: ' + e.message); }
+        }
+        window.sendAdminMessageReply = async function() {
+            if (!currentAdminMessageId) return;
+            const uid = localStorage.getItem('it9an_uid');
+            const myName = (uid === 'admin_super') ? 'المسؤول' : (localStorage.getItem('it9an_name') || '');
+            if (!uid || uid === 'guest') return;
+            const textEl = document.getElementById('adminMsgReplyText');
+            const txt = (textEl && textEl.value || '').trim();
+            if (!txt) { alert('اكتب الرد أولاً'); return; }
+            try {
+                const msgRef = window.doc(window.db, "adminMessages", currentAdminMessageId);
+                const snap = await window.getDoc(msgRef);
+                if (!snap.exists()) return;
+                const d = snap.data();
+                const replies = d.replies || [];
+                replies.push({ uid, name: myName, text: txt, timestamp: Date.now() });
+                await window.updateDoc(msgRef, { replies });
+                if (textEl) textEl.value = '';
+                if (d.to && d.to !== 'teachers') {
+                    const notifyTo = (uid === 'admin_super') ? (d.to === 'admin_super' ? d.senderUid : d.to) : 'admin_super';
+                    await window.addDoc(window.collection(window.db, "notifications"), {
+                        to: notifyTo, type: 'admin_message', messageId: currentAdminMessageId, timestamp: window.serverTimestamp(),
+                        senderName: stripYearFromName(myName), subtype: 'private_reply'
+                    });
+                }
+            } catch (e) { alert('خطأ: ' + e.message); }
+        }
         window.showAdminMessageView = async function(messageId) {
             currentAdminMessageId = messageId;
             if (adminMessageViewUnsub) adminMessageViewUnsub();
             document.getElementById('menu-view').style.display = 'none';
             document.getElementById('player-view').style.display = 'none';
             document.getElementById('notifications-view').style.display = 'none';
+            const cn = document.getElementById('contact-admin-new-view');
+            if (cn) cn.style.display = 'none';
             document.getElementById('admin-message-view').style.display = 'block';
             document.getElementById('appFooter').style.display = 'none';
             const menuBtn = document.getElementById('menuBtn'); if(menuBtn) menuBtn.style.display = 'flex';
-            document.getElementById('pageTitle').innerText = "رسالة من المسؤول";
+            const ptA = document.getElementById('pageTitle'); if (ptA) { ptA.classList.remove('header-name-pin'); ptA.innerText = "رسالة من المسؤول"; }
             window.scrollTo({ top: 0, behavior: 'smooth' });
             const isAdmin = localStorage.getItem('it9an_uid') === 'admin_super';
             const myUid = localStorage.getItem('it9an_uid');
             const msgRef = window.doc(window.db, "adminMessages", messageId);
             adminMessageViewUnsub = window.onSnapshot(msgRef, (snap) => {
                 if (document.hidden) return;
-                if (snap.exists()) renderAdminMessageContent(snap.data(), isAdmin, myUid);
+                if (snap.exists()) {
+                    const d = snap.data();
+                    const ptA = document.getElementById('pageTitle');
+                    if (ptA) ptA.innerText = (d.to === 'admin_super' && d.senderUid === myUid) ? 'محادثة مع المسؤول' : 'رسالة من المسؤول';
+                    renderAdminMessageContent(d, isAdmin, myUid);
+                }
             });
         }
         window.closeAdminMessageView = function() { if (adminMessageViewUnsub) adminMessageViewUnsub(); adminMessageViewUnsub = null; currentAdminMessageId = null; showView('menu-view'); renderMenu(); }
+        window.showContactAdminView = async function() {
+            const myUid = localStorage.getItem('it9an_uid');
+            if (!myUid || myUid === 'admin_super' || myUid === 'guest') return;
+            document.getElementById('menu-view').style.display = 'none';
+            document.getElementById('player-view').style.display = 'none';
+            document.getElementById('notifications-view').style.display = 'none';
+            const cn = document.getElementById('contact-admin-new-view');
+            if (cn) cn.style.display = 'none';
+            document.getElementById('admin-message-view').style.display = 'none';
+            document.getElementById('appFooter').style.display = 'none';
+            const menuBtn = document.getElementById('menuBtn'); if (menuBtn) menuBtn.style.display = 'flex';
+            const pt = document.getElementById('pageTitle'); if (pt) { pt.classList.remove('header-name-pin'); pt.innerText = 'تواصل مع المسؤول'; }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            try {
+                const q = window.query(window.collection(window.db, "adminMessages"), window.where("to", "==", "admin_super"), window.where("senderUid", "==", myUid), window.orderBy("timestamp", "desc"), window.limit(1));
+                const snap = await window.getDocs(q);
+                if (!snap.empty) {
+                    const first = snap.docs[0];
+                    showAdminMessageView(first.id);
+                    return;
+                }
+            } catch (e) { console.warn('contact admin query:', e); }
+            if (cn) cn.style.display = 'block';
+            const ta = document.getElementById('contactAdminFirstMsg');
+            if (ta) ta.value = '';
+        }
+        window.sendContactAdminFirstMessage = async function() {
+            const myUid = localStorage.getItem('it9an_uid');
+            const myName = localStorage.getItem('it9an_name') || '';
+            if (!myUid || myUid === 'admin_super' || myUid === 'guest') return;
+            const ta = document.getElementById('contactAdminFirstMsg');
+            const text = (ta && ta.value || '').trim();
+            if (!text) { alert('اكتب رسالتك أولاً'); return; }
+            try {
+                const msgRef = await window.addDoc(window.collection(window.db, "adminMessages"), {
+                    text, timestamp: window.serverTimestamp(), senderUid: myUid, likes: [], to: 'admin_super', replies: []
+                });
+                await window.addDoc(window.collection(window.db, "notifications"), {
+                    to: 'admin_super', type: 'admin_message', messageId: msgRef.id, timestamp: window.serverTimestamp(),
+                    senderName: stripYearFromName(myName), subtype: 'user_contact'
+                });
+                const cn = document.getElementById('contact-admin-new-view');
+                if (cn) cn.style.display = 'none';
+                showAdminMessageView(msgRef.id);
+            } catch (e) { alert('خطأ: ' + e.message); }
+        }
+        window.closeContactAdminNewView = function() { showView('menu-view'); renderMenu(); }
         window.likeAdminMessage = async function() {
             if (!currentAdminMessageId) return;
             const uid = localStorage.getItem('it9an_uid');
@@ -2869,13 +2979,16 @@
                     const d = doc.data();
                     const text = (d.text || '').slice(0, 50) + ((d.text || '').length > 50 ? '...' : '');
                     const likesCount = (d.likes || []).length;
+                    const repliesCount = (d.replies || []).length;
                     const dateStr = d.timestamp && d.timestamp.seconds ? new Date(d.timestamp.seconds * 1000).toLocaleDateString('ar-EG') : '';
                     const msgId = doc.id;
+                    const isPrivate = d.to && d.to !== 'teachers';
+                    const privLabel = isPrivate ? ' <span style="color:var(--primary); font-size:12px;">(خاصة)</span>' : '';
                     container.innerHTML += `
                     <div class="notif-card" style="margin-bottom:8px; padding:12px;">
                         <div style="flex:1; min-width:0;" onclick="showAdminMessageView('${msgId}')">
-                            <div class="notif-text" style="font-size:14px;">${(text || '').replace(/</g,'&lt;')}</div>
-                            <div class="notif-time">${dateStr}</div>
+                            <div class="notif-text" style="font-size:14px;">${(text || '').replace(/</g,'&lt;')}${privLabel}</div>
+                            <div class="notif-time">${dateStr}${repliesCount > 0 ? ' • ' + repliesCount + ' رد' : ''}</div>
                         </div>
                         <span class="lb-likes lb-likes-click" onclick="event.stopPropagation(); showAdminMessageLikersById('${msgId}')" style="cursor:pointer; padding:4px 8px;">👍 ${likesCount}</span>
                     </div>`;
@@ -2885,7 +2998,7 @@
         window.showAdminMessageLikersById = async function(msgId) {
             const snap = await window.getDoc(window.doc(window.db, "adminMessages", msgId));
             const likes = snap.exists() ? (snap.data().likes || []) : [];
-            const names = likes.map(l => (typeof l === 'object' ? l.name : l) || 'مستخدم').join('\n');
+            const names = likes.map(l => stripYearFromName((typeof l === 'object' ? l.name : l) || 'مستخدم')).join('\n');
             alert(names || 'لا أحد');
         }
 
@@ -2895,16 +3008,18 @@
             const myName = localStorage.getItem('it9an_name') || '';
             const nameClean = myName.replace(/\s*\(\d{4}\)\s*$/, '').trim();
             const uid = localStorage.getItem('it9an_uid');
-            let pinHtml = '';
             if (uid && uid !== 'admin_super') {
                 const u = leaderboardAllUsers.find(x => x.uid === uid) || leaderboardAllTeachers.find(x => x.uid === uid);
                 const pin = (u && u.personalPin) ? u.personalPin : (localStorage.getItem('it9an_pin') || '');
                 const pinStr = pin ? (pin+'').padStart(4,'0') : '';
-                const totalLen = pinStr.length + (nameClean || '').length;
-                const fs = Math.max(17, Math.min(28, 38 - Math.floor(totalLen / 1.2)));
-                if (pin) pinHtml = `<span class="header-pin" title="الرمز الشخصي" style="font-size:${fs}px">${pinStr}</span> `;
-                pt.innerHTML = pinHtml + `<span class="header-user-name-main" style="font-size:${fs}px">${nameClean || ''}</span>`;
+                pt.classList.add('header-name-pin');
+                if (pin) {
+                    pt.innerHTML = `<span class="header-user-name-main" style="font-size:20px">${nameClean || ''}</span><div class="header-pin-row"><span class="header-pin">${pinStr}</span> <span>— استخدم هذا الرمز للدخول في المستقبل</span></div>`;
+                } else {
+                    pt.innerHTML = `<span class="header-user-name-main" style="font-size:20px">${nameClean || ''}</span>`;
+                }
             } else {
+                pt.classList.remove('header-name-pin');
                 pt.innerHTML = `<span class="header-user-name-main" style="font-size:26px">${nameClean || ''}</span>`;
             }
         };
@@ -2914,17 +3029,20 @@
             const myName = localStorage.getItem('it9an_name') || '';
             const nameClean = myName.replace(/\s*\(\d{4}\)\s*$/, '').trim();
             const uid = localStorage.getItem('it9an_uid');
-            let pinHtml = '';
+            const pt = document.getElementById('pageTitle');
             if (uid && uid !== 'admin_super') {
                 const u = leaderboardAllUsers.find(x => x.uid === uid) || leaderboardAllTeachers.find(x => x.uid === uid);
                 const pin = (u && u.personalPin) ? u.personalPin : (localStorage.getItem('it9an_pin') || '');
                 const pinStr = pin ? (pin+'').padStart(4,'0') : '';
-                const totalLen = pinStr.length + (nameClean || '').length;
-                const fs = Math.max(17, Math.min(28, 38 - Math.floor(totalLen / 1.2)));
-                if (pin) pinHtml = `<span class="header-pin" title="الرمز الشخصي" style="font-size:${fs}px">${pinStr}</span> `;
-                document.getElementById('pageTitle').innerHTML = pinHtml + `<span class="header-user-name-main" style="font-size:${fs}px">${nameClean || ''}</span>`;
+                if (pt) pt.classList.add('header-name-pin');
+                if (pin && pt) {
+                    pt.innerHTML = `<span class="header-user-name-main" style="font-size:20px">${nameClean || ''}</span><div class="header-pin-row"><span class="header-pin">${pinStr}</span> <span>— استخدم هذا الرمز للدخول في المستقبل</span></div>`;
+                } else if (pt) {
+                    pt.innerHTML = `<span class="header-user-name-main" style="font-size:20px">${nameClean || ''}</span>`;
+                }
             } else {
-                document.getElementById('pageTitle').innerHTML = `<span class="header-user-name-main" style="font-size:26px">${nameClean || ''}</span>`;
+                if (pt) pt.classList.remove('header-name-pin');
+                if (pt) pt.innerHTML = `<span class="header-user-name-main" style="font-size:26px">${nameClean || ''}</span>`;
             }
             document.getElementById('appFooter').style.display = 'none';
             
@@ -2934,6 +3052,8 @@
                 document.getElementById('addToHomeBtn').style.display = 'none';
                 document.getElementById('pushEnableBtn').style.display = 'none';
                 document.getElementById('microEnableBtn').style.display = 'none';
+                const contactBtn = document.getElementById('contactAdminBtn');
+                if (contactBtn) contactBtn.style.display = 'none';
                 loadAdminMessagesList();
                 loadLeaderboard(lbPendingRestore ? doLbRestore : undefined);
                 loadAppStats();
@@ -2942,6 +3062,8 @@
                 document.getElementById('leaderboard-section').style.display = 'block';
                 const role = localStorage.getItem('it9an_role');
                 const showPermBtns = (role === 'teacher' || role === 'student');
+                const contactBtn = document.getElementById('contactAdminBtn');
+                if (contactBtn) contactBtn.style.display = (uid && uid !== 'guest') ? 'block' : 'none';
                 const addToHomeBtn = document.getElementById('addToHomeBtn');
                 const pushBtn = document.getElementById('pushEnableBtn');
                 const microBtn = document.getElementById('microEnableBtn');
@@ -2987,7 +3109,7 @@
                 grid.appendChild(div);
             });
             showView('lessons-view');
-            document.getElementById('pageTitle').innerText = 'جميع الدروس';
+            const ptL = document.getElementById('pageTitle'); if (ptL) { ptL.classList.remove('header-name-pin'); ptL.innerText = 'جميع الدروس'; }
             document.getElementById('appFooter').style.display = 'none';
         };
 
@@ -3061,10 +3183,7 @@
             else document.getElementById('adminPlayerPanel').style.display = 'none';
 
             const lessonId = KURS_DATEN[currentLessonIdx].id;
-            document.getElementById('pageTitle').innerHTML = `
-                <span class="title-text-maktaa">المقطع ${localVersNum}</span>
-                <img src="assets/T${lessonId}.png" alt="Lesson Title">
-            `;
+            const ptP = document.getElementById('pageTitle'); if (ptP) { ptP.classList.remove('header-name-pin'); ptP.innerHTML = `<span class="title-text-maktaa">المقطع ${localVersNum}</span><img src="assets/T${lessonId}.png" alt="Lesson Title">`; }
 
             document.getElementById('currentImg').src = `assets/${globalId}.png`;
             audioEl.src = `assets/${globalId}.mp3`;
@@ -3107,7 +3226,7 @@
             const data = window.currentViewersData || { viewers: {}, totalRepetitions: 0 };
             const viewers = data.viewers || {};
             const total = data.totalRepetitions || 0;
-            const entries = Object.entries(viewers).map(([uid, v]) => ({ uid, name: (v && v.name) || 'مستخدم', count: (v && v.count) || 0 })).filter(e => e.count > 0);
+            const entries = Object.entries(viewers).map(([uid, v]) => ({ uid, name: stripYearFromName((v && v.name) || 'مستخدم'), count: (v && v.count) || 0 })).filter(e => e.count > 0);
             if(entries.length === 0 && total === 0) {
                 alert("لا يوجد مشاهدات بعد");
                 return;
@@ -3218,7 +3337,7 @@
                 if (d.likes && Array.isArray(d.likes)) { 
                     mainLikesCount = d.likes.length; 
                     mainIsLikedByMe = d.likes.some(l => (typeof l === 'object' ? l.uid === myUid : l === myUid)); 
-                    mainLikerNames = d.likes.map(l => typeof l === 'object' ? (l.name || 'مستخدم') : 'مستخدم');
+                    mainLikerNames = d.likes.map(l => stripYearFromName(typeof l === 'object' ? (l.name || 'مستخدم') : 'مستخدم'));
                 }
                 const isMyMainPost = (d.uid === myUid);
                 const isGuest = (myUid === 'guest');
@@ -3255,7 +3374,7 @@
                         if (r.likes && Array.isArray(r.likes)) { 
                             rLikesCount = r.likes.length; 
                             rIsLikedByMe = r.likes.some(l => (typeof l === 'object' ? l.uid === myUid : l === myUid)); 
-                            rLikerNames = r.likes.map(l => typeof l === 'object' ? (l.name || 'مستخدم') : 'مستخدم');
+                            rLikerNames = r.likes.map(l => stripYearFromName(typeof l === 'object' ? (l.name || 'مستخدم') : 'مستخدم'));
                         }
                         const isMyReply = (r.uid === myUid);
                         let rLikeClass = rIsLikedByMe ? 'liked' : '';
@@ -3280,7 +3399,7 @@
                         <div class="${rBoxClass}">
                             <div class="reply-row1">
                                 ${rDelWrap}
-                                <div class="reply-name-badge">${r.name} ${rBadge}</div>
+                                <div class="reply-name-badge">${stripYearFromName(r.name)} ${rBadge}</div>
                                 <div class="reply-like-wrap">
                                     <div class="like-btn ${rLikeClass}">
                                         <div class="like-action ${rLockedClass}" onclick="${rLikeAction}">👍</div>
@@ -3318,7 +3437,7 @@
                 <div class="${msgClass}" id="post-${d.id}">
                     <div class="feed-row1">
                         ${delBtn}
-                        <div class="feed-name-badge">${d.name} <span class="${badgeClass}">${badgeText}</span></div>
+                        <div class="feed-name-badge">${stripYearFromName(d.name)} <span class="${badgeClass}">${badgeText}</span></div>
                         ${saveBtnHtml}
                         <div class="feed-like-wrap">
                             <div class="like-btn ${mainLikeClass}">
@@ -3381,7 +3500,7 @@
             const myUid = localStorage.getItem('it9an_uid');
             if (!myUid) { alert("يجب تسجيل الدخول"); return; }
             showView('saved-list-view');
-            document.getElementById('pageTitle').innerText = "📌 للمشاهدة لاحقاً";
+            const ptS = document.getElementById('pageTitle'); if (ptS) { ptS.classList.remove('header-name-pin'); ptS.innerText = "📌 للمشاهدة لاحقاً"; }
             document.getElementById('appFooter').style.display = 'none';
             const container = document.getElementById('savedList');
             container.innerHTML = "<div style='text-align:center; color:#999; padding:20px;'>جاري التحميل...</div>";
@@ -3432,7 +3551,7 @@
                     html += `<div class="${msgClass}" id="saved-post-${d.id}">
                         <div class="feed-row1">
                             <div class="feed-delete-wrap"><button class="delete-btn" onclick="removeFromSaved('${it.savedDocId}', '${d.id}')" title="إزالة من القائمة">🗑️</button></div>
-                            <div class="feed-name-badge">${d.name} <span class="${badgeClass}">${badgeText}</span></div>
+                            <div class="feed-name-badge">${stripYearFromName(d.name)} <span class="${badgeClass}">${badgeText}</span></div>
                         </div>
                         <div class="feed-row2">
                             <span class="feed-datetime">${postDateStr}</span>
@@ -3737,7 +3856,7 @@
             }
             lbReturnSource = null; lbReturnToUid = null; lbReturnOffset = 0; lbReturnScrollToId = null; showView('menu-view'); renderMenu(); updateLbBackButton();
         } 
-        function showView(id) { document.getElementById('menu-view').style.display = 'none'; document.getElementById('player-view').style.display = 'none'; document.getElementById('notifications-view').style.display = 'none'; document.getElementById('saved-list-view').style.display = 'none'; document.getElementById('lessons-view').style.display = 'none'; document.getElementById('admin-message-view').style.display = 'none'; document.getElementById(id).style.display = (id === 'menu-view') ? 'grid' : 'block'; const menuBtn = document.getElementById('menuBtn'); if(menuBtn) menuBtn.style.display = (id === 'menu-view') ? 'none' : 'flex'; const skipScroll = (id === 'menu-view' && lbPendingRestore) || (id === 'player-view' && activePostFilter); if (!skipScroll) window.scrollTo({ top: 0, behavior: 'smooth' }); }
+        function showView(id) { document.getElementById('menu-view').style.display = 'none'; document.getElementById('player-view').style.display = 'none'; document.getElementById('notifications-view').style.display = 'none'; document.getElementById('saved-list-view').style.display = 'none'; document.getElementById('lessons-view').style.display = 'none'; document.getElementById('admin-message-view').style.display = 'none'; const cn = document.getElementById('contact-admin-new-view'); if(cn) cn.style.display = 'none'; document.getElementById(id).style.display = (id === 'menu-view') ? 'grid' : 'block'; const menuBtn = document.getElementById('menuBtn'); if(menuBtn) menuBtn.style.display = (id === 'menu-view') ? 'none' : 'flex'; const skipScroll = (id === 'menu-view' && lbPendingRestore) || (id === 'player-view' && activePostFilter); if (!skipScroll) window.scrollTo({ top: 0, behavior: 'smooth' }); }
         
         window.likePost = async (id, ownerUid) => { 
             const uid = localStorage.getItem('it9an_uid'); const myName = localStorage.getItem('it9an_name');
