@@ -1000,6 +1000,12 @@
             feedAudioEl.currentTime = val;
         }
 
+        function restoreFeedPlayButtonState() {
+            if (!currentFeedAudioId) return;
+            const btn = document.getElementById('btn-' + currentFeedAudioId);
+            if (btn && !feedAudioEl.paused) btn.innerText = '⏸';
+        }
+
         const audioEl = document.getElementById('mainAudio');
         const pBar = document.getElementById('progressBar');
         const cTime = document.getElementById('currentTime');
@@ -2298,6 +2304,7 @@
                 html += `<button class="lb-load-more-likes" onclick="loadMoreLbRecordings('${studentUid}', ${newOffset})">عرض 3 تسجيلات أخرى ▼</button>`;
             }
             container.innerHTML = html || '<div style="padding:15px; text-align:center; color:#999;">لا توجد تسجيلات بعد</div>';
+            restoreFeedPlayButtonState();
         }
 
         window.loadMoreLbRecordings = function(studentUid, offset) {
@@ -2394,6 +2401,7 @@
                 html += `<button class="lb-load-more-likes" onclick="loadMoreLbLikes('${studentUid}', ${newOffset})">عرض 3 إعجابات أخرى ▼</button>`;
             }
             container.innerHTML = html || '<div style="padding:15px; text-align:center; color:#999;">لا توجد إعجابات بعد</div>';
+            restoreFeedPlayButtonState();
         }
 
         window.loadMoreLbLikes = function(studentUid, offset) {
