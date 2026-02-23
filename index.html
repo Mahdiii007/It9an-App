@@ -1451,6 +1451,8 @@
             try {
                 await window.updateDoc(window.doc(window.db, "users", uid), { firstName: newFirst, lastName: newLast, baseName: baseNameOnly, name: displayName });
                 await updateUserNameEverywhere(uid, displayName);
+                lastStudentsRefreshTime = 0;
+                lastTeachersRefreshTime = 0;
                 loadLeaderboard();
                 if(localStorage.getItem('it9an_uid')==='admin_super') loadTeachersLeaderboard();
                 await refreshOpenSubLists();
@@ -1893,7 +1895,7 @@
                 const needPin = leaderboardAllUsers.filter(u => !u.personalPin);
                 if (needPin.length > 0) {
                     (async () => {
-                        const allPins = users.map(u => u.personalPin).filter(Boolean);
+                        const allPins = leaderboardAllUsers.map(u => u.personalPin).filter(Boolean);
                         for (const u of needPin) {
                             try {
                                 const fresh = await window.getDoc(window.doc(window.db, "users", u.uid));
@@ -1910,7 +1912,7 @@
                     else if (lbPendingRestore.source === 'recordings') { lbRecordingsOpenUid = lbPendingRestore.uid; lbRecordingsOpenOffset = lbPendingRestore.offset || 0; lbRecordingsOpenRole = lbPendingRestore.role || 'student'; }
                     else if (lbPendingRestore.source === 'views') { lbViewsOpenUid = lbPendingRestore.uid; lbViewsOpenOffset = lbPendingRestore.offset || 0; }
                 }
-                renderLeaderboardItems(users, leaderboardVisibleCount, myUid, !!lbPendingRestore || !firstSnapshot);
+                renderLeaderboardItems(leaderboardAllUsers, leaderboardVisibleCount, myUid, !!lbPendingRestore || !firstSnapshot);
                 if (typeof window.updateHeaderNamePin === 'function') window.updateHeaderNamePin();
                 if (firstSnapshot) { lbDone.students = true; checkLbComplete(); }
                 firstSnapshot = false;
@@ -2674,7 +2676,7 @@
                     let text = "";
                     if(n.type === 'new_recording') text = `🎤 تسجيل جديد من ${stripYearFromName(n.senderName || '')}`;
                     if(n.type === 'reply') text = `✍️ رد جديد من ${stripYearFromName(n.senderName || '')}`;
-                    if(n.type === 'admin_message') text = n.subtype === 'private_reply' ? `💬 رد من ${stripYearFromName(n.senderName || '')}` : `📩 رسالة من المسؤول`;
+                    if(n.type === 'admin_message') text = n.subtype === 'private_reply' ? `💬 رد من ${stripYearFromName(n.senderName || '')}` : (n.subtype === 'user_contact' ? `📩 رسالة من ${stripYearFromName(n.senderName || '')}` : `📩 رسالة من المسؤول`);
                     let notifDateStr = formatDateTime(n.timestamp);
                     const fileId = n.fileId || '';
                     const postId = n.postId || '';
@@ -2856,7 +2858,13 @@
                 if (snap.exists()) {
                     const d = snap.data();
                     const ptA = document.getElementById('pageTitle');
-                    if (ptA) ptA.innerText = (d.to === 'admin_super' && d.senderUid === myUid) ? 'محادثة مع المسؤول' : 'رسالة من المسؤول';
+                    if (ptA) {
+                        if (d.to === 'admin_super' && d.senderUid === myUid) ptA.innerText = 'محادثة مع المسؤول';
+                        else if (d.to === 'admin_super') {
+                            const sn = d.senderName || (() => { const u = leaderboardAllUsers.find(x => x.uid === d.senderUid) || leaderboardAllTeachers.find(x => x.uid === d.senderUid); return u ? getDisplayName(u) : ''; })();
+                            ptA.innerText = sn ? ('رسالة من ' + stripYearFromName(sn)) : 'رسالة من المسؤول';
+                        } else ptA.innerText = 'رسالة من المسؤول';
+                    }
                     renderAdminMessageContent(d, isAdmin, myUid);
                 }
             });
@@ -2897,7 +2905,7 @@
             if (!text) { alert('اكتب رسالتك أولاً'); return; }
             try {
                 const msgRef = await window.addDoc(window.collection(window.db, "adminMessages"), {
-                    text, timestamp: window.serverTimestamp(), senderUid: myUid, likes: [], to: 'admin_super', replies: []
+                    text, timestamp: window.serverTimestamp(), senderUid: myUid, senderName: stripYearFromName(myName), likes: [], to: 'admin_super', replies: []
                 });
                 await window.addDoc(window.collection(window.db, "notifications"), {
                     to: 'admin_super', type: 'admin_message', messageId: msgRef.id, timestamp: window.serverTimestamp(),
@@ -2984,10 +2992,12 @@
                     const msgId = doc.id;
                     const isPrivate = d.to && d.to !== 'teachers';
                     const privLabel = isPrivate ? ' <span style="color:var(--primary); font-size:12px;">(خاصة)</span>' : '';
+                    const senderNameForAdmin = (d.to === 'admin_super') ? (d.senderName || (() => { const u = leaderboardAllUsers.find(x => x.uid === d.senderUid) || leaderboardAllTeachers.find(x => x.uid === d.senderUid); return u ? getDisplayName(u) : ''; })()) : '';
+                    const senderLabel = senderNameForAdmin ? ` <span style="color:#666; font-size:12px;">(من ${stripYearFromName(senderNameForAdmin).replace(/</g,'&lt;')})</span>` : '';
                     container.innerHTML += `
                     <div class="notif-card" style="margin-bottom:8px; padding:12px;">
                         <div style="flex:1; min-width:0;" onclick="showAdminMessageView('${msgId}')">
-                            <div class="notif-text" style="font-size:14px;">${(text || '').replace(/</g,'&lt;')}${privLabel}</div>
+                            <div class="notif-text" style="font-size:14px;">${(text || '').replace(/</g,'&lt;')}${privLabel}${senderLabel}</div>
                             <div class="notif-time">${dateStr}${repliesCount > 0 ? ' • ' + repliesCount + ' رد' : ''}</div>
                         </div>
                         <span class="lb-likes lb-likes-click" onclick="event.stopPropagation(); showAdminMessageLikersById('${msgId}')" style="cursor:pointer; padding:4px 8px;">👍 ${likesCount}</span>
@@ -4319,7 +4329,7 @@
           let title = 'تطبيق إتقان'; let body = 'إشعار جديد';
           if (d.type === 'reply') body = 'رد جديد من ' + (d.senderName || '');
           if (d.type === 'new_recording') body = 'تسجيل جديد من ' + (d.senderName || '');
-          if (d.type === 'admin_message') body = 'رسالة من المسؤول';
+          if (d.type === 'admin_message') body = (d.subtype === 'user_contact' && d.senderName) ? ('رسالة من ' + d.senderName) : 'رسالة من المسؤول';
           await admin.messaging().sendEachForMulticast({ tokens, notification: { title, body }, webpush: { notification: { vibrate: [200,100,200], requireInteraction: false } }, android: { priority: 'high', notification: { sound: 'default', defaultVibrateTimings: true } }, apns: { payload: { aps: { sound: 'default', contentAvailable: true } } } });
         });
         */
