@@ -114,7 +114,7 @@
             min-height: 50px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); border: 2px solid var(--gold);
             cursor: default; overflow: hidden; flex: 1; min-width: 0; max-width: 78%;
         }
-        #pageTitle.header-name-pin { flex-direction: column; padding: 8px 12px; gap: 4px; overflow: visible; white-space: normal; }
+        #pageTitle.header-name-pin { flex-direction: column; padding: 4px 12px 5px; gap: 1px; min-height: auto; overflow: visible; white-space: normal; }
         #pageTitle .header-pin-row { display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; font-size: 12px; color: #555; }
         #pageTitle img { height: 35px; width: auto; display: block; object-fit: contain; flex-shrink: 0; } 
         .header-user-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; font-size: clamp(11px, 2.5vw, 14px); color: var(--primary); margin-right: 8px; }
@@ -606,7 +606,6 @@
     <div id="menu-view">
         <button class="verse-list-btn lessons-main-btn" onclick="showLessonsView()" style="margin-bottom:15px;">📚 جميع الدروس</button>
         <button class="verse-list-btn" style="margin: 0 0 15px 0;" onclick="showSavedList()">📌 للمشاهدة لاحقاً</button>
-        <button id="contactAdminBtn" class="verse-list-btn" style="margin: 0 0 15px 0; display:none; background:var(--primary); color:white; border-color:var(--gold);" onclick="showContactAdminView()">📩 تواصل مع المسؤول</button>
         <div id="app-stats-card" class="leaderboard-card" style="margin-bottom:15px;">
             <div class="lb-title">📊 إحصائيات التطبيق</div>
             <div id="appStatsContent" style="display:flex; flex-wrap:wrap; justify-content:space-around; align-items:center; gap:8px; padding:10px 0; font-size:15px;">
@@ -637,7 +636,8 @@
         </div>
         <button id="addToHomeBtn" class="setup-step-btn" style="margin: 15px 0 8px 0; display:none;" onclick="handleAddToHomeScreen()"><span class="step-main">📱 1. إضافة إلى الشاشة الرئيسية</span><span class="step-note">(تثبيت التطبيق على الشاشة الرئيسية)</span></button>
         <button id="pushEnableBtn" class="setup-step-btn" style="margin: 0 0 8px 0; display:none;" onclick="enablePushNotifications()"><span class="step-main">🔔 2. تفعيل الإشعارات على الشاشة</span><span class="step-note">(تفعيل الإشعارات في التطبيق وليس في المتصفح)</span></button>
-        <button id="microEnableBtn" class="setup-step-btn" style="margin: 0 0 15px 0; display:none;" onclick="enableMicrophonePermission()"><span class="step-main">🎤 3. تفعيل الميكروفون للتسجيل</span><span class="step-note">(تفعيل الميكروفون في التطبيق وليس في المتصفح)</span></button>
+        <button id="microEnableBtn" class="setup-step-btn" style="margin: 0 0 8px 0; display:none;" onclick="enableMicrophonePermission()"><span class="step-main">🎤 3. تفعيل الميكروفون للتسجيل</span><span class="step-note">(تفعيل الميكروفون في التطبيق وليس في المتصفح)</span></button>
+        <button id="contactAdminBtn" class="verse-list-btn" style="margin: 15px 0 0 0; display:none; background:var(--primary); color:white; border-color:var(--gold);" onclick="showContactAdminView()">📩 تواصل مع المسؤول</button>
     </div>
 
     <div id="lessons-view" style="display:none; padding: 15px 10px; width: 100%; max-width: 100%; margin: 0 auto; overflow-x: hidden;">
