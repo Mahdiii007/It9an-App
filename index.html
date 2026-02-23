@@ -1047,7 +1047,8 @@
             if (!ms) return '—';
             const d = new Date(ms);
             const y = d.getFullYear(), m = ('0' + (d.getMonth() + 1)).slice(-2), day = ('0' + d.getDate()).slice(-2);
-            return y + '-' + m + '-' + day;
+            const h = ('0' + d.getHours()).slice(-2), min = ('0' + d.getMinutes()).slice(-2);
+            return y + '-' + m + '-' + day + ' ' + h + ':' + min;
         }
         function getFirstLoginOrCreated(u) {
             if (!u) return null;
