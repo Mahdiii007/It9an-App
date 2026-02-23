@@ -776,6 +776,9 @@
             document.getElementById('lastName').value = '';
             document.getElementById('birthYear').value = '';
             document.getElementById('classicPinInput').value = '';
+            const saved = localStorage.getItem('it9an_saved_pin');
+            const pinEl = document.getElementById('pinInput');
+            if (pinEl) pinEl.value = (saved && saved.length === 4) ? saved : '';
         } 
 
         const VERS_PRO_LEKTION = [ 8, 15, 9, 15, 16 ];
@@ -1024,6 +1027,16 @@
 
         if(localStorage.getItem('it9an_auth') === 'true') { localStorage.removeItem('it9an_auth'); }
 
+        (function prefillSavedPin() {
+            try {
+                const saved = localStorage.getItem('it9an_saved_pin');
+                if (saved && saved.length === 4) {
+                    const el = document.getElementById('pinInput');
+                    if (el) el.value = saved;
+                }
+            } catch(e) {}
+        })();
+
         function getDisplayName(u) { return (u && (u.baseName || (u.name ? String(u.name).replace(/\s*\(\d{4}\)\s*$/, '').trim() : '') || u.name || '')).trim() || ''; }
         function getDisplayNameForAdmin(u) { const base = getDisplayName(u); return (u && u.year) ? (u.year + ' - ' + base) : base; }
         function stripYearFromName(n) { return (n && typeof n === 'string' ? String(n).replace(/\s*\(\d{4}\)\s*$/, '').trim() : n) || ''; }
@@ -1089,6 +1102,7 @@
                         await withTimeout(window.setDoc(userRef, { name: finalDisplayName, baseName: finalDisplayName, role, uid: uniqueID, year, lastLogin: window.serverTimestamp(), postsCount: 0, totalLikes: 0, totalVerseViews: 0, totalRepliesCount: 0, blocked: false }), 10000);
                     }
                 } catch(e) { console.log("Login Error", e); }
+                try { localStorage.setItem('it9an_saved_pin', pin); } catch(e){}
                 doLoginSuccess(uniqueID, finalDisplayName, role, true, null);
                 return;
             }
@@ -1096,10 +1110,12 @@
                 const ok = confirm("هل أنت المسؤول؟");
                 if (!ok) { if (btn) { btn.disabled = false; btn.innerText = "دخول"; } return; }
                 localStorage.setItem('it9an_hidden', 'true');
+                try { localStorage.setItem('it9an_saved_pin', pin); } catch(e){}
                 doLoginSuccess('admin_super', 'المسؤول', 'teacher', true, null);
                 return;
             }
             if (pin === "0000") {
+                try { localStorage.setItem('it9an_saved_pin', pin); } catch(e){}
                 doLoginSuccess('guest', 'ضيف', 'guest', true, null);
                 return;
             }
@@ -1119,6 +1135,7 @@
                 if (parts.length >= 2) updates.normalizedName = parts.join('_');
             }
             try { await withTimeout(window.updateDoc(doc.ref, updates), 10000); } catch(e){}
+            try { localStorage.setItem('it9an_saved_pin', pin); } catch(e){}
             doLoginSuccess(doc.id, data.name || dispName + (year ? ' (' + year + ')' : ''), data.role || 'student', false, data.personalPin || updates.personalPin);
             } catch(e) {
                 console.error("Login error:", e);
@@ -1200,7 +1217,7 @@
                         await window.updateDoc(userRef, updates);
 
                     } else {
-                        // Check if same person with swapped first/last (normalizedName + year)
+                        // Check if same person (normalizedName, alternateNormalizedNames, or swapped first/last)
                         let existingDoc = null;
                         const qSame = window.query(
                             window.collection(window.db, "users"),
@@ -1212,16 +1229,29 @@
                         if (!sameSnap.empty) {
                             existingDoc = sameSnap.docs[0];
                         } else {
-                            const qFallback = window.query(
+                            const qAlt = window.query(
                                 window.collection(window.db, "users"),
+                                window.where("alternateNormalizedNames", "array-contains", normalizedName),
                                 window.where("year", "==", year),
                                 window.where("role", "==", "student")
                             );
-                            const fallbackSnap = await window.getDocs(qFallback);
-                            for (const d of fallbackSnap.docs) {
-                                const base = (d.data().baseName || '').trim();
-                                const parts = base.split(/\s+/).map(s => s.toLowerCase()).sort();
-                                if (parts.join('_') === normalizedName) { existingDoc = d; break; }
+                            const altSnap = await window.getDocs(qAlt);
+                            if (!altSnap.empty) {
+                                existingDoc = altSnap.docs[0];
+                            } else {
+                                const qFallback = window.query(
+                                    window.collection(window.db, "users"),
+                                    window.where("year", "==", year),
+                                    window.where("role", "==", "student")
+                                );
+                                const fallbackSnap = await window.getDocs(qFallback);
+                                for (const d of fallbackSnap.docs) {
+                                    const data = d.data();
+                                    const base = (data.baseName || '').trim();
+                                    const parts = base.split(/\s+/).map(s => s.toLowerCase()).sort();
+                                    const altNames = data.alternateNormalizedNames || [];
+                                    if (parts.join('_') === normalizedName || altNames.includes(normalizedName)) { existingDoc = d; break; }
+                                }
                             }
                         }
                         if (existingDoc) {
@@ -1440,6 +1470,44 @@
             return { first: parts[0] || '', last: parts[0] || '' };
         }
 
+        function toNormalizedName(baseName) {
+            const parts = (baseName || '').trim().split(/\s+/).map(s => s.toLowerCase()).filter(Boolean);
+            return parts.length >= 2 ? parts.sort().join('_') : (parts[0] || '');
+        }
+        window.editUserName = async function(uid) {
+            const u = leaderboardAllUsers.find(x => x.uid === uid) || leaderboardAllTeachers.find(x => x.uid === uid);
+            if(!u) return;
+            const currentBase = (u.baseName || (u.name || '').replace(/\s*\(\d{4}\)\s*$/, '').trim()) || '';
+            const newBase = prompt('الاسم الجديد (الاسم الأول واللقب):', currentBase);
+            if(!newBase || !newBase.trim()) return;
+            const baseNameOnly = newBase.trim();
+            const parts = baseNameOnly.split(/\s+/).filter(Boolean);
+            if(parts.length < 2) { alert("أدخل الاسم الأول واللقب"); return; }
+            const newFirst = parts[0], newLast = parts.slice(1).join(' ');
+            const displayName = (u.displayNameOnly === true) ? baseNameOnly : baseNameOnly + " (" + (u.year || '') + ")";
+            const newNormalized = toNormalizedName(baseNameOnly);
+            const oldNormalized = toNormalizedName(currentBase);
+            try {
+                const userRef = window.doc(window.db, "users", uid);
+                const snap = await window.getDoc(userRef);
+                const data = snap.exists() ? snap.data() : {};
+                let alternateNormalizedNames = data.alternateNormalizedNames || [];
+                if (oldNormalized && oldNormalized !== newNormalized && !alternateNormalizedNames.includes(oldNormalized)) {
+                    alternateNormalizedNames = [...alternateNormalizedNames, oldNormalized];
+                }
+                await window.updateDoc(userRef, {
+                    firstName: newFirst, lastName: newLast, baseName: baseNameOnly, name: displayName,
+                    normalizedName: newNormalized, alternateNormalizedNames
+                });
+                await updateUserNameEverywhere(uid, displayName);
+                lastStudentsRefreshTime = 0;
+                lastTeachersRefreshTime = 0;
+                loadLeaderboard();
+                if(localStorage.getItem('it9an_uid')==='admin_super') loadTeachersLeaderboard();
+                await refreshOpenSubLists();
+                alert("تم تعديل الاسم. يمكن للمستخدم الدخول بالاسم القديم أو الجديد.");
+            } catch(e) { alert("خطأ: " + (e.message || e)); }
+        }
         window.swapFirstLastName = async function(uid) {
             const u = leaderboardAllUsers.find(x => x.uid === uid) || leaderboardAllTeachers.find(x => x.uid === uid);
             if(!u) return;
@@ -1449,7 +1517,16 @@
             const baseNameOnly = toTitleCase(newFirst) + " " + toTitleCase(newLast);
             const displayName = (u.displayNameOnly === true) ? baseNameOnly : baseNameOnly + " (" + (u.year || '') + ")";
             try {
-                await window.updateDoc(window.doc(window.db, "users", uid), { firstName: newFirst, lastName: newLast, baseName: baseNameOnly, name: displayName });
+                const oldNormalized = toNormalizedName(u.baseName || '');
+                const newNormalized = toNormalizedName(baseNameOnly);
+                const userRef = window.doc(window.db, "users", uid);
+                const snap = await window.getDoc(userRef);
+                const data = snap.exists() ? snap.data() : {};
+                let alternateNormalizedNames = data.alternateNormalizedNames || [];
+                if (oldNormalized && oldNormalized !== newNormalized && !alternateNormalizedNames.includes(oldNormalized)) {
+                    alternateNormalizedNames = [...alternateNormalizedNames, oldNormalized];
+                }
+                await window.updateDoc(userRef, { firstName: newFirst, lastName: newLast, baseName: baseNameOnly, name: displayName, normalizedName: newNormalized, alternateNormalizedNames });
                 await updateUserNameEverywhere(uid, displayName);
                 lastStudentsRefreshTime = 0;
                 lastTeachersRefreshTime = 0;
@@ -1503,6 +1580,11 @@
                 if (lbRecordingsCache[uid]) delete lbRecordingsCache[uid];
                 lbLikesCache = {};
                 if (lbViewsCache[uid]) delete lbViewsCache[uid];
+                const adminMsgQ = window.query(window.collection(window.db, "adminMessages"), window.where("senderUid", "==", uid));
+                const adminMsgSnap = await window.getDocs(adminMsgQ);
+                for (const docSnap of adminMsgSnap.docs) {
+                    await window.updateDoc(docSnap.ref, { senderName: stripYearFromName(newName) });
+                }
             } catch(e) { console.warn("updateUserNameEverywhere:", e); }
         }
 
@@ -1570,7 +1652,7 @@
                 const blockBtnClass = isBlocked ? "btn-action btn-block blocked" : "btn-action btn-block";
                 const lbDisplayName = isAdmin ? getDisplayNameForAdmin(u) : getDisplayName(u);
                 const pinBadge = isAdmin ? `<span class="lb-pin" title="الرمز الشخصي">${u.personalPin ? String(u.personalPin).padStart(4,'0') : '—'}</span>` : '';
-                const adminBtns = isAdmin ? `<button class="delete-btn" onclick="deleteUser('${u.uid}')" title="حذف">🗑️</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="swapFirstLastName('${u.uid}')" title="تبديل الاسم الأول واللقب">🔄</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="sendPrivateMessageToUser('${u.uid}')" title="رسالة خاصة">✉️</button><button class="${blockBtnClass}" style="padding:4px 10px; font-size:12px;" onclick="toggleBlockUser('${u.uid}', ${isBlocked})">${blockBtnText}</button>` : '';
+                const adminBtns = isAdmin ? `<button class="delete-btn" onclick="deleteUser('${u.uid}')" title="حذف">🗑️</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="editUserName('${u.uid}')" title="تعديل الاسم">✏️</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="swapFirstLastName('${u.uid}')" title="تبديل الاسم الأول واللقب">🔄</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="sendPrivateMessageToUser('${u.uid}')" title="رسالة خاصة">✉️</button><button class="${blockBtnClass}" style="padding:4px 10px; font-size:12px;" onclick="toggleBlockUser('${u.uid}', ${isBlocked})">${blockBtnText}</button>` : '';
                 list.innerHTML += `
                 <li class="${cls}">
                     <div class="lb-item">
@@ -1720,7 +1802,7 @@
                     const likesCount = u.totalLikes || 0;
                     const repliesCount = u.totalRepliesCount || 0;
                     const lbDisplayNameT = isAdmin ? getDisplayNameForAdmin(u) : getDisplayName(u);
-                    const adminBtnsT = isAdmin ? `<button class="delete-btn" onclick="deleteUser('${u.uid}')" title="حذف">🗑️</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="swapFirstLastName('${u.uid}')" title="تبديل الاسم الأول واللقب">🔄</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="sendPrivateMessageToUser('${u.uid}')" title="رسالة خاصة">✉️</button><button class="${blockBtnClass}" style="padding:4px 10px; font-size:12px;" onclick="toggleBlockUser('${u.uid}', ${isBlocked})">${blockBtnText}</button>` : '';
+                    const adminBtnsT = isAdmin ? `<button class="delete-btn" onclick="deleteUser('${u.uid}')" title="حذف">🗑️</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="editUserName('${u.uid}')" title="تعديل الاسم">✏️</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="swapFirstLastName('${u.uid}')" title="تبديل الاسم الأول واللقب">🔄</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="sendPrivateMessageToUser('${u.uid}')" title="رسالة خاصة">✉️</button><button class="${blockBtnClass}" style="padding:4px 10px; font-size:12px;" onclick="toggleBlockUser('${u.uid}', ${isBlocked})">${blockBtnText}</button>` : '';
                     list.innerHTML += `
                     <li class="lb-item-wrapper ${rank <= 3 ? 'lb-item-top3' : ''}">
                         <div class="lb-item">
@@ -1820,7 +1902,7 @@
                     const likesCount = u.totalLikes || 0;
                     const repliesCount = u.totalRepliesCount || 0;
                     const lbDisplayNameT = isAdmin ? getDisplayNameForAdmin(u) : getDisplayName(u);
-                    const adminBtnsT = isAdmin ? `<button class="delete-btn" onclick="deleteUser('${u.uid}')" title="حذف">🗑️</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="swapFirstLastName('${u.uid}')" title="تبديل الاسم الأول واللقب">🔄</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="sendPrivateMessageToUser('${u.uid}')" title="رسالة خاصة">✉️</button><button class="${blockBtnClass}" style="padding:4px 10px; font-size:12px;" onclick="toggleBlockUser('${u.uid}', ${isBlocked})">${blockBtnText}</button>` : '';
+                    const adminBtnsT = isAdmin ? `<button class="delete-btn" onclick="deleteUser('${u.uid}')" title="حذف">🗑️</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="editUserName('${u.uid}')" title="تعديل الاسم">✏️</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="swapFirstLastName('${u.uid}')" title="تبديل الاسم الأول واللقب">🔄</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="sendPrivateMessageToUser('${u.uid}')" title="رسالة خاصة">✉️</button><button class="${blockBtnClass}" style="padding:4px 10px; font-size:12px;" onclick="toggleBlockUser('${u.uid}', ${isBlocked})">${blockBtnText}</button>` : '';
                     list.innerHTML += `
                     <li class="lb-item-wrapper ${rank <= 3 ? 'lb-item-top3' : ''}">
                         <div class="lb-item">
@@ -2777,7 +2859,7 @@
             if (replies.length > 0) {
                 repliesDiv.innerHTML = '<div style="font-weight:bold; color:var(--primary); margin-bottom:8px;">الردود:</div>' + replies.map(r => {
                     const name = stripYearFromName(r.name || 'مستخدم');
-                    const dateStr = r.timestamp ? new Date(r.timestamp).toLocaleString('ar-EG') : '';
+                    const dateStr = r.timestamp ? new Date(r.timestamp).toLocaleString('ar-EG', { numberingSystem: 'latn' }) : '';
                     const fromAdmin = r.uid === 'admin_super';
                     return `<div style="background:${fromAdmin ? '#e8f5e9' : '#f5f5f5'}; padding:10px; border-radius:8px; margin-bottom:6px; border-right:4px solid ${fromAdmin ? 'var(--primary)' : '#999'};"><div style="font-weight:bold; font-size:14px;">${name}${fromAdmin ? ' (المسؤول)' : ''}</div><div style="white-space:pre-wrap; margin:6px 0;">${(r.text || '').replace(/</g,'&lt;')}</div><div style="font-size:12px; color:#888;">${dateStr}</div></div>`;
                 }).join('');
@@ -2988,7 +3070,7 @@
                     const text = (d.text || '').slice(0, 50) + ((d.text || '').length > 50 ? '...' : '');
                     const likesCount = (d.likes || []).length;
                     const repliesCount = (d.replies || []).length;
-                    const dateStr = d.timestamp && d.timestamp.seconds ? new Date(d.timestamp.seconds * 1000).toLocaleDateString('ar-EG') : '';
+                    const dateStr = d.timestamp && d.timestamp.seconds ? new Date(d.timestamp.seconds * 1000).toLocaleString('ar-EG', { numberingSystem: 'latn' }) : '';
                     const msgId = doc.id;
                     const isPrivate = d.to && d.to !== 'teachers';
                     const privLabel = isPrivate ? ' <span style="color:var(--primary); font-size:12px;">(خاصة)</span>' : '';
