@@ -623,6 +623,7 @@
                     <li style="text-align:center; color:#999; padding:10px;">جاري التحميل...</li>
                 </ul>
                 <button id="lbShowMoreBtn" class="lb-show-more-btn" onclick="showMoreLeaderboardStudents()" style="display:none;">عرض المزيد (+10)</button>
+                <button id="lbShowAllBtn" class="lb-show-more-btn" style="display:none; margin-top:8px; background:var(--primary);" onclick="showAllLeaderboardStudents()">عرض الكل</button>
                 <button id="lbShowTop3Btn" class="lb-show-more-btn" style="display:none; margin-top:8px; background:#888;" onclick="showTop3Only()">عرض Top 3 فقط</button>
                 <button id="lbSyncNamesBtn" class="btn-action lb-refresh-btn" style="display:none; margin-top:8px;" onclick="syncAllUserNames()" title="تحديث الأسماء في جميع التسجيلات والإعجابات والمشاهدات">🔄 مزامنة الأسماء</button>
                 <button id="lbSortAlphaBtn" class="btn-action lb-refresh-btn" style="display:none; margin-top:8px;" onclick="toggleLeaderboardSort()" title="ترتيب أبجدي">🔤 ترتيب أبجدي</button>
@@ -1038,7 +1039,26 @@
         })();
 
         function getDisplayName(u) { return (u && (u.baseName || (u.name ? String(u.name).replace(/\s*\(\d{4}\)\s*$/, '').trim() : '') || u.name || '')).trim() || ''; }
+        function formatDateLatin(ts) {
+            if (!ts) return '—';
+            let ms = 0;
+            if (ts.seconds != null) ms = ts.seconds * 1000;
+            else if (typeof ts === 'number') ms = ts;
+            if (!ms) return '—';
+            const d = new Date(ms);
+            const y = d.getFullYear(), m = ('0' + (d.getMonth() + 1)).slice(-2), day = ('0' + d.getDate()).slice(-2);
+            return y + '-' + m + '-' + day;
+        }
+        function getFirstLoginOrCreated(u) {
+            if (!u) return null;
+            return u.createdAt || u.lastLogin || null;
+        }
         function getDisplayNameForAdmin(u) { const base = getDisplayName(u); return (u && u.year) ? (u.year + ' - ' + base) : base; }
+        function getDisplayNameForAdminWithDate(u) {
+            const dateStr = formatDateLatin(getFirstLoginOrCreated(u));
+            const namePart = getDisplayNameForAdmin(u);
+            return dateStr + ' — ' + namePart;
+        }
         function stripYearFromName(n) { return (n && typeof n === 'string' ? String(n).replace(/\s*\(\d{4}\)\s*$/, '').trim() : n) || ''; }
         // --- NEW ID GENERATOR WITH YEAR ---
         function generateUserId(fullName, role, year) {
@@ -1099,7 +1119,7 @@
                         if(userSnap.data().name) finalDisplayName = userSnap.data().name;
                         await withTimeout(window.updateDoc(userRef, { lastLogin: window.serverTimestamp() }), 10000);
                     } else {
-                        await withTimeout(window.setDoc(userRef, { name: finalDisplayName, baseName: finalDisplayName, role, uid: uniqueID, year, lastLogin: window.serverTimestamp(), postsCount: 0, totalLikes: 0, totalVerseViews: 0, totalRepliesCount: 0, blocked: false }), 10000);
+                        await withTimeout(window.setDoc(userRef, { name: finalDisplayName, baseName: finalDisplayName, role, uid: uniqueID, year, createdAt: window.serverTimestamp(), lastLogin: window.serverTimestamp(), postsCount: 0, totalLikes: 0, totalVerseViews: 0, totalRepliesCount: 0, blocked: false }), 10000);
                     }
                 } catch(e) { console.log("Login Error", e); }
                 try { localStorage.setItem('it9an_saved_pin', pin); } catch(e){}
@@ -1298,6 +1318,7 @@
                                 role: role,
                                 uid: uniqueID,
                                 year: year,
+                                createdAt: window.serverTimestamp(),
                                 lastLogin: window.serverTimestamp(),
                                 postsCount: 0,
                                 totalLikes: 0,
@@ -1593,9 +1614,17 @@
         let leaderboardVisibleCount = 3;
         let lastStudentsRefreshTime = 0;
         let leaderboardSortBy = 'points';
+        function getTimestampMs(u) {
+            const ts = getFirstLoginOrCreated(u);
+            if (!ts) return 0;
+            return (ts.seconds != null ? ts.seconds * 1000 : (typeof ts === 'number' ? ts : 0)) || 0;
+        }
         function applyLeaderboardSort(users) {
             if (leaderboardSortBy === 'alpha') {
                 return [...users].sort((a,b) => (getDisplayName(a) || '').localeCompare(getDisplayName(b) || '', 'ar'));
+            }
+            if (leaderboardSortBy === 'date') {
+                return [...users].sort((a,b) => getTimestampMs(b) - getTimestampMs(a));
             }
             return users.sort((a,b) => {
                 const sumA = (a.totalVerseViews || 0) + (a.postsCount || 0) + (a.totalLikes || 0);
@@ -1603,11 +1632,16 @@
                 return sumB - sumA;
             });
         }
+        function getLeaderboardSortButtonText() {
+            if (leaderboardSortBy === 'points') return '🔤 ترتيب أبجدي';
+            if (leaderboardSortBy === 'alpha') return '📅 ترتيب بالتاريخ';
+            return '🔢 ترتيب بالنقاط';
+        }
         window.toggleLeaderboardSort = function() {
             if (localStorage.getItem('it9an_uid') !== 'admin_super') return;
-            leaderboardSortBy = leaderboardSortBy === 'points' ? 'alpha' : 'points';
+            leaderboardSortBy = leaderboardSortBy === 'points' ? 'alpha' : (leaderboardSortBy === 'alpha' ? 'date' : 'points');
             const btn = document.getElementById('lbSortAlphaBtn');
-            if (btn) btn.innerText = leaderboardSortBy === 'alpha' ? '🔢 ترتيب بالنقاط' : '🔤 ترتيب أبجدي';
+            if (btn) btn.innerText = getLeaderboardSortButtonText();
             leaderboardAllUsers = applyLeaderboardSort([...leaderboardAllUsers]);
             renderLeaderboardItems(leaderboardAllUsers, leaderboardVisibleCount, localStorage.getItem('it9an_uid'), true);
             lastTeachersRefreshTime = 0;
@@ -1625,19 +1659,21 @@
             list.innerHTML = "";
             if(users.length === 0) {
                 list.innerHTML = "<li style='text-align:center; color:#999; padding:10px;'>لا يوجد طلاب بعد</li>";
-                const sm = document.getElementById('lbShowMoreBtn'); const st = document.getElementById('lbShowTop3Btn');
-                if(sm) sm.style.display = 'none'; if(st) st.style.display = 'none';
+                const sm = document.getElementById('lbShowMoreBtn'); const st = document.getElementById('lbShowTop3Btn'); const sa = document.getElementById('lbShowAllBtn');
+                if(sm) sm.style.display = 'none'; if(st) st.style.display = 'none'; if(sa) sa.style.display = 'none';
                 return;
             }
             const toShow = users.slice(0, visibleCount);
             const showMoreBtn = document.getElementById('lbShowMoreBtn');
             const showTop3Btn = document.getElementById('lbShowTop3Btn');
+            const showAllBtn = document.getElementById('lbShowAllBtn');
             if(showMoreBtn) showMoreBtn.style.display = users.length > visibleCount ? 'block' : 'none';
             if(showTop3Btn) showTop3Btn.style.display = visibleCount > 3 ? 'block' : 'none';
+            if(showAllBtn) showAllBtn.style.display = (isAdmin && users.length > 3 && visibleCount < users.length) ? 'block' : 'none';
             const syncBtn = document.getElementById('lbSyncNamesBtn');
             if(syncBtn) syncBtn.style.display = isAdmin ? 'block' : 'none';
             const sortBtn = document.getElementById('lbSortAlphaBtn');
-            if(sortBtn) { sortBtn.style.display = isAdmin ? 'block' : 'none'; sortBtn.innerText = leaderboardSortBy === 'alpha' ? '🔢 ترتيب بالنقاط' : '🔤 ترتيب أبجدي'; }
+            if(sortBtn) { sortBtn.style.display = isAdmin ? 'block' : 'none'; sortBtn.innerText = getLeaderboardSortButtonText(); }
             toShow.forEach((u, i) => {
                 adminUserRoles[u.uid] = 'student';
                 const rank = i + 1;
@@ -1650,7 +1686,7 @@
                 const isBlocked = u.blocked === true;
                 const blockBtnText = isBlocked ? "فك الحظر" : "حظر";
                 const blockBtnClass = isBlocked ? "btn-action btn-block blocked" : "btn-action btn-block";
-                const lbDisplayName = isAdmin ? getDisplayNameForAdmin(u) : getDisplayName(u);
+                const lbDisplayName = isAdmin ? getDisplayNameForAdminWithDate(u) : getDisplayName(u);
                 const pinBadge = isAdmin ? `<span class="lb-pin" title="الرمز الشخصي">${u.personalPin ? String(u.personalPin).padStart(4,'0') : '—'}</span>` : '';
                 const adminBtns = isAdmin ? `<button class="delete-btn" onclick="deleteUser('${u.uid}')" title="حذف">🗑️</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="editUserName('${u.uid}')" title="تعديل الاسم">✏️</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="swapFirstLastName('${u.uid}')" title="تبديل الاسم الأول واللقب">🔄</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="sendPrivateMessageToUser('${u.uid}')" title="رسالة خاصة">✉️</button><button class="${blockBtnClass}" style="padding:4px 10px; font-size:12px;" onclick="toggleBlockUser('${u.uid}', ${isBlocked})">${blockBtnText}</button>` : '';
                 list.innerHTML += `
@@ -1695,6 +1731,12 @@
         window.showMoreLeaderboardStudents = function() {
             leaderboardVisibleCount = Math.min(leaderboardVisibleCount + 10, leaderboardAllUsers.length);
             renderLeaderboardItems(leaderboardAllUsers, leaderboardVisibleCount, localStorage.getItem('it9an_uid'));
+        }
+        window.showAllLeaderboardStudents = function() {
+            if (localStorage.getItem('it9an_uid') !== 'admin_super') return;
+            leaderboardVisibleCount = leaderboardAllUsers.length;
+            renderLeaderboardItems(leaderboardAllUsers, leaderboardVisibleCount, localStorage.getItem('it9an_uid'));
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
         window.showTop3Only = function() {
             leaderboardVisibleCount = 3;
@@ -1785,11 +1827,17 @@
                     const uid = d.uid || doc.id;
                     teachers.push({ ...d, uid, totalRepliesCount: replyCountByUid[uid] ?? 0 });
                 });
-                teachers.sort((a,b) => (b.totalRepliesCount || 0) - (a.totalRepliesCount || 0));
-                leaderboardAllTeachers = teachers;
-                const list = document.getElementById('leaderboard-teachers-list');
                 const myUid = localStorage.getItem('it9an_uid');
                 const isAdmin = myUid === 'admin_super';
+                if (leaderboardSortBy === 'alpha' && isAdmin) {
+                    teachers.sort((a,b) => (getDisplayName(a) || '').localeCompare(getDisplayName(b) || '', 'ar'));
+                } else if (leaderboardSortBy === 'date' && isAdmin) {
+                    teachers.sort((a,b) => getTimestampMs(b) - getTimestampMs(a));
+                } else {
+                    teachers.sort((a,b) => (b.totalRepliesCount || 0) - (a.totalRepliesCount || 0));
+                }
+                leaderboardAllTeachers = teachers;
+                const list = document.getElementById('leaderboard-teachers-list');
                 if (!list) return;
                 list.innerHTML = "";
                 if (teachers.length === 0) { list.innerHTML = "<li style='text-align:center; color:#999; padding:10px;'>لا يوجد معلمون</li>"; return; }
@@ -1801,7 +1849,7 @@
                     const blockBtnClass = isBlocked ? "btn-action btn-block blocked" : "btn-action btn-block";
                     const likesCount = u.totalLikes || 0;
                     const repliesCount = u.totalRepliesCount || 0;
-                    const lbDisplayNameT = isAdmin ? getDisplayNameForAdmin(u) : getDisplayName(u);
+                    const lbDisplayNameT = isAdmin ? getDisplayNameForAdminWithDate(u) : getDisplayName(u);
                     const adminBtnsT = isAdmin ? `<button class="delete-btn" onclick="deleteUser('${u.uid}')" title="حذف">🗑️</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="editUserName('${u.uid}')" title="تعديل الاسم">✏️</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="swapFirstLastName('${u.uid}')" title="تبديل الاسم الأول واللقب">🔄</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="sendPrivateMessageToUser('${u.uid}')" title="رسالة خاصة">✉️</button><button class="${blockBtnClass}" style="padding:4px 10px; font-size:12px;" onclick="toggleBlockUser('${u.uid}', ${isBlocked})">${blockBtnText}</button>` : '';
                     list.innerHTML += `
                     <li class="lb-item-wrapper ${rank <= 3 ? 'lb-item-top3' : ''}">
@@ -1887,6 +1935,8 @@
                 snap.forEach(doc => teachers.push({ ...doc.data(), uid: doc.data().uid || doc.id }));
                 if (leaderboardSortBy === 'alpha' && myUid === 'admin_super') {
                     teachers.sort((a,b) => (getDisplayName(a) || '').localeCompare(getDisplayName(b) || '', 'ar'));
+                } else if (leaderboardSortBy === 'date' && myUid === 'admin_super') {
+                    teachers.sort((a,b) => getTimestampMs(b) - getTimestampMs(a));
                 } else {
                     teachers.sort((a,b) => (b.totalRepliesCount || 0) - (a.totalRepliesCount || 0));
                 }
@@ -1901,7 +1951,7 @@
                     const blockBtnClass = isBlocked ? "btn-action btn-block blocked" : "btn-action btn-block";
                     const likesCount = u.totalLikes || 0;
                     const repliesCount = u.totalRepliesCount || 0;
-                    const lbDisplayNameT = isAdmin ? getDisplayNameForAdmin(u) : getDisplayName(u);
+                    const lbDisplayNameT = isAdmin ? getDisplayNameForAdminWithDate(u) : getDisplayName(u);
                     const adminBtnsT = isAdmin ? `<button class="delete-btn" onclick="deleteUser('${u.uid}')" title="حذف">🗑️</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="editUserName('${u.uid}')" title="تعديل الاسم">✏️</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="swapFirstLastName('${u.uid}')" title="تبديل الاسم الأول واللقب">🔄</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="sendPrivateMessageToUser('${u.uid}')" title="رسالة خاصة">✉️</button><button class="${blockBtnClass}" style="padding:4px 10px; font-size:12px;" onclick="toggleBlockUser('${u.uid}', ${isBlocked})">${blockBtnText}</button>` : '';
                     list.innerHTML += `
                     <li class="lb-item-wrapper ${rank <= 3 ? 'lb-item-top3' : ''}">
