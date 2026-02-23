@@ -916,6 +916,7 @@
                 const seek = document.getElementById('seek-' + currentFeedAudioId);
                 if (seek) seek.value = 0;
                 currentFeedAudioId = null;
+                releaseWakeLock();
             }
         }
 
@@ -961,6 +962,7 @@
                 }
             }
             currentFeedAudioId = null;
+            releaseWakeLock();
         });
 
         window.playFeedAudio = function(url, id) {
@@ -970,9 +972,11 @@
                 if (feedAudioEl.paused) {
                     feedAudioEl.play();
                     document.getElementById('btn-' + id).innerText = "⏸";
+                    requestWakeLock();
                 } else {
                     feedAudioEl.pause();
                     document.getElementById('btn-' + id).innerText = "▶";
+                    releaseWakeLock();
                 }
                 return;
             }
@@ -987,8 +991,9 @@
                 
                 currentFeedAudioId = id;
                 const newBtn = document.getElementById('btn-' + id);
-                newBtn.innerText = "⏳"; 
-                
+                newBtn.innerText = "⏳";
+                requestWakeLock();
+
                 feedAudioEl.src = url;
                 feedAudioEl.play().then(() => {
                     newBtn.innerText = "⏸";
@@ -1022,8 +1027,11 @@
                 wakeLockSentinel.addEventListener('release', () => { wakeLockSentinel = null; });
             } catch (e) { console.warn('Wake Lock:', e); }
         }
-        function releaseWakeLock() {
-            if (wakeLockSentinel) { try { wakeLockSentinel.release(); } catch(e){} wakeLockSentinel = null; }
+        async function releaseWakeLock() {
+            if (!wakeLockSentinel) return;
+            const sentinel = wakeLockSentinel;
+            wakeLockSentinel = null;
+            try { await sentinel.release(); } catch (e) { console.warn('Wake Lock release:', e); }
         }
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'visible' && isPlaying) requestWakeLock();
@@ -3835,6 +3843,7 @@
                     if(replyTargetId) statusText.innerText = "تسجيل رد..."; else statusText.innerText = "تسجيل تلاوة...";
 
                     mediaRecorder.onstop = () => {
+                        releaseWakeLock();
                         const mimeType = mediaRecorder.mimeType || 'audio/mp4';
                         currentBlob = new Blob(chunks, { type: mimeType });
                         showReviewModal();
@@ -3843,7 +3852,8 @@
                         rawStream.getTracks().forEach(track => track.stop());
                         try { recCtx.close(); } catch(e) {}
                     };
-                    mediaRecorder.start(200); 
+                    mediaRecorder.start(200);
+                    requestWakeLock(); 
                     const recBtn = document.getElementById('recBtn'); if(recBtn && recBtn.style.display !== 'none') recBtn.classList.add('recording');
                     ui.style.display = 'flex'; recSeconds = 0; document.getElementById('recTimer').innerText = "00:00";
                     recInterval = setInterval(() => { recSeconds++; let m = Math.floor(recSeconds / 60); let s = recSeconds % 60; document.getElementById('recTimer').innerText = (m<10?"0"+m:m)+":"+(s<10?"0"+s:s); if(recSeconds >= maxRecDuration) stopRecordingAndReview(); }, 1000);
