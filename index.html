@@ -3866,7 +3866,7 @@
                     if(targetPost) {
                        await window.addDoc(window.collection(window.db, "notifications"), {
                            to: targetPost.uid,
-                           senderName: "المعلم",
+                           senderName: role === 'teacher' ? "المعلم" : stripYearFromName(name),
                            type: 'reply',
                            fileId: String(currentGlobalFileId),
                            postId: replyTargetId,
@@ -3898,7 +3898,7 @@
                     if(role === 'student') {
                         await window.addDoc(window.collection(window.db, "notifications"), {
                            to: "teachers",
-                           senderName: name,
+                           senderName: stripYearFromName(name),
                            type: 'new_recording',
                            fileId: String(currentGlobalFileId),
                            postId: postRef.id, 
