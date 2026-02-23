@@ -1054,9 +1054,13 @@
             if (!u) return null;
             return u.firstLogin || u.createdAt || u.lastLogin || null;
         }
+        function getLastLoginForDisplay(u) {
+            if (!u) return null;
+            return u.lastLogin || null;
+        }
         function getDisplayNameForAdmin(u) { const base = getDisplayName(u); return (u && u.year) ? (u.year + ' - ' + base) : base; }
         function getDisplayNameForAdminWithDate(u) {
-            const dateStr = formatDateLatin(getFirstLoginOrCreated(u));
+            const dateStr = formatDateLatin(getLastLoginForDisplay(u));
             const namePart = getDisplayNameForAdmin(u);
             return dateStr + ' — ' + namePart;
         }
@@ -1624,7 +1628,7 @@
         let lastStudentsRefreshTime = 0;
         let leaderboardSortBy = 'points';
         function getTimestampMs(u) {
-            const ts = getFirstLoginOrCreated(u);
+            const ts = getLastLoginForDisplay(u);
             if (!ts) return 0;
             return (ts.seconds != null ? ts.seconds * 1000 : (typeof ts === 'number' ? ts : 0)) || 0;
         }
