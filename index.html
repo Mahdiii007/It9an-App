@@ -1013,6 +1013,22 @@
         const cTime = document.getElementById('currentTime');
         const dTime = document.getElementById('durationTime');
 
+        let wakeLockSentinel = null;
+        async function requestWakeLock() {
+            if (!navigator.wakeLock) return;
+            try {
+                if (wakeLockSentinel) return;
+                wakeLockSentinel = await navigator.wakeLock.request('screen');
+                wakeLockSentinel.addEventListener('release', () => { wakeLockSentinel = null; });
+            } catch (e) { console.warn('Wake Lock:', e); }
+        }
+        function releaseWakeLock() {
+            if (wakeLockSentinel) { try { wakeLockSentinel.release(); } catch(e){} wakeLockSentinel = null; }
+        }
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible' && isPlaying) requestWakeLock();
+        });
+
         audioEl.addEventListener('timeupdate', () => {
             if(!audioEl.duration) return;
             pBar.value = audioEl.currentTime; pBar.max = audioEl.duration;
@@ -3930,9 +3946,11 @@
         window.toggleSmartLoop = function() {
             if (isPlaying) {
                 isPlaying = false; isPaused = true; audioEl.pause(); clearInterval(pauseInterval);
+                releaseWakeLock();
                 document.getElementById('playBtn').innerText = "▶"; document.getElementById('statusDisplay').innerText = "متوقف مؤقتاً";
             } else {
                 isPlaying = true; isPaused = false; document.getElementById('playBtn').innerText = "⏸";
+                requestWakeLock();
                 if (pauseSecondsLeft > 0) { startPauseCountdown(pauseSecondsLeft); } 
                 else if (audioEl.currentTime > 0 && audioEl.currentTime < audioEl.duration) {
                     pauseFeedAudio();
@@ -3946,6 +3964,7 @@
         
         function playCycle() {
             if(!isPlaying) return;
+            requestWakeLock();
             pauseFeedAudio();
             const target = parseInt(document.getElementById('globalRepeats').value);
             document.getElementById('statusDisplay').innerText = `تلاوة ${verseRepeatsPlayed + 1} من ${target}`;
@@ -3979,6 +3998,7 @@
         }
 
         function startPauseCountdown(seconds) {
+            requestWakeLock();
             pauseSecondsLeft = seconds;
             document.getElementById('statusDisplay').innerText = `تكرار الطالب... (${pauseSecondsLeft})`;
             clearInterval(pauseInterval);
@@ -4010,6 +4030,7 @@
         function stopLoop() { 
             isPlaying = false; isPaused = false; pauseSecondsLeft = 0; clearInterval(pauseInterval); 
             audioEl.pause(); audioEl.currentTime = 0; 
+            releaseWakeLock();
             pauseFeedAudio();
             document.getElementById('playBtn').innerText = "▶"; document.getElementById('statusDisplay').innerText = "جاهز للتلاوة"; 
         }
