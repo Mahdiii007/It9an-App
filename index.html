@@ -598,6 +598,7 @@
 
         <div class="admin-actions">
             <button class="btn-admin-reset" id="adminThemenToggleBtn" onclick="toggleThemenVisibilityForAll()" style="display:none;">📂 إخفاء المواضيع عن الجميع ما عدا 9898 و 0860</button>
+            <button class="btn-admin-reset" id="adminLessonsToggleBtn" onclick="toggleLessonsVisibilityForAll()" style="display:none;">📚 إخفاء جميع الدروس عن الجميع ما عدا 9898 و 0860</button>
             <button class="btn-admin-reset" onclick="resetAllNotifications()">🔔 تصفير كل الإشعارات</button>
             <button class="btn-admin-reset" onclick="resetAllViews()">👁️ تصفير كل المشاهدات</button>
             <button class="btn-admin-reset" onclick="resetAllLikes()">👍 تصفير كل الإعجابات</button>
@@ -607,7 +608,7 @@
     </div>
 
     <div id="menu-view">
-        <button class="verse-list-btn lessons-main-btn" onclick="showLessonsView()" style="margin-bottom:15px;">📚 جميع الدروس</button>
+        <button class="verse-list-btn lessons-main-btn" id="lessonsMenuBtn" onclick="showLessonsView()" style="margin-bottom:15px;">📚 جميع الدروس</button>
         <button class="verse-list-btn" id="themenMenuBtn" onclick="showThemenView()" style="margin: 0 0 15px 0;">📂 المواضيع</button>
         <button class="verse-list-btn" style="margin: 0 0 15px 0;" onclick="showSavedList()">📌 للمشاهدة لاحقاً</button>
         <div id="app-stats-card" class="leaderboard-card" style="margin-bottom:15px;">
@@ -3013,6 +3014,7 @@
         let notifUnsubscribe = null;
         let appConfigUnsubscribe = null;
         window.appConfigThemenHiddenExceptPins = false;
+        window.appConfigLessonsHiddenExceptPins = false;
         function listenForAppConfig() {
             const uid = localStorage.getItem('it9an_uid');
             if (!uid) return;
@@ -3021,8 +3023,9 @@
             appConfigUnsubscribe = window.onSnapshot(ref, (snap) => {
                 const data = snap.exists() ? snap.data() : {};
                 window.appConfigThemenHiddenExceptPins = data.themenHiddenExceptPins === true;
+                window.appConfigLessonsHiddenExceptPins = data.lessonsHiddenExceptPins === true;
                 if (document.getElementById('menu-view') && document.getElementById('menu-view').style.display !== 'none') renderMenu();
-            }, (err) => { window.appConfigThemenHiddenExceptPins = false; });
+            }, (err) => { window.appConfigThemenHiddenExceptPins = false; window.appConfigLessonsHiddenExceptPins = false; });
         }
         function updateAppIconBadge(count) {
             if ('setAppBadge' in navigator) {
@@ -3522,6 +3525,13 @@
                     adminThemenToggle.style.display = 'block';
                     adminThemenToggle.innerText = window.appConfigThemenHiddenExceptPins ? '📂 إظهار المواضيع للجميع' : '📂 إخفاء المواضيع عن الجميع ما عدا 9898 و 0860';
                 }
+                const lessonsBtn = document.getElementById('lessonsMenuBtn');
+                if (lessonsBtn) lessonsBtn.style.display = '';
+                const adminLessonsToggle = document.getElementById('adminLessonsToggleBtn');
+                if (adminLessonsToggle) {
+                    adminLessonsToggle.style.display = 'block';
+                    adminLessonsToggle.innerText = window.appConfigLessonsHiddenExceptPins ? '📚 إظهار جميع الدروس للجميع' : '📚 إخفاء جميع الدروس عن الجميع ما عدا 9898 و 0860';
+                }
                 loadAdminMessagesList();
                 loadLeaderboard(lbPendingRestore ? doLbRestore : undefined);
                 loadAppStats();
@@ -3536,6 +3546,15 @@
                     const pinNorm = String(pinRaw).replace(/\D/g, '').padStart(4, '0').slice(-4);
                     const allowed = THEMEN_ALLOWED_PINS.includes(pinNorm);
                     themenBtn.style.display = (restricted && !allowed) ? 'none' : '';
+                }
+                const lessonsBtn = document.getElementById('lessonsMenuBtn');
+                if (lessonsBtn) {
+                    const restricted = window.appConfigLessonsHiddenExceptPins === true;
+                    const u = leaderboardAllUsers.find(x => x.uid === uid) || leaderboardAllTeachers.find(x => x.uid === uid);
+                    const pinRaw = (u && u.personalPin != null) ? u.personalPin : (localStorage.getItem('it9an_pin') || '');
+                    const pinNorm = String(pinRaw).replace(/\D/g, '').padStart(4, '0').slice(-4);
+                    const allowed = THEMEN_ALLOWED_PINS.includes(pinNorm);
+                    lessonsBtn.style.display = (restricted && !allowed) ? 'none' : '';
                 }
                 const role = localStorage.getItem('it9an_role');
                 const showPermBtns = (role === 'teacher' || role === 'student');
@@ -4778,6 +4797,19 @@
             try {
                 await window.setDoc(ref, { themenHiddenExceptPins: next }, { merge: true });
                 window.appConfigThemenHiddenExceptPins = next;
+                renderMenu();
+            } catch (e) {
+                alert('خطأ: ' + (e.message || e));
+            }
+        }
+
+        window.toggleLessonsVisibilityForAll = async function() {
+            if (localStorage.getItem('it9an_uid') !== 'admin_super') return;
+            const ref = window.doc(window.db, 'appConfig', 'settings');
+            const next = !window.appConfigLessonsHiddenExceptPins;
+            try {
+                await window.setDoc(ref, { lessonsHiddenExceptPins: next }, { merge: true });
+                window.appConfigLessonsHiddenExceptPins = next;
                 renderMenu();
             } catch (e) {
                 alert('خطأ: ' + (e.message || e));
