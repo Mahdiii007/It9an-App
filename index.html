@@ -597,6 +597,7 @@
         </div>
 
         <div class="admin-actions">
+            <button class="btn-admin-reset" id="adminThemenToggleBtn" onclick="toggleThemenVisibilityForAll()" style="display:none;">📂 إخفاء المواضيع عن الجميع ما عدا 9898 و 0860</button>
             <button class="btn-admin-reset" onclick="resetAllNotifications()">🔔 تصفير كل الإشعارات</button>
             <button class="btn-admin-reset" onclick="resetAllViews()">👁️ تصفير كل المشاهدات</button>
             <button class="btn-admin-reset" onclick="resetAllLikes()">👍 تصفير كل الإعجابات</button>
@@ -607,7 +608,7 @@
 
     <div id="menu-view">
         <button class="verse-list-btn lessons-main-btn" onclick="showLessonsView()" style="margin-bottom:15px;">📚 جميع الدروس</button>
-        <button class="verse-list-btn" onclick="showThemenView()" style="margin: 0 0 15px 0;">📂 المواضيع</button>
+        <button class="verse-list-btn" id="themenMenuBtn" onclick="showThemenView()" style="margin: 0 0 15px 0;">📂 المواضيع</button>
         <button class="verse-list-btn" style="margin: 0 0 15px 0;" onclick="showSavedList()">📌 للمشاهدة لاحقاً</button>
         <div id="app-stats-card" class="leaderboard-card" style="margin-bottom:15px;">
             <div class="lb-title">📊 إحصائيات التطبيق</div>
@@ -752,6 +753,7 @@
         const ADMIN_PIN = "1879";
         const TEACHER_LOTFI_PIN = "9898";
         const RESERVED_PINS = ["9898", "1879"];
+        const THEMEN_ALLOWED_PINS = ["9898", "0860"];
         (function storePushParamsIfNeeded() {
             const params = new URLSearchParams(window.location.search);
             const postId = params.get('postId'), fileId = params.get('fileId'), notifId = params.get('notifId') || '';
@@ -1345,6 +1347,7 @@
             document.getElementById('login-screen').style.display = 'none';
             updateUIForRole();
             if (uid !== 'guest') listenForNotifications();
+            listenForAppConfig();
             renderMenu();
             window.scrollTo({ top: 0, behavior: 'smooth' });
             if (uid && uid !== 'admin_super' && uid !== 'guest') requestPushPermissionAndSaveToken(uid, role);
@@ -3008,6 +3011,19 @@
 
         // --- NOTIFICATIONS ---
         let notifUnsubscribe = null;
+        let appConfigUnsubscribe = null;
+        window.appConfigThemenHiddenExceptPins = false;
+        function listenForAppConfig() {
+            const uid = localStorage.getItem('it9an_uid');
+            if (!uid) return;
+            const ref = window.doc(window.db, 'appConfig', 'settings');
+            if (appConfigUnsubscribe) appConfigUnsubscribe();
+            appConfigUnsubscribe = window.onSnapshot(ref, (snap) => {
+                const data = snap.exists() ? snap.data() : {};
+                window.appConfigThemenHiddenExceptPins = data.themenHiddenExceptPins === true;
+                if (document.getElementById('menu-view') && document.getElementById('menu-view').style.display !== 'none') renderMenu();
+            }, (err) => { window.appConfigThemenHiddenExceptPins = false; });
+        }
         function updateAppIconBadge(count) {
             if ('setAppBadge' in navigator) {
                 try {
@@ -3499,12 +3515,28 @@
                 document.getElementById('microEnableBtn').style.display = 'none';
                 const contactBtn = document.getElementById('contactAdminBtn');
                 if (contactBtn) contactBtn.style.display = 'none';
+                const themenBtn = document.getElementById('themenMenuBtn');
+                if (themenBtn) themenBtn.style.display = '';
+                const adminThemenToggle = document.getElementById('adminThemenToggleBtn');
+                if (adminThemenToggle) {
+                    adminThemenToggle.style.display = 'block';
+                    adminThemenToggle.innerText = window.appConfigThemenHiddenExceptPins ? '📂 إظهار المواضيع للجميع' : '📂 إخفاء المواضيع عن الجميع ما عدا 9898 و 0860';
+                }
                 loadAdminMessagesList();
                 loadLeaderboard(lbPendingRestore ? doLbRestore : undefined);
                 loadAppStats();
             } else {
                 document.getElementById('adminMenuPanel').style.display = 'none';
                 document.getElementById('leaderboard-section').style.display = 'block';
+                const themenBtn = document.getElementById('themenMenuBtn');
+                if (themenBtn) {
+                    const restricted = window.appConfigThemenHiddenExceptPins === true;
+                    const u = leaderboardAllUsers.find(x => x.uid === uid) || leaderboardAllTeachers.find(x => x.uid === uid);
+                    const pinRaw = (u && u.personalPin != null) ? u.personalPin : (localStorage.getItem('it9an_pin') || '');
+                    const pinNorm = String(pinRaw).replace(/\D/g, '').padStart(4, '0').slice(-4);
+                    const allowed = THEMEN_ALLOWED_PINS.includes(pinNorm);
+                    themenBtn.style.display = (restricted && !allowed) ? 'none' : '';
+                }
                 const role = localStorage.getItem('it9an_role');
                 const showPermBtns = (role === 'teacher' || role === 'student');
                 const contactBtn = document.getElementById('contactAdminBtn');
@@ -4736,6 +4768,19 @@
                 const snap = await window.getDocs(q);
                 for(const d of snap.docs) { await window.deleteDoc(window.doc(window.db, "notifications", d.id)); }
                 alert("تم تصفير جميع الإشعارات");
+            }
+        }
+
+        window.toggleThemenVisibilityForAll = async function() {
+            if (localStorage.getItem('it9an_uid') !== 'admin_super') return;
+            const ref = window.doc(window.db, 'appConfig', 'settings');
+            const next = !window.appConfigThemenHiddenExceptPins;
+            try {
+                await window.setDoc(ref, { themenHiddenExceptPins: next }, { merge: true });
+                window.appConfigThemenHiddenExceptPins = next;
+                renderMenu();
+            } catch (e) {
+                alert('خطأ: ' + (e.message || e));
             }
         }
 
