@@ -3065,7 +3065,11 @@
                     const fileId = n.fileId || '';
                     const postId = n.postId || '';
                     const messageId = n.messageId || '';
-                    const onClick = n.type === 'admin_message' ? `openFromAdminMessageNotif('${n.id}', '${messageId}')` : `openFromNotif('${n.id}', '${fileId}', '${postId}')`;
+                    const notifIdEsc = String(n.id || '').replace(/'/g, "\\'");
+                    const fileIdEsc = String(fileId).replace(/'/g, "\\'");
+                    const postIdEsc = String(postId).replace(/'/g, "\\'");
+                    const messageIdEsc = String(messageId).replace(/'/g, "\\'");
+                    const onClick = n.type === 'admin_message' ? `openFromAdminMessageNotif('${notifIdEsc}', '${messageIdEsc}')` : `openFromNotif('${notifIdEsc}', '${fileIdEsc}', '${postIdEsc}')`;
 
                     list.innerHTML += `
                     <div class="notif-card" onclick="${onClick}">
@@ -5068,7 +5072,7 @@
         const functions = require('firebase-functions'); const admin = require('firebase-admin'); admin.initializeApp();
         exports.sendPushOnNotif = functions.firestore.document('notifications/{id}').onCreate(async (snap, ctx) => {
           const d = snap.data(); const to = d.to;
-          const tokens = []; 
+          const tokens = [];
           if (to === 'teachers') {
             const q = admin.firestore().collection('fcmTokens').where('role','==','teacher');
             (await q.get()).forEach(t => { if (t.data().token) tokens.push(t.data().token); });
@@ -5081,7 +5085,19 @@
           if (d.type === 'reply') body = 'رد جديد من ' + (d.senderName || '');
           if (d.type === 'new_recording') body = 'تسجيل جديد من ' + (d.senderName || '');
           if (d.type === 'admin_message') body = (d.subtype === 'user_contact' && d.senderName) ? ('رسالة من ' + d.senderName) : 'رسالة من المسؤول';
-          await admin.messaging().sendEachForMulticast({ tokens, notification: { title, body }, webpush: { notification: { vibrate: [200,100,200], requireInteraction: false } }, android: { priority: 'high', notification: { sound: 'default', defaultVibrateTimings: true } }, apns: { payload: { aps: { sound: 'default', contentAvailable: true } } } });
+          const notifId = snap.id;
+          const postId = String(d.postId || '');
+          const fileId = String(d.fileId || '');
+          const dataPayload = { title, body, notifId, postId, fileId };
+          if (d.replyTimestamp) dataPayload.replyTimestamp = String(d.replyTimestamp);
+          await admin.messaging().sendEachForMulticast({
+            tokens,
+            data: dataPayload,
+            notification: { title, body },
+            webpush: { notification: { vibrate: [200,100,200], requireInteraction: false } },
+            android: { priority: 'high', notification: { sound: 'default', defaultVibrateTimings: true } },
+            apns: { payload: { aps: { sound: 'default', contentAvailable: true } } }
+          });
         });
         */
     </script>
