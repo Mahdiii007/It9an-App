@@ -1195,6 +1195,37 @@
             return dateStr + ' — ' + namePart;
         }
         function stripYearFromName(n) { return (n && typeof n === 'string' ? String(n).replace(/\s*\(\d{4}\)\s*$/, '').trim() : n) || ''; }
+        window._resolvedNamesCache = {};
+        async function getDisplayNameByUid(uid) {
+            if (!uid) return 'مستخدم';
+            if (window._resolvedNamesCache[uid] !== undefined) return window._resolvedNamesCache[uid];
+            try {
+                var snap = await window.getDoc(window.doc(window.db, 'users', uid));
+                if (!snap.exists()) { window._resolvedNamesCache[uid] = 'مستخدم'; return 'مستخدم'; }
+                var u = snap.data();
+                var name = stripYearFromName((u.baseName || (u.name ? String(u.name).replace(/\s*\(\d{4}\)\s*$/, '').trim() : '') || u.name || '').trim()) || 'مستخدم';
+                window._resolvedNamesCache[uid] = name;
+                return name;
+            } catch(e) { window._resolvedNamesCache[uid] = 'مستخدم'; return 'مستخدم'; }
+        }
+        async function resolveDisplayNamesForUids(uids) {
+            var uniq = uids ? [...new Set(uids.filter(Boolean))] : [];
+            for (var i = 0; i < uniq.length; i++) {
+                var uid = uniq[i];
+                if (window._resolvedNamesCache[uid] === undefined) {
+                    try {
+                        var snap = await window.getDoc(window.doc(window.db, 'users', uid));
+                        if (snap.exists()) {
+                            var u = snap.data();
+                            window._resolvedNamesCache[uid] = stripYearFromName((u.baseName || (u.name ? String(u.name).replace(/\s*\(\d{4}\)\s*$/, '').trim() : '') || u.name || '').trim()) || 'مستخدم';
+                        } else {
+                            window._resolvedNamesCache[uid] = 'مستخدم';
+                        }
+                    } catch(e) { window._resolvedNamesCache[uid] = 'مستخدم'; }
+                }
+            }
+            return window._resolvedNamesCache;
+        }
         // --- NEW ID GENERATOR WITH YEAR ---
         function generateUserId(fullName, role, year) {
             let cleanName = fullName.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
@@ -2490,22 +2521,29 @@
                 const fileId = data.fileId || '1';
                 if (data.uid === studentUid && data.likes && data.likes.length) {
                     data.likes.forEach(l => {
-                        const name = stripYearFromName(typeof l === 'object' ? (l.name || 'مستخدم') : 'مستخدم');
+                        var likerUid = typeof l === 'object' ? l.uid : l;
+                        const name = stripYearFromName(typeof l === 'object' ? (l.name || '') : '');
                         const ts = typeof l === 'object' && l.timestamp ? l.timestamp : 0;
-                        all.push({ type: 'post', postId, audioUrl: data.audioUrl, fileId, likerName: name, timestamp: ts, playId: postId });
+                        all.push({ type: 'post', postId, audioUrl: data.audioUrl, fileId, likerUid: likerUid, likerName: name || 'مستخدم', timestamp: ts, playId: postId });
                     });
                 }
                 if (data.replies) {
                     data.replies.forEach((r, idx) => {
                         if (r.uid === studentUid && r.likes && r.likes.length) {
                             r.likes.forEach(l => {
-                                const name = stripYearFromName(typeof l === 'object' ? (l.name || 'مستخدم') : 'مستخدم');
+                                var likerUid = typeof l === 'object' ? l.uid : l;
+                                const name = stripYearFromName(typeof l === 'object' ? (l.name || '') : '');
                                 const ts = typeof l === 'object' && l.timestamp ? l.timestamp : 0;
-                                all.push({ type: 'reply', postId, replyIdx: idx, replyTimestamp: r.timestamp, audioUrl: r.audioUrl, fileId: data.fileId || '1', likerName: name, timestamp: ts, playId: postId + '-reply-' + idx });
+                                all.push({ type: 'reply', postId, replyIdx: idx, replyTimestamp: r.timestamp, audioUrl: r.audioUrl, fileId: data.fileId || '1', likerUid: likerUid, likerName: name || 'مستخدم', timestamp: ts, playId: postId + '-reply-' + idx });
                             });
                         }
                     });
                 }
+            });
+            var uids = all.map(function(it) { return it.likerUid; }).filter(Boolean);
+            await resolveDisplayNamesForUids(uids);
+            all.forEach(function(it) {
+                if (it.likerUid && window._resolvedNamesCache[it.likerUid]) it.likerName = window._resolvedNamesCache[it.likerUid];
             });
             all.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
             return all;
@@ -3148,7 +3186,7 @@
             const div = document.getElementById('community-feed');
             const userRole = localStorage.getItem('it9an_role');
             const myUid = localStorage.getItem('it9an_uid');
-            renderPosts(div, userRole, myUid, savedIdsForFeed);
+            renderPosts(div, userRole, myUid, savedIdsForFeed, window._resolvedNamesCache);
         }
 
         let currentAdminMessageId = null;
@@ -3161,12 +3199,16 @@
             const replies = d.replies || [];
             const repliesDiv = document.getElementById('adminMsgReplies');
             if (replies.length > 0) {
-                repliesDiv.innerHTML = '<div style="font-weight:bold; color:var(--primary); margin-bottom:8px;">الردود:</div>' + replies.map(r => {
-                    const name = stripYearFromName(r.name || 'مستخدم');
-                    const dateStr = r.timestamp ? new Date(r.timestamp).toLocaleString('ar-EG', { numberingSystem: 'latn' }) : '';
-                    const fromAdmin = r.uid === 'admin_super';
-                    return `<div style="background:${fromAdmin ? '#e8f5e9' : '#f5f5f5'}; padding:10px; border-radius:8px; margin-bottom:6px; border-right:4px solid ${fromAdmin ? 'var(--primary)' : '#999'};"><div style="font-weight:bold; font-size:14px;">${name}${fromAdmin ? ' (المسؤول)' : ''}</div><div style="white-space:pre-wrap; margin:6px 0;">${(r.text || '').replace(/</g,'&lt;')}</div><div style="font-size:12px; color:#888;">${dateStr}</div></div>`;
-                }).join('');
+                var replyUids = replies.map(function(r) { return r.uid; }).filter(Boolean);
+                resolveDisplayNamesForUids(replyUids).then(function() {
+                    var rn = window._resolvedNamesCache;
+                    repliesDiv.innerHTML = '<div style="font-weight:bold; color:var(--primary); margin-bottom:8px;">الردود:</div>' + replies.map(r => {
+                        const name = (rn[r.uid] || stripYearFromName(r.name) || 'مستخدم').replace(/</g,'&lt;');
+                        const dateStr = r.timestamp ? new Date(r.timestamp).toLocaleString('ar-EG', { numberingSystem: 'latn' }) : '';
+                        const fromAdmin = r.uid === 'admin_super';
+                        return `<div style="background:${fromAdmin ? '#e8f5e9' : '#f5f5f5'}; padding:10px; border-radius:8px; margin-bottom:6px; border-right:4px solid ${fromAdmin ? 'var(--primary)' : '#999'};"><div style="font-weight:bold; font-size:14px;">${name}${fromAdmin ? ' (المسؤول)' : ''}</div><div style="white-space:pre-wrap; margin:6px 0;">${(r.text || '').replace(/</g,'&lt;')}</div><div style="font-size:12px; color:#888;">${dateStr}</div></div>`;
+                    }).join('');
+                });
                 repliesDiv.style.display = 'block';
             } else {
                 repliesDiv.innerHTML = '';
@@ -3394,7 +3436,10 @@
         window.showAdminMessageLikersById = async function(msgId) {
             const snap = await window.getDoc(window.doc(window.db, "adminMessages", msgId));
             const likes = snap.exists() ? (snap.data().likes || []) : [];
-            const names = likes.map(l => stripYearFromName((typeof l === 'object' ? l.name : l) || 'مستخدم')).join('\n');
+            var uids = likes.map(function(l) { return typeof l === 'object' ? l.uid : l; }).filter(Boolean);
+            await resolveDisplayNamesForUids(uids);
+            var rn = window._resolvedNamesCache;
+            const names = likes.map(l => (rn[typeof l === 'object' ? l.uid : l] || stripYearFromName(typeof l === 'object' ? l.name : '') || 'مستخدم')).join('\n');
             alert(names || 'لا أحد');
         }
 
@@ -3852,14 +3897,27 @@
             feedLimit = 3; loadFeed(globalId);
         }
 
-        window.showViewers = function() {
+        window.showViewers = async function() {
             const data = window.currentViewersData || { viewers: {}, totalRepetitions: 0 };
             const viewers = data.viewers || {};
             const total = data.totalRepetitions || 0;
-            const entries = Object.entries(viewers).map(([uid, v]) => ({ uid, name: stripYearFromName((v && v.name) || 'مستخدم'), count: (v && v.count) || 0 })).filter(e => e.count > 0);
+            let entries = Object.entries(viewers).map(([uid, v]) => ({ uid, name: stripYearFromName((v && v.name) || ''), count: (v && v.count) || 0 })).filter(e => e.count > 0);
             if(entries.length === 0 && total === 0) {
                 alert("لا يوجد مشاهدات بعد");
                 return;
+            }
+            for (var i = 0; i < entries.length; i++) {
+                if (!entries[i].name || entries[i].name === 'مستخدم') {
+                    try {
+                        var userSnap = await window.getDoc(window.doc(window.db, 'users', entries[i].uid));
+                        if (userSnap.exists()) {
+                            var u = userSnap.data();
+                            entries[i].name = stripYearFromName((u.baseName || (u.name ? String(u.name).replace(/\s*\(\d{4}\)\s*$/, '').trim() : '') || u.name || '').trim()) || 'مستخدم';
+                        } else {
+                            entries[i].name = 'مستخدم';
+                        }
+                    } catch(e) { entries[i].name = 'مستخدم'; }
+                }
             }
             let lines = ["👁️ " + total + " المجموع الكلي\n"];
             entries.sort((a,b) => (b.count || 0) - (a.count || 0)).forEach(e => { lines.push("👁️ " + e.count + "  " + e.name); });
@@ -3920,7 +3978,17 @@
                         savedSnap.forEach(d => savedIdsForFeed.add(d.data().postId));
                     } catch(e) {}
                 }
-                renderPosts(div, userRole, myUid, savedIdsForFeed);
+                var feedUids = [];
+                allLoadedPosts.forEach(function(d) {
+                    if (d.uid) feedUids.push(d.uid);
+                    if (d.likes) d.likes.forEach(function(l) { var u = typeof l === 'object' ? l.uid : l; if (u) feedUids.push(u); });
+                    if (d.replies) d.replies.forEach(function(r) {
+                        if (r.uid) feedUids.push(r.uid);
+                        if (r.likes) r.likes.forEach(function(l) { var u = typeof l === 'object' ? l.uid : l; if (u) feedUids.push(u); });
+                    });
+                });
+                await resolveDisplayNamesForUids(feedUids);
+                renderPosts(div, userRole, myUid, savedIdsForFeed, window._resolvedNamesCache);
                 
                 if (activePostFilter) {
                     setTimeout(() => {
@@ -3933,7 +4001,8 @@
             });
         }
 
-        function renderPosts(container, userRole, myUid, savedIds) {
+        function renderPosts(container, userRole, myUid, savedIds, resolvedNames) {
+            resolvedNames = resolvedNames || {};
             savedIds = savedIds || new Set();
             let htmlContent = "";
             let displayPosts = allLoadedPosts.slice(0, feedLimit);
@@ -3967,7 +4036,7 @@
                 if (d.likes && Array.isArray(d.likes)) { 
                     mainLikesCount = d.likes.length; 
                     mainIsLikedByMe = d.likes.some(l => (typeof l === 'object' ? l.uid === myUid : l === myUid)); 
-                    mainLikerNames = d.likes.map(l => stripYearFromName(typeof l === 'object' ? (l.name || 'مستخدم') : 'مستخدم'));
+                    mainLikerNames = d.likes.map(l => { var uid = typeof l === 'object' ? l.uid : l; return (resolvedNames[uid] || stripYearFromName(typeof l === 'object' ? l.name : '') || 'مستخدم'); });
                 }
                 const isMyMainPost = (d.uid === myUid);
                 const isGuest = (myUid === 'guest');
@@ -4004,7 +4073,7 @@
                         if (r.likes && Array.isArray(r.likes)) { 
                             rLikesCount = r.likes.length; 
                             rIsLikedByMe = r.likes.some(l => (typeof l === 'object' ? l.uid === myUid : l === myUid)); 
-                            rLikerNames = r.likes.map(l => stripYearFromName(typeof l === 'object' ? (l.name || 'مستخدم') : 'مستخدم'));
+                            rLikerNames = r.likes.map(l => { var uid = typeof l === 'object' ? l.uid : l; return (resolvedNames[uid] || stripYearFromName(typeof l === 'object' ? l.name : '') || 'مستخدم'); });
                         }
                         const isMyReply = (r.uid === myUid);
                         let rLikeClass = rIsLikedByMe ? 'liked' : '';
@@ -4029,7 +4098,7 @@
                         <div class="${rBoxClass}">
                             <div class="reply-row1">
                                 ${rDelWrap}
-                                <div class="reply-name-badge">${stripYearFromName(r.name)} ${rBadge}</div>
+                                <div class="reply-name-badge">${(resolvedNames[r.uid] || stripYearFromName(r.name) || 'مستخدم').replace(/</g,'&lt;')} ${rBadge}</div>
                                 <div class="reply-like-wrap">
                                     <div class="like-btn ${rLikeClass}">
                                         <div class="like-action ${rLockedClass}" onclick="${rLikeAction}">👍</div>
@@ -4067,7 +4136,7 @@
                 <div class="${msgClass}" id="post-${d.id}">
                     <div class="feed-row1">
                         ${delBtn}
-                        <div class="feed-name-badge">${stripYearFromName(d.name)} <span class="${badgeClass}">${badgeText}</span></div>
+                        <div class="feed-name-badge">${(resolvedNames[d.uid] || stripYearFromName(d.name) || 'مستخدم').replace(/</g,'&lt;')} <span class="${badgeClass}">${badgeText}</span></div>
                         ${saveBtnHtml}
                         <div class="feed-like-wrap">
                             <div class="like-btn ${mainLikeClass}">
@@ -4103,7 +4172,7 @@
             const userRole = localStorage.getItem('it9an_role');
             const myUid = localStorage.getItem('it9an_uid');
             const scrollY = window.scrollY;
-            renderPosts(div, userRole, myUid, savedIdsForFeed);
+            renderPosts(div, userRole, myUid, savedIdsForFeed, window._resolvedNamesCache);
             window.scrollTo(0, scrollY);
         }
 
@@ -4122,7 +4191,7 @@
                     savedIdsForFeed.add(postId);
                 }
                 const div = document.getElementById('community-feed');
-                if (div) renderPosts(div, localStorage.getItem('it9an_role'), myUid, savedIdsForFeed);
+                if (div) renderPosts(div, localStorage.getItem('it9an_role'), myUid, savedIdsForFeed, window._resolvedNamesCache);
             } catch (e) { console.error(e); alert("حدث خطأ"); }
         }
 
@@ -4150,11 +4219,21 @@
                     container.innerHTML = "<div style='text-align:center; color:#999; font-size:16px; padding:20px;'>لا توجد تسجيلات محفوظة</div>";
                     return;
                 }
-                let html = "";
-                for (const it of items) {
-                    const postSnap = await window.getDoc(window.doc(window.db, "posts", it.postId));
+                var savedPosts = [];
+                var savedUids = [];
+                for (var it of items) {
+                    var postSnap = await window.getDoc(window.doc(window.db, "posts", it.postId));
                     if (!postSnap.exists()) continue;
-                    const d = { id: postSnap.id, ...postSnap.data() };
+                    var d = { id: postSnap.id, ...postSnap.data() };
+                    savedPosts.push({ it: it, d: d });
+                    if (d.uid) savedUids.push(d.uid);
+                    if (d.replies) d.replies.forEach(function(r) { if (r.uid) savedUids.push(r.uid); });
+                }
+                await resolveDisplayNamesForUids(savedUids);
+                var rn = window._resolvedNamesCache;
+                let html = "";
+                for (var i = 0; i < savedPosts.length; i++) {
+                    var it = savedPosts[i].it, d = savedPosts[i].d;
                     const fileId = d.fileId ? String(d.fileId) : '';
                     let msgClass = 'feed-msg student-msg';
                     let badgeClass = 'role-badge badge-student';
@@ -4173,15 +4252,17 @@
                             let rDateStr = r.timestamp ? (function(ts){ let dt=new Date(ts); return dt.getFullYear()+'-'+('0'+(dt.getMonth()+1)).slice(-2)+'-'+('0'+dt.getDate()).slice(-2)+' '+('0'+dt.getHours()).slice(-2)+':'+('0'+dt.getMinutes()).slice(-2); })(r.timestamp) : '';
                             let rBadge = r.uid === 'admin_super' ? '<span class="role-badge badge-admin">المسؤول</span>' : (r.role === 'teacher' ? '<span class="role-badge badge-teacher">معلم</span>' : '<span class="role-badge badge-student">طالب</span>');
                             let rUniqueId = d.id + "-saved-reply-" + idx;
-                            repliesInner += `<div class="${rBoxClass}"><div class="reply-row1"><div class="reply-name-badge">${r.name} ${rBadge}</div></div><div class="reply-row2">${rDateStr ? '<span class="reply-datetime">'+rDateStr+'</span>' : ''}<div class="reply-player-wrap"><div class="custom-player"><button class="cp-btn" id="btn-${rUniqueId}" onclick="playFeedAudio('${r.audioUrl}', '${rUniqueId}')">▶</button><input type="range" class="cp-slider" id="seek-${rUniqueId}" value="0" min="0" step="0.1" oninput="seekFeedAudio(this.value)"><span class="cp-time" id="time-${rUniqueId}">00:00</span></div></div></div></div>`;
+                            var rName = (rn[r.uid] || stripYearFromName(r.name) || 'مستخدم').replace(/</g,'&lt;');
+                            repliesInner += `<div class="${rBoxClass}"><div class="reply-row1"><div class="reply-name-badge">${rName} ${rBadge}</div></div><div class="reply-row2">${rDateStr ? '<span class="reply-datetime">'+rDateStr+'</span>' : ''}<div class="reply-player-wrap"><div class="custom-player"><button class="cp-btn" id="btn-${rUniqueId}" onclick="playFeedAudio('${r.audioUrl}', '${rUniqueId}')">▶</button><input type="range" class="cp-slider" id="seek-${rUniqueId}" value="0" min="0" step="0.1" oninput="seekFeedAudio(this.value)"><span class="cp-time" id="time-${rUniqueId}">00:00</span></div></div></div></div>`;
                         });
                         repliesHtml = `<div class="replies-wrapper"><div class="replies-title">الردود</div>${repliesInner}</div>`;
                     }
                     const openToFeed = fileId ? `openSavedToFeed('${String(fileId).replace(/'/g, "\\'")}', '${d.id}')` : '';
+                    var mainName = (rn[d.uid] || stripYearFromName(d.name) || 'مستخدم').replace(/</g,'&lt;');
                     html += `<div class="${msgClass}" id="saved-post-${d.id}">
                         <div class="feed-row1">
                             <div class="feed-delete-wrap"><button class="delete-btn" onclick="removeFromSaved('${it.savedDocId}', '${d.id}')" title="إزالة من القائمة">🗑️</button></div>
-                            <div class="feed-name-badge">${stripYearFromName(d.name)} <span class="${badgeClass}">${badgeText}</span></div>
+                            <div class="feed-name-badge">${mainName} <span class="${badgeClass}">${badgeText}</span></div>
                         </div>
                         <div class="feed-row2">
                             <span class="feed-datetime">${postDateStr}</span>
@@ -4468,8 +4549,8 @@
                         if(verseRepeatsPlayed === 0) updates.verseViewCount = window.increment(1);
                         updates[`viewers.${uid}.count`] = window.increment(1);
                         updates[`viewers.${uid}.lastViewed`] = window.serverTimestamp();
-                        if(uid === 'guest') updates[`viewers.${uid}.name`] = 'ضيف';
-                        else updates[`viewers.${uid}.name`] = (myName && !isHidden) ? myName : 'مستخدم';
+                        var viewerName = (uid === 'guest') ? 'ضيف' : ((myName && !isHidden) ? myName : 'مستخدم');
+                        updates[`viewers.${uid}.name`] = viewerName;
                         await window.updateDoc(sRef, updates);
                     } catch(e){}
                 }
