@@ -858,6 +858,10 @@
             window._assets2Base = ASSETS2_BASE;
             return [];
         }
+        async function hasAnyVerse(themeId, doorId, lessonId) {
+            var url = getAssets2Base() + '/' + themeId + '/' + doorId + '/' + lessonId + '/' + lessonId + '-1.png';
+            return await checkAssetExists(url);
+        }
         async function discoverDoors(themeId) {
             var rawList = [];
             for (var i = 1; i <= DOORS_DISCOVERY_MAX; i++) {
@@ -866,10 +870,10 @@
                 if (!(await checkAssetExists(url))) break;
                 rawList.push({ id: id });
             }
+            var results = await Promise.all(rawList.map(function(d) { return discoverLessons(themeId, d.id); }));
             var list = [];
             for (var j = 0; j < rawList.length; j++) {
-                var lessons = await discoverLessons(themeId, rawList[j].id);
-                if (lessons.length > 0) list.push(rawList[j]);
+                if (results[j].length > 0) list.push(rawList[j]);
             }
             return list;
         }
@@ -881,10 +885,10 @@
                 if (!(await checkAssetExists(url))) break;
                 rawList.push({ id: id });
             }
+            var checks = await Promise.all(rawList.map(function(l) { return hasAnyVerse(themeId, doorId, l.id); }));
             var list = [];
             for (var j = 0; j < rawList.length; j++) {
-                var verseCount = await discoverVerses(themeId, doorId, rawList[j].id);
-                if (verseCount > 0) list.push(rawList[j]);
+                if (checks[j]) list.push(rawList[j]);
             }
             return list;
         }
@@ -1974,6 +1978,7 @@
             const btn = document.getElementById('lbRefreshStudentsBtn');
             if (btn) { btn.disabled = true; btn.innerText = 'جاري التحديث...'; }
             lastStudentsRefreshTime = Date.now();
+            if (unsubscribeLeaderboard) { unsubscribeLeaderboard(); unsubscribeLeaderboard = null; }
             try {
                 lbRecordingsCache = {}; lbLikesCache = {}; lbViewsCache = {};
                 const q = window.query(window.collection(window.db, "users"), window.where("role", "==", "student"));
@@ -2006,7 +2011,10 @@
                 document.body.appendChild(toast);
                 setTimeout(() => toast.remove(), 2000);
             } catch(e) { console.warn("refreshStudentsLeaderboard:", e); alert("خطأ في التحديث"); }
-            finally { if (btn) { btn.disabled = false; btn.innerText = '🔄 تحديث'; } }
+            finally {
+                if (btn) { btn.disabled = false; btn.innerText = '🔄 تحديث'; }
+                loadLeaderboard();
+            }
         }
 
         window.refreshTeachersLeaderboard = async function() {
@@ -5019,10 +5027,27 @@
         }
 
         window.resetLocalViews = async function() {
-            if(confirm("تصفير مشاهدات هذا المقطع فقط؟")) {
-                try { await window.deleteDoc(window.doc(window.db, "stats", getCurrentStatDocId())); loadLeaderboard(); alert("تم التصفير"); } 
-                catch(e) { alert("خطأ"); }
-            }
+            if(!confirm("تصفير مشاهدات هذا المقطع فقط؟")) return;
+            const statId = getCurrentStatDocId();
+            try {
+                const statRef = window.doc(window.db, "stats", statId);
+                const statSnap = await window.getDoc(statRef);
+                if (statSnap.exists()) {
+                    const data = statSnap.data();
+                    const viewers = data.viewers && typeof data.viewers === 'object' ? data.viewers : {};
+                    for (const [uid, v] of Object.entries(viewers)) {
+                        const count = (v && v.count) || 0;
+                        if (uid && uid !== 'guest' && count > 0) {
+                            try { await window.updateDoc(window.doc(window.db, "users", uid), { totalVerseViews: window.increment(-count) }); } catch(e){}
+                        }
+                    }
+                }
+                await window.deleteDoc(statRef);
+                lbViewsCache = {};
+                loadLeaderboard();
+                if (window.currentViewersData) { window.currentViewersData = { viewers: {}, totalRepetitions: 0 }; document.getElementById('viewCount').innerText = '0'; }
+                alert("تم التصفير");
+            } catch(e) { alert("خطأ"); }
         }
 
         window.resetLocalLikes = async function() {
