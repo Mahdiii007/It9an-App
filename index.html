@@ -607,6 +607,7 @@
 
     <div id="menu-view">
         <button class="verse-list-btn lessons-main-btn" onclick="showLessonsView()" style="margin-bottom:15px;">📚 جميع الدروس</button>
+        <button class="verse-list-btn" onclick="showThemenView()" style="margin: 0 0 15px 0;">📂 المواضيع</button>
         <button class="verse-list-btn" style="margin: 0 0 15px 0;" onclick="showSavedList()">📌 للمشاهدة لاحقاً</button>
         <div id="app-stats-card" class="leaderboard-card" style="margin-bottom:15px;">
             <div class="lb-title">📊 إحصائيات التطبيق</div>
@@ -648,6 +649,12 @@
         <div class="menu-grid" id="lesson-grid"></div>
     </div>
 
+    <div id="themen-view" style="display:none; padding: 15px 10px; width: 100%; max-width: 100%; margin: 0 auto; overflow-x: hidden;">
+        <button class="verse-list-btn lessons-main-btn" id="themen-back-btn" onclick="goBackThemen()" style="margin-bottom:15px;">↩️ العودة</button>
+        <h3 id="themen-title" style="text-align:center; color:var(--primary); font-size:22px; margin-bottom:15px;">📚 المواضيع</h3>
+        <div class="menu-grid" id="themen-nav-grid"></div>
+    </div>
+
     <div id="player-view">
         
         <div id="adminPlayerPanel" class="admin-panel">
@@ -667,7 +674,7 @@
         <div class="verse-section">
             <button id="lbBackToLikesBtn" class="verse-list-btn lb-back-btn" onclick="goBackToLbList()" style="display:none;">↩️ العودة</button>
             <button class="verse-list-btn" onclick="showVerseList()">📋 قائمة مقاطع الدرس</button>
-            <button class="verse-list-btn" onclick="showLessonsView()">📚 العودة لقائمة الدروس</button>
+            <button class="verse-list-btn" onclick="goBackFromPlayerToLessons()">📚 العودة لقائمة الدروس</button>
             <div class="quran-frame">
                 <div class="player-container">
                     <img id="currentImg" class="quran-image" src="" alt="Vers Bild" onerror="this.src='placeholder.png'">
@@ -790,6 +797,78 @@
             for(let i=0; i<index; i++) startId += VERS_PRO_LEKTION[i];
             return { id: index + 1, verse: anzahl, startGlobalId: startId };
         });
+
+        // --- Themen (assets 2): Struktur Themen → Türen → Lektionen → Verse ---
+        const ASSETS2_BASE = 'assets%202';
+        const THEMEN_DISCOVERY_MAX = 80;
+        const DOORS_DISCOVERY_MAX = 50;
+        const LESSONS_DISCOVERY_MAX = 50;
+        const VERSES_DISCOVERY_MAX = 150;
+        let themenNavStack = [];
+        let currentThemenTheme = null, currentThemenDoor = null, currentThemenLesson = null;
+        let isThemenMode = false;
+        let currentThemenVerseKey = null, currentThemenLocalVers = null;
+
+        function getThemenVerseKey(lessonId, localVersNum) { return lessonId + '-' + localVersNum; }
+        function getThemenAssetPath(themeId, doorId, lessonId, verseKey) {
+            return ASSETS2_BASE + '/' + themeId + '/' + doorId + '/' + lessonId + '/' + verseKey;
+        }
+        function checkAssetExists(url) {
+            return new Promise(function(resolve) {
+                var img = new Image();
+                var t = setTimeout(function() { img.onload = null; img.onerror = null; img.src = ''; resolve(false); }, 6000);
+                img.onload = function() { clearTimeout(t); resolve(true); };
+                img.onerror = function() { clearTimeout(t); resolve(false); };
+                img.src = url;
+            });
+        }
+        async function discoverThemes() {
+            var list = [];
+            for (var i = 1; i <= THEMEN_DISCOVERY_MAX; i++) {
+                var id = 'M' + i;
+                var url = ASSETS2_BASE + '/' + id + '/' + id + '.png';
+                if (!(await checkAssetExists(url))) break;
+                list.push({ id: id });
+            }
+            return list;
+        }
+        async function discoverDoors(themeId) {
+            var list = [];
+            for (var i = 1; i <= DOORS_DISCOVERY_MAX; i++) {
+                var id = String(i);
+                var url = ASSETS2_BASE + '/' + themeId + '/' + id + '/' + id + '.png';
+                if (!(await checkAssetExists(url))) break;
+                list.push({ id: id });
+            }
+            return list;
+        }
+        async function discoverLessons(themeId, doorId) {
+            var list = [];
+            for (var i = 1; i <= LESSONS_DISCOVERY_MAX; i++) {
+                var id = doorId + '-' + i;
+                var url = ASSETS2_BASE + '/' + themeId + '/' + doorId + '/' + id + '/' + id + '.png';
+                if (!(await checkAssetExists(url))) break;
+                list.push({ id: id });
+            }
+            return list;
+        }
+        async function discoverVerses(themeId, doorId, lessonId) {
+            var count = 0;
+            for (var i = 1; i <= VERSES_DISCOVERY_MAX; i++) {
+                var verseKey = lessonId + '-' + i;
+                var url = ASSETS2_BASE + '/' + themeId + '/' + doorId + '/' + lessonId + '/' + verseKey + '.png';
+                if (!(await checkAssetExists(url))) break;
+                count = i;
+            }
+            return count;
+        }
+        function getCurrentFileId() {
+            return isThemenMode && currentThemenVerseKey ? ('themen_' + currentThemenVerseKey) : String(currentGlobalFileId != null ? currentGlobalFileId : '');
+        }
+        function getCurrentStatDocId() {
+            return isThemenMode && currentThemenVerseKey ? ('file_themen_' + currentThemenVerseKey.replace(/-/g, '_')) : ('file_' + currentGlobalFileId);
+        }
+
         function getLessonVerseFromFileId(fileId) {
             const fid = parseInt(fileId, 10);
             for (let i = 0; i < KURS_DATEN.length; i++) {
@@ -2445,12 +2524,67 @@
         let lbRecordingsOpenRole = 'student';
         let lbPendingRestore = null;
 
+        function closeLbPanels() {
+            var openEl = lbLikesOpenUid ? document.getElementById('lb-likes-' + lbLikesOpenUid) : null;
+            if (openEl) openEl.style.display = 'none';
+            lbLikesOpenUid = null;
+            var openRec = lbRecordingsOpenUid ? document.getElementById('lb-recordings-' + lbRecordingsOpenUid) : null;
+            if (openRec) openRec.style.display = 'none';
+            lbRecordingsOpenUid = null;
+            var openViews = lbViewsOpenUid ? document.getElementById('lb-views-' + lbViewsOpenUid) : null;
+            if (openViews) openViews.style.display = 'none';
+            lbViewsOpenUid = null;
+        }
+
+        function openThemenVerseFromLeaderboard(themeId, doorId, lessonId, verseKey, lbSource, studentUid, offset, scrollToId, postId) {
+            var localVersNum = parseInt(verseKey.split('-').pop(), 10) || 1;
+            currentThemenTheme = { id: themeId };
+            currentThemenDoor = { id: doorId };
+            currentThemenLesson = { id: lessonId, verses: 0 };
+            currentLessonIdx = null;
+            isThemenMode = true;
+            if (lbSource === 'likes') {
+                lbReturnSource = 'likes';
+                highlightedPostId = postId;
+                activePostFilter = postId;
+            } else if (lbSource === 'recordings') {
+                lbReturnSource = 'recordings';
+                highlightedPostId = postId;
+                activePostFilter = postId;
+            } else {
+                lbReturnSource = 'views';
+                highlightedPostId = null;
+                activePostFilter = null;
+            }
+            lbReturnToUid = studentUid || null;
+            lbReturnOffset = offset || 0;
+            lbReturnScrollToId = scrollToId || postId || null;
+            closeLbPanels();
+            discoverVerses(themeId, doorId, lessonId).then(function(verseCount) {
+                currentThemenLesson.verses = verseCount;
+                if (verseCount === 0) return;
+                playVersThemen(verseKey, localVersNum);
+                updateLbBackButton();
+            });
+        }
+
         window.goToVerseFromLikes = function(fileId, postId, studentUid, offset) {
             pauseFeedAudio();
-            let foundIndex = -1, foundVerse = 1;
-            for (let i = 0; i < KURS_DATEN.length; i++) {
-                const start = KURS_DATEN[i].startGlobalId;
-                const end = start + KURS_DATEN[i].verse - 1;
+            var idStr = String(fileId);
+            if (idStr.indexOf('themen_') === 0) {
+                var postRef = window.doc(window.db, 'posts', postId);
+                window.getDoc(postRef).then(function(snap) {
+                    if (snap.exists() && snap.data().themenThemeId) {
+                        var d = snap.data();
+                        openThemenVerseFromLeaderboard(d.themenThemeId, d.themenDoorId, d.themenLessonId, idStr.replace('themen_', ''), 'likes', studentUid, offset, postId, postId);
+                    }
+                }).catch(function() {});
+                return;
+            }
+            var foundIndex = -1, foundVerse = 1;
+            for (var i = 0; i < KURS_DATEN.length; i++) {
+                var start = KURS_DATEN[i].startGlobalId;
+                var end = start + KURS_DATEN[i].verse - 1;
                 if (fileId >= start && fileId <= end) {
                     foundIndex = i;
                     foundVerse = fileId - start + 1;
@@ -2465,15 +2599,7 @@
                 currentLessonIdx = foundIndex;
                 highlightedPostId = postId;
                 activePostFilter = postId;
-                const openEl = lbLikesOpenUid ? document.getElementById('lb-likes-' + lbLikesOpenUid) : null;
-                if (openEl) openEl.style.display = 'none';
-                lbLikesOpenUid = null;
-                const openRec = lbRecordingsOpenUid ? document.getElementById('lb-recordings-' + lbRecordingsOpenUid) : null;
-                if (openRec) openRec.style.display = 'none';
-                lbRecordingsOpenUid = null;
-                const openViews = lbViewsOpenUid ? document.getElementById('lb-views-' + lbViewsOpenUid) : null;
-                if (openViews) openViews.style.display = 'none';
-                lbViewsOpenUid = null;
+                closeLbPanels();
                 playVers(parseInt(fileId), foundVerse);
                 updateLbBackButton();
             }
@@ -2481,10 +2607,22 @@
 
         window.goToVerseFromViews = function(fileId, studentUid, offset, scrollToId) {
             pauseFeedAudio();
-            let foundIndex = -1, foundVerse = 1;
-            for (let i = 0; i < KURS_DATEN.length; i++) {
-                const start = KURS_DATEN[i].startGlobalId;
-                const end = start + KURS_DATEN[i].verse - 1;
+            var idStr = String(fileId);
+            if (idStr.indexOf('themen_') === 0) {
+                var verseKey = idStr.replace('themen_', '');
+                var q = window.query(window.collection(window.db, 'posts'), window.where('fileId', '==', idStr));
+                window.getDocs(q).then(function(snap) {
+                    if (!snap.empty && snap.docs[0].data().themenThemeId) {
+                        var d = snap.docs[0].data();
+                        openThemenVerseFromLeaderboard(d.themenThemeId, d.themenDoorId, d.themenLessonId, verseKey, 'views', studentUid, offset, scrollToId, snap.docs[0].id);
+                    }
+                }).catch(function() {});
+                return;
+            }
+            var foundIndex = -1, foundVerse = 1;
+            for (var i = 0; i < KURS_DATEN.length; i++) {
+                var start = KURS_DATEN[i].startGlobalId;
+                var end = start + KURS_DATEN[i].verse - 1;
                 if (fileId >= start && fileId <= end) {
                     foundIndex = i;
                     foundVerse = fileId - start + 1;
@@ -2498,15 +2636,7 @@
                 lbReturnScrollToId = scrollToId || null;
                 highlightedPostId = null;
                 activePostFilter = null;
-                const openEl = lbLikesOpenUid ? document.getElementById('lb-likes-' + lbLikesOpenUid) : null;
-                if (openEl) openEl.style.display = 'none';
-                lbLikesOpenUid = null;
-                const openRec = lbRecordingsOpenUid ? document.getElementById('lb-recordings-' + lbRecordingsOpenUid) : null;
-                if (openRec) openRec.style.display = 'none';
-                lbRecordingsOpenUid = null;
-                const openViews = lbViewsOpenUid ? document.getElementById('lb-views-' + lbViewsOpenUid) : null;
-                if (openViews) openViews.style.display = 'none';
-                lbViewsOpenUid = null;
+                closeLbPanels();
                 feedLimit = 3;
                 playVers(parseInt(fileId), foundVerse);
                 updateLbBackButton();
@@ -2515,10 +2645,21 @@
 
         window.goToVerseFromRecordings = function(fileId, postId, studentUid, offset) {
             pauseFeedAudio();
-            let foundIndex = -1, foundVerse = 1;
-            for (let i = 0; i < KURS_DATEN.length; i++) {
-                const start = KURS_DATEN[i].startGlobalId;
-                const end = start + KURS_DATEN[i].verse - 1;
+            var idStr = String(fileId);
+            if (idStr.indexOf('themen_') === 0) {
+                var postRef = window.doc(window.db, 'posts', postId);
+                window.getDoc(postRef).then(function(snap) {
+                    if (snap.exists() && snap.data().themenThemeId) {
+                        var d = snap.data();
+                        openThemenVerseFromLeaderboard(d.themenThemeId, d.themenDoorId, d.themenLessonId, idStr.replace('themen_', ''), 'recordings', studentUid, offset, postId, postId);
+                    }
+                }).catch(function() {});
+                return;
+            }
+            var foundIndex = -1, foundVerse = 1;
+            for (var i = 0; i < KURS_DATEN.length; i++) {
+                var start = KURS_DATEN[i].startGlobalId;
+                var end = start + KURS_DATEN[i].verse - 1;
                 if (fileId >= start && fileId <= end) {
                     foundIndex = i;
                     foundVerse = fileId - start + 1;
@@ -2533,15 +2674,7 @@
                 currentLessonIdx = foundIndex;
                 highlightedPostId = postId;
                 activePostFilter = postId;
-                const openEl = lbLikesOpenUid ? document.getElementById('lb-likes-' + lbLikesOpenUid) : null;
-                if (openEl) openEl.style.display = 'none';
-                lbLikesOpenUid = null;
-                const openRec = lbRecordingsOpenUid ? document.getElementById('lb-recordings-' + lbRecordingsOpenUid) : null;
-                if (openRec) openRec.style.display = 'none';
-                lbRecordingsOpenUid = null;
-                const openViews = lbViewsOpenUid ? document.getElementById('lb-views-' + lbViewsOpenUid) : null;
-                if (openViews) openViews.style.display = 'none';
-                lbViewsOpenUid = null;
+                closeLbPanels();
                 playVers(parseInt(fileId), foundVerse);
                 updateLbBackButton();
             }
@@ -2892,8 +3025,48 @@
         }
 
         window.openFromNotif = async function(notifId, fileId, postId) {
-            const fid = parseInt(String(fileId || ''), 10);
-            if (!postId || !fileId || isNaN(fid)) {
+            var idStr = String(fileId || '');
+            if (!postId || !fileId) {
+                if (notifId) try { await window.deleteDoc(window.doc(window.db, "notifications", notifId)); } catch(e){}
+                alert("إشعار غير صالح. تم إزالة الإشعار.");
+                return;
+            }
+            if (idStr.indexOf('themen_') === 0) {
+                try {
+                    var postSnap = await window.getDoc(window.doc(window.db, "posts", postId));
+                    if (!postSnap.exists()) {
+                        if (notifId) await window.deleteDoc(window.doc(window.db, "notifications", notifId));
+                        alert("تم حذف التسجيل من قبل الطالب. تم إزالة الإشعار.");
+                        return;
+                    }
+                    var postData = postSnap.data();
+                    if (!postData.themenThemeId) {
+                        if (notifId) try { await window.deleteDoc(window.doc(window.db, "notifications", notifId)); } catch(e){}
+                        alert("إشعار غير صالح. تم إزالة الإشعار.");
+                        return;
+                    }
+                    highlightedPostId = postId;
+                    activePostFilter = postId;
+                    activePostFilterNotifId = notifId || null;
+                    var verseKey = idStr.replace('themen_', '');
+                    var localVersNum = parseInt(verseKey.split('-').pop(), 10) || 1;
+                    currentThemenTheme = { id: postData.themenThemeId };
+                    currentThemenDoor = { id: postData.themenDoorId };
+                    currentThemenLesson = { id: postData.themenLessonId, verses: postData.themenVerseCount || 0 };
+                    currentLessonIdx = null;
+                    isThemenMode = true;
+                    if (currentThemenLesson.verses < 1) {
+                        currentThemenLesson.verses = await discoverVerses(postData.themenThemeId, postData.themenDoorId, postData.themenLessonId);
+                    }
+                    playVersThemen(verseKey, localVersNum);
+                } catch(e) {
+                    if (notifId) try { await window.deleteDoc(window.doc(window.db, "notifications", notifId)); } catch(e2){}
+                    alert("إشعار غير صالح. تم إزالة الإشعار.");
+                }
+                return;
+            }
+            var fid = parseInt(idStr, 10);
+            if (isNaN(fid)) {
                 if (notifId) try { await window.deleteDoc(window.doc(window.db, "notifications", notifId)); } catch(e){}
                 alert("إشعار غير صالح. تم إزالة الإشعار.");
                 return;
@@ -3306,8 +3479,203 @@
 
         function startLesson(index) {
             currentLessonIdx = index;
+            isThemenMode = false;
             activePostFilter = null; activePostFilterNotifId = null; highlightedPostId = null;
             playVers(KURS_DATEN[index].startGlobalId, 1);
+        }
+
+        window.showThemenView = async function(restoreStack) {
+            var grid = document.getElementById('themen-nav-grid');
+            var titleEl = document.getElementById('themen-title');
+            var backBtn = document.getElementById('themen-back-btn');
+            if (!grid) return;
+            if (restoreStack) {
+                themenNavStack = restoreStack;
+            } else {
+                themenNavStack = [];
+            }
+            grid.innerHTML = '';
+            if (themenNavStack.length === 0) {
+                titleEl.innerText = '📂 المواضيع';
+                backBtn.onclick = function() { showView('menu-view'); document.getElementById('appFooter').style.display = 'none'; renderMenu(); };
+                grid.innerHTML = '<p style="text-align:center;color:#666;padding:20px;">جاري تحميل المواضيع...</p>';
+                showView('themen-view');
+                document.getElementById('pageTitle').innerText = 'المواضيع';
+                document.getElementById('appFooter').style.display = 'none';
+                var themes = await discoverThemes();
+                grid.innerHTML = '';
+                if (themes.length === 0) {
+                    grid.innerHTML = '<p style="text-align:center;color:#666;padding:20px;">لا توجد مواضيع في المجلد assets 2</p>';
+                    return;
+                }
+                themes.forEach(function(theme, index) {
+                    var div = document.createElement('div');
+                    div.className = 'menu-item';
+                    div.innerHTML = '<div class="menu-item-title">الموضوع ' + (index + 1) + '</div><img src="' + ASSETS2_BASE + '/' + theme.id + '/' + theme.id + '.png" loading="lazy" onerror="this.style.display=\'none\'">';
+                    div.onclick = function() { themenNavStack = [{ id: theme.id }]; showThemenDoors(theme.id); };
+                    grid.appendChild(div);
+                });
+            } else if (themenNavStack.length === 1) {
+                var theme = themenNavStack[0];
+                titleEl.innerText = '📚 الأبواب';
+                backBtn.onclick = goBackThemen;
+                theme.doors.forEach(function(door, index) {
+                    var div = document.createElement('div');
+                    div.className = 'menu-item';
+                    div.innerHTML = '<div class="menu-item-title">الباب ' + (index + 1) + '</div><img src="' + ASSETS2_BASE + '/' + theme.id + '/' + door.id + '/' + door.id + '.png" loading="lazy" onerror="this.style.display=\'none\'">';
+                    div.onclick = function() { themenNavStack = [theme, door]; showThemenLessons(theme, door); };
+                    grid.appendChild(div);
+                });
+            } else {
+                var theme = themenNavStack[0];
+                var door = themenNavStack[1];
+                titleEl.innerText = '📚 الدروس';
+                backBtn.onclick = goBackThemen;
+                door.lessons.forEach(function(lesson, index) {
+                    var div = document.createElement('div');
+                    div.className = 'menu-item';
+                    div.innerHTML = '<div class="menu-item-title">الدرس ' + (index + 1) + '</div><img src="' + ASSETS2_BASE + '/' + theme.id + '/' + door.id + '/' + lesson.id + '/' + lesson.id + '.png" loading="lazy" onerror="this.style.display=\'none\'">';
+                    div.onclick = function() { startThemenLessonAsync(theme, door, lesson); };
+                    grid.appendChild(div);
+                });
+            }
+            showView('themen-view');
+            var ptL = document.getElementById('pageTitle');
+            if (ptL) { ptL.classList.remove('header-name-pin'); ptL.innerText = 'المواضيع'; }
+            document.getElementById('appFooter').style.display = 'none';
+        };
+
+        window.showThemenDoors = async function(themeId) {
+            var grid = document.getElementById('themen-nav-grid');
+            var titleEl = document.getElementById('themen-title');
+            var backBtn = document.getElementById('themen-back-btn');
+            grid.innerHTML = '<p style="text-align:center;color:#666;padding:20px;">جاري تحميل الأبواب...</p>';
+            var doors = await discoverDoors(themeId);
+            var theme = { id: themeId, doors: doors };
+            themenNavStack = [theme];
+            grid.innerHTML = '';
+            if (doors.length === 0) {
+                grid.innerHTML = '<p style="text-align:center;color:#666;padding:20px;">لا توجد أبواب</p>';
+            } else {
+                titleEl.innerText = '📚 الأبواب';
+                backBtn.onclick = goBackThemen;
+                doors.forEach(function(door, index) {
+                    var div = document.createElement('div');
+                    div.className = 'menu-item';
+                    div.innerHTML = '<div class="menu-item-title">الباب ' + (index + 1) + '</div><img src="' + ASSETS2_BASE + '/' + themeId + '/' + door.id + '/' + door.id + '.png" loading="lazy" onerror="this.style.display=\'none\'">';
+                    div.onclick = function() { showThemenLessons(theme, door); };
+                    grid.appendChild(div);
+                });
+            }
+        };
+
+        window.showThemenLessons = async function(theme, door) {
+            var grid = document.getElementById('themen-nav-grid');
+            var titleEl = document.getElementById('themen-title');
+            var backBtn = document.getElementById('themen-back-btn');
+            grid.innerHTML = '<p style="text-align:center;color:#666;padding:20px;">جاري تحميل الدروس...</p>';
+            var lessons = await discoverLessons(theme.id, door.id);
+            var doorWithLessons = { id: door.id, lessons: lessons };
+            themenNavStack = [theme, doorWithLessons];
+            grid.innerHTML = '';
+            if (lessons.length === 0) {
+                grid.innerHTML = '<p style="text-align:center;color:#666;padding:20px;">لا توجد دروس</p>';
+            } else {
+                titleEl.innerText = '📚 الدروس';
+                backBtn.onclick = goBackThemen;
+                lessons.forEach(function(lesson, index) {
+                    var div = document.createElement('div');
+                    div.className = 'menu-item';
+                    div.innerHTML = '<div class="menu-item-title">الدرس ' + (index + 1) + '</div><img src="' + ASSETS2_BASE + '/' + theme.id + '/' + door.id + '/' + lesson.id + '/' + lesson.id + '.png" loading="lazy" onerror="this.style.display=\'none\'">';
+                    div.onclick = function() { startThemenLessonAsync(theme, doorWithLessons, lesson); };
+                    grid.appendChild(div);
+                });
+            }
+        };
+
+        function startThemenLessonAsync(theme, door, lesson) {
+            var grid = document.getElementById('themen-nav-grid');
+            grid.innerHTML = '<p style="text-align:center;color:#666;padding:20px;">جاري تحميل المقاطع...</p>';
+            discoverVerses(theme.id, door.id, lesson.id).then(function(verseCount) {
+                lesson.verses = verseCount;
+                if (verseCount === 0) {
+                    grid.innerHTML = '<p style="text-align:center;color:#666;padding:20px;">لا توجد مقاطع في هذا الدرس</p>';
+                    return;
+                }
+                currentThemenTheme = theme;
+                currentThemenDoor = door;
+                currentThemenLesson = lesson;
+                currentLessonIdx = null;
+                isThemenMode = true;
+                activePostFilter = null;
+                activePostFilterNotifId = null;
+                highlightedPostId = null;
+                var firstKey = getThemenVerseKey(lesson.id, 1);
+                playVersThemen(firstKey, 1);
+            });
+        }
+
+        window.goBackThemen = function() {
+            if (themenNavStack.length === 0) { showView('menu-view'); document.getElementById('appFooter').style.display = 'none'; renderMenu(); return; }
+            themenNavStack.pop();
+            if (themenNavStack.length === 0) { showView('menu-view'); document.getElementById('appFooter').style.display = 'none'; renderMenu(); return; }
+            showThemenView(themenNavStack);
+        };
+
+        window.goBackFromPlayerToLessons = function() {
+            if (isThemenMode && currentThemenTheme && currentThemenDoor) {
+                isThemenMode = false;
+                showThemenView([currentThemenTheme, currentThemenDoor]);
+                return;
+            }
+            showLessonsView();
+        };
+
+        async function playVersThemen(verseKey, localVersNum, isAuto = false) {
+            pauseFeedAudio();
+            currentThemenVerseKey = verseKey;
+            currentThemenLocalVers = localVersNum;
+            currentGlobalFileId = null;
+            currentLocalVers = localVersNum;
+            showView('player-view');
+            if (!activePostFilter) window.scrollTo({ top: 0, behavior: 'smooth' });
+            updateLbBackButton();
+            document.getElementById('appFooter').style.display = 'flex';
+            document.getElementById('adminMenuPanel').style.display = 'none';
+            const uid = localStorage.getItem('it9an_uid');
+            if (uid === 'admin_super') document.getElementById('adminPlayerPanel').style.display = 'block';
+            else document.getElementById('adminPlayerPanel').style.display = 'none';
+
+            const base = getThemenAssetPath(currentThemenTheme.id, currentThemenDoor.id, currentThemenLesson.id, verseKey);
+            const ptP = document.getElementById('pageTitle');
+            if (ptP) { ptP.classList.remove('header-name-pin'); ptP.innerHTML = `<span class="title-text-maktaa">المقطع ${localVersNum}</span><img src="${ASSETS2_BASE}/${currentThemenTheme.id}/${currentThemenTheme.id}.png" alt="Thema" onerror="this.style.display='none'">`; }
+            document.getElementById('currentImg').src = base + '.png';
+            audioEl.src = base + '.mp3';
+
+            if (!isAuto) stopLoop();
+            else {
+                verseRepeatsPlayed = 0;
+                document.getElementById('statusDisplay').innerText = "bereite nächsten Vers vor...";
+                if (isPlaying) playCycle();
+            }
+            window.currentViewersData = { viewers: {}, totalRepetitions: 0 };
+            document.getElementById('viewCount').innerText = "0";
+            const statRef = window.doc(window.db, "stats", "file_themen_" + verseKey.replace(/-/g, '_'));
+            if (unsubscribeViews) unsubscribeViews();
+            unsubscribeViews = window.onSnapshot(statRef, (snap) => {
+                if (document.hidden) return;
+                if (snap.exists()) {
+                    const d = snap.data();
+                    const viewersObj = d.viewers && typeof d.viewers === 'object' && !Array.isArray(d.viewers) ? d.viewers : {};
+                    window.currentViewersData = { viewers: viewersObj, totalRepetitions: d.totalRepetitions || 0 };
+                    document.getElementById('viewCount').innerText = d.totalRepetitions || 0;
+                } else {
+                    window.currentViewersData = { viewers: {}, totalRepetitions: 0 };
+                    document.getElementById('viewCount').innerText = 0;
+                }
+            });
+            feedLimit = 3;
+            loadFeed('themen_' + verseKey);
         }
 
         // --- NAVIGATION LOGIC: ARABIC BOOK (RTL) & LOOPING ---
@@ -3317,6 +3685,16 @@
         
         window.nextVers = function() {
             activePostFilter = null; activePostFilterNotifId = null; highlightedPostId = null;
+            if (isThemenMode && currentThemenLesson) {
+                const n = currentThemenLocalVers + 1;
+                if (n <= currentThemenLesson.verses) {
+                    const nextKey = getThemenVerseKey(currentThemenLesson.id, n);
+                    playVersThemen(nextKey, n);
+                } else {
+                    playVersThemen(getThemenVerseKey(currentThemenLesson.id, 1), 1);
+                }
+                return;
+            }
             const currentLesson = KURS_DATEN[currentLessonIdx];
             
             if(currentLocalVers < currentLesson.verse) {
@@ -3329,6 +3707,25 @@
         }
         
         window.showVerseList = function() {
+            if (isThemenMode && currentThemenLesson) {
+                const grid = document.getElementById('verse-list-grid');
+                grid.innerHTML = '';
+                const theme = currentThemenTheme;
+                const door = currentThemenDoor;
+                const lesson = currentThemenLesson;
+                for (let v = 1; v <= lesson.verses; v++) {
+                    const verseKey = getThemenVerseKey(lesson.id, v);
+                    const isActive = (verseKey === currentThemenVerseKey);
+                    const base = getThemenAssetPath(theme.id, door.id, lesson.id, verseKey);
+                    const div = document.createElement('div');
+                    div.className = 'verse-list-item' + (isActive ? ' active' : '');
+                    div.innerHTML = `<span>المقطع ${v}</span><img src="${base}.png" alt="Vers ${v}" onerror="this.style.display='none'">`;
+                    div.onclick = () => { activePostFilter = null; activePostFilterNotifId = null; highlightedPostId = null; playVersThemen(verseKey, v); hideVerseList(); };
+                    grid.appendChild(div);
+                }
+                document.getElementById('verse-list-modal').style.display = 'block';
+                return;
+            }
             if(currentLessonIdx === null) return;
             const lesson = KURS_DATEN[currentLessonIdx];
             const grid = document.getElementById('verse-list-grid');
@@ -3348,6 +3745,16 @@
 
         window.prevVers = function() { 
             activePostFilter = null; activePostFilterNotifId = null; highlightedPostId = null; 
+            if (isThemenMode && currentThemenLesson) {
+                if (currentThemenLocalVers > 1) {
+                    const prevKey = getThemenVerseKey(currentThemenLesson.id, currentThemenLocalVers - 1);
+                    playVersThemen(prevKey, currentThemenLocalVers - 1);
+                } else {
+                    const lastV = currentThemenLesson.verses;
+                    playVersThemen(getThemenVerseKey(currentThemenLesson.id, lastV), lastV);
+                }
+                return;
+            }
             const currentLesson = KURS_DATEN[currentLessonIdx];
             
             if(currentLocalVers > 1) {
@@ -3906,7 +4313,7 @@
                            to: targetPost.uid,
                            senderName: role === 'teacher' ? "المعلم" : stripYearFromName(name),
                            type: 'reply',
-                           fileId: String(currentGlobalFileId),
+                           fileId: getCurrentFileId(),
                            postId: replyTargetId,
                            replyTimestamp: replyTs,
                            timestamp: window.serverTimestamp()
@@ -3928,7 +4335,14 @@
                     }
                     replyTargetId = null; 
                 } else {
-                    const postRef = await window.addDoc(window.collection(window.db, "posts"), { name: name, role: role, uid: uid, audioUrl: url, fileId: String(currentGlobalFileId), likes: [], timestamp: window.serverTimestamp() });
+                    const postData = { name: name, role: role, uid: uid, audioUrl: url, fileId: getCurrentFileId(), likes: [], timestamp: window.serverTimestamp() };
+                    if (isThemenMode && currentThemenTheme && currentThemenDoor && currentThemenLesson) {
+                        postData.themenThemeId = currentThemenTheme.id;
+                        postData.themenDoorId = currentThemenDoor.id;
+                        postData.themenLessonId = currentThemenLesson.id;
+                        postData.themenVerseCount = currentThemenLesson.verses || 0;
+                    }
+                    const postRef = await window.addDoc(window.collection(window.db, "posts"), postData);
                     
                     const userRef = window.doc(window.db, "users", uid);
                     try { await window.updateDoc(userRef, { postsCount: window.increment(1) }); } catch(e){}
@@ -3938,7 +4352,7 @@
                            to: "teachers",
                            senderName: stripYearFromName(name),
                            type: 'new_recording',
-                           fileId: String(currentGlobalFileId),
+                           fileId: getCurrentFileId(),
                            postId: postRef.id, 
                            clearedBy: [],
                            timestamp: window.serverTimestamp()
@@ -3989,7 +4403,7 @@
                         try { await window.updateDoc(window.doc(window.db, "users", uid), { totalVerseViews: window.increment(1) }); } catch(e){}
                     }
                     try {
-                        const sRef = window.doc(window.db, "stats", "file_" + currentGlobalFileId);
+                        const sRef = window.doc(window.db, "stats", getCurrentStatDocId());
                         await window.setDoc(sRef, {}, { merge: true });
                         const updates = { totalRepetitions: window.increment(1) };
                         if(verseRepeatsPlayed === 0) updates.verseViewCount = window.increment(1);
@@ -4026,6 +4440,15 @@
                 playCycle(); 
             } else {
                  // LOOPING LOGIC for AUTO PLAY
+                 if (isThemenMode && currentThemenLesson) {
+                     const n = currentThemenLocalVers + 1;
+                     if (n <= currentThemenLesson.verses) {
+                         playVersThemen(getThemenVerseKey(currentThemenLesson.id, n), n, true);
+                     } else {
+                         playVersThemen(getThemenVerseKey(currentThemenLesson.id, 1), 1, true);
+                     }
+                     return;
+                 }
                  const currentLesson = KURS_DATEN[currentLessonIdx];
                  if(currentLocalVers < currentLesson.verse) {
                      // Next Verse
@@ -4054,7 +4477,7 @@
             }
             lbReturnSource = null; lbReturnToUid = null; lbReturnOffset = 0; lbReturnScrollToId = null; showView('menu-view'); renderMenu(); updateLbBackButton();
         } 
-        function showView(id) { document.getElementById('menu-view').style.display = 'none'; document.getElementById('player-view').style.display = 'none'; document.getElementById('notifications-view').style.display = 'none'; document.getElementById('saved-list-view').style.display = 'none'; document.getElementById('lessons-view').style.display = 'none'; document.getElementById('admin-message-view').style.display = 'none'; const cn = document.getElementById('contact-admin-new-view'); if(cn) cn.style.display = 'none'; document.getElementById(id).style.display = (id === 'menu-view') ? 'grid' : 'block'; const menuBtn = document.getElementById('menuBtn'); if(menuBtn) menuBtn.style.display = (id === 'menu-view') ? 'none' : 'flex'; const skipScroll = (id === 'menu-view' && lbPendingRestore) || (id === 'player-view' && activePostFilter); if (!skipScroll) window.scrollTo({ top: 0, behavior: 'smooth' }); }
+        function showView(id) { document.getElementById('menu-view').style.display = 'none'; document.getElementById('player-view').style.display = 'none'; document.getElementById('notifications-view').style.display = 'none'; document.getElementById('saved-list-view').style.display = 'none'; document.getElementById('lessons-view').style.display = 'none'; document.getElementById('themen-view').style.display = 'none'; document.getElementById('admin-message-view').style.display = 'none'; const cn = document.getElementById('contact-admin-new-view'); if(cn) cn.style.display = 'none'; document.getElementById(id).style.display = (id === 'menu-view') ? 'grid' : 'block'; const menuBtn = document.getElementById('menuBtn'); if(menuBtn) menuBtn.style.display = (id === 'menu-view') ? 'none' : 'flex'; const skipScroll = (id === 'menu-view' && lbPendingRestore) || (id === 'player-view' && activePostFilter); if (!skipScroll) window.scrollTo({ top: 0, behavior: 'smooth' }); }
         
         window.likePost = async (id, ownerUid) => { 
             const uid = localStorage.getItem('it9an_uid'); const myName = localStorage.getItem('it9an_name');
@@ -4259,14 +4682,14 @@
 
         window.resetLocalViews = async function() {
             if(confirm("تصفير مشاهدات هذا المقطع فقط؟")) {
-                try { await window.deleteDoc(window.doc(window.db, "stats", "file_" + currentGlobalFileId)); loadLeaderboard(); alert("تم التصفير"); } 
+                try { await window.deleteDoc(window.doc(window.db, "stats", getCurrentStatDocId())); loadLeaderboard(); alert("تم التصفير"); } 
                 catch(e) { alert("خطأ"); }
             }
         }
 
         window.resetLocalLikes = async function() {
             if(confirm("تصفير إعجابات هذا المقطع فقط؟")) {
-                const q = window.query(window.collection(window.db, "posts"), window.where("fileId", "==", String(currentGlobalFileId)));
+                const q = window.query(window.collection(window.db, "posts"), window.where("fileId", "==", getCurrentFileId()));
                 const querySnapshot = await window.getDocs(q);
                 const userLikesToDecrement = {};
                 for(const docSnap of querySnapshot.docs) {
@@ -4295,7 +4718,7 @@
 
         window.deleteAllLocalPosts = async function() {
             if(confirm("هل أنت متأكد من حذف جميع تسجيلات هذا المقطع فقط؟")) {
-                const q = window.query(window.collection(window.db, "posts"), window.where("fileId", "==", String(currentGlobalFileId)));
+                const q = window.query(window.collection(window.db, "posts"), window.where("fileId", "==", getCurrentFileId()));
                 const querySnapshot = await window.getDocs(q);
                 for(const docSnap of querySnapshot.docs) {
                     const data = docSnap.data();
@@ -4462,9 +4885,9 @@
                 listenForNotifications();
             }
             const playerView = document.getElementById('player-view');
-            if (playerView && playerView.style.display !== 'none' && currentGlobalFileId != null) {
+            if (playerView && playerView.style.display !== 'none' && (currentGlobalFileId != null || (isThemenMode && currentThemenVerseKey))) {
                 if (unsubscribeViews) unsubscribeViews();
-                const statRef = window.doc(window.db, "stats", "file_" + currentGlobalFileId);
+                const statRef = window.doc(window.db, "stats", getCurrentStatDocId());
                 unsubscribeViews = window.onSnapshot(statRef, (snap) => {
                     if (document.hidden) return;
                     if (snap.exists()) {
@@ -4477,7 +4900,7 @@
                         document.getElementById('viewCount').innerText = 0;
                     }
                 });
-                loadFeed(currentGlobalFileId);
+                loadFeed(getCurrentFileId());
             }
             const adminMsgView = document.getElementById('admin-message-view');
             if (adminMsgView && adminMsgView.style.display !== 'none' && currentAdminMessageId) {
