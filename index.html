@@ -800,6 +800,7 @@
 
         // --- Themen (assets 2): Struktur Themen → Türen → Lektionen → Verse ---
         const ASSETS2_BASE = 'assets%202';
+        const ASSETS2_ALT_BASES = ['assets2', 'assets%202', 'assets 2'];
         const THEMEN_DISCOVERY_MAX = 80;
         const DOORS_DISCOVERY_MAX = 50;
         const LESSONS_DISCOVERY_MAX = 50;
@@ -811,32 +812,44 @@
 
         function getThemenVerseKey(lessonId, localVersNum) { return lessonId + '-' + localVersNum; }
         function getThemenAssetPath(themeId, doorId, lessonId, verseKey) {
-            return ASSETS2_BASE + '/' + themeId + '/' + doorId + '/' + lessonId + '/' + verseKey;
+            return getAssets2Base() + '/' + themeId + '/' + doorId + '/' + lessonId + '/' + verseKey;
         }
         function checkAssetExists(url) {
             return new Promise(function(resolve) {
                 var img = new Image();
-                var t = setTimeout(function() { img.onload = null; img.onerror = null; img.src = ''; resolve(false); }, 6000);
+                var t = setTimeout(function() { img.onload = null; img.onerror = null; img.src = ''; resolve(false); }, 8000);
                 img.onload = function() { clearTimeout(t); resolve(true); };
                 img.onerror = function() { clearTimeout(t); resolve(false); };
                 img.src = url;
             });
         }
+        function getAssets2Base() {
+            return window._assets2Base || ASSETS2_BASE;
+        }
         async function discoverThemes() {
-            var list = [];
-            for (var i = 1; i <= THEMEN_DISCOVERY_MAX; i++) {
-                var id = 'M' + i;
-                var url = ASSETS2_BASE + '/' + id + '/' + id + '.png';
-                if (!(await checkAssetExists(url))) break;
-                list.push({ id: id });
+            var basesToTry = ['assets2', 'assets%202', 'assets 2'];
+            for (var b = 0; b < basesToTry.length; b++) {
+                var base = basesToTry[b];
+                var list = [];
+                for (var i = 1; i <= THEMEN_DISCOVERY_MAX; i++) {
+                    var id = 'M' + i;
+                    var url = base + '/' + id + '.png';
+                    if (!(await checkAssetExists(url))) break;
+                    list.push({ id: id });
+                }
+                if (list.length > 0) {
+                    window._assets2Base = base;
+                    return list;
+                }
             }
-            return list;
+            window._assets2Base = ASSETS2_BASE;
+            return [];
         }
         async function discoverDoors(themeId) {
             var list = [];
             for (var i = 1; i <= DOORS_DISCOVERY_MAX; i++) {
                 var id = String(i);
-                var url = ASSETS2_BASE + '/' + themeId + '/' + id + '/' + id + '.png';
+                var url = getAssets2Base() + '/' + themeId + '/' + id + '.png';
                 if (!(await checkAssetExists(url))) break;
                 list.push({ id: id });
             }
@@ -846,7 +859,7 @@
             var list = [];
             for (var i = 1; i <= LESSONS_DISCOVERY_MAX; i++) {
                 var id = doorId + '-' + i;
-                var url = ASSETS2_BASE + '/' + themeId + '/' + doorId + '/' + id + '/' + id + '.png';
+                var url = getAssets2Base() + '/' + themeId + '/' + doorId + '/' + id + '.png';
                 if (!(await checkAssetExists(url))) break;
                 list.push({ id: id });
             }
@@ -856,7 +869,7 @@
             var count = 0;
             for (var i = 1; i <= VERSES_DISCOVERY_MAX; i++) {
                 var verseKey = lessonId + '-' + i;
-                var url = ASSETS2_BASE + '/' + themeId + '/' + doorId + '/' + lessonId + '/' + verseKey + '.png';
+                var url = getAssets2Base() + '/' + themeId + '/' + doorId + '/' + lessonId + '/' + verseKey + '.png';
                 if (!(await checkAssetExists(url))) break;
                 count = i;
             }
@@ -3505,13 +3518,13 @@
                 var themes = await discoverThemes();
                 grid.innerHTML = '';
                 if (themes.length === 0) {
-                    grid.innerHTML = '<p style="text-align:center;color:#666;padding:20px;">لا توجد مواضيع في المجلد assets 2</p>';
+                    grid.innerHTML = '<p style="text-align:center;color:#666;padding:20px;">لا توجد مواضيع.<br>تأكد من وجود مجلد <strong>assets 2</strong> أو <strong>assets2</strong> بجانب index.html وفيه صورة <strong>M1.png</strong> (بجانب مجلد M1)</p>';
                     return;
                 }
                 themes.forEach(function(theme, index) {
                     var div = document.createElement('div');
                     div.className = 'menu-item';
-                    div.innerHTML = '<div class="menu-item-title">الموضوع ' + (index + 1) + '</div><img src="' + ASSETS2_BASE + '/' + theme.id + '/' + theme.id + '.png" loading="lazy" onerror="this.style.display=\'none\'">';
+                    div.innerHTML = '<div class="menu-item-title">الموضوع ' + (index + 1) + '</div><img src="' + getAssets2Base() + '/' + theme.id + '.png" loading="lazy" onerror="this.style.display=\'none\'">';
                     div.onclick = function() { themenNavStack = [{ id: theme.id }]; showThemenDoors(theme.id); };
                     grid.appendChild(div);
                 });
@@ -3522,7 +3535,7 @@
                 theme.doors.forEach(function(door, index) {
                     var div = document.createElement('div');
                     div.className = 'menu-item';
-                    div.innerHTML = '<div class="menu-item-title">الباب ' + (index + 1) + '</div><img src="' + ASSETS2_BASE + '/' + theme.id + '/' + door.id + '/' + door.id + '.png" loading="lazy" onerror="this.style.display=\'none\'">';
+                    div.innerHTML = '<div class="menu-item-title">الباب ' + (index + 1) + '</div><img src="' + getAssets2Base() + '/' + theme.id + '/' + door.id + '.png" loading="lazy" onerror="this.style.display=\'none\'">';
                     div.onclick = function() { themenNavStack = [theme, door]; showThemenLessons(theme, door); };
                     grid.appendChild(div);
                 });
@@ -3534,7 +3547,7 @@
                 door.lessons.forEach(function(lesson, index) {
                     var div = document.createElement('div');
                     div.className = 'menu-item';
-                    div.innerHTML = '<div class="menu-item-title">الدرس ' + (index + 1) + '</div><img src="' + ASSETS2_BASE + '/' + theme.id + '/' + door.id + '/' + lesson.id + '/' + lesson.id + '.png" loading="lazy" onerror="this.style.display=\'none\'">';
+                    div.innerHTML = '<div class="menu-item-title">الدرس ' + (index + 1) + '</div><img src="' + getAssets2Base() + '/' + theme.id + '/' + door.id + '/' + lesson.id + '.png" loading="lazy" onerror="this.style.display=\'none\'">';
                     div.onclick = function() { startThemenLessonAsync(theme, door, lesson); };
                     grid.appendChild(div);
                 });
@@ -3562,7 +3575,7 @@
                 doors.forEach(function(door, index) {
                     var div = document.createElement('div');
                     div.className = 'menu-item';
-                    div.innerHTML = '<div class="menu-item-title">الباب ' + (index + 1) + '</div><img src="' + ASSETS2_BASE + '/' + themeId + '/' + door.id + '/' + door.id + '.png" loading="lazy" onerror="this.style.display=\'none\'">';
+                    div.innerHTML = '<div class="menu-item-title">الباب ' + (index + 1) + '</div><img src="' + getAssets2Base() + '/' + themeId + '/' + door.id + '.png" loading="lazy" onerror="this.style.display=\'none\'">';
                     div.onclick = function() { showThemenLessons(theme, door); };
                     grid.appendChild(div);
                 });
@@ -3586,7 +3599,7 @@
                 lessons.forEach(function(lesson, index) {
                     var div = document.createElement('div');
                     div.className = 'menu-item';
-                    div.innerHTML = '<div class="menu-item-title">الدرس ' + (index + 1) + '</div><img src="' + ASSETS2_BASE + '/' + theme.id + '/' + door.id + '/' + lesson.id + '/' + lesson.id + '.png" loading="lazy" onerror="this.style.display=\'none\'">';
+                    div.innerHTML = '<div class="menu-item-title">الدرس ' + (index + 1) + '</div><img src="' + getAssets2Base() + '/' + theme.id + '/' + door.id + '/' + lesson.id + '.png" loading="lazy" onerror="this.style.display=\'none\'">';
                     div.onclick = function() { startThemenLessonAsync(theme, doorWithLessons, lesson); };
                     grid.appendChild(div);
                 });
@@ -3648,7 +3661,7 @@
 
             const base = getThemenAssetPath(currentThemenTheme.id, currentThemenDoor.id, currentThemenLesson.id, verseKey);
             const ptP = document.getElementById('pageTitle');
-            if (ptP) { ptP.classList.remove('header-name-pin'); ptP.innerHTML = `<span class="title-text-maktaa">المقطع ${localVersNum}</span><img src="${ASSETS2_BASE}/${currentThemenTheme.id}/${currentThemenTheme.id}.png" alt="Thema" onerror="this.style.display='none'">`; }
+            if (ptP) { ptP.classList.remove('header-name-pin'); ptP.innerHTML = `<span class="title-text-maktaa">المقطع ${localVersNum}</span><img src="${getAssets2Base()}/${currentThemenTheme.id}.png" alt="Thema" onerror="this.style.display='none'">`; }
             document.getElementById('currentImg').src = base + '.png';
             audioEl.src = base + '.mp3';
 
