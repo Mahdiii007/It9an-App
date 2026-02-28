@@ -859,22 +859,32 @@
             return [];
         }
         async function discoverDoors(themeId) {
-            var list = [];
+            var rawList = [];
             for (var i = 1; i <= DOORS_DISCOVERY_MAX; i++) {
                 var id = String(i);
                 var url = getAssets2Base() + '/' + themeId + '/' + id + '.png';
                 if (!(await checkAssetExists(url))) break;
-                list.push({ id: id });
+                rawList.push({ id: id });
+            }
+            var list = [];
+            for (var j = 0; j < rawList.length; j++) {
+                var lessons = await discoverLessons(themeId, rawList[j].id);
+                if (lessons.length > 0) list.push(rawList[j]);
             }
             return list;
         }
         async function discoverLessons(themeId, doorId) {
-            var list = [];
+            var rawList = [];
             for (var i = 1; i <= LESSONS_DISCOVERY_MAX; i++) {
                 var id = doorId + '-' + i;
                 var url = getAssets2Base() + '/' + themeId + '/' + doorId + '/' + id + '.png';
                 if (!(await checkAssetExists(url))) break;
-                list.push({ id: id });
+                rawList.push({ id: id });
+            }
+            var list = [];
+            for (var j = 0; j < rawList.length; j++) {
+                var verseCount = await discoverVerses(themeId, doorId, rawList[j].id);
+                if (verseCount > 0) list.push(rawList[j]);
             }
             return list;
         }
