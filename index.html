@@ -1294,7 +1294,7 @@
                     }
                 } catch(e) { console.log("Login Error", e); }
                 try { localStorage.setItem('it9an_saved_pin', pin); } catch(e){}
-                doLoginSuccess(uniqueID, finalDisplayName, role, true, null);
+                doLoginSuccess(uniqueID, finalDisplayName, role, true, pin);
                 return;
             }
             if (pin === ADMIN_PIN) {
