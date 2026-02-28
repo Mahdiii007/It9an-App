@@ -127,6 +127,8 @@
         /* --- MENU & NOTIFICATIONS --- */
         #menu-view { width: 100%; max-width: 100%; overflow-x: hidden; padding: 15px 12px 0 12px; }
         .menu-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; padding: 25px 10px; max-width: 100%; margin: 0 auto; }
+        #themen-view .menu-grid { grid-template-columns: 1fr; gap: 15px; padding: 15px 0; }
+        #themen-view { padding: 15px 12px; }
         .menu-item { background: var(--surface); border-radius: 18px; overflow: hidden; cursor: pointer; box-shadow: var(--shadow); display: flex; flex-direction: column; }
         .menu-item-title { text-align: center; padding: 12px 5px; font-weight: bold; color: var(--primary); border-bottom: 1px solid #eee; background: #fdfdfd; font-size: 18px; }
         .menu-item img { width: 100%; height: auto; display: block; padding: 15px; }
@@ -325,6 +327,7 @@
 
         @media (max-width: 480px) {
             #menu-view { padding: 15px 8px 0 8px; }
+            #themen-view { padding: 15px 8px; }
             #leaderboard-section { padding: 15px 0; }
             .leaderboard-card { padding: 20px 8px; }
             .lb-item { padding: 14px 8px; }
@@ -651,7 +654,7 @@
         <div class="menu-grid" id="lesson-grid"></div>
     </div>
 
-    <div id="themen-view" style="display:none; padding: 15px 10px; width: 100%; max-width: 100%; margin: 0 auto; overflow-x: hidden;">
+    <div id="themen-view" style="display:none; width: 100%; max-width: 100%; margin: 0 auto; overflow-x: hidden;">
         <button class="verse-list-btn lessons-main-btn" id="themen-back-btn" onclick="goBackThemen()" style="margin-bottom:15px;">↩️ العودة</button>
         <h3 id="themen-title" style="text-align:center; color:var(--primary); font-size:22px; margin-bottom:15px;">📚 المواضيع</h3>
         <div class="menu-grid" id="themen-nav-grid"></div>
@@ -661,6 +664,13 @@
         
         <div id="adminPlayerPanel" class="admin-panel">
             <div class="admin-title">🔒 إدارة المقطع الحالي</div>
+            <div id="adminExportSection" style="display:none; margin-top:12px; padding:12px; border:1px solid var(--gold); border-radius:10px; background:#fffcf2;">
+                <div class="admin-title" style="font-size:13px;">📥 استيراد بيانات من مقطع قديم (1–63)</div>
+                <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:8px;">
+                    <input type="number" id="adminExportOldVerse" min="1" max="63" placeholder="رقم المقطع" style="width:70px; padding:8px; border-radius:8px; border:1px solid #ddd; font-size:16px;">
+                    <button class="btn-admin-reset" onclick="exportFromOldVerse()">استيراد البيانات</button>
+                </div>
+            </div>
             <div class="admin-actions">
                 <button class="btn-admin-reset" onclick="resetLocalViews()">👁️ تصفير المشاهدات</button>
                 <button class="btn-admin-reset" onclick="resetLocalLikes()">👍 تصفير الإعجابات</button>
@@ -3775,8 +3785,15 @@
             document.getElementById('appFooter').style.display = 'flex';
             document.getElementById('adminMenuPanel').style.display = 'none';
             const uid = localStorage.getItem('it9an_uid');
-            if (uid === 'admin_super') document.getElementById('adminPlayerPanel').style.display = 'block';
-            else document.getElementById('adminPlayerPanel').style.display = 'none';
+            if (uid === 'admin_super') {
+                document.getElementById('adminPlayerPanel').style.display = 'block';
+                const ae = document.getElementById('adminExportSection');
+                if (ae) ae.style.display = 'block';
+            } else {
+                document.getElementById('adminPlayerPanel').style.display = 'none';
+                const ae = document.getElementById('adminExportSection');
+                if (ae) ae.style.display = 'none';
+            }
 
             const base = getThemenAssetPath(currentThemenTheme.id, currentThemenDoor.id, currentThemenLesson.id, verseKey);
             const ptP = document.getElementById('pageTitle');
@@ -3909,8 +3926,15 @@
             
             document.getElementById('adminMenuPanel').style.display = 'none'; 
             const uid = localStorage.getItem('it9an_uid');
-            if(uid === 'admin_super') document.getElementById('adminPlayerPanel').style.display = 'block';
-            else document.getElementById('adminPlayerPanel').style.display = 'none';
+            if(uid === 'admin_super') {
+                document.getElementById('adminPlayerPanel').style.display = 'block';
+                const ae = document.getElementById('adminExportSection');
+                if (ae) ae.style.display = 'none';
+            } else {
+                document.getElementById('adminPlayerPanel').style.display = 'none';
+                const ae = document.getElementById('adminExportSection');
+                if (ae) ae.style.display = 'none';
+            }
 
             const lessonId = KURS_DATEN[currentLessonIdx].id;
             const ptP = document.getElementById('pageTitle'); if (ptP) { ptP.classList.remove('header-name-pin'); ptP.innerHTML = `<span class="title-text-maktaa">المقطع ${localVersNum}</span><img src="assets/T${lessonId}.png" alt="Lesson Title">`; }
@@ -4898,6 +4922,83 @@
                 loadLeaderboard();
                 if(localStorage.getItem('it9an_uid')==='admin_super') loadTeachersLeaderboard();
                 alert("تم حذف جميع البيانات");
+            }
+        }
+
+        window.exportFromOldVerse = async function() {
+            if (localStorage.getItem('it9an_uid') !== 'admin_super') return;
+            if (!isThemenMode || !currentThemenVerseKey || !currentThemenTheme || !currentThemenDoor || !currentThemenLesson) {
+                alert("يجب أن تكون في وضع المواضيع لعرض مقطع معين.");
+                return;
+            }
+            const inputEl = document.getElementById('adminExportOldVerse');
+            const oldNum = inputEl ? parseInt(inputEl.value, 10) : NaN;
+            if (isNaN(oldNum) || oldNum < 1 || oldNum > 63) {
+                alert("أدخل رقماً صحيحاً بين 1 و 63.");
+                return;
+            }
+            if (!confirm("استيراد جميع البيانات (مشاهدات، تسجيلات، إعجابات) من المقطع القديم " + oldNum + " إلى هذا المقطع في المواضيع؟ سيتم حذف البيانات من المقطع القديم.")) return;
+            const themenFileId = 'themen_' + currentThemenVerseKey;
+            const themenStatId = 'file_themen_' + currentThemenVerseKey.replace(/-/g, '_');
+            const oldStatId = 'file_' + oldNum;
+            try {
+                const oldStatRef = window.doc(window.db, "stats", oldStatId);
+                const newStatRef = window.doc(window.db, "stats", themenStatId);
+                const oldStatSnap = await window.getDoc(oldStatRef);
+                const newStatSnap = await window.getDoc(newStatRef);
+                const oldData = oldStatSnap.exists() ? oldStatSnap.data() : {};
+                const newData = newStatSnap.exists() ? newStatSnap.data() : {};
+                const mergedViewers = {};
+                const oldViewers = oldData.viewers && typeof oldData.viewers === 'object' ? oldData.viewers : {};
+                const newViewers = newData.viewers && typeof newData.viewers === 'object' ? newData.viewers : {};
+                for (const uid of new Set([...Object.keys(oldViewers), ...Object.keys(newViewers)])) {
+                    const ov = oldViewers[uid] || {};
+                    const nv = newViewers[uid] || {};
+                    const oldCount = ov.count || 0;
+                    const newCount = nv.count || 0;
+                    const oldTs = (ov.lastViewed && ov.lastViewed.seconds) ? ov.lastViewed.seconds * 1000 : (typeof ov.lastViewed === 'number' ? ov.lastViewed : 0);
+                    const newTs = (nv.lastViewed && nv.lastViewed.seconds) ? nv.lastViewed.seconds * 1000 : (typeof nv.lastViewed === 'number' ? nv.lastViewed : 0);
+                    const lastViewedVal = (oldTs && newTs) ? (oldTs <= newTs ? ov.lastViewed : nv.lastViewed) : (ov.lastViewed || nv.lastViewed);
+                    mergedViewers[uid] = { count: oldCount + newCount, name: ov.name || nv.name || 'مستخدم' };
+                    if (lastViewedVal) mergedViewers[uid].lastViewed = lastViewedVal;
+                }
+                const totalRepetitions = (oldData.totalRepetitions || 0) + (newData.totalRepetitions || 0);
+                const verseViewCount = (oldData.verseViewCount || 0) + (newData.verseViewCount || 0);
+                await window.setDoc(newStatRef, { viewers: mergedViewers, totalRepetitions, verseViewCount }, { merge: true });
+                const q1 = window.query(window.collection(window.db, "posts"), window.where("fileId", "==", oldNum));
+                const q2 = window.query(window.collection(window.db, "posts"), window.where("fileId", "==", String(oldNum)));
+                const [snap1, snap2] = await Promise.all([window.getDocs(q1), window.getDocs(q2)]);
+                const seen = new Set();
+                const postsToUpdate = [];
+                for (const d of snap1.docs) { if (!seen.has(d.id)) { seen.add(d.id); postsToUpdate.push(d); } }
+                for (const d of snap2.docs) { if (!seen.has(d.id)) { seen.add(d.id); postsToUpdate.push(d); } }
+                const themenMeta = {
+                    fileId: themenFileId,
+                    themenThemeId: currentThemenTheme.id,
+                    themenDoorId: currentThemenDoor.id,
+                    themenLessonId: currentThemenLesson.id,
+                    themenVerseCount: currentThemenLesson.verses || 0
+                };
+                for (const docSnap of postsToUpdate) {
+                    await window.updateDoc(window.doc(window.db, "posts", docSnap.id), themenMeta);
+                }
+                await window.deleteDoc(oldStatRef);
+                if (inputEl) inputEl.value = '';
+                loadLeaderboard();
+                if (unsubscribeViews) unsubscribeViews();
+                unsubscribeViews = window.onSnapshot(newStatRef, (snap) => {
+                    if (document.hidden) return;
+                    if (snap.exists()) {
+                        const d = snap.data();
+                        const viewersObj = d.viewers && typeof d.viewers === 'object' ? d.viewers : {};
+                        window.currentViewersData = { viewers: viewersObj, totalRepetitions: d.totalRepetitions || 0 };
+                        document.getElementById('viewCount').innerText = d.totalRepetitions || 0;
+                    }
+                });
+                loadFeed(themenFileId);
+                alert("تم استيراد البيانات بنجاح.");
+            } catch (e) {
+                alert("خطأ: " + (e.message || e));
             }
         }
 
