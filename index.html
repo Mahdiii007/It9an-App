@@ -836,6 +836,18 @@
                 img.src = url;
             });
         }
+        async function computeAssetHash(url) {
+            try {
+                var r = await fetch(url);
+                if (!r.ok) return null;
+                var buf = await r.arrayBuffer();
+                if (typeof crypto !== 'undefined' && crypto.subtle) {
+                    var hashBuf = await crypto.subtle.digest('SHA-256', buf);
+                    return Array.from(new Uint8Array(hashBuf)).map(function(b) { return ('0' + b.toString(16)).slice(-2); }).join('');
+                }
+                return null;
+            } catch(e) { return null; }
+        }
         function getAssets2Base() {
             return window._assets2Base || ASSETS2_BASE;
         }
@@ -864,11 +876,20 @@
         }
         async function discoverDoors(themeId) {
             var rawList = [];
-            for (var i = 1; i <= DOORS_DISCOVERY_MAX; i++) {
-                var id = String(i);
-                var url = getAssets2Base() + '/' + themeId + '/' + id + '.png';
-                if (!(await checkAssetExists(url))) break;
-                rawList.push({ id: id });
+            var batchSize = 10;
+            var done = false;
+            for (var batchStart = 1; !done && batchStart <= DOORS_DISCOVERY_MAX; batchStart += batchSize) {
+                var checks = [];
+                for (var b = 0; b < batchSize && batchStart + b <= DOORS_DISCOVERY_MAX; b++) {
+                    var id = String(batchStart + b);
+                    var url = getAssets2Base() + '/' + themeId + '/' + id + '.png';
+                    checks.push(checkAssetExists(url));
+                }
+                var results = await Promise.all(checks);
+                for (var j = 0; j < results.length; j++) {
+                    if (!results[j]) { done = true; break; }
+                    rawList.push({ id: String(batchStart + j) });
+                }
             }
             var results = await Promise.all(rawList.map(function(d) { return discoverLessons(themeId, d.id); }));
             var list = [];
@@ -902,6 +923,29 @@
             }
             return count;
         }
+        async function resolveThemenVerseByHash(assetHash) {
+            if (!assetHash) return null;
+            var themes = await discoverThemes();
+            for (var ti = 0; ti < themes.length; ti++) {
+                var theme = themes[ti];
+                var doors = await discoverDoors(theme.id);
+                for (var di = 0; di < doors.length; di++) {
+                    var door = doors[di];
+                    var lessons = await discoverLessons(theme.id, door.id);
+                    for (var li = 0; li < lessons.length; li++) {
+                        var lesson = lessons[li];
+                        var verseCount = await discoverVerses(theme.id, door.id, lesson.id);
+                        for (var v = 1; v <= verseCount; v++) {
+                            var verseKey = getThemenVerseKey(lesson.id, v);
+                            var url = getThemenAssetPath(theme.id, door.id, lesson.id, verseKey) + '.png';
+                            var h = await computeAssetHash(url);
+                            if (h === assetHash) return { themeId: theme.id, doorId: door.id, lessonId: lesson.id, verseKey: verseKey };
+                        }
+                    }
+                }
+            }
+            return null;
+        }
         function getCurrentFileId() {
             return isThemenMode && currentThemenVerseKey ? ('themen_' + currentThemenVerseKey) : String(currentGlobalFileId != null ? currentGlobalFileId : '');
         }
@@ -920,13 +964,14 @@
             }
             return { lesson: 0, verse: fid };
         }
-        function getVerseButtonText(fileId) {
+        function getVerseButtonText(fileId, resolvedVerseKey) {
             var idStr = String(fileId || '');
             if (idStr.indexOf('themen_') === 0) {
-                var parts = idStr.replace('themen_', '').split('-');
-                var verse = parts.length >= 4 ? parts[3] : (parts[2] || '?');
-                var lesson = parts.length >= 3 ? parts[2] : (parts[1] || '?');
-                var door = parts.length >= 2 ? parts[1] : (parts[0] || '?');
+                var keyStr = resolvedVerseKey || idStr.replace('themen_', '');
+                var parts = keyStr.split('-');
+                var verse = parts.length >= 3 ? parts[parts.length - 1] : (parts[2] || '?');
+                var lesson = parts.length >= 2 ? parts[parts.length - 2] : (parts[1] || '?');
+                var door = parts.length >= 1 ? parts[0] : '?';
                 return '← مقطع ' + verse + ' - درس ' + lesson + ' - باب ' + door;
             }
             var lv = getLessonVerseFromFileId(fileId);
@@ -1981,10 +2026,29 @@
             if (unsubscribeLeaderboard) { unsubscribeLeaderboard(); unsubscribeLeaderboard = null; }
             try {
                 lbRecordingsCache = {}; lbLikesCache = {}; lbViewsCache = {};
-                const q = window.query(window.collection(window.db, "users"), window.where("role", "==", "student"));
-                const snap = await window.getDocsFromServer(q);
+                const [usersSnap, statsSnap] = await Promise.all([
+                    window.getDocsFromServer(window.query(window.collection(window.db, "users"), window.where("role", "==", "student"))),
+                    window.getDocsFromServer(window.query(window.collection(window.db, "stats")))
+                ]);
+                const viewsByUid = {};
+                statsSnap.forEach(sDoc => {
+                    const data = sDoc.data();
+                    const viewers = data.viewers && typeof data.viewers === 'object' ? data.viewers : {};
+                    for (const [uid, v] of Object.entries(viewers)) {
+                        const c = (v && v.count) || 0;
+                        if (uid && c > 0) viewsByUid[uid] = (viewsByUid[uid] || 0) + c;
+                    }
+                });
                 let users = [];
-                snap.forEach(doc => users.push({ ...doc.data(), uid: doc.data().uid || doc.id }));
+                usersSnap.forEach(doc => {
+                    const d = doc.data();
+                    const uid = d.uid || doc.id;
+                    const actualViews = viewsByUid[uid] ?? (d.totalVerseViews || 0);
+                    if (actualViews !== (d.totalVerseViews || 0)) {
+                        window.updateDoc(window.doc(window.db, "users", uid), { totalVerseViews: actualViews }).catch(function(){});
+                    }
+                    users.push({ ...d, uid, totalVerseViews: actualViews });
+                });
                 leaderboardAllUsers = applyLeaderboardSort(users);
                 const myUid = localStorage.getItem('it9an_uid');
                 renderLeaderboardItems(leaderboardAllUsers, leaderboardVisibleCount, myUid, true);
@@ -2330,7 +2394,16 @@
                     if (typeof v.lastViewed === 'object' && v.lastViewed.seconds) lastViewed = v.lastViewed.seconds * 1000;
                     else if (typeof v.lastViewed === 'number') lastViewed = v.lastViewed;
                 }
-                all.push({ fileId: fileId, repetitions: v.count || 0, lastViewed: lastViewed });
+                const item = { fileId: fileId, repetitions: v.count || 0, lastViewed: lastViewed };
+                if (id.startsWith('file_themen_') && data.themenThemeId) {
+                    item.themenThemeId = data.themenThemeId;
+                    item.themenDoorId = data.themenDoorId;
+                    item.themenLessonId = data.themenLessonId;
+                    item.statDocId = id;
+                    if (data.themenAssetHash) item.themenAssetHash = data.themenAssetHash;
+                    if (data.resolvedVerseKey) item.resolvedVerseKey = data.resolvedVerseKey;
+                }
+                all.push(item);
             });
             all.sort((a, b) => {
                 const diff = (b.lastViewed || 0) - (a.lastViewed || 0);
@@ -2350,12 +2423,19 @@
             const hasMore = items.length > toShow.length;
             let html = '';
             toShow.forEach((it) => {
-                const btnText = getVerseButtonText(it.fileId);
+                const btnText = getVerseButtonText(it.fileId, it.resolvedVerseKey);
                 const scrollId = String(it.fileId).replace(/[^a-zA-Z0-9-]/g, '_') + '-' + (it.repetitions || 0);
                 const fileIdEsc = String(it.fileId).replace(/'/g, "\\'");
+                const themeEsc = (it.themenThemeId || '').replace(/'/g, "\\'");
+                const doorEsc = (it.themenDoorId || '').replace(/'/g, "\\'");
+                const lessonEsc = (it.themenLessonId || '').replace(/'/g, "\\'");
+                const verseKeyEsc = (it.resolvedVerseKey || String(it.fileId).replace('themen_','')).replace(/'/g, "\\'");
+                const hashEsc = (it.themenAssetHash || '').replace(/'/g, "\\'");
+                const statDocEsc = (it.statDocId || '').replace(/'/g, "\\'");
+                const onclick = it.themenThemeId ? `goToVerseFromViews('${fileIdEsc}', '${studentUid}', ${offset}, '${scrollId}', '${themeEsc}', '${doorEsc}', '${lessonEsc}', '${verseKeyEsc}', '${hashEsc}', '${statDocEsc}')` : `goToVerseFromViews('${fileIdEsc}', '${studentUid}', ${offset}, '${scrollId}')`;
                 html += `
                 <div class="lb-liked-item" data-lb-scroll-id="${scrollId}">
-                    <button class="lb-verse-goto-btn" onclick="goToVerseFromViews('${fileIdEsc}', '${studentUid}', ${offset}, '${scrollId}')" title="الذهاب للمقطع">${btnText}</button>
+                    <button class="lb-verse-goto-btn" onclick="${onclick}" title="الذهاب للمقطع">${btnText}</button>
                     <div class="lb-liked-info">
                         <div class="lb-liked-name">🔄 ${it.repetitions} تكرار</div>
                     </div>
@@ -2644,7 +2724,7 @@
             lbViewsOpenUid = null;
         }
 
-        function openThemenVerseFromLeaderboard(themeId, doorId, lessonId, verseKey, lbSource, studentUid, offset, scrollToId, postId) {
+        function openThemenVerseFromLeaderboard(themeId, doorId, lessonId, verseKey, lbSource, studentUid, offset, scrollToId, postId, assetHash, statDocId) {
             var localVersNum = parseInt(verseKey.split('-').pop(), 10) || 1;
             currentThemenTheme = { id: themeId };
             currentThemenDoor = { id: doorId };
@@ -2668,11 +2748,66 @@
             lbReturnOffset = offset || 0;
             lbReturnScrollToId = scrollToId || postId || null;
             closeLbPanels();
-            discoverVerses(themeId, doorId, lessonId).then(function(verseCount) {
-                currentThemenLesson.verses = verseCount;
-                if (verseCount === 0) return;
-                playVersThemen(verseKey, localVersNum);
-                updateLbBackButton();
+            function doOpen(tid, did, lid, vk) {
+                var lvn = parseInt(vk.split('-').pop(), 10) || 1;
+                currentThemenTheme = { id: tid };
+                currentThemenDoor = { id: did };
+                currentThemenLesson = { id: lid, verses: 0 };
+                discoverVerses(tid, did, lid).then(function(verseCount) {
+                    currentThemenLesson.verses = verseCount;
+                    if (verseCount === 0) {
+                        if (typeof document.getElementById('statusDisplay') !== 'undefined') document.getElementById('statusDisplay').innerText = 'المقطع غير متوفر';
+                        return;
+                    }
+                    playVersThemen(vk, lvn);
+                    updateLbBackButton();
+                });
+            }
+            var assetUrl = getThemenAssetPath(themeId, doorId, lessonId, verseKey) + '.png';
+            checkAssetExists(assetUrl).then(function(exists) {
+                if (exists) {
+                    doOpen(themeId, doorId, lessonId, verseKey);
+                    return;
+                }
+                var statusEl = document.getElementById('statusDisplay');
+                if (assetHash && statDocId) {
+                    if (statusEl) statusEl.innerText = 'جاري البحث عن المقطع...';
+                    resolveThemenVerseByHash(assetHash).then(function(resolved) {
+                        if (statusEl) statusEl.innerText = '';
+                        if (resolved) {
+                            try {
+                                window.updateDoc(window.doc(window.db, 'stats', statDocId), {
+                                    themenThemeId: resolved.themeId,
+                                    themenDoorId: resolved.doorId,
+                                    themenLessonId: resolved.lessonId,
+                                    resolvedVerseKey: resolved.verseKey
+                                }).then(function() {
+                                    if (lbViewsCache[studentUid]) {
+                                        var it = lbViewsCache[studentUid].find(function(x) { return x.statDocId === statDocId; });
+                                        if (it) {
+                                            it.themenThemeId = resolved.themeId;
+                                            it.themenDoorId = resolved.doorId;
+                                            it.themenLessonId = resolved.lessonId;
+                                            it.resolvedVerseKey = resolved.verseKey;
+                                        }
+                                    }
+                                }).catch(function(){});
+                            } catch(e) {}
+                            doOpen(resolved.themeId, resolved.doorId, resolved.lessonId, resolved.verseKey);
+                        } else {
+                            doOpen(themeId, doorId, lessonId, verseKey);
+                        }
+                    });
+                } else if (assetHash) {
+                    if (statusEl) statusEl.innerText = 'جاري البحث عن المقطع...';
+                    resolveThemenVerseByHash(assetHash).then(function(resolved) {
+                        if (statusEl) statusEl.innerText = '';
+                        if (resolved) doOpen(resolved.themeId, resolved.doorId, resolved.lessonId, resolved.verseKey);
+                        else doOpen(themeId, doorId, lessonId, verseKey);
+                    });
+                } else {
+                    doOpen(themeId, doorId, lessonId, verseKey);
+                }
             });
         }
 
@@ -2684,7 +2819,7 @@
                 window.getDoc(postRef).then(function(snap) {
                     if (snap.exists() && snap.data().themenThemeId) {
                         var d = snap.data();
-                        openThemenVerseFromLeaderboard(d.themenThemeId, d.themenDoorId, d.themenLessonId, idStr.replace('themen_', ''), 'likes', studentUid, offset, postId, postId);
+                        openThemenVerseFromLeaderboard(d.themenThemeId, d.themenDoorId, d.themenLessonId, idStr.replace('themen_', ''), 'likes', studentUid, offset, postId, postId, d.themenAssetHash, null);
                     }
                 }).catch(function() {});
                 return;
@@ -2713,27 +2848,32 @@
             }
         }
 
-        window.goToVerseFromViews = function(fileId, studentUid, offset, scrollToId) {
+        window.goToVerseFromViews = function(fileId, studentUid, offset, scrollToId, themenThemeId, themenDoorId, themenLessonId, verseKey, assetHash, statDocId) {
             pauseFeedAudio();
             var idStr = String(fileId);
             if (idStr.indexOf('themen_') === 0) {
-                var verseKey = idStr.replace('themen_', '');
+                var vk = verseKey || idStr.replace('themen_', '');
+                if (themenThemeId && themenDoorId && themenLessonId) {
+                    openThemenVerseFromLeaderboard(themenThemeId, themenDoorId, themenLessonId, vk, 'views', studentUid, offset, scrollToId, null, assetHash, statDocId);
+                    return;
+                }
                 var q = window.query(window.collection(window.db, 'posts'), window.where('fileId', '==', idStr));
                 window.getDocs(q).then(function(snap) {
                     if (!snap.empty && snap.docs[0].data().themenThemeId) {
                         var d = snap.docs[0].data();
-                        openThemenVerseFromLeaderboard(d.themenThemeId, d.themenDoorId, d.themenLessonId, verseKey, 'views', studentUid, offset, scrollToId, snap.docs[0].id);
+                        openThemenVerseFromLeaderboard(d.themenThemeId, d.themenDoorId, d.themenLessonId, vk, 'views', studentUid, offset, scrollToId, snap.docs[0].id, d.themenAssetHash, null);
                     }
                 }).catch(function() {});
                 return;
             }
             var foundIndex = -1, foundVerse = 1;
+            var numId = typeof fileId === 'number' ? fileId : parseInt(fileId, 10);
             for (var i = 0; i < KURS_DATEN.length; i++) {
                 var start = KURS_DATEN[i].startGlobalId;
                 var end = start + KURS_DATEN[i].verse - 1;
-                if (fileId >= start && fileId <= end) {
+                if (numId >= start && numId <= end) {
                     foundIndex = i;
-                    foundVerse = fileId - start + 1;
+                    foundVerse = numId - start + 1;
                     break;
                 }
             }
@@ -2746,7 +2886,9 @@
                 activePostFilter = null;
                 closeLbPanels();
                 feedLimit = 3;
-                playVers(parseInt(fileId), foundVerse);
+                isThemenMode = false;
+                currentLessonIdx = foundIndex;
+                playVers(numId, foundVerse);
                 updateLbBackButton();
             }
         }
@@ -2759,7 +2901,7 @@
                 window.getDoc(postRef).then(function(snap) {
                     if (snap.exists() && snap.data().themenThemeId) {
                         var d = snap.data();
-                        openThemenVerseFromLeaderboard(d.themenThemeId, d.themenDoorId, d.themenLessonId, idStr.replace('themen_', ''), 'recordings', studentUid, offset, postId, postId);
+                        openThemenVerseFromLeaderboard(d.themenThemeId, d.themenDoorId, d.themenLessonId, idStr.replace('themen_', ''), 'recordings', studentUid, offset, postId, postId, d.themenAssetHash, null);
                     }
                 }).catch(function() {});
                 return;
@@ -4584,6 +4726,10 @@
                         postData.themenDoorId = currentThemenDoor.id;
                         postData.themenLessonId = currentThemenLesson.id;
                         postData.themenVerseCount = currentThemenLesson.verses || 0;
+                        if (currentThemenVerseKey) {
+                            var ph = await computeAssetHash(getThemenAssetPath(currentThemenTheme.id, currentThemenDoor.id, currentThemenLesson.id, currentThemenVerseKey) + '.png');
+                            if (ph) postData.themenAssetHash = ph;
+                        }
                     }
                     const postRef = await window.addDoc(window.collection(window.db, "posts"), postData);
                     
@@ -4647,7 +4793,13 @@
                     }
                     try {
                         const sRef = window.doc(window.db, "stats", getCurrentStatDocId());
-                        await window.setDoc(sRef, {}, { merge: true });
+                        const mergeData = {};
+                        if (isThemenMode && currentThemenTheme && currentThemenDoor && currentThemenLesson) {
+                            mergeData.themenThemeId = currentThemenTheme.id;
+                            mergeData.themenDoorId = currentThemenDoor.id;
+                            mergeData.themenLessonId = currentThemenLesson.id;
+                        }
+                        await window.setDoc(sRef, mergeData, { merge: true });
                         const updates = { totalRepetitions: window.increment(1) };
                         if(verseRepeatsPlayed === 0) updates.verseViewCount = window.increment(1);
                         updates[`viewers.${uid}.count`] = window.increment(1);
@@ -4655,6 +4807,12 @@
                         var viewerName = (uid === 'guest') ? 'ضيف' : ((myName && !isHidden) ? myName : 'مستخدم');
                         updates[`viewers.${uid}.name`] = viewerName;
                         await window.updateDoc(sRef, updates);
+                        if (verseRepeatsPlayed === 0 && isThemenMode && currentThemenTheme && currentThemenDoor && currentThemenLesson) {
+                            var assetUrl = getThemenAssetPath(currentThemenTheme.id, currentThemenDoor.id, currentThemenLesson.id, currentThemenVerseKey) + '.png';
+                            computeAssetHash(assetUrl).then(function(h) {
+                                if (h) window.updateDoc(sRef, { themenAssetHash: h }).catch(function(){});
+                            });
+                        }
                     } catch(e){}
                 }
                 if(document.getElementById('globalGap').checked) {
