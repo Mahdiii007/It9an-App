@@ -908,7 +908,13 @@
         }
         function getVerseButtonText(fileId) {
             var idStr = String(fileId || '');
-            if (idStr.indexOf('themen_') === 0) return '← مواضيع ' + idStr.replace('themen_', '');
+            if (idStr.indexOf('themen_') === 0) {
+                var parts = idStr.replace('themen_', '').split('-');
+                var verse = parts.length >= 4 ? parts[3] : (parts[2] || '?');
+                var lesson = parts.length >= 3 ? parts[2] : (parts[1] || '?');
+                var door = parts.length >= 2 ? parts[1] : (parts[0] || '?');
+                return '← مقطع ' + verse + ' - درس ' + lesson + ' - باب ' + door;
+            }
             var lv = getLessonVerseFromFileId(fileId);
             return '← مقطع ' + lv.verse + ' درس ' + lv.lesson;
         }
@@ -3797,7 +3803,7 @@
 
             const base = getThemenAssetPath(currentThemenTheme.id, currentThemenDoor.id, currentThemenLesson.id, verseKey);
             const ptP = document.getElementById('pageTitle');
-            if (ptP) { ptP.classList.remove('header-name-pin'); ptP.innerHTML = `<span class="title-text-maktaa">المقطع ${localVersNum}</span><img src="${getAssets2Base()}/${currentThemenTheme.id}.png" alt="Thema" onerror="this.style.display='none'">`; }
+            if (ptP) { ptP.classList.remove('header-name-pin'); ptP.innerHTML = `<span class="title-text-maktaa">المقطع ${localVersNum}</span><img src="${getAssets2Base()}/${currentThemenTheme.id}/${currentThemenDoor.id}/${currentThemenLesson.id}.png" alt="الدرس" onerror="this.style.display='none'">`; }
             document.getElementById('currentImg').src = base + '.png';
             audioEl.src = base + '.mp3';
 
