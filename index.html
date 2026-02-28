@@ -893,6 +893,12 @@
             }
             return { lesson: 0, verse: fid };
         }
+        function getVerseButtonText(fileId) {
+            var idStr = String(fileId || '');
+            if (idStr.indexOf('themen_') === 0) return '← مواضيع ' + idStr.replace('themen_', '');
+            var lv = getLessonVerseFromFileId(fileId);
+            return '← مقطع ' + lv.verse + ' درس ' + lv.lesson;
+        }
 
         let currentLessonIdx = null, currentGlobalFileId = null, currentLocalVers = null;
         let unsubscribeFeed = null, unsubscribeViews = null, unsubscribeLeaderboard = null;
@@ -2238,7 +2244,14 @@
             snap.forEach(docSnap => {
                 const id = docSnap.id;
                 if (!id.startsWith('file_')) return;
-                const fileId = parseInt(id.replace('file_', ''), 10);
+                var fileId;
+                if (id.startsWith('file_themen_')) {
+                    fileId = 'themen_' + id.replace('file_themen_', '').replace(/_/g, '-');
+                } else {
+                    var num = parseInt(id.replace('file_', ''), 10);
+                    if (isNaN(num)) return;
+                    fileId = num;
+                }
                 const data = docSnap.data();
                 const viewers = data.viewers && typeof data.viewers === 'object' ? data.viewers : {};
                 const v = viewers[studentUid];
@@ -2248,11 +2261,16 @@
                     if (typeof v.lastViewed === 'object' && v.lastViewed.seconds) lastViewed = v.lastViewed.seconds * 1000;
                     else if (typeof v.lastViewed === 'number') lastViewed = v.lastViewed;
                 }
-                all.push({ fileId, repetitions: v.count || 0, lastViewed });
+                all.push({ fileId: fileId, repetitions: v.count || 0, lastViewed: lastViewed });
             });
             all.sort((a, b) => {
                 const diff = (b.lastViewed || 0) - (a.lastViewed || 0);
-                return diff !== 0 ? diff : (b.fileId || 0) - (a.fileId || 0);
+                if (diff !== 0) return diff;
+                var fa = a.fileId, fb = b.fileId;
+                if (typeof fa === 'string' && typeof fb === 'string') return (fb).localeCompare(fa);
+                if (typeof fa === 'string') return 1;
+                if (typeof fb === 'string') return -1;
+                return (fb || 0) - (fa || 0);
             });
             return all;
         }
@@ -2263,12 +2281,12 @@
             const hasMore = items.length > toShow.length;
             let html = '';
             toShow.forEach((it) => {
-                const lv = getLessonVerseFromFileId(it.fileId);
-                const btnText = `← مقطع ${lv.verse} درس ${lv.lesson}`;
-                const scrollId = it.fileId + '-' + (it.repetitions || 0);
+                const btnText = getVerseButtonText(it.fileId);
+                const scrollId = String(it.fileId).replace(/[^a-zA-Z0-9-]/g, '_') + '-' + (it.repetitions || 0);
+                const fileIdEsc = String(it.fileId).replace(/'/g, "\\'");
                 html += `
                 <div class="lb-liked-item" data-lb-scroll-id="${scrollId}">
-                    <button class="lb-verse-goto-btn" onclick="goToVerseFromViews('${it.fileId}', '${studentUid}', ${offset}, '${scrollId}')" title="الذهاب للمقطع">${btnText}</button>
+                    <button class="lb-verse-goto-btn" onclick="goToVerseFromViews('${fileIdEsc}', '${studentUid}', ${offset}, '${scrollId}')" title="الذهاب للمقطع">${btnText}</button>
                     <div class="lb-liked-info">
                         <div class="lb-liked-name">🔄 ${it.repetitions} تكرار</div>
                     </div>
@@ -2377,8 +2395,8 @@
                 window._lbRecordingsMainUrls.push(it.mainAudioUrl || '');
                 const playId = 'lbr-' + studentUid.replace(/[^a-zA-Z0-9]/g, '_') + '-' + idx;
                 const playIdMain = 'lbr-main-' + studentUid.replace(/[^a-zA-Z0-9]/g, '_') + '-' + idx;
-                const lv = getLessonVerseFromFileId(it.fileId);
-                const btnText = `← مقطع ${lv.verse} درس ${lv.lesson}`;
+                const lv = getVerseButtonText(it.fileId);
+                const btnText = lv;
                 const dateStr = it.timestamp ? (function(ts){ const d=new Date(ts); return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2)+' '+('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2); })(it.timestamp) : '';
                 const authorUid = it.authorUid || studentUid;
                 let delBtn = '';
@@ -2408,9 +2426,10 @@
                         <button class="cp-btn" id="btn-${playId}" onclick="playFeedAudio(window._lbRecordingsUrls[${idx}]||'','${playId}')">▶</button>
                     </div>`;
                 }
+                const fileIdEsc = String(it.fileId).replace(/'/g, "\\'");
                 html += `
                 <div class="lb-liked-item" data-lb-scroll-id="${it.postId}">
-                    <button class="lb-verse-goto-btn" onclick="goToVerseFromRecordings('${it.fileId}', '${it.postId}', '${studentUid}', ${offset})" title="الذهاب للمقطع">${btnText}</button>
+                    <button class="lb-verse-goto-btn" onclick="goToVerseFromRecordings('${fileIdEsc}', '${it.postId}', '${studentUid}', ${offset})" title="الذهاب للمقطع">${btnText}</button>
                     <div class="lb-liked-info">
                         <div class="lb-liked-name">👍 ${it.likesCount}</div>
                         <div class="lb-liked-date">${dateStr}</div>
@@ -2501,12 +2520,12 @@
             toShow.forEach((it, idx) => {
                 window._lbLikedUrls.push(it.audioUrl || '');
                 const playId = 'lb-' + studentUid.replace(/[^a-zA-Z0-9]/g, '_') + '-' + idx;
-                const lv = getLessonVerseFromFileId(it.fileId);
-                const btnText = `← مقطع ${lv.verse} درس ${lv.lesson}`;
+                const btnText = getVerseButtonText(it.fileId);
                 const dateStr = it.timestamp ? (function(ts){ const d=new Date(ts); return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2)+' '+('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2); })(it.timestamp) : '';
+                const fileIdEsc = String(it.fileId).replace(/'/g, "\\'");
                 html += `
                 <div class="lb-liked-item" data-lb-scroll-id="${it.postId}">
-                    <button class="lb-verse-goto-btn" onclick="goToVerseFromLikes('${it.fileId}', '${it.postId}', '${studentUid}', ${offset})" title="الذهاب للمقطع">${btnText}</button>
+                    <button class="lb-verse-goto-btn" onclick="goToVerseFromLikes('${fileIdEsc}', '${it.postId}', '${studentUid}', ${offset})" title="الذهاب للمقطع">${btnText}</button>
                     <div class="lb-liked-info">
                         <div class="lb-liked-name">${(it.likerName || '').replace(/</g,'&lt;')}</div>
                         <div class="lb-liked-date">${dateStr}</div>
@@ -4158,7 +4177,7 @@
                         });
                         repliesHtml = `<div class="replies-wrapper"><div class="replies-title">الردود</div>${repliesInner}</div>`;
                     }
-                    const openToFeed = fileId ? `openSavedToFeed('${fileId}', '${d.id}')` : '';
+                    const openToFeed = fileId ? `openSavedToFeed('${String(fileId).replace(/'/g, "\\'")}', '${d.id}')` : '';
                     html += `<div class="${msgClass}" id="saved-post-${d.id}">
                         <div class="feed-row1">
                             <div class="feed-delete-wrap"><button class="delete-btn" onclick="removeFromSaved('${it.savedDocId}', '${d.id}')" title="إزالة من القائمة">🗑️</button></div>
@@ -4191,18 +4210,45 @@
         }
 
         window.openSavedToFeed = function(fileId, postId) {
-            let foundIndex = -1, foundVerse = 1;
-            for (let i = 0; i < KURS_DATEN.length; i++) {
-                const lek = KURS_DATEN[i];
-                const start = lek.startGlobalId, end = start + lek.verse - 1;
-                const fid = parseInt(fileId);
+            var idStr = String(fileId || '');
+            if (idStr.indexOf('themen_') === 0) {
+                var postRef = window.doc(window.db, 'posts', postId);
+                window.getDoc(postRef).then(function(snap) {
+                    if (snap.exists() && snap.data().themenThemeId) {
+                        var d = snap.data();
+                        var verseKey = idStr.replace('themen_', '');
+                        var localVersNum = parseInt(verseKey.split('-').pop(), 10) || 1;
+                        currentThemenTheme = { id: d.themenThemeId };
+                        currentThemenDoor = { id: d.themenDoorId };
+                        currentThemenLesson = { id: d.themenLessonId, verses: d.themenVerseCount || 0 };
+                        currentLessonIdx = null;
+                        isThemenMode = true;
+                        highlightedPostId = postId;
+                        activePostFilter = postId;
+                        if (currentThemenLesson.verses < 1) {
+                            discoverVerses(d.themenThemeId, d.themenDoorId, d.themenLessonId).then(function(c) {
+                                currentThemenLesson.verses = c;
+                                playVersThemen(verseKey, localVersNum);
+                            });
+                        } else {
+                            playVersThemen(verseKey, localVersNum);
+                        }
+                    }
+                }).catch(function() {});
+                return;
+            }
+            var foundIndex = -1, foundVerse = 1;
+            for (var i = 0; i < KURS_DATEN.length; i++) {
+                var lek = KURS_DATEN[i];
+                var start = lek.startGlobalId, end = start + lek.verse - 1;
+                var fid = parseInt(fileId, 10);
                 if (fid >= start && fid <= end) { foundIndex = i; foundVerse = fid - start + 1; break; }
             }
             if (foundIndex >= 0) {
                 currentLessonIdx = foundIndex;
                 highlightedPostId = postId;
                 activePostFilter = postId;
-                playVers(parseInt(fileId), foundVerse);
+                playVers(parseInt(fileId, 10), foundVerse);
             }
         }
 
@@ -4423,7 +4469,7 @@
                         updates[`viewers.${uid}.count`] = window.increment(1);
                         updates[`viewers.${uid}.lastViewed`] = window.serverTimestamp();
                         if(uid === 'guest') updates[`viewers.${uid}.name`] = 'ضيف';
-                        else if(myName && !isHidden) updates[`viewers.${uid}.name`] = myName;
+                        else updates[`viewers.${uid}.name`] = (myName && !isHidden) ? myName : 'مستخدم';
                         await window.updateDoc(sRef, updates);
                     } catch(e){}
                 }
