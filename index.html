@@ -180,6 +180,13 @@
         .lb-likes-click:hover { opacity: 0.9; }
         .lb-likes-list { padding: 10px 10px; background: #f9f9f9; border-radius: 0 0 10px 10px; border: 1px solid #eee; border-top: none; max-width: 100%; overflow-x: hidden; }
         .lb-liked-item { display: flex; align-items: center; gap: 10px; padding: 10px; background: white; border-radius: 10px; margin-bottom: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.06); border: 1px solid #eee; max-width: 100%; overflow-x: hidden; }
+        .lb-liked-item.lb-review-pending { background: #ffffff; border-left: 4px solid #9e9e9e; }
+        .lb-liked-item.lb-review-acceptable { background: #f4fbf4; border-left: 4px solid #2e7d32; }
+        .lb-liked-item.lb-review-can-improve { background: #fef5f5; border-left: 4px solid #c62828; }
+        .lb-review-label { font-size: 12px; font-weight: bold; margin-top: 2px; }
+        .lb-liked-item.lb-review-pending .lb-review-label { color: #616161; }
+        .lb-liked-item.lb-review-acceptable .lb-review-label { color: #2e7d32; }
+        .lb-liked-item.lb-review-can-improve .lb-review-label { color: #c62828; }
         .lb-liked-item:last-of-type { margin-bottom: 0; }
         .lb-liked-item img { width: 45px; height: 45px; object-fit: cover; border-radius: 6px; flex-shrink: 0; }
         .lb-liked-img-click { cursor: pointer; }
@@ -239,6 +246,13 @@
             height: auto;
             overflow: hidden;
         }
+        .verse-status-label { text-align: center; padding: 8px 10px; font-size: 15px; font-weight: bold; font-family: 'Amiri'; border-radius: 8px; margin-bottom: 8px; }
+        .verse-status-label.completed { background: #e8f5e9; color: #2e7d32; }
+        .verse-status-label.not-completed { background: #fff3e0; color: #e65100; }
+        .lesson-progress-wrap { width: 100%; padding: 0 15px 12px; box-sizing: border-box; }
+        .lesson-progress-bar { width: 100%; height: 14px; background: #e0e0e0; border-radius: 7px; overflow: hidden; }
+        .lesson-progress-fill { height: 100%; background: linear-gradient(90deg, var(--primary), var(--gold)); border-radius: 7px; transition: width 0.3s; }
+        .lesson-progress-text { text-align: center; font-size: 13px; font-weight: bold; color: var(--primary); margin-top: 4px; }
         
         .player-container { width: 100%; }
         
@@ -382,6 +396,21 @@
         .like-action.locked { cursor: not-allowed; opacity: 0.3; filter: grayscale(1); }
         .like-count { padding: 5px 10px; border-right: 1px solid #ddd; cursor: pointer; background: rgba(0,0,0,0.03); font-size: 13px; }
         .like-count:active { background: rgba(0,0,0,0.1); }
+        /* تقييم المعلم: مقبول / يمكن أن يكون أفضل */
+        .teacher-review-wrap { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+        .teacher-review-btn { padding: 5px 10px; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer; border: 2px solid transparent; font-family: 'Amiri'; }
+        .teacher-review-btn.acceptable { background: #2e7d32; color: white; border-color: #1b5e20; }
+        .teacher-review-btn.acceptable:hover:not(.disabled) { background: #1b5e20; }
+        .teacher-review-btn.can-improve { background: #c62828; color: white; border-color: #b71c1c; }
+        .teacher-review-btn.can-improve:hover:not(.disabled) { background: #b71c1c; }
+        .teacher-review-btn.disabled { opacity: 0.5; cursor: not-allowed; filter: grayscale(1); }
+        .feed-msg.review-pending, .reply-box.review-pending { background: #ffffff !important; border-left: 4px solid #9e9e9e; }
+        .feed-msg.review-acceptable, .reply-box.review-acceptable { background: #f4fbf4 !important; border-left: 4px solid #2e7d32; }
+        .feed-msg.review-can-improve, .reply-box.review-can-improve { background: #fef5f5 !important; border-left: 4px solid #c62828; }
+        .review-label { font-size: 11px; color: #666; margin-top: 2px; }
+        .review-pending .review-label { color: #757575; }
+        .review-acceptable .review-label { color: #2e7d32; }
+        .review-can-improve .review-label { color: #c62828; }
         .reply-btn { cursor: pointer; background: none; border: 1px solid var(--primary); color: var(--primary); padding: 4px 12px; border-radius: 6px; font-size: 13px; font-weight: bold; }
         .delete-btn { background: rgba(255,0,0,0.1); color: var(--red); border: none; border-radius: 50%; width: 28px; height: 28px; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
         .save-btn { background: rgba(0,0,0,0.05); border: 1px solid #ddd; border-radius: 50%; width: 32px; height: 32px; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
@@ -390,6 +419,7 @@
 
         .replies-wrapper { margin-top: 8px; padding-right: 16px; border-right: 3px solid #e0e0e0; position: relative; }
         .replies-title { font-size: 12px; color: #999; margin-bottom: 4px; font-weight: bold; margin-right: -19px; background: var(--bg); display: inline-block; padding: 0 6px; }
+        .replies-empty-hint { font-size: 12px; color: #999; padding: 8px 0; font-style: italic; }
         .reply-box { margin-top: 6px; padding: 8px 10px; border-radius: 8px; position: relative; }
         .reply-box::before { content: ''; position: absolute; top: 14px; right: -19px; width: 16px; height: 2px; background: #e0e0e0; }
         .reply-box.reply-student { background: #f0f4f8; border-right: 3px solid #b0bec5; }
@@ -669,6 +699,7 @@
             <button class="verse-list-btn" onclick="showVerseList()">📋 قائمة مقاطع الدرس</button>
             <button class="verse-list-btn" onclick="showLessonsView()">📚 العودة لقائمة الدروس</button>
             <div class="quran-frame">
+                <div id="verse-status-wrap" class="verse-status-label not-completed" style="display:none;">لم يُنجز بعد</div>
                 <div class="player-container">
                     <img id="currentImg" class="quran-image" src="" alt="Vers Bild" onerror="this.src='placeholder.png'">
                 </div>
@@ -801,6 +832,28 @@
             }
             return { lesson: 0, verse: fid };
         }
+
+        let studentCompletedVerseIds = new Set();
+        let studentCompletedVerseIdsTime = 0;
+        const STUDENT_COMPLETED_CACHE_MS = 60000;
+        async function fetchStudentCompletedVerseIds(uid) {
+            if (!uid || uid === 'guest' || uid === 'admin_super') return studentCompletedVerseIds;
+            const now = Date.now();
+            if (studentCompletedVerseIds.size >= 0 && (now - studentCompletedVerseIdsTime) < STUDENT_COMPLETED_CACHE_MS) return studentCompletedVerseIds;
+            const next = new Set();
+            try {
+                const q = window.query(window.collection(window.db, "posts"), window.where("uid", "==", uid));
+                const snap = await window.getDocs(q);
+                snap.forEach(doc => {
+                    const d = doc.data();
+                    if (d.teacherReview && d.teacherReview.status === 'acceptable' && d.fileId != null) next.add(String(d.fileId));
+                });
+                studentCompletedVerseIds = next;
+                studentCompletedVerseIdsTime = now;
+            } catch (e) { console.warn('fetchStudentCompletedVerseIds', e); }
+            return studentCompletedVerseIds;
+        }
+        function invalidateStudentCompletedCache() { studentCompletedVerseIdsTime = 0; }
 
         let currentLessonIdx = null, currentGlobalFileId = null, currentLocalVers = null;
         let unsubscribeFeed = null, unsubscribeViews = null, unsubscribeLeaderboard = null;
@@ -1395,24 +1448,31 @@
             const adminPlayerPanel = document.getElementById('adminPlayerPanel');
             const notifContainer = document.querySelector('.notif-container');
 
+            if (recBtn) {
+                if (uid === 'admin_super' || role === 'teacher') {
+                    recBtn.style.display = 'none';
+                } else if (uid === 'guest' || role === 'guest') {
+                    recBtn.style.display = 'none';
+                } else if (role === 'student') {
+                    recBtn.style.display = 'flex';
+                } else {
+                    recBtn.style.display = 'none';
+                }
+            }
             if (uid === 'admin_super') {
                 if(notifContainer) notifContainer.style.display = 'none';
-                recBtn.style.display = 'flex';
                 updateAppIconBadge(0);
             } else if (uid === 'guest' || role === 'guest') {
                 if(notifContainer) notifContainer.style.display = 'none';
-                recBtn.style.display = 'none';
                 updateAppIconBadge(0);
                 if(adminMenuPanel) adminMenuPanel.style.display = 'none';
                 if(adminPlayerPanel) adminPlayerPanel.style.display = 'none';
             } else {
                 if(notifContainer) notifContainer.style.display = 'flex';
                 if (role === 'student') {
-                    recBtn.style.display = 'flex';
                     if(adminMenuPanel) adminMenuPanel.style.display = 'none';
                     if(adminPlayerPanel) adminPlayerPanel.style.display = 'none';
                 } else {
-                    recBtn.style.display = 'none'; 
                     if(adminMenuPanel) adminMenuPanel.style.display = 'none';
                     if(adminPlayerPanel) adminPlayerPanel.style.display = 'none';
                 }
@@ -2234,12 +2294,13 @@
                 const postId = docSnap.id;
                 const fileId = data.fileId || '1';
                 const likesCount = (data.likes && data.likes.length) || 0;
+                const teacherReview = data.teacherReview && (data.teacherReview.status === 'acceptable' || data.teacherReview.status === 'can_improve') ? data.teacherReview : null;
                 let ts = 0;
                 if (data.timestamp) {
                     if (typeof data.timestamp === 'object' && data.timestamp.seconds) ts = data.timestamp.seconds * 1000;
                     else if (typeof data.timestamp === 'number') ts = data.timestamp;
                 }
-                all.push({ postId, audioUrl: data.audioUrl, fileId, likesCount, timestamp: ts });
+                all.push({ postId, audioUrl: data.audioUrl, fileId, likesCount, timestamp: ts, teacherReview });
             });
             all.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
             return all;
@@ -2261,7 +2322,8 @@
                         if (r.uid === uid) {
                             const likesCount = (r.likes && r.likes.length) || 0;
                             const ts = r.timestamp || 0;
-                            all.push({ type: 'reply', postId, replyIdx: idx, replyTimestamp: ts, audioUrl: r.audioUrl, mainAudioUrl, fileId, likesCount, timestamp: ts, authorUid: uid });
+                            const teacherReview = r.teacherReview && (r.teacherReview.status === 'acceptable' || r.teacherReview.status === 'can_improve') ? r.teacherReview : null;
+                            all.push({ type: 'reply', postId, replyIdx: idx, replyTimestamp: ts, audioUrl: r.audioUrl, mainAudioUrl, fileId, likesCount, timestamp: ts, authorUid: uid, teacherReview });
                         }
                     });
                 });
@@ -2283,6 +2345,9 @@
             toShow.forEach((it, idx) => {
                 window._lbRecordingsUrls.push(it.audioUrl || '');
                 window._lbRecordingsMainUrls.push(it.mainAudioUrl || '');
+                const tr = it.teacherReview;
+                const lbReviewClass = tr ? (tr.status === 'acceptable' ? ' lb-review-acceptable' : ' lb-review-can-improve') : ' lb-review-pending';
+                const lbReviewLabel = tr ? (tr.status === 'acceptable' ? 'مقبول' : 'يمكن أن يكون أفضل') : 'لم يُراجع بعد';
                 const playId = 'lbr-' + studentUid.replace(/[^a-zA-Z0-9]/g, '_') + '-' + idx;
                 const playIdMain = 'lbr-main-' + studentUid.replace(/[^a-zA-Z0-9]/g, '_') + '-' + idx;
                 const lv = getLessonVerseFromFileId(it.fileId);
@@ -2317,10 +2382,11 @@
                     </div>`;
                 }
                 html += `
-                <div class="lb-liked-item" data-lb-scroll-id="${it.postId}">
+                <div class="lb-liked-item${lbReviewClass}" data-lb-scroll-id="${it.postId}">
                     <button class="lb-verse-goto-btn" onclick="goToVerseFromRecordings('${it.fileId}', '${it.postId}', '${studentUid}', ${offset})" title="الذهاب للمقطع">${btnText}</button>
                     <div class="lb-liked-info">
                         <div class="lb-liked-name">👍 ${it.likesCount}</div>
+                        <div class="lb-review-label">${lbReviewLabel}</div>
                         <div class="lb-liked-date">${dateStr}</div>
                     </div>
                     ${playSection}
@@ -3288,14 +3354,27 @@
             }
         }
 
-        window.showLessonsView = function() {
+        window.showLessonsView = async function() {
             const grid = document.getElementById('lesson-grid');
             if (!grid) return;
             grid.innerHTML = '';
+            const uid = localStorage.getItem('it9an_uid');
+            const role = localStorage.getItem('it9an_role');
+            if (role === 'student' && uid && uid !== 'guest') await fetchStudentCompletedVerseIds(uid);
             KURS_DATEN.forEach((lek, index) => {
                 const div = document.createElement('div');
                 div.className = 'menu-item';
-                div.innerHTML = `<div class="menu-item-title">الدرس ${index + 1}</div><img src="assets/T${lek.id}.png" loading="lazy" onerror="this.style.display='none'">`;
+                let progressHtml = '';
+                if (role === 'student' && uid && uid !== 'guest') {
+                    let count = 0;
+                    for (let v = 0; v < lek.verse; v++) {
+                        const gid = lek.startGlobalId + v;
+                        if (studentCompletedVerseIds.has(String(gid))) count++;
+                    }
+                    const pct = lek.verse ? Math.round((count / lek.verse) * 100) : 0;
+                    progressHtml = `<div class="lesson-progress-wrap"><div class="lesson-progress-bar"><div class="lesson-progress-fill" style="width:${pct}%"></div></div><div class="lesson-progress-text">${pct}% مكتمل</div></div>`;
+                }
+                div.innerHTML = `<div class="menu-item-title">الدرس ${index + 1}</div><img src="assets/T${lek.id}.png" loading="lazy" onerror="this.style.display='none'">${progressHtml}`;
                 div.onclick = () => startLesson(index);
                 grid.appendChild(div);
             });
@@ -3328,17 +3407,22 @@
             }
         }
         
-        window.showVerseList = function() {
+        window.showVerseList = async function() {
             if(currentLessonIdx === null) return;
             const lesson = KURS_DATEN[currentLessonIdx];
             const grid = document.getElementById('verse-list-grid');
             grid.innerHTML = '';
+            const uid = localStorage.getItem('it9an_uid');
+            const role = localStorage.getItem('it9an_role');
+            if (role === 'student' && uid && uid !== 'guest') await fetchStudentCompletedVerseIds(uid);
             for(let v = 1; v <= lesson.verse; v++) {
                 const globalId = lesson.startGlobalId + v - 1;
                 const isActive = (globalId === currentGlobalFileId);
+                const completed = role === 'student' && studentCompletedVerseIds.has(String(globalId));
+                const statusText = role === 'student' ? (completed ? 'مكتمل' : 'لم يُنجز بعد') : '';
                 const div = document.createElement('div');
                 div.className = 'verse-list-item' + (isActive ? ' active' : '');
-                div.innerHTML = `<span>المقطع ${v}</span><img src="assets/${globalId}.png" alt="Vers ${v}" onerror="this.style.display='none'">`;
+                div.innerHTML = `<span>المقطع ${v}${statusText ? ' — ' + statusText : ''}</span><img src="assets/${globalId}.png" alt="Vers ${v}" onerror="this.style.display='none'">`;
                 div.onclick = () => { activePostFilter = null; activePostFilterNotifId = null; highlightedPostId = null; playVers(globalId, v); hideVerseList(); };
                 grid.appendChild(div);
             }
@@ -3378,6 +3462,20 @@
 
             document.getElementById('currentImg').src = `assets/${globalId}.png`;
             audioEl.src = `assets/${globalId}.mp3`;
+            
+            const role = localStorage.getItem('it9an_role');
+            const verseStatusWrap = document.getElementById('verse-status-wrap');
+            if (verseStatusWrap) {
+                if (role === 'student' && uid && uid !== 'guest' && uid !== 'admin_super') {
+                    await fetchStudentCompletedVerseIds(uid);
+                    const completed = studentCompletedVerseIds.has(String(globalId));
+                    verseStatusWrap.textContent = completed ? 'مكتمل' : 'لم يُنجز بعد';
+                    verseStatusWrap.className = 'verse-status-label ' + (completed ? 'completed' : 'not-completed');
+                    verseStatusWrap.style.display = 'block';
+                } else {
+                    verseStatusWrap.style.display = 'none';
+                }
+            }
             
             if(!isAuto) {
                 stopLoop(); // Resets isPlaying to false
@@ -3464,12 +3562,21 @@
                         }
                     }
                 } else {
+                    function getPostTime(p) {
+                        const t = p.timestamp;
+                        if (!t) return 0;
+                        if (typeof t === 'object' && t.seconds != null) return t.seconds;
+                        if (typeof t === 'number') return t / 1000;
+                        return 0;
+                    }
                     allLoadedPosts.sort((a, b) => {
-                        if (userRole === 'student') {
-                            if (a.uid === myUid && b.uid !== myUid) return -1;
-                            if (a.uid !== myUid && b.uid === myUid) return 1;
+                        if (userRole === 'student' && myUid) {
+                            const aMine = a.uid === myUid;
+                            const bMine = b.uid === myUid;
+                            if (aMine && !bMine) return -1;
+                            if (!aMine && bMine) return 1;
                         }
-                        return (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0);
+                        return getPostTime(b) - getPostTime(a);
                     });
                 }
 
@@ -3531,12 +3638,32 @@
                     mainLikerNames = d.likes.map(l => stripYearFromName(typeof l === 'object' ? (l.name || 'مستخدم') : 'مستخدم'));
                 }
                 const isMyMainPost = (d.uid === myUid);
+                const mainReview = d.teacherReview && (d.teacherReview.status === 'acceptable' || d.teacherReview.status === 'can_improve') ? d.teacherReview : null;
+                const mainReviewClass = mainReview ? (mainReview.status === 'acceptable' ? ' review-acceptable' : ' review-can-improve') : ' review-pending';
+                const mainReviewLabel = mainReview ? (mainReview.status === 'acceptable' ? 'مقبول' : 'يمكن أن يكون أفضل') : 'لم يُراجع بعد';
+                if (!isAdminPost && !isTeacherPost) msgClass += mainReviewClass;
+
+                let mainLikeWrap = '';
+                if (isTeacher && !isAdminPost && !isTeacherPost) {
+                    const mainReviewed = !!mainReview;
+                    const mainDisabled = mainReviewed ? ' disabled' : '';
+                    mainLikeWrap = `<div class="teacher-review-wrap">
+                        <button class="teacher-review-btn acceptable${mainDisabled}" onclick="${mainReviewed ? '' : "setTeacherReviewPost('"+d.id+"', 'acceptable')"}">مقبول</button>
+                        <button class="teacher-review-btn can-improve${mainDisabled}" onclick="${mainReviewed ? '' : "setTeacherReviewPost('"+d.id+"', 'can_improve')"}">يمكن أن يكون أفضل</button>
+                        <span class="review-label">${mainReviewLabel}</span>
+                    </div>`;
+                } else {
+                    let mainLikeClass = mainIsLikedByMe ? 'liked' : '';
+                    let mainLikeAction = `likePost('${d.id}', '${d.uid}')`;
+                    let mainLockedClass = '';
+                    if (isMyMainPost || isGuest) { mainLikeAction = ''; mainLockedClass = 'locked'; mainLikeClass += ' disabled'; }
+                    mainLikeWrap = `<div class="like-btn ${mainLikeClass}">
+                                <div class="like-action ${mainLockedClass}" onclick="${mainLikeAction}">👍</div>
+                                <div class="like-count" onclick="showLikeNames(event, '${mainLikerNames.join('|||')}')">${mainLikesCount}</div>
+                            </div>
+                            <span class="review-label">${mainReviewLabel}</span>`;
+                }
                 const isGuest = (myUid === 'guest');
-                let mainLikeClass = mainIsLikedByMe ? 'liked' : '';
-                let mainLikeAction = `likePost('${d.id}', '${d.uid}')`; // Pass owner UID
-                let mainCursor = 'pointer';
-                let mainLockedClass = '';
-                if (isMyMainPost || isGuest) { mainLikeAction = ''; mainLockedClass = 'locked'; mainCursor = 'not-allowed'; mainLikeClass += ' disabled'; }
 
                 let deleteBtnHtml = "";
                 // MODIFIED: Show delete button if Admin OR Teacher OR Own Post (already handled by logic but button hidden)
@@ -3551,7 +3678,9 @@
                 }
 
                 let repliesHtml = "";
-                if(d.replies && d.replies.length > 0) {
+                const isStudentPost = !isAdminPost && !isTeacherPost;
+                const hasReplies = d.replies && d.replies.length > 0;
+                if(hasReplies) {
                     let repliesInner = "";
                     d.replies.forEach((r, idx) => {
                         let rIsAdmin = r.uid === 'admin_super';
@@ -3560,6 +3689,7 @@
                         if(rIsAdmin) rBoxClass += " reply-admin";
                         else if(rIsTeacher) rBoxClass += " reply-teacher";
                         else rBoxClass += " reply-student";
+                        if (!isAdminPost && !isTeacherPost) rBoxClass += mainReviewClass;
 
                         let rLikesCount = 0, rIsLikedByMe = false, rLikerNames = [];
                         if (r.likes && Array.isArray(r.likes)) { 
@@ -3573,6 +3703,14 @@
                         let rNamesStr = rLikerNames.join('|||');
                         let rLockedClass = '';
                         if (isMyReply || isGuest) { rLikeAction = ''; rLockedClass = 'locked'; rLikeClass += ' disabled'; }
+
+                        const replyReviewLabel = (!isAdminPost && !isTeacherPost) ? mainReviewLabel : '';
+                        let rLikeWrap = '';
+                        rLikeWrap = `<div class="like-btn ${rLikeClass}">
+                                <div class="like-action ${rLockedClass}" onclick="${rLikeAction}">👍</div>
+                                <div class="like-count" onclick="showLikeNames(event, '${rNamesStr}')">${rLikesCount}</div>
+                            </div>
+                            ${replyReviewLabel ? '<span class="review-label">'+replyReviewLabel+'</span>' : ''}`;
 
                         let rDeleteBtn = "";
                         if (isAdmin || isTeacher) {
@@ -3592,10 +3730,7 @@
                                 ${rDelWrap}
                                 <div class="reply-name-badge">${stripYearFromName(r.name)} ${rBadge}</div>
                                 <div class="reply-like-wrap">
-                                    <div class="like-btn ${rLikeClass}">
-                                        <div class="like-action ${rLockedClass}" onclick="${rLikeAction}">👍</div>
-                                        <div class="like-count" onclick="showLikeNames(event, '${rNamesStr}')">${rLikesCount}</div>
-                                    </div>
+                                    ${rLikeWrap}
                                 </div>
                             </div>
                             <div class="reply-row2">
@@ -3616,6 +3751,12 @@
                         <div class="replies-title">الردود</div>
                         ${repliesInner}
                     </div>`;
+                } else if (isStudentPost) {
+                    repliesHtml = `
+                    <div class="replies-wrapper">
+                        <div class="replies-title">الردود</div>
+                        <div class="replies-empty-hint">لا رد من المعلم بعد</div>
+                    </div>`;
                 }
                 
                 let replyBtnHtml = (userRole === 'teacher' || isAdmin) ? `<button class="reply-btn" onclick="startReply('${d.id}')">↩️ الرد</button>` : "<div></div>";
@@ -3631,10 +3772,7 @@
                         <div class="feed-name-badge">${stripYearFromName(d.name)} <span class="${badgeClass}">${badgeText}</span></div>
                         ${saveBtnHtml}
                         <div class="feed-like-wrap">
-                            <div class="like-btn ${mainLikeClass}">
-                                <div class="like-action ${mainLockedClass}" onclick="${mainLikeAction}">👍</div>
-                                <div class="like-count" onclick="showLikeNames(event, '${mainLikerNames.join('|||')}')">${mainLikesCount}</div>
-                            </div>
+                            ${mainLikeWrap}
                         </div>
                     </div>
                     <div class="feed-row2">
@@ -3723,6 +3861,7 @@
                     if (d.uid === 'admin_super') { msgClass = 'feed-msg admin-msg'; badgeClass = 'role-badge badge-admin'; badgeText = 'المسؤول'; }
                     else if (d.role === 'teacher') { msgClass = 'feed-msg teacher-msg'; badgeClass = 'role-badge badge-teacher'; badgeText = 'معلم'; }
                     let postDateStr = formatDateTime(d.timestamp);
+                    const isStudentPostSaved = d.uid !== 'admin_super' && d.role !== 'teacher';
                     let repliesHtml = "";
                     if (d.replies && d.replies.length > 0) {
                         let repliesInner = "";
@@ -3737,6 +3876,8 @@
                             repliesInner += `<div class="${rBoxClass}"><div class="reply-row1"><div class="reply-name-badge">${r.name} ${rBadge}</div></div><div class="reply-row2">${rDateStr ? '<span class="reply-datetime">'+rDateStr+'</span>' : ''}<div class="reply-player-wrap"><div class="custom-player"><button class="cp-btn" id="btn-${rUniqueId}" onclick="playFeedAudio('${r.audioUrl}', '${rUniqueId}')">▶</button><input type="range" class="cp-slider" id="seek-${rUniqueId}" value="0" min="0" step="0.1" oninput="seekFeedAudio(this.value)"><span class="cp-time" id="time-${rUniqueId}">00:00</span></div></div></div></div>`;
                         });
                         repliesHtml = `<div class="replies-wrapper"><div class="replies-title">الردود</div>${repliesInner}</div>`;
+                    } else if (isStudentPostSaved) {
+                        repliesHtml = `<div class="replies-wrapper"><div class="replies-title">الردود</div><div class="replies-empty-hint">لا رد من المعلم بعد</div></div>`;
                     }
                     const openToFeed = fileId ? `openSavedToFeed('${fileId}', '${d.id}')` : '';
                     html += `<div class="${msgClass}" id="saved-post-${d.id}">
@@ -3794,10 +3935,19 @@
             const statusText = document.getElementById('recText');
             if(ui.style.display === 'flex') { stopRecordingAndReview(); } 
             else {
+                const role = localStorage.getItem('it9an_role');
+                const uid = localStorage.getItem('it9an_uid');
+                if (uid === 'admin_super') {
+                    alert("المسؤولون لا يمكنهم التسجيل.");
+                    return;
+                }
+                if (role === 'teacher' && !replyTargetId) {
+                    alert("المعلمون يمكنهم الرد على تسجيلات الطلاب فقط. اضغط «الرد» عند تسجيل طالب أولاً.");
+                    return;
+                }
                 let rawStream = null, recCtx = null;
                 try {
                     let dur = audioEl.duration; if(!dur || isNaN(dur)) dur = 15;
-                    const role = localStorage.getItem('it9an_role');
                     maxRecDuration = (replyTargetId && role === 'teacher') ? 180 : Math.ceil(dur * 2);
                     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
                     if (navigator.audioSession && isIOS) {
@@ -3875,6 +4025,17 @@
             const role = localStorage.getItem('it9an_role');
             const uid = localStorage.getItem('it9an_uid');
 
+            if (uid === 'admin_super') {
+                currentBlob = null; replyTargetId = null;
+                alert("المسؤولون لا يمكنهم النشر أو التسجيل.");
+                return;
+            }
+            if (role === 'teacher' && !replyTargetId) {
+                currentBlob = null; replyTargetId = null;
+                alert("المعلمون يمكنهم الرد على تسجيلات الطلاب فقط. اضغط «الرد» عند تسجيل طالب أولاً.");
+                return;
+            }
+
             try {
                 let blobToUpload = currentBlob;
                 const needsTranscode = blobToUpload.type.includes('webm') || blobToUpload.type.includes('ogg');
@@ -3901,6 +4062,26 @@
                         try { await window.updateDoc(window.doc(window.db, "users", uid), { totalRepliesCount: window.increment(1) }); } catch(e){}
                     }
                     const targetPost = allLoadedPosts.find(p => p.id === replyTargetId);
+                    if (role === 'teacher' && targetPost && targetPost.role === 'student') {
+                        const postSnap = await window.getDoc(window.doc(window.db, "posts", replyTargetId));
+                        if (postSnap.exists()) {
+                            const updated = postSnap.data();
+                            if (updated.teacherReview && updated.teacherReview.reviewedBy === uid) {
+                                try {
+                                    const nq = window.query(window.collection(window.db, "notifications"), window.where("to", "==", "teachers"), window.where("postId", "==", replyTargetId));
+                                    const ns = await window.getDocs(nq);
+                                    for (const nd of ns.docs) {
+                                        const d = nd.data();
+                                        const cleared = d.clearedBy || [];
+                                        if (!cleared.includes(uid)) {
+                                            await window.updateDoc(window.doc(window.db, "notifications", nd.id), { clearedBy: window.arrayUnion(uid) });
+                                        }
+                                        break;
+                                    }
+                                } catch(e) {}
+                            }
+                        }
+                    }
                     if(targetPost) {
                        await window.addDoc(window.collection(window.db, "notifications"), {
                            to: targetPost.uid,
@@ -3911,20 +4092,6 @@
                            replyTimestamp: replyTs,
                            timestamp: window.serverTimestamp()
                        });
-                       if (role === 'teacher' && targetPost.role === 'student') {
-                           try {
-                               const nq = window.query(window.collection(window.db, "notifications"), window.where("to", "==", "teachers"), window.where("postId", "==", replyTargetId));
-                               const ns = await window.getDocs(nq);
-                               for (const nd of ns.docs) {
-                                   const d = nd.data();
-                                   const cleared = d.clearedBy || [];
-                                   if (!cleared.includes(uid)) {
-                                       await window.updateDoc(window.doc(window.db, "notifications", nd.id), { clearedBy: window.arrayUnion(uid) });
-                                   }
-                                   break;
-                               }
-                           } catch(e) {}
-                       }
                     }
                     replyTargetId = null; 
                 } else {
@@ -4078,21 +4245,6 @@
                 
                 await window.updateDoc(postRef, { likes: likes });
 
-                if (myRole === 'teacher' && post.role === 'student' && change === 1) {
-                    try {
-                        const nq = window.query(window.collection(window.db, "notifications"), window.where("to", "==", "teachers"), window.where("postId", "==", id));
-                        const ns = await window.getDocs(nq);
-                        for (const nd of ns.docs) {
-                            const d = nd.data();
-                            const cleared = d.clearedBy || [];
-                            if (!cleared.includes(uid)) {
-                                await window.updateDoc(window.doc(window.db, "notifications", nd.id), { clearedBy: window.arrayUnion(uid) });
-                            }
-                            break;
-                        }
-                    } catch(e) {}
-                }
-
                 if(ownerUid && change !== 0) {
                     const userRef = window.doc(window.db, "users", ownerUid);
                     try { await window.updateDoc(userRef, { totalLikes: window.increment(change) }); } catch(e){}
@@ -4140,15 +4292,64 @@
             const names = namesStr.split('|||'); alert("قائمة الإعجابات:\n\n" + names.join("\n"));
         }
 
+        window.setTeacherReviewPost = async function(postId, status) {
+            const uid = localStorage.getItem('it9an_uid');
+            const role = localStorage.getItem('it9an_role');
+            if (role !== 'teacher' || !uid || uid === 'guest') return;
+            const postRef = window.doc(window.db, "posts", postId);
+            const snap = await window.getDoc(postRef);
+            if (!snap.exists()) return;
+            const data = snap.data();
+            if (data.teacherReview && data.teacherReview.reviewedBy) return;
+            await window.updateDoc(postRef, { teacherReview: { status: status, reviewedBy: uid } });
+            try {
+                const hasMyReply = (data.replies || []).some(r => r.uid === uid);
+                if (hasMyReply) {
+                    const nq = window.query(window.collection(window.db, "notifications"), window.where("to", "==", "teachers"), window.where("postId", "==", postId));
+                    const ns = await window.getDocs(nq);
+                    for (const nd of ns.docs) {
+                        const d = nd.data();
+                        const cleared = d.clearedBy || [];
+                        if (!cleared.includes(uid)) {
+                            await window.updateDoc(window.doc(window.db, "notifications", nd.id), { clearedBy: window.arrayUnion(uid) });
+                        }
+                        break;
+                    }
+                }
+            } catch(e) {}
+            const div = document.getElementById('community-feed');
+            if (div) renderPosts(div, role, uid, savedIdsForFeed);
+        };
+
+        window.setTeacherReviewReply = async function(postId, replyTimestamp, status) {
+            const uid = localStorage.getItem('it9an_uid');
+            const role = localStorage.getItem('it9an_role');
+            if (role !== 'teacher' || !uid || uid === 'guest') return;
+            const postRef = window.doc(window.db, "posts", postId);
+            const snap = await window.getDoc(postRef);
+            if (!snap.exists()) return;
+            const data = snap.data();
+            const replyToRate = (data.replies || []).find(r => r.timestamp === replyTimestamp);
+            if (!replyToRate || replyToRate.role === 'teacher') return;
+            const replies = (data.replies || []).map(r => {
+                if (r.timestamp === replyTimestamp && (!r.teacherReview || !r.teacherReview.reviewedBy))
+                    return { ...r, teacherReview: { status: status, reviewedBy: uid } };
+                return r;
+            });
+            await window.updateDoc(postRef, { replies });
+            const div = document.getElementById('community-feed');
+            if (div) renderPosts(div, role, uid, savedIdsForFeed);
+        };
+
         window.resetAllLikes = async function() {
             if(confirm("تحذير: هل تريد حقاً حذف جميع الإعجابات من التطبيق؟")) {
                 const q = window.query(window.collection(window.db, "posts"));
                 const querySnapshot = await window.getDocs(q);
                 for(const docSnap of querySnapshot.docs) {
-                    let updates = { likes: [] };
+                    let updates = { likes: [], teacherReview: null };
                     let data = docSnap.data();
                     if(data.replies && data.replies.length > 0) {
-                        let cleanedReplies = data.replies.map(r => ({ ...r, likes: [] }));
+                        let cleanedReplies = data.replies.map(r => ({ ...r, likes: [], teacherReview: null }));
                         updates.replies = cleanedReplies;
                     }
                     await window.updateDoc(window.doc(window.db, "posts", docSnap.id), updates);
