@@ -639,6 +639,7 @@
 
         <div class="admin-actions">
             <button id="maintenanceModeBtn" class="btn-admin-reset" onclick="toggleMaintenanceMode()" title="إصلاح التطبيق: إظهار رسالة للجميع ما عدا المعلم 9898 والطالب 0860">🔧 وضع الإصلاح</button>
+            <button class="btn-admin-reset" onclick="restoreStudentRecordingNotifications()" title="إعادة إشعارات التسجيلات التي لا تزال تحتاج رد أو تقييم من المعلم">🔔 استعادة إشعارات التسجيلات</button>
             <button class="btn-admin-reset" onclick="resetAllNotifications()">🔔 تصفير كل الإشعارات</button>
             <button class="btn-admin-reset" onclick="resetAllViews()">👁️ تصفير كل المشاهدات</button>
             <button class="btn-admin-reset" onclick="resetAllLikes()">👍 تصفير كل الإعجابات</button>
@@ -4426,6 +4427,42 @@
                 alert("تم تصفير الإعجابات (Global)");
             }
         }
+
+        window.restoreStudentRecordingNotifications = async function() {
+            if (localStorage.getItem('it9an_uid') !== 'admin_super') return;
+            if (!confirm("إعادة إشعارات التسجيلات التي لا تزال تحتاج رد أو تقييم من المعلم لجميع المعلمين؟")) return;
+            try {
+                const postsSnap = await window.getDocs(window.collection(window.db, "posts"));
+                let created = 0, updated = 0;
+                for (const doc of postsSnap.docs) {
+                    const d = doc.data();
+                    if (d.uid === 'admin_super' || d.role === 'teacher') continue;
+                    const hasTeacherReply = d.replies && d.replies.some(r => r.role === 'teacher');
+                    const hasTeacherRating = d.teacherRating && (d.teacherRating.verdict === 'accepted' || d.teacherRating.verdict === 'needs_improvement');
+                    if (hasTeacherReply && hasTeacherRating) continue;
+                    const nq = window.query(window.collection(window.db, "notifications"), window.where("to", "==", "teachers"), window.where("postId", "==", doc.id), window.where("type", "==", "new_recording"));
+                    const nsnap = await window.getDocs(nq);
+                    if (nsnap.empty) {
+                        await window.addDoc(window.collection(window.db, "notifications"), {
+                            to: "teachers",
+                            senderName: stripYearFromName(d.name || 'طالب'),
+                            type: 'new_recording',
+                            fileId: String(d.fileId || '1'),
+                            postId: doc.id,
+                            clearedBy: [],
+                            timestamp: window.serverTimestamp()
+                        });
+                        created++;
+                    } else {
+                        for (const nd of nsnap.docs) {
+                            await window.updateDoc(window.doc(window.db, "notifications", nd.id), { clearedBy: [] });
+                            updated++;
+                        }
+                    }
+                }
+                alert("تم: " + created + " إشعار جديد، " + updated + " إشعار تم إعادة تفعيله");
+            } catch(e) { console.error(e); alert("خطأ: " + (e.message || "")); }
+        };
 
         window.resetAllNotifications = async function() {
             if(confirm("تحذير: هل تريد حذف جميع الإشعارات لجميع المعلمين والطلاب؟")) {
