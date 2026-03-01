@@ -183,6 +183,7 @@
         .lb-liked-item.lb-rating-unexamined { background: #ffffff; border-color: #eee; }
         .lb-liked-item.lb-rating-accepted { background: #e8f5e9; border-color: #a5d6a7; }
         .lb-liked-item.lb-rating-needs-improvement { background: #ffebee; border-color: #ef9a9a; }
+        .lb-liked-name { white-space: nowrap; }
         .lb-liked-item:last-of-type { margin-bottom: 0; }
         .lb-liked-item img { width: 45px; height: 45px; object-fit: cover; border-radius: 6px; flex-shrink: 0; }
         .lb-liked-img-click { cursor: pointer; }
@@ -378,7 +379,7 @@
 
         /* Kompaktes Design: Zeile 1 = Müll | Name | Like */
         .feed-msg .feed-row1 { display: flex; align-items: center; gap: 8px; margin-bottom: 2px; flex-wrap: wrap; }
-        .feed-msg .feed-delete-wrap { flex-shrink: 0; order: 1; }
+        .feed-msg .feed-delete-wrap { flex-shrink: 0; order: 1; margin-left: 20px; }
         .feed-msg .feed-name-badge { font-weight: bold; color: var(--primary); font-size: 14px; flex-shrink: 0; order: 2; }
         .feed-msg .feed-like-wrap { flex-shrink: 0; order: 3; margin-right: auto; }
         .feed-msg .feed-row2 { display: flex; align-items: center; gap: 8px; margin-bottom: 2px; flex-wrap: wrap; }
@@ -394,7 +395,7 @@
         .like-count:active { background: rgba(0,0,0,0.1); }
 
         /* Lehrer-Bewertung für Schüleraufnahmen (statt Like) */
-        .rating-btns-wrap { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+        .rating-btns-wrap { display: flex; align-items: center; gap: 6px; flex-shrink: 0; margin-right: auto; }
         .rating-btn { padding: 5px 12px; border-radius: 8px; font-size: 13px; font-weight: bold; cursor: pointer; border: 2px solid; font-family: 'Amiri'; }
         .rating-btn-accept { background: #c8e6c9; color: #2e7d32; border-color: #4caf50; }
         .rating-btn-accept:hover:not(.disabled) { background: #a5d6a7; }
@@ -402,6 +403,7 @@
         .rating-btn-improve:hover:not(.disabled) { background: #ef9a9a; }
         .rating-btn.disabled { opacity: 0.5; filter: grayscale(1); cursor: not-allowed; }
         .rating-btn.rating-active { box-shadow: 0 0 0 2px currentColor; }
+        .rating-btn.rating-inactive { opacity: 0.5; filter: grayscale(1); }
         .rating-unexamined-badge { font-size: 11px; color: #888; font-style: italic; margin-top: 2px; }
         .rating-status-badge { font-size: 13px; font-weight: bold; margin-top: 4px; padding: 4px 8px; border-radius: 6px; display: inline-block; }
         .rating-status-badge.unexamined { background: #f5f5f5; color: #666; }
@@ -3803,11 +3805,13 @@
                     const improveDisabled = ratingButtonsDisabled ? ' disabled' : '';
                     const acceptActive = ratingVerdict === 'accepted' ? ' rating-active' : '';
                     const improveActive = ratingVerdict === 'needs_improvement' ? ' rating-active' : '';
+                    const acceptInactive = ratingVerdict === 'needs_improvement' ? ' rating-inactive' : '';
+                    const improveInactive = ratingVerdict === 'accepted' ? ' rating-inactive' : '';
                     const acceptClick = ratingButtonsDisabled ? '' : `onclick="rateStudentPost('${d.id}', 'accepted')"`;
                     const improveClick = ratingButtonsDisabled ? '' : `onclick="rateStudentPost('${d.id}', 'needs_improvement')"`;
                     mainActionHtml = `<div class="rating-btns-wrap">
-                        <button class="rating-btn rating-btn-accept${acceptDisabled}${acceptActive}" ${acceptClick} title="مقبول">مقبول</button>
-                        <button class="rating-btn rating-btn-improve${improveDisabled}${improveActive}" ${improveClick} title="يمكن أن يكون أفضل">يمكن أن يكون أفضل</button>
+                        <button class="rating-btn rating-btn-accept${acceptDisabled}${acceptActive}${acceptInactive}" ${acceptClick} title="مقبول">مقبول</button>
+                        <button class="rating-btn rating-btn-improve${improveDisabled}${improveActive}${improveInactive}" ${improveClick} title="يمكن أن يكون أفضل">يمكن أن يكون أفضل</button>
                     </div>`;
                 } else {
                     mainActionHtml = `<div class="feed-like-wrap">
