@@ -866,6 +866,7 @@
         window.currentViewersData = { viewers: {}, totalRepetitions: 0 }; 
         
         let feedLimit = 3;
+        let feedLimitOthers = 3;
         let allLoadedPosts = [];
         let savedIdsForFeed = new Set();
         let highlightedPostId = null;
@@ -2573,7 +2574,7 @@
                 const openViews = lbViewsOpenUid ? document.getElementById('lb-views-' + lbViewsOpenUid) : null;
                 if (openViews) openViews.style.display = 'none';
                 lbViewsOpenUid = null;
-                feedLimit = 3;
+                feedLimit = 3; feedLimitOthers = 3;
                 playVers(parseInt(fileId), foundVerse);
                 updateLbBackButton();
             }
@@ -3508,7 +3509,7 @@
                     document.getElementById('viewCount').innerText = 0;
                 }
             });
-            feedLimit = 3; loadFeed(globalId);
+            feedLimit = 3; feedLimitOthers = 3; loadFeed(globalId);
         }
 
         window.showViewers = function() {
@@ -3604,9 +3605,16 @@
         function renderPosts(container, userRole, myUid, savedIds) {
             savedIds = savedIds || new Set();
             let htmlContent = "";
-            let displayPosts = allLoadedPosts.slice(0, feedLimit);
+            let displayPosts;
             const isAdmin = (myUid === 'admin_super');
             const isTeacher = (userRole === 'teacher');
+            if (userRole === 'student' && myUid && myUid !== 'guest') {
+                const myPosts = allLoadedPosts.filter(p => p.uid === myUid);
+                const otherPosts = allLoadedPosts.filter(p => p.uid !== myUid);
+                displayPosts = myPosts.concat(otherPosts.slice(0, feedLimitOthers));
+            } else {
+                displayPosts = allLoadedPosts.slice(0, feedLimit);
+            }
             
             if (activePostFilter) {
                 htmlContent += `<button class="reset-filter-btn" onclick="clearFilter()">عرض الكل</button>`;
@@ -3790,17 +3798,23 @@
                 </div>`;
             });
 
-            if (!activePostFilter && allLoadedPosts.length > feedLimit) {
+            const totalOthers = userRole === 'student' && myUid ? allLoadedPosts.filter(p => p.uid !== myUid).length : 0;
+            const hasMore = (userRole === 'student' && myUid && totalOthers > feedLimitOthers) || (userRole !== 'student' && allLoadedPosts.length > feedLimit);
+            if (!activePostFilter && hasMore) {
                 htmlContent += `<button class="load-more-btn" onclick="loadMorePosts()">▼ عرض المزيد</button>`;
             }
             container.innerHTML = htmlContent;
         }
 
         window.loadMorePosts = function() {
-            feedLimit += 3;
-            const div = document.getElementById('community-feed');
             const userRole = localStorage.getItem('it9an_role');
             const myUid = localStorage.getItem('it9an_uid');
+            if (userRole === 'student' && myUid && myUid !== 'guest') {
+                feedLimitOthers += 3;
+            } else {
+                feedLimit += 3;
+            }
+            const div = document.getElementById('community-feed');
             const scrollY = window.scrollY;
             renderPosts(div, userRole, myUid, savedIdsForFeed);
             window.scrollTo(0, scrollY);
