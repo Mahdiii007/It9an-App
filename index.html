@@ -180,6 +180,9 @@
         .lb-likes-click:hover { opacity: 0.9; }
         .lb-likes-list { padding: 10px 10px; background: #f9f9f9; border-radius: 0 0 10px 10px; border: 1px solid #eee; border-top: none; max-width: 100%; overflow-x: hidden; }
         .lb-liked-item { display: flex; align-items: center; gap: 10px; padding: 10px; background: white; border-radius: 10px; margin-bottom: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.06); border: 1px solid #eee; max-width: 100%; overflow-x: hidden; }
+        .lb-liked-item.lb-rating-unexamined { background: #ffffff; border-color: #eee; }
+        .lb-liked-item.lb-rating-accepted { background: #e8f5e9; border-color: #a5d6a7; }
+        .lb-liked-item.lb-rating-needs-improvement { background: #ffebee; border-color: #ef9a9a; }
         .lb-liked-item:last-of-type { margin-bottom: 0; }
         .lb-liked-item img { width: 45px; height: 45px; object-fit: cover; border-radius: 6px; flex-shrink: 0; }
         .lb-liked-img-click { cursor: pointer; }
@@ -231,6 +234,13 @@
         .lb-back-btn { background: var(--primary); color: var(--gold-light); border-color: var(--gold); }
         .verse-list-btn:active { opacity: 0.9; }
         
+        .verse-status-badge { text-align: center; padding: 8px 12px; font-size: 15px; font-weight: bold; border-radius: 10px; margin-bottom: 8px; font-family: 'Amiri'; }
+        .verse-status-badge.completed { background: #e8f5e9; color: #2e7d32; border: 1px solid #4caf50; }
+        .verse-status-badge.not-completed { background: #fff3e0; color: #e65100; border: 1px solid #ff9800; }
+        .lesson-progress-bar-wrap { width: 100%; padding: 0 15px 10px 15px; }
+        .lesson-progress-bar { height: 12px; background: #e0e0e0; border-radius: 6px; overflow: hidden; }
+        .lesson-progress-bar-fill { height: 100%; background: linear-gradient(90deg, var(--primary), var(--primary-light)); border-radius: 6px; transition: width 0.3s; }
+        .lesson-progress-text { font-size: 12px; color: #666; text-align: center; margin-top: 4px; }
         .quran-frame {
             background: var(--surface); padding: 5px; border-radius: 15px;
             border: 2px solid var(--gold-light); outline: 1px solid var(--gold); outline-offset: -5px;
@@ -382,6 +392,22 @@
         .like-action.locked { cursor: not-allowed; opacity: 0.3; filter: grayscale(1); }
         .like-count { padding: 5px 10px; border-right: 1px solid #ddd; cursor: pointer; background: rgba(0,0,0,0.03); font-size: 13px; }
         .like-count:active { background: rgba(0,0,0,0.1); }
+
+        /* Lehrer-Bewertung für Schüleraufnahmen (statt Like) */
+        .rating-btns-wrap { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+        .rating-btn { padding: 5px 12px; border-radius: 8px; font-size: 13px; font-weight: bold; cursor: pointer; border: 2px solid; font-family: 'Amiri'; }
+        .rating-btn-accept { background: #c8e6c9; color: #2e7d32; border-color: #4caf50; }
+        .rating-btn-accept:hover:not(.disabled) { background: #a5d6a7; }
+        .rating-btn-improve { background: #ffcdd2; color: #c62828; border-color: #e57373; }
+        .rating-btn-improve:hover:not(.disabled) { background: #ef9a9a; }
+        .rating-btn.disabled { opacity: 0.5; filter: grayscale(1); cursor: not-allowed; }
+        .rating-btn.rating-active { box-shadow: 0 0 0 2px currentColor; }
+        .rating-unexamined-badge { font-size: 11px; color: #888; font-style: italic; margin-top: 2px; }
+        .feed-msg.student-msg.rating-unexamined { background: #ffffff; border: 1px solid #eee; }
+        .feed-msg.student-msg.rating-accepted { background: #e8f5e9; border: 1px solid #a5d6a7; }
+        .feed-msg.student-msg.rating-needs-improvement { background: #ffebee; border: 1px solid #ef9a9a; }
+        .reply-box.reply-teacher.reply-inherit-accepted { background: #e8f5e9; border-right-color: #4caf50; }
+        .reply-box.reply-teacher.reply-inherit-needs-improvement { background: #ffebee; border-right-color: #e57373; }
         .reply-btn { cursor: pointer; background: none; border: 1px solid var(--primary); color: var(--primary); padding: 4px 12px; border-radius: 6px; font-size: 13px; font-weight: bold; }
         .delete-btn { background: rgba(255,0,0,0.1); color: var(--red); border: none; border-radius: 50%; width: 28px; height: 28px; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
         .save-btn { background: rgba(0,0,0,0.05); border: 1px solid #ddd; border-radius: 50%; width: 32px; height: 32px; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
@@ -403,6 +429,8 @@
         .reply-datetime { font-size: 10px; color: #888; flex-shrink: 0; }
         .reply-player-wrap { flex: 1; min-width: 80px; }
 
+        .feed-section-frame { background: #f9f9f9; border: 1px solid #e0e0e0; border-radius: 12px; padding: 12px; margin-bottom: 20px; }
+        .feed-section-title { font-size: 16px; font-weight: bold; color: var(--primary); margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid var(--primary); }
         .load-more-btn { display: block; width: 100%; padding: 15px; text-align: center; background: #f0f0f0; color: #555; border: none; border-radius: 10px; font-family: 'Amiri'; font-weight: bold; font-size: 16px; cursor: pointer; margin-top: 25px; }
         .load-more-btn:active { background: #e0e0e0; }
 
@@ -532,6 +560,15 @@
         </div>
     </div>
 
+    <div id="maintenance-screen" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:var(--surface); z-index:6000; padding:30px 20px; box-sizing:border-box; overflow-y:auto;">
+        <div style="max-width:400px; margin:60px auto 0; text-align:center;">
+            <div style="font-size:48px; margin-bottom:25px;">🔧</div>
+            <div style="font-size:22px; font-weight:bold; color:var(--primary); margin-bottom:20px; line-height:1.6;">نعمل على التطبيق لتحسين وظائفه. سيتوفر التطبيق قريباً.</div>
+            <div style="font-size:16px; color:#666; margin-bottom:30px;">We are working on the app for better functionality. The app will be available again shortly.</div>
+            <button class="login-btn" onclick="hideMaintenanceScreen()">رجوع</button>
+        </div>
+    </div>
+
     <div id="install-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:5001; overflow-y:auto; padding:15px; box-sizing:border-box;" onclick="if(event.target===this) hideInstallModal()">
         <div class="verse-list-content" onclick="event.stopPropagation()" style="max-width:400px; margin:20px auto;">
             <div class="verse-list-title">📱 إضافة إلى الشاشة الرئيسية</div>
@@ -597,6 +634,7 @@
         </div>
 
         <div class="admin-actions">
+            <button id="maintenanceModeBtn" class="btn-admin-reset" onclick="toggleMaintenanceMode()" title="إصلاح التطبيق: إظهار رسالة للجميع ما عدا المعلم 9898 والطالب 0860">🔧 وضع الإصلاح</button>
             <button class="btn-admin-reset" onclick="resetAllNotifications()">🔔 تصفير كل الإشعارات</button>
             <button class="btn-admin-reset" onclick="resetAllViews()">👁️ تصفير كل المشاهدات</button>
             <button class="btn-admin-reset" onclick="resetAllLikes()">👍 تصفير كل الإعجابات</button>
@@ -668,6 +706,7 @@
             <button id="lbBackToLikesBtn" class="verse-list-btn lb-back-btn" onclick="goBackToLbList()" style="display:none;">↩️ العودة</button>
             <button class="verse-list-btn" onclick="showVerseList()">📋 قائمة مقاطع الدرس</button>
             <button class="verse-list-btn" onclick="showLessonsView()">📚 العودة لقائمة الدروس</button>
+            <div id="verseStatusBadge" class="verse-status-badge" style="display:none;"></div>
             <div class="quran-frame">
                 <div class="player-container">
                     <img id="currentImg" class="quran-image" src="" alt="Vers Bild" onerror="this.src='placeholder.png'">
@@ -744,6 +783,7 @@
         const STUDENT_PIN = "1234";
         const ADMIN_PIN = "1879";
         const TEACHER_LOTFI_PIN = "9898";
+        const MAINTENANCE_EXEMPT_STUDENT_PIN = "0860";
         const RESERVED_PINS = ["9898", "1879"];
         (function storePushParamsIfNeeded() {
             const params = new URLSearchParams(window.location.search);
@@ -782,7 +822,42 @@
             const saved = localStorage.getItem('it9an_saved_pin');
             const pinEl = document.getElementById('pinInput');
             if (pinEl) pinEl.value = (saved && saved.length === 4) ? saved : '';
-        } 
+        }
+
+        const APP_SETTINGS_DOC = 'appSettings';
+        async function getMaintenanceMode() {
+            try {
+                const ref = window.doc(window.db, APP_SETTINGS_DOC, 'maintenance');
+                const snap = await window.getDoc(ref);
+                return snap.exists() && snap.data().enabled === true;
+            } catch(e) { return false; }
+        }
+        window.toggleMaintenanceMode = async function() {
+            if (!window.db || localStorage.getItem('it9an_uid') !== 'admin_super') return;
+            try {
+                const ref = window.doc(window.db, APP_SETTINGS_DOC, 'maintenance');
+                const snap = await window.getDoc(ref);
+                const current = snap.exists() && snap.data().enabled === true;
+                await window.setDoc(ref, { enabled: !current, updatedAt: window.serverTimestamp() });
+                updateMaintenanceButtonState(!current);
+                alert(current ? 'تم إيقاف وضع الإصلاح' : 'تم تفعيل وضع الإصلاح');
+            } catch(e) { console.error(e); alert('خطأ'); }
+        };
+        function updateMaintenanceButtonState(isOn) {
+            const btn = document.getElementById('maintenanceModeBtn');
+            if (btn) {
+                btn.innerText = isOn ? '🔧 وضع الإصلاح (مفعّل)' : '🔧 وضع الإصلاح';
+                btn.style.background = isOn ? '#8e0000' : '';
+            }
+        }
+        window.hideMaintenanceScreen = function() {
+            document.getElementById('maintenance-screen').style.display = 'none';
+            document.getElementById('login-screen').style.display = 'block';
+        };
+        window.showMaintenanceScreen = function() {
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('maintenance-screen').style.display = 'block';
+        };
 
         const VERS_PRO_LEKTION = [ 8, 15, 9, 15, 16 ];
         const KURS_DATEN = VERS_PRO_LEKTION.map((anzahl, index) => {
@@ -800,6 +875,37 @@
                 }
             }
             return { lesson: 0, verse: fid };
+        }
+
+        let completedVersesCache = null;
+        let completedVersesCacheUid = null;
+        async function fetchCompletedVersesForStudent(studentUid) {
+            if (completedVersesCache && completedVersesCacheUid === studentUid) return completedVersesCache;
+            const q = window.query(window.collection(window.db, "posts"), window.where("uid", "==", studentUid));
+            const snap = await window.getDocs(q);
+            const completed = new Set();
+            snap.forEach(doc => {
+                const d = doc.data();
+                if (d.role === 'teacher' || d.uid === 'admin_super') return;
+                const tr = d.teacherRating;
+                if (tr && tr.verdict === 'accepted' && d.fileId != null) completed.add(String(d.fileId));
+            });
+            completedVersesCache = completed;
+            completedVersesCacheUid = studentUid;
+            return completed;
+        }
+        function invalidateCompletedVersesCache() { completedVersesCache = null; completedVersesCacheUid = null; }
+        function getLessonCompletion(lessonIndex, completedVerses) {
+            const lek = KURS_DATEN[lessonIndex];
+            if (!lek) return { completed: 0, total: 0, percent: 0 };
+            let count = 0;
+            for (let v = 0; v < lek.verse; v++) {
+                const fileId = lek.startGlobalId + v;
+                if (completedVerses.has(String(fileId))) count++;
+            }
+            const total = lek.verse;
+            const percent = total > 0 ? Math.round((count / total) * 100) : 0;
+            return { completed: count, total, percent };
         }
 
         let currentLessonIdx = null, currentGlobalFileId = null, currentLocalVers = null;
@@ -1141,6 +1247,7 @@
             if (!pin || pin.length !== 4) { alert("الرجاء إدخال رمز من 4 أرقام"); return; }
             if (btn) { btn.disabled = true; btn.innerText = "جاري..."; }
             try {
+            const isExemptFromMaintenance = (pin === TEACHER_LOTFI_PIN || pin === MAINTENANCE_EXEMPT_STUDENT_PIN || pin === ADMIN_PIN);
             if (pin === TEACHER_LOTFI_PIN) {
                 const ok = confirm("هل أنت Lotfi Fakhfakh المولود سنة 1967؟");
                 if (!ok) { if (btn) { btn.disabled = false; btn.innerText = "دخول"; } return; }
@@ -1175,6 +1282,12 @@
                 return;
             }
             if (pin === "0000") {
+                const maintenanceOn = await getMaintenanceMode();
+                if (maintenanceOn) {
+                    if (btn) { btn.disabled = false; btn.innerText = "دخول"; }
+                    showMaintenanceScreen();
+                    return;
+                }
                 try { localStorage.setItem('it9an_saved_pin', pin); } catch(e){}
                 doLoginSuccess('guest', 'ضيف', 'guest', true, null);
                 return;
@@ -1189,6 +1302,12 @@
             const year = data.year || '';
             const confirmMsg = "هل أنت " + dispName + (year ? " المولود سنة " + year : "") + "؟";
             if (!confirm(confirmMsg)) { if (btn) { btn.disabled = false; btn.innerText = "دخول"; } return; }
+            const maintenanceOn = await getMaintenanceMode();
+            if (maintenanceOn && !isExemptFromMaintenance) {
+                if (btn) { btn.disabled = false; btn.innerText = "دخول"; }
+                showMaintenanceScreen();
+                return;
+            }
             const updates = { lastLogin: window.serverTimestamp() };
             if (!data.firstLogin) updates.firstLogin = window.serverTimestamp();
             if (!data.normalizedName && data.baseName) {
@@ -1381,6 +1500,11 @@
                     const ur = await window.getDoc(window.doc(window.db, "users", actualUid));
                     if (ur.exists()) loginPin = ur.data().personalPin || null;
                 } catch(e){}
+                const maintenanceOn = await getMaintenanceMode();
+                if (maintenanceOn) {
+                    showMaintenanceScreen();
+                    return;
+                }
                 localStorage.removeItem('it9an_hidden');
                 doLoginSuccess(actualUid, finalDisplayName, role, true, loginPin);
                 if (createdNew && loginPin) alert("تم تسجيلك بنجاح. رمزك الشخصي: " + loginPin + " - احفظه!");
@@ -1399,6 +1523,7 @@
                 if(notifContainer) notifContainer.style.display = 'none';
                 recBtn.style.display = 'flex';
                 updateAppIconBadge(0);
+                getMaintenanceMode().then(on => updateMaintenanceButtonState(on));
             } else if (uid === 'guest' || role === 'guest') {
                 if(notifContainer) notifContainer.style.display = 'none';
                 recBtn.style.display = 'none';
@@ -2214,13 +2339,11 @@
             lbRecordingsOpenUid = studentUid;
             lbRecordingsOpenOffset = 0;
             lbRecordingsOpenRole = adminUserRoles[studentUid] || 'student';
-            if (!lbRecordingsCache[studentUid]) {
-                container.innerHTML = '<div style="padding:15px; text-align:center; color:#999;">جاري التحميل...</div>';
-                container.style.display = 'block';
-                const role = adminUserRoles[studentUid] || 'student';
-                const items = await fetchUserRecordings(studentUid, role);
-                lbRecordingsCache[studentUid] = items;
-            }
+            container.innerHTML = '<div style="padding:15px; text-align:center; color:#999;">جاري التحميل...</div>';
+            container.style.display = 'block';
+            const role = adminUserRoles[studentUid] || 'student';
+            const items = await fetchUserRecordings(studentUid, role, true);
+            lbRecordingsCache[studentUid] = items;
             renderLbRecordingsList(container, studentUid, 0);
             container.style.display = 'block';
         }
@@ -2234,12 +2357,13 @@
                 const postId = docSnap.id;
                 const fileId = data.fileId || '1';
                 const likesCount = (data.likes && data.likes.length) || 0;
+                const teacherRating = data.teacherRating || null;
                 let ts = 0;
                 if (data.timestamp) {
                     if (typeof data.timestamp === 'object' && data.timestamp.seconds) ts = data.timestamp.seconds * 1000;
                     else if (typeof data.timestamp === 'number') ts = data.timestamp;
                 }
-                all.push({ postId, audioUrl: data.audioUrl, fileId, likesCount, timestamp: ts });
+                all.push({ postId, audioUrl: data.audioUrl, fileId, likesCount, timestamp: ts, teacherRating });
             });
             all.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
             return all;
@@ -2257,11 +2381,12 @@
                     const fileId = data.fileId || '1';
                     if (!data.replies) return;
                     const mainAudioUrl = data.audioUrl || '';
+                    const mainTeacherRating = data.teacherRating || null;
                     data.replies.forEach((r, idx) => {
                         if (r.uid === uid) {
                             const likesCount = (r.likes && r.likes.length) || 0;
                             const ts = r.timestamp || 0;
-                            all.push({ type: 'reply', postId, replyIdx: idx, replyTimestamp: ts, audioUrl: r.audioUrl, mainAudioUrl, fileId, likesCount, timestamp: ts, authorUid: uid });
+                            all.push({ type: 'reply', postId, replyIdx: idx, replyTimestamp: ts, audioUrl: r.audioUrl, mainAudioUrl, fileId, likesCount, timestamp: ts, authorUid: uid, teacherRating: mainTeacherRating });
                         }
                     });
                 });
@@ -2289,6 +2414,9 @@
                 const btnText = `← مقطع ${lv.verse} درس ${lv.lesson}`;
                 const dateStr = it.timestamp ? (function(ts){ const d=new Date(ts); return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2)+' '+('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2); })(it.timestamp) : '';
                 const authorUid = it.authorUid || studentUid;
+                const tr = it.teacherRating || null;
+                const rv = tr ? tr.verdict : null;
+                const lbRatingClass = rv ? (rv === 'accepted' ? ' lb-rating-accepted' : ' lb-rating-needs-improvement') : ' lb-rating-unexamined';
                 let delBtn = '';
                 if (isAdmin) {
                     if (it.type === 'reply') {
@@ -2317,10 +2445,10 @@
                     </div>`;
                 }
                 html += `
-                <div class="lb-liked-item" data-lb-scroll-id="${it.postId}">
+                <div class="lb-liked-item${lbRatingClass}" data-lb-scroll-id="${it.postId}">
                     <button class="lb-verse-goto-btn" onclick="goToVerseFromRecordings('${it.fileId}', '${it.postId}', '${studentUid}', ${offset})" title="الذهاب للمقطع">${btnText}</button>
                     <div class="lb-liked-info">
-                        <div class="lb-liked-name">👍 ${it.likesCount}</div>
+                        <div class="lb-liked-name">${rv === 'accepted' ? '✓ مقبول' : rv === 'needs_improvement' ? '↻ يمكن أن يكون أفضل' : 'لم يُفحص بعد'}</div>
                         <div class="lb-liked-date">${dateStr}</div>
                     </div>
                     ${playSection}
@@ -3288,14 +3416,24 @@
             }
         }
 
-        window.showLessonsView = function() {
+        window.showLessonsView = async function() {
             const grid = document.getElementById('lesson-grid');
             if (!grid) return;
             grid.innerHTML = '';
+            const myUid = localStorage.getItem('it9an_uid');
+            const userRole = localStorage.getItem('it9an_role');
+            let completedVerses = new Set();
+            if (myUid && myUid !== 'admin_super' && myUid !== 'guest' && userRole === 'student') {
+                completedVerses = await fetchCompletedVersesForStudent(myUid);
+            }
             KURS_DATEN.forEach((lek, index) => {
                 const div = document.createElement('div');
                 div.className = 'menu-item';
-                div.innerHTML = `<div class="menu-item-title">الدرس ${index + 1}</div><img src="assets/T${lek.id}.png" loading="lazy" onerror="this.style.display='none'">`;
+                const prog = getLessonCompletion(index, completedVerses);
+                const progressHtml = (myUid && myUid !== 'admin_super' && userRole === 'student') 
+                    ? `<div class="lesson-progress-bar-wrap"><div class="lesson-progress-bar"><div class="lesson-progress-bar-fill" style="width:${prog.percent}%"></div></div><div class="lesson-progress-text">${prog.completed}/${prog.total} (${prog.percent}%)</div></div>` 
+                    : '';
+                div.innerHTML = `<div class="menu-item-title">الدرس ${index + 1}</div><img src="assets/T${lek.id}.png" loading="lazy" onerror="this.style.display='none'">${progressHtml}`;
                 div.onclick = () => startLesson(index);
                 grid.appendChild(div);
             });
@@ -3328,17 +3466,25 @@
             }
         }
         
-        window.showVerseList = function() {
+        window.showVerseList = async function() {
             if(currentLessonIdx === null) return;
             const lesson = KURS_DATEN[currentLessonIdx];
             const grid = document.getElementById('verse-list-grid');
             grid.innerHTML = '';
+            const uid = localStorage.getItem('it9an_uid');
+            const userRole = localStorage.getItem('it9an_role');
+            let completedVerses = new Set();
+            if (uid && uid !== 'admin_super' && uid !== 'guest' && userRole === 'student') {
+                completedVerses = await fetchCompletedVersesForStudent(uid);
+            }
             for(let v = 1; v <= lesson.verse; v++) {
                 const globalId = lesson.startGlobalId + v - 1;
                 const isActive = (globalId === currentGlobalFileId);
+                const isCompleted = completedVerses.has(String(globalId));
+                const statusSpan = (uid && userRole === 'student') ? `<span style="font-size:11px; color:${isCompleted?'#2e7d32':'#e65100'};">${isCompleted ? 'منجز' : 'لم يُنجز بعد'}</span>` : '';
                 const div = document.createElement('div');
                 div.className = 'verse-list-item' + (isActive ? ' active' : '');
-                div.innerHTML = `<span>المقطع ${v}</span><img src="assets/${globalId}.png" alt="Vers ${v}" onerror="this.style.display='none'">`;
+                div.innerHTML = `<span>المقطع ${v} ${statusSpan}</span><img src="assets/${globalId}.png" alt="Vers ${v}" onerror="this.style.display='none'">`;
                 div.onclick = () => { activePostFilter = null; activePostFilterNotifId = null; highlightedPostId = null; playVers(globalId, v); hideVerseList(); };
                 grid.appendChild(div);
             }
@@ -3378,6 +3524,18 @@
 
             document.getElementById('currentImg').src = `assets/${globalId}.png`;
             audioEl.src = `assets/${globalId}.mp3`;
+
+            const verseBadge = document.getElementById('verseStatusBadge');
+            const userRole = localStorage.getItem('it9an_role');
+            if (verseBadge && uid && uid !== 'admin_super' && uid !== 'guest' && userRole === 'student') {
+                const completed = await fetchCompletedVersesForStudent(uid);
+                const isCompleted = completed.has(String(globalId));
+                verseBadge.style.display = 'block';
+                verseBadge.className = 'verse-status-badge ' + (isCompleted ? 'completed' : 'not-completed');
+                verseBadge.innerText = isCompleted ? 'منجز' : 'لم يُنجز بعد';
+            } else if (verseBadge) {
+                verseBadge.style.display = 'none';
+            }
             
             if(!isAuto) {
                 stopLoop(); // Resets isPlaying to false
@@ -3394,7 +3552,6 @@
             window.currentViewersData = { viewers: {}, totalRepetitions: 0 };
             document.getElementById('viewCount').innerText = "0";
 
-            const myUid = localStorage.getItem('it9an_uid');
             const statRef = window.doc(window.db, "stats", "file_" + globalId);
             
             if(unsubscribeViews) unsubscribeViews();
@@ -3464,13 +3621,7 @@
                         }
                     }
                 } else {
-                    allLoadedPosts.sort((a, b) => {
-                        if (userRole === 'student') {
-                            if (a.uid === myUid && b.uid !== myUid) return -1;
-                            if (a.uid !== myUid && b.uid === myUid) return 1;
-                        }
-                        return (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0);
-                    });
+                    allLoadedPosts.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
                 }
 
                 savedIdsForFeed = new Set();
@@ -3497,17 +3648,18 @@
         function renderPosts(container, userRole, myUid, savedIds) {
             savedIds = savedIds || new Set();
             let htmlContent = "";
-            let displayPosts = allLoadedPosts.slice(0, feedLimit);
             const isAdmin = (myUid === 'admin_super');
             const isTeacher = (userRole === 'teacher');
+            const isStudentView = userRole === 'student' && myUid && myUid !== 'admin_super' && myUid !== 'guest';
             
             if (activePostFilter) {
                 htmlContent += `<button class="reset-filter-btn" onclick="clearFilter()">عرض الكل</button>`;
             }
 
-            displayPosts.forEach(d => {
+            const renderOnePost = (d) => {
                 let isTeacherPost = d.role === 'teacher';
                 let isAdminPost = d.uid === 'admin_super'; 
+                const isStudentPost = !isAdminPost && !isTeacherPost;
                 
                 let msgClass = 'feed-msg student-msg';
                 let badgeClass = 'role-badge badge-student';
@@ -3524,6 +3676,14 @@
                 }
                 if (highlightedPostId && d.id === highlightedPostId) msgClass += ' highlighted';
 
+                const teacherRating = d.teacherRating || null;
+                const ratingVerdict = teacherRating ? teacherRating.verdict : null;
+                if (isStudentPost) {
+                    if (ratingVerdict === 'accepted') msgClass += ' rating-accepted';
+                    else if (ratingVerdict === 'needs_improvement') msgClass += ' rating-needs-improvement';
+                    else msgClass += ' rating-unexamined';
+                }
+
                 let mainLikesCount = 0, mainIsLikedByMe = false, mainLikerNames = [];
                 if (d.likes && Array.isArray(d.likes)) { 
                     mainLikesCount = d.likes.length; 
@@ -3537,6 +3697,11 @@
                 let mainCursor = 'pointer';
                 let mainLockedClass = '';
                 if (isMyMainPost || isGuest) { mainLikeAction = ''; mainLockedClass = 'locked'; mainCursor = 'not-allowed'; mainLikeClass += ' disabled'; }
+
+                const canTeacherRate = (isTeacher || isAdmin) && isStudentPost;
+                const ratingByOtherTeacher = teacherRating && teacherRating.uid !== myUid;
+                const ratingButtonsDisabled = canTeacherRate && ratingByOtherTeacher;
+                const showRatingButtons = canTeacherRate;
 
                 let deleteBtnHtml = "";
                 // MODIFIED: Show delete button if Admin OR Teacher OR Own Post (already handled by logic but button hidden)
@@ -3560,6 +3725,10 @@
                         if(rIsAdmin) rBoxClass += " reply-admin";
                         else if(rIsTeacher) rBoxClass += " reply-teacher";
                         else rBoxClass += " reply-student";
+                        if (isStudentPost && rIsTeacher && ratingVerdict) {
+                            if (ratingVerdict === 'accepted') rBoxClass += " reply-inherit-accepted";
+                            else if (ratingVerdict === 'needs_improvement') rBoxClass += " reply-inherit-needs-improvement";
+                        }
 
                         let rLikesCount = 0, rIsLikedByMe = false, rLikerNames = [];
                         if (r.likes && Array.isArray(r.likes)) { 
@@ -3623,22 +3792,39 @@
                 const isSaved = savedIds.has(d.id);
                 const saveBtnHtml = (myUid && myUid !== 'admin_super' && myUid !== 'guest') ? `<button class="save-btn ${isSaved ? 'saved' : ''}" onclick="toggleSaveForLater('${d.id}', ${isSaved})" title="${isSaved ? 'إزالة من القائمة' : 'حفظ للمشاهدة لاحقاً'}">📌</button>` : '';
 
+                let mainActionHtml = '';
+                if (showRatingButtons) {
+                    const acceptDisabled = ratingButtonsDisabled ? ' disabled' : '';
+                    const improveDisabled = ratingButtonsDisabled ? ' disabled' : '';
+                    const acceptActive = ratingVerdict === 'accepted' ? ' rating-active' : '';
+                    const improveActive = ratingVerdict === 'needs_improvement' ? ' rating-active' : '';
+                    const acceptClick = ratingButtonsDisabled ? '' : `onclick="rateStudentPost('${d.id}', 'accepted')"`;
+                    const improveClick = ratingButtonsDisabled ? '' : `onclick="rateStudentPost('${d.id}', 'needs_improvement')"`;
+                    mainActionHtml = `<div class="rating-btns-wrap">
+                        <button class="rating-btn rating-btn-accept${acceptDisabled}${acceptActive}" ${acceptClick} title="مقبول">مقبول</button>
+                        <button class="rating-btn rating-btn-improve${improveDisabled}${improveActive}" ${improveClick} title="يمكن أن يكون أفضل">يمكن أن يكون أفضل</button>
+                    </div>`;
+                } else {
+                    mainActionHtml = `<div class="feed-like-wrap">
+                        <div class="like-btn ${mainLikeClass}">
+                            <div class="like-action ${mainLockedClass}" onclick="${mainLikeAction}">👍</div>
+                            <div class="like-count" onclick="showLikeNames(event, '${mainLikerNames.join('|||')}')">${mainLikesCount}</div>
+                        </div>
+                    </div>`;
+                }
+                const unexaminedBadge = (isStudentPost && !ratingVerdict) ? '<div class="rating-unexamined-badge">لم يُفحص بعد</div>' : '';
                 let delBtn = deleteBtnHtml ? `<div class="feed-delete-wrap">${deleteBtnHtml}</div>` : '';
-                htmlContent += `
+                return `
                 <div class="${msgClass}" id="post-${d.id}">
                     <div class="feed-row1">
                         ${delBtn}
                         <div class="feed-name-badge">${stripYearFromName(d.name)} <span class="${badgeClass}">${badgeText}</span></div>
                         ${saveBtnHtml}
-                        <div class="feed-like-wrap">
-                            <div class="like-btn ${mainLikeClass}">
-                                <div class="like-action ${mainLockedClass}" onclick="${mainLikeAction}">👍</div>
-                                <div class="like-count" onclick="showLikeNames(event, '${mainLikerNames.join('|||')}')">${mainLikesCount}</div>
-                            </div>
-                        </div>
+                        ${mainActionHtml}
                     </div>
                     <div class="feed-row2">
                         <span class="feed-datetime">${postDateStr}</span>
+                        ${unexaminedBadge}
                         <div class="feed-player-wrap">
                             <div class="custom-player">
                                 <button class="cp-btn" id="btn-${d.id}" onclick="playFeedAudio('${d.audioUrl}', '${d.id}')">▶</button>
@@ -3650,10 +3836,30 @@
                     <div class="feed-row3">${replyBtnHtml}</div>
                     ${repliesHtml}
                 </div>`;
-            });
+            };
 
-            if (!activePostFilter && allLoadedPosts.length > feedLimit) {
-                htmlContent += `<button class="load-more-btn" onclick="loadMorePosts()">▼ عرض المزيد</button>`;
+            if (isStudentView && !activePostFilter) {
+                const ownPosts = allLoadedPosts.filter(p => p.uid === myUid);
+                const othersPosts = allLoadedPosts.filter(p => p.uid !== myUid);
+                const displayOwn = ownPosts.slice(0, feedLimit);
+                const displayOthers = othersPosts.slice(0, feedLimit);
+                htmlContent += `<div class="feed-section-frame"><div class="feed-section-title">تسجيلاتي</div>`;
+                if (displayOwn.length === 0) htmlContent += `<div style="text-align:center; color:#999; padding:15px;">لا توجد تسجيلات</div>`;
+                else displayOwn.forEach(d => { htmlContent += renderOnePost(d); });
+                htmlContent += `</div>`;
+                htmlContent += `<div class="feed-section-frame"><div class="feed-section-title">تسجيلات الطلاب الآخرين</div>`;
+                if (displayOthers.length === 0) htmlContent += `<div style="text-align:center; color:#999; padding:15px;">لا توجد تسجيلات</div>`;
+                else displayOthers.forEach(d => { htmlContent += renderOnePost(d); });
+                htmlContent += `</div>`;
+                if (ownPosts.length > feedLimit || othersPosts.length > feedLimit) {
+                    htmlContent += `<button class="load-more-btn" onclick="loadMorePosts()">▼ عرض المزيد</button>`;
+                }
+            } else {
+                const displayPosts = allLoadedPosts.slice(0, feedLimit);
+                displayPosts.forEach(d => { htmlContent += renderOnePost(d); });
+                if (!activePostFilter && allLoadedPosts.length > feedLimit) {
+                    htmlContent += `<button class="load-more-btn" onclick="loadMorePosts()">▼ عرض المزيد</button>`;
+                }
             }
             container.innerHTML = htmlContent;
         }
@@ -3717,11 +3923,19 @@
                     if (!postSnap.exists()) continue;
                     const d = { id: postSnap.id, ...postSnap.data() };
                     const fileId = d.fileId ? String(d.fileId) : '';
+                    const isStudentPost = d.uid !== 'admin_super' && d.role !== 'teacher';
+                    const teacherRating = d.teacherRating || null;
+                    const ratingVerdict = teacherRating ? teacherRating.verdict : null;
                     let msgClass = 'feed-msg student-msg';
                     let badgeClass = 'role-badge badge-student';
                     let badgeText = 'طالب';
                     if (d.uid === 'admin_super') { msgClass = 'feed-msg admin-msg'; badgeClass = 'role-badge badge-admin'; badgeText = 'المسؤول'; }
                     else if (d.role === 'teacher') { msgClass = 'feed-msg teacher-msg'; badgeClass = 'role-badge badge-teacher'; badgeText = 'معلم'; }
+                    if (isStudentPost) {
+                        if (ratingVerdict === 'accepted') msgClass += ' rating-accepted';
+                        else if (ratingVerdict === 'needs_improvement') msgClass += ' rating-needs-improvement';
+                        else msgClass += ' rating-unexamined';
+                    }
                     let postDateStr = formatDateTime(d.timestamp);
                     let repliesHtml = "";
                     if (d.replies && d.replies.length > 0) {
@@ -3731,6 +3945,10 @@
                             if (r.uid === 'admin_super') rBoxClass += " reply-admin";
                             else if (r.role === 'teacher') rBoxClass += " reply-teacher";
                             else rBoxClass += " reply-student";
+                            if (isStudentPost && r.role === 'teacher' && ratingVerdict) {
+                                if (ratingVerdict === 'accepted') rBoxClass += " reply-inherit-accepted";
+                                else if (ratingVerdict === 'needs_improvement') rBoxClass += " reply-inherit-needs-improvement";
+                            }
                             let rDateStr = r.timestamp ? (function(ts){ let dt=new Date(ts); return dt.getFullYear()+'-'+('0'+(dt.getMonth()+1)).slice(-2)+'-'+('0'+dt.getDate()).slice(-2)+' '+('0'+dt.getHours()).slice(-2)+':'+('0'+dt.getMinutes()).slice(-2); })(r.timestamp) : '';
                             let rBadge = r.uid === 'admin_super' ? '<span class="role-badge badge-admin">المسؤول</span>' : (r.role === 'teacher' ? '<span class="role-badge badge-teacher">معلم</span>' : '<span class="role-badge badge-student">طالب</span>');
                             let rUniqueId = d.id + "-saved-reply-" + idx;
@@ -3739,6 +3957,7 @@
                         repliesHtml = `<div class="replies-wrapper"><div class="replies-title">الردود</div>${repliesInner}</div>`;
                     }
                     const openToFeed = fileId ? `openSavedToFeed('${fileId}', '${d.id}')` : '';
+                    const savedUnexaminedBadge = (isStudentPost && !ratingVerdict) ? '<div class="rating-unexamined-badge">لم يُفحص بعد</div>' : '';
                     html += `<div class="${msgClass}" id="saved-post-${d.id}">
                         <div class="feed-row1">
                             <div class="feed-delete-wrap"><button class="delete-btn" onclick="removeFromSaved('${it.savedDocId}', '${d.id}')" title="إزالة من القائمة">🗑️</button></div>
@@ -3746,6 +3965,7 @@
                         </div>
                         <div class="feed-row2">
                             <span class="feed-datetime">${postDateStr}</span>
+                            ${savedUnexaminedBadge}
                             <div class="feed-player-wrap">
                                 <div class="custom-player">
                                     <button class="cp-btn" id="btn-saved-${d.id}" onclick="playFeedAudio('${d.audioUrl}', 'saved-${d.id}')">▶</button>
@@ -3913,17 +4133,20 @@
                        });
                        if (role === 'teacher' && targetPost.role === 'student') {
                            try {
-                               const nq = window.query(window.collection(window.db, "notifications"), window.where("to", "==", "teachers"), window.where("postId", "==", replyTargetId));
-                               const ns = await window.getDocs(nq);
-                               for (const nd of ns.docs) {
-                                   const d = nd.data();
-                                   const cleared = d.clearedBy || [];
-                                   if (!cleared.includes(uid)) {
-                                       await window.updateDoc(window.doc(window.db, "notifications", nd.id), { clearedBy: window.arrayUnion(uid) });
-                                   }
-                                   break;
+                               const postAfter = (await window.getDoc(window.doc(window.db, "posts", replyTargetId))).data();
+                               const hasTeacherReply = postAfter && postAfter.replies && postAfter.replies.some(r => r.role === 'teacher');
+                               const hasTeacherRating = postAfter && postAfter.teacherRating;
+                               if (hasTeacherReply && hasTeacherRating) {
+                                   const nq = window.query(window.collection(window.db, "notifications"), window.where("to", "==", "teachers"), window.where("postId", "==", replyTargetId));
+                                   const ns = await window.getDocs(nq);
+                                   for (const nd of ns.docs) await window.deleteDoc(window.doc(window.db, "notifications", nd.id));
                                }
                            } catch(e) {}
+                       }
+                       lbRecordingsCache = {}; lbLikesCache = {};
+                       if (lbRecordingsOpenUid) {
+                           const cont = document.getElementById('lb-recordings-' + lbRecordingsOpenUid);
+                           if (cont) fetchUserRecordings(lbRecordingsOpenUid, lbRecordingsOpenRole, true).then(items => { lbRecordingsCache[lbRecordingsOpenUid] = items; renderLbRecordingsList(cont, lbRecordingsOpenUid, lbRecordingsOpenOffset); });
                        }
                     }
                     replyTargetId = null; 
@@ -4056,6 +4279,54 @@
         } 
         function showView(id) { document.getElementById('menu-view').style.display = 'none'; document.getElementById('player-view').style.display = 'none'; document.getElementById('notifications-view').style.display = 'none'; document.getElementById('saved-list-view').style.display = 'none'; document.getElementById('lessons-view').style.display = 'none'; document.getElementById('admin-message-view').style.display = 'none'; const cn = document.getElementById('contact-admin-new-view'); if(cn) cn.style.display = 'none'; document.getElementById(id).style.display = (id === 'menu-view') ? 'grid' : 'block'; const menuBtn = document.getElementById('menuBtn'); if(menuBtn) menuBtn.style.display = (id === 'menu-view') ? 'none' : 'flex'; const skipScroll = (id === 'menu-view' && lbPendingRestore) || (id === 'player-view' && activePostFilter); if (!skipScroll) window.scrollTo({ top: 0, behavior: 'smooth' }); }
         
+        window.rateStudentPost = async function(postId, verdict) {
+            const uid = localStorage.getItem('it9an_uid');
+            const myName = localStorage.getItem('it9an_name');
+            const myRole = localStorage.getItem('it9an_role');
+            if (!uid || uid === 'guest' || (myRole !== 'teacher' && uid !== 'admin_super')) return;
+            if (verdict !== 'accepted' && verdict !== 'needs_improvement') return;
+            try {
+                const postRef = window.doc(window.db, "posts", postId);
+                const docSnap = await window.getDoc(postRef);
+                if (!docSnap.exists()) return;
+                const data = docSnap.data();
+                const existing = data.teacherRating || null;
+                if (existing && existing.uid !== uid) return;
+                const teacherRating = { uid, verdict, timestamp: Date.now(), name: myName };
+                await window.updateDoc(postRef, { teacherRating });
+                const idx = allLoadedPosts.findIndex(p => p.id === postId);
+                if (idx >= 0) allLoadedPosts[idx].teacherRating = teacherRating;
+                if (data.uid) invalidateCompletedVersesCache();
+                const div = document.getElementById('community-feed');
+                if (div) renderPosts(div, localStorage.getItem('it9an_role'), uid, savedIdsForFeed);
+                const hasTeacherReply = data.replies && data.replies.some(r => r.role === 'teacher');
+                if (hasTeacherReply) {
+                    try {
+                        const nq = window.query(window.collection(window.db, "notifications"), window.where("to", "==", "teachers"), window.where("postId", "==", postId));
+                        const ns = await window.getDocs(nq);
+                        for (const nd of ns.docs) await window.deleteDoc(window.doc(window.db, "notifications", nd.id));
+                    } catch(e) {}
+                }
+                lbRecordingsCache = {}; lbLikesCache = {};
+                if (lbRecordingsOpenUid) {
+                    const container = document.getElementById('lb-recordings-' + lbRecordingsOpenUid);
+                    if (container) {
+                        const items = await fetchUserRecordings(lbRecordingsOpenUid, lbRecordingsOpenRole, true);
+                        lbRecordingsCache[lbRecordingsOpenUid] = items;
+                        renderLbRecordingsList(container, lbRecordingsOpenUid, lbRecordingsOpenOffset);
+                    }
+                }
+                if (lbLikesOpenUid) {
+                    const container = document.getElementById('lb-likes-' + lbLikesOpenUid);
+                    if (container) {
+                        const items = await fetchLikedRecordings(lbLikesOpenUid, true);
+                        lbLikesCache[lbLikesOpenUid] = items;
+                        renderLbLikesList(container, lbLikesOpenUid, lbLikesOpenOffset);
+                    }
+                }
+            } catch (e) { console.error(e); alert("حدث خطأ"); }
+        };
+
         window.likePost = async (id, ownerUid) => { 
             const uid = localStorage.getItem('it9an_uid'); const myName = localStorage.getItem('it9an_name');
             const myRole = localStorage.getItem('it9an_role');
@@ -4077,21 +4348,6 @@
                 }
                 
                 await window.updateDoc(postRef, { likes: likes });
-
-                if (myRole === 'teacher' && post.role === 'student' && change === 1) {
-                    try {
-                        const nq = window.query(window.collection(window.db, "notifications"), window.where("to", "==", "teachers"), window.where("postId", "==", id));
-                        const ns = await window.getDocs(nq);
-                        for (const nd of ns.docs) {
-                            const d = nd.data();
-                            const cleared = d.clearedBy || [];
-                            if (!cleared.includes(uid)) {
-                                await window.updateDoc(window.doc(window.db, "notifications", nd.id), { clearedBy: window.arrayUnion(uid) });
-                            }
-                            break;
-                        }
-                    } catch(e) {}
-                }
 
                 if(ownerUid && change !== 0) {
                     const userRef = window.doc(window.db, "users", ownerUid);
