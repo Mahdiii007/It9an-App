@@ -403,6 +403,10 @@
         .rating-btn.disabled { opacity: 0.5; filter: grayscale(1); cursor: not-allowed; }
         .rating-btn.rating-active { box-shadow: 0 0 0 2px currentColor; }
         .rating-unexamined-badge { font-size: 11px; color: #888; font-style: italic; margin-top: 2px; }
+        .rating-status-badge { font-size: 13px; font-weight: bold; margin-top: 4px; padding: 4px 8px; border-radius: 6px; display: inline-block; }
+        .rating-status-badge.unexamined { background: #f5f5f5; color: #666; }
+        .rating-status-badge.accepted { background: #e8f5e9; color: #2e7d32; }
+        .rating-status-badge.needs-improvement { background: #ffebee; color: #c62828; }
         .feed-msg.student-msg.rating-unexamined { background: #ffffff; border: 1px solid #eee; }
         .feed-msg.student-msg.rating-accepted { background: #e8f5e9; border: 1px solid #a5d6a7; }
         .feed-msg.student-msg.rating-needs-improvement { background: #ffebee; border: 1px solid #ef9a9a; }
@@ -3812,7 +3816,9 @@
                         </div>
                     </div>`;
                 }
-                const unexaminedBadge = (isStudentPost && !ratingVerdict) ? '<div class="rating-unexamined-badge">لم يُفحص بعد</div>' : '';
+                const ratingStatusText = isStudentPost ? (ratingVerdict === 'accepted' ? 'مقبول' : ratingVerdict === 'needs_improvement' ? 'يمكن أن يكون أفضل' : 'لم يُفحص بعد') : '';
+                const ratingStatusClass = isStudentPost ? (ratingVerdict === 'accepted' ? 'accepted' : ratingVerdict === 'needs_improvement' ? 'needs-improvement' : 'unexamined') : '';
+                const ratingStatusBadge = ratingStatusText ? `<div class="rating-status-badge ${ratingStatusClass}">${ratingStatusText}</div>` : '';
                 let delBtn = deleteBtnHtml ? `<div class="feed-delete-wrap">${deleteBtnHtml}</div>` : '';
                 return `
                 <div class="${msgClass}" id="post-${d.id}">
@@ -3824,7 +3830,7 @@
                     </div>
                     <div class="feed-row2">
                         <span class="feed-datetime">${postDateStr}</span>
-                        ${unexaminedBadge}
+                        ${ratingStatusBadge}
                         <div class="feed-player-wrap">
                             <div class="custom-player">
                                 <button class="cp-btn" id="btn-${d.id}" onclick="playFeedAudio('${d.audioUrl}', '${d.id}')">▶</button>
@@ -3957,7 +3963,9 @@
                         repliesHtml = `<div class="replies-wrapper"><div class="replies-title">الردود</div>${repliesInner}</div>`;
                     }
                     const openToFeed = fileId ? `openSavedToFeed('${fileId}', '${d.id}')` : '';
-                    const savedUnexaminedBadge = (isStudentPost && !ratingVerdict) ? '<div class="rating-unexamined-badge">لم يُفحص بعد</div>' : '';
+                    const savedRatingText = isStudentPost ? (ratingVerdict === 'accepted' ? 'مقبول' : ratingVerdict === 'needs_improvement' ? 'يمكن أن يكون أفضل' : 'لم يُفحص بعد') : '';
+                    const savedRatingClass = isStudentPost ? (ratingVerdict === 'accepted' ? 'accepted' : ratingVerdict === 'needs_improvement' ? 'needs-improvement' : 'unexamined') : '';
+                    const savedRatingBadge = savedRatingText ? `<div class="rating-status-badge ${savedRatingClass}">${savedRatingText}</div>` : '';
                     html += `<div class="${msgClass}" id="saved-post-${d.id}">
                         <div class="feed-row1">
                             <div class="feed-delete-wrap"><button class="delete-btn" onclick="removeFromSaved('${it.savedDocId}', '${d.id}')" title="إزالة من القائمة">🗑️</button></div>
@@ -3965,7 +3973,7 @@
                         </div>
                         <div class="feed-row2">
                             <span class="feed-datetime">${postDateStr}</span>
-                            ${savedUnexaminedBadge}
+                            ${savedRatingBadge}
                             <div class="feed-player-wrap">
                                 <div class="custom-player">
                                     <button class="cp-btn" id="btn-saved-${d.id}" onclick="playFeedAudio('${d.audioUrl}', 'saved-${d.id}')">▶</button>
