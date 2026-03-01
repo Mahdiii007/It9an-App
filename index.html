@@ -3536,12 +3536,8 @@
             const myUid = localStorage.getItem('it9an_uid');
             const q = window.query(window.collection(window.db, "posts"), window.where("fileId", "==", idString));
             
-            unsubscribeFeed = window.onSnapshot(q, async (snap) => {
-                if (document.hidden) return;
-                if(snap.empty) { div.innerHTML = "<div style='text-align:center; color:#999; font-size:16px; padding:20px;'>لا توجد مشاركات حتى الآن</div>"; return; }
-                allLoadedPosts = [];
-                snap.forEach(doc => { allLoadedPosts.push({ id: doc.id, ...doc.data() }); });
-                
+            async function applyFeedAndRender() {
+                if (allLoadedPosts.length === 0) { div.innerHTML = "<div style='text-align:center; color:#999; font-size:16px; padding:20px;'>لا توجد مشاركات حتى الآن</div>"; return; }
                 if (activePostFilter) {
                     const hp = allLoadedPosts.find(p => p.id === activePostFilter);
                     if (hp) {
@@ -3580,7 +3576,6 @@
                         return getPostTime(b) - getPostTime(a);
                     });
                 }
-
                 savedIdsForFeed = new Set();
                 if (myUid && myUid !== 'admin_super') {
                     try {
@@ -3590,7 +3585,6 @@
                     } catch(e) {}
                 }
                 renderPosts(div, userRole, myUid, savedIdsForFeed);
-                
                 if (activePostFilter) {
                     setTimeout(() => {
                         const el = document.getElementById('post-' + activePostFilter);
@@ -3599,6 +3593,29 @@
                 } else {
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                 }
+            }
+            
+            unsubscribeFeed = window.onSnapshot(q, async (snap) => {
+                if (document.hidden) return;
+                allLoadedPosts = [];
+                snap.forEach(doc => { allLoadedPosts.push({ id: doc.id, ...doc.data() }); });
+                if (allLoadedPosts.length === 0 && userRole === 'student' && myUid && myUid !== 'guest') {
+                    try {
+                        const serverSnap = await window.getDocsFromServer(q);
+                        serverSnap.forEach(doc => { allLoadedPosts.push({ id: doc.id, ...doc.data() }); });
+                    } catch (e) { console.warn('Feed server fallback:', e); }
+                    if (allLoadedPosts.length === 0) {
+                        const numId = parseInt(fileId, 10);
+                        if (!isNaN(numId)) {
+                            try {
+                                const qNum = window.query(window.collection(window.db, "posts"), window.where("fileId", "==", numId));
+                                const snapNum = await window.getDocsFromServer(qNum);
+                                snapNum.forEach(doc => { allLoadedPosts.push({ id: doc.id, ...doc.data() }); });
+                            } catch (e2) { console.warn('Feed fileId number fallback:', e2); }
+                        }
+                    }
+                }
+                await applyFeedAndRender();
             });
         }
 
