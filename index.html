@@ -866,12 +866,29 @@
             document.getElementById('maintenance-screen').style.display = 'block';
         };
 
-        const VERS_PRO_LEKTION = [ 8, 15, 9, 15, 16 ];
-        const KURS_DATEN = VERS_PRO_LEKTION.map((anzahl, index) => {
-            let startId = 1;
-            for(let i=0; i<index; i++) startId += VERS_PRO_LEKTION[i];
-            return { id: index + 1, verse: anzahl, startGlobalId: startId };
-        });
+        const ASSETS_BASE = 'assets-v2';
+        const VERS_PRO_LEKTION_FALLBACK = [ 8, 15, 9, 15, 16 ];
+        function buildKursFromVerses(versesPerLesson) {
+            return versesPerLesson.map((anzahl, index) => {
+                let startId = 1;
+                for (let i = 0; i < index; i++) startId += versesPerLesson[i];
+                return { id: index + 1, verse: anzahl, startGlobalId: startId };
+            });
+        }
+        let KURS_DATEN = buildKursFromVerses(VERS_PRO_LEKTION_FALLBACK);
+        async function loadManifest() {
+            try {
+                const r = await fetch(ASSETS_BASE + '/manifest.json');
+                if (r.ok) {
+                    const j = await r.json();
+                    const arr = Array.isArray(j) ? j : (j.versesPerLesson || (j.lessons && j.lessons.map(l => l.verses)));
+                    if (arr && Array.isArray(arr) && arr.length > 0) {
+                        KURS_DATEN = buildKursFromVerses(arr);
+                    }
+                }
+            } catch (e) { /* Fallback bleibt aktiv */ }
+        }
+        loadManifest();
         function getLessonVerseFromFileId(fileId) {
             const fid = parseInt(fileId, 10);
             for (let i = 0; i < KURS_DATEN.length; i++) {
@@ -882,6 +899,10 @@
                 }
             }
             return { lesson: 0, verse: fid };
+        }
+        function getVerseAssetPath(globalId) {
+            const { lesson, verse } = getLessonVerseFromFileId(globalId);
+            return lesson > 0 ? `${lesson}-${verse}` : String(globalId);
         }
 
         let completedVersesCache = null;
@@ -3440,7 +3461,7 @@
                 const progressHtml = (myUid && myUid !== 'admin_super' && userRole === 'student') 
                     ? `<div class="lesson-progress-bar-wrap"><div class="lesson-progress-bar"><div class="lesson-progress-bar-fill" style="width:${prog.percent}%"></div></div><div class="lesson-progress-text">${prog.completed}/${prog.total} (${prog.percent}%)</div></div>` 
                     : '';
-                div.innerHTML = `<div class="menu-item-title">الدرس ${index + 1}</div><img src="assets/T${lek.id}.png" loading="lazy" onerror="this.style.display='none'">${progressHtml}`;
+                div.innerHTML = `<div class="menu-item-title">الدرس ${index + 1}</div><img src="${ASSETS_BASE}/T${lek.id}.png" loading="lazy" onerror="this.style.display='none'">${progressHtml}`;
                 div.onclick = () => startLesson(index);
                 grid.appendChild(div);
             });
@@ -3491,7 +3512,7 @@
                 const statusSpan = (uid && userRole === 'student') ? `<span style="font-size:11px; color:${isCompleted?'#2e7d32':'#e65100'};">${isCompleted ? 'منجز' : 'لم يُنجز بعد'}</span>` : '';
                 const div = document.createElement('div');
                 div.className = 'verse-list-item' + (isActive ? ' active' : '');
-                div.innerHTML = `<span>المقطع ${v} ${statusSpan}</span><img src="assets/${globalId}.png" alt="Vers ${v}" onerror="this.style.display='none'">`;
+                div.innerHTML = `<span>المقطع ${v} ${statusSpan}</span><img src="${ASSETS_BASE}/${getVerseAssetPath(globalId)}.png" alt="Vers ${v}" onerror="this.style.display='none'">`;
                 div.onclick = () => { activePostFilter = null; activePostFilterNotifId = null; highlightedPostId = null; playVers(globalId, v); hideVerseList(); };
                 grid.appendChild(div);
             }
@@ -3527,10 +3548,10 @@
             else document.getElementById('adminPlayerPanel').style.display = 'none';
 
             const lessonId = KURS_DATEN[currentLessonIdx].id;
-            const ptP = document.getElementById('pageTitle'); if (ptP) { ptP.classList.remove('header-name-pin'); ptP.innerHTML = `<span class="title-text-maktaa">المقطع ${localVersNum}</span><img src="assets/T${lessonId}.png" alt="Lesson Title">`; }
+            const ptP = document.getElementById('pageTitle'); if (ptP) { ptP.classList.remove('header-name-pin'); ptP.innerHTML = `<span class="title-text-maktaa">المقطع ${localVersNum}</span><img src="${ASSETS_BASE}/T${lessonId}.png" alt="Lesson Title">`; }
 
-            document.getElementById('currentImg').src = `assets/${globalId}.png`;
-            audioEl.src = `assets/${globalId}.mp3`;
+            document.getElementById('currentImg').src = `${ASSETS_BASE}/${getVerseAssetPath(globalId)}.png`;
+            audioEl.src = `${ASSETS_BASE}/${getVerseAssetPath(globalId)}.mp3`;
 
             const verseBadge = document.getElementById('verseStatusBadge');
             const userRole = localStorage.getItem('it9an_role');
