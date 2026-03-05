@@ -950,10 +950,6 @@
             document.getElementById('stages-view').style.display = 'none';
             invalidateCompletedVersesCache();
             if (typeof window.applyNotifStageFilter === 'function') window.applyNotifStageFilter();
-            lbViewsCache = {};
-            lbRecordingsCache = {};
-            lbLikesCache = {};
-            lbPendingRestore = null;
             renderMenu();
         }
         async function getStageProgressForStudent(studentUid, stageId) {
