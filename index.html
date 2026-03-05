@@ -127,7 +127,7 @@
         /* --- STAGES VIEW --- */
         #stages-view { display: none; width: 100%; max-width: 100%; overflow-x: hidden; padding: 20px 15px; }
         .stages-title { text-align: center; color: var(--primary); font-size: 24px; font-weight: bold; margin-bottom: 25px; }
-        .stages-grid { display: flex; flex-direction: column; gap: 20px; max-width: 500px; margin: 0 auto; margin-bottom: 40px; }
+        .stages-grid { display: flex; flex-direction: column; gap: 20px; max-width: 500px; margin: 0 auto; }
         .stage-card { 
             border-radius: 16px; padding: 24px 20px; cursor: pointer; text-align: center;
             transition: transform 0.2s ease, box-shadow 0.25s ease; border: none;
@@ -2138,9 +2138,11 @@
                 let users = [];
                 snap.forEach(doc => users.push({ ...doc.data(), uid: doc.data().uid || doc.id }));
                 const stageStats = await fetchStageLeaderboardStats();
+                let stageViews = {};
+                if (currentStageId !== 4) stageViews = await fetchStageVerseViewsFromStats(currentStageId);
                 users = users.map(u => {
                     const s = stageStats[u.uid] || { postsCount: 0, totalLikes: 0 };
-                    const views = (currentStageId === 4) ? (u.totalVerseViews || 0) : 0;
+                    const views = (currentStageId === 4) ? (u.totalVerseViews || 0) : (stageViews[u.uid] ?? 0);
                     return { ...u, postsCount: s.postsCount, totalLikes: s.totalLikes, totalVerseViews: views };
                 });
                 leaderboardAllUsers = applyLeaderboardSort(users);
@@ -2307,6 +2309,8 @@
             let firstSnap = true;
             const q = window.query(window.collection(window.db, "users"), window.where("role", "==", "teacher"));
             unsubscribeTeachersLeaderboard = window.onSnapshot(q, async (snap) => {
+                if (document.hidden) return;
+                if (Date.now() - lastTeachersRefreshTime < 15000) { if (onFirstRender && firstSnap) { onFirstRender(); firstSnap = false; } return; }
                 let teachers = [];
                 snap.forEach(doc => teachers.push({ ...doc.data(), uid: doc.data().uid || doc.id }));
                 const stageStats = await fetchStageTeachersStats();
@@ -2433,12 +2437,17 @@
             const myUid = localStorage.getItem('it9an_uid');
             let firstSnapshot = true;
             const cb = async (snap) => {
+                if (document.hidden) return;
+                const skipRender = Date.now() - lastStudentsRefreshTime < 15000;
+                if (skipRender) { if (firstSnapshot) { lbDone.students = true; checkLbComplete(); firstSnapshot = false; } return; }
                 let users = [];
                 snap.forEach(doc => users.push({ ...doc.data(), uid: doc.data().uid || doc.id }));
                 const stageStats = await fetchStageLeaderboardStats();
+                let stageViews = {};
+                if (currentStageId !== 4) stageViews = await fetchStageVerseViewsFromStats(currentStageId);
                 users = users.map(u => {
                     const s = stageStats[u.uid] || { postsCount: 0, totalLikes: 0 };
-                    const views = (currentStageId === 4) ? (u.totalVerseViews || 0) : 0;
+                    const views = (currentStageId === 4) ? (u.totalVerseViews || 0) : (stageViews[u.uid] ?? 0);
                     return { ...u, postsCount: s.postsCount, totalLikes: s.totalLikes, totalVerseViews: views };
                 });
                 leaderboardAllUsers = applyLeaderboardSort(users);
