@@ -525,7 +525,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, query, where, orderBy, onSnapshot, serverTimestamp, doc, setDoc, updateDoc, increment, arrayUnion, arrayRemove, deleteDoc, getDoc, getDocs, getDocsFromServer, enableIndexedDbPersistence, limit, deleteField } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, query, where, orderBy, onSnapshot, serverTimestamp, doc, setDoc, updateDoc, increment, arrayUnion, arrayRemove, deleteDoc, getDoc, getDocFromServer, getDocs, getDocsFromServer, enableIndexedDbPersistence, limit, deleteField } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
         import { getMessaging, getToken, isSupported } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging.js";
 
@@ -548,7 +548,7 @@
         window.where = where; window.orderBy = orderBy; window.onSnapshot = onSnapshot; 
         window.serverTimestamp = serverTimestamp; window.ref = ref; 
         window.uploadBytes = uploadBytes; window.getDownloadURL = getDownloadURL;
-        window.doc = doc; window.setDoc = setDoc; window.updateDoc = updateDoc; window.increment = increment; window.arrayUnion = arrayUnion; window.arrayRemove = arrayRemove; window.deleteDoc = deleteDoc; window.getDoc = getDoc; window.getDocs = getDocs; window.getDocsFromServer = getDocsFromServer; window.deleteField = deleteField; 
+        window.doc = doc; window.setDoc = setDoc; window.updateDoc = updateDoc; window.increment = increment; window.arrayUnion = arrayUnion; window.arrayRemove = arrayRemove; window.deleteDoc = deleteDoc; window.getDoc = getDoc; window.getDocFromServer = getDocFromServer; window.getDocs = getDocs; window.getDocsFromServer = getDocsFromServer; window.deleteField = deleteField; 
         window.deleteObject = deleteObject; window.limit = limit;
         window.getMessaging = getMessaging; window.getToken = getToken; window.isSupportedFcm = isSupported;
     </script>
@@ -2448,10 +2448,10 @@
         async function loadAppStats() {
             try {
                 const [statsSnap, postsSnap, studentsSnap, teachersSnap] = await Promise.all([
-                    window.getDocs(window.query(window.collection(window.db, "stats"))),
-                    window.getDocs(window.query(window.collection(window.db, "posts"))),
-                    window.getDocs(window.query(window.collection(window.db, "users"), window.where("role", "==", "student"))),
-                    window.getDocs(window.query(window.collection(window.db, "users"), window.where("role", "==", "teacher")))
+                    window.getDocsFromServer(window.query(window.collection(window.db, "stats"))),
+                    window.getDocsFromServer(window.query(window.collection(window.db, "posts"))),
+                    window.getDocsFromServer(window.query(window.collection(window.db, "users"), window.where("role", "==", "student"))),
+                    window.getDocsFromServer(window.query(window.collection(window.db, "users"), window.where("role", "==", "teacher")))
                 ]);
                 let totalRepetitions = 0;
                 statsSnap.forEach(d => { totalRepetitions += (d.data().totalRepetitions || 0); });
@@ -2612,7 +2612,7 @@
             if (!lbViewsCache[studentUid]) {
                 container.innerHTML = '<div style="padding:15px; text-align:center; color:#999;">جاري التحميل...</div>';
                 container.style.display = 'block';
-                const items = await fetchStudentViewedVerses(studentUid);
+                const items = await fetchStudentViewedVerses(studentUid, true);
                 lbViewsCache[studentUid] = items;
             }
             renderLbViewsList(container, studentUid, 0);
@@ -3157,7 +3157,7 @@
                     if (!lbRecordingsCache[uid]) {
                         container.innerHTML = '<div style="padding:15px; text-align:center; color:#999;">جاري التحميل...</div>';
                         container.style.display = 'block';
-                        fetchUserRecordings(uid, lbRecordingsOpenRole).then(items => {
+                        fetchUserRecordings(uid, lbRecordingsOpenRole, true).then(items => {
                             lbRecordingsCache[uid] = items;
                             renderLbRecordingsList(container, uid, offset);
                             container.style.display = 'block';
@@ -3176,7 +3176,7 @@
                     if (!lbViewsCache[uid]) {
                         container.innerHTML = '<div style="padding:15px; text-align:center; color:#999;">جاري التحميل...</div>';
                         container.style.display = 'block';
-                        fetchStudentViewedVerses(uid).then(items => {
+                        fetchStudentViewedVerses(uid, true).then(items => {
                             lbViewsCache[uid] = items;
                             renderLbViewsList(container, uid, offset);
                             container.style.display = 'block';
@@ -3261,7 +3261,8 @@
                 return;
             }
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                const ac = /iPad|iPhone|iPod/.test(navigator.userAgent) ? { audio: { echoCancellation: false } } : { audio: true };
+                const stream = await navigator.mediaDevices.getUserMedia(ac);
                 stream.getTracks().forEach(t => t.stop());
                 alert('تم تفعيل الميكروفون بنجاح. يمكنك التسجيل الآن.');
             } catch (e) {
@@ -3404,7 +3405,7 @@
                 return;
             }
             try {
-                const postSnap = await window.getDoc(window.doc(window.db, "posts", postId));
+                const postSnap = await window.getDocFromServer(window.doc(window.db, "posts", postId));
                 if (!postSnap.exists()) {
                     if (notifId) await window.deleteDoc(window.doc(window.db, "notifications", notifId));
                     alert("تم حذف التسجيل من قبل الطالب. تم إزالة الإشعار.");
@@ -3880,8 +3881,9 @@
         }
 
         async function playVers(globalId, localVersNum, isAuto = false) {
-            pauseFeedAudio();
             currentGlobalFileId = globalId; currentLocalVers = localVersNum;
+            feedLimit = 3; loadFeed(globalId);
+            pauseFeedAudio();
             showView('player-view');
             if (!activePostFilter) window.scrollTo({ top: 0, behavior: 'smooth' });
             updateLbBackButton();
@@ -3942,7 +3944,6 @@
                     document.getElementById('viewCount').innerText = 0;
                 }
             });
-            feedLimit = 3; loadFeed(globalId);
         }
 
         window.showViewers = async function() {
@@ -3974,7 +3975,7 @@
             alert(lines.join("\n"));
         }
 
-        function loadFeed(fileId) {
+        async function loadFeed(fileId) {
             const div = document.getElementById('community-feed');
             div.innerHTML = "<div style='text-align:center; color:#ccc; padding:10px;'>...</div>";
             if(unsubscribeFeed) unsubscribeFeed();
@@ -3983,8 +3984,33 @@
             const userRole = localStorage.getItem('it9an_role');
             const myUid = localStorage.getItem('it9an_uid');
             const q = window.query(window.collection(window.db, "posts"), window.where("fileId", "==", idString));
+            try {
+                const snap = await window.getDocsFromServer(q);
+                allLoadedPosts = [];
+                snap.forEach(doc => {
+                    const d = doc.data();
+                    const postStage = d.stageId != null ? d.stageId : 4;
+                    if (postStage !== currentStageId) return;
+                    allLoadedPosts.push({ id: doc.id, ...d });
+                });
+                if (allLoadedPosts.length > 0) {
+                    allLoadedPosts.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+                    savedIdsForFeed = new Set();
+                    if (myUid && myUid !== 'admin_super') {
+                        try {
+                            const savedQ = window.query(window.collection(window.db, "savedRecordings"), window.where("uid", "==", myUid));
+                            const savedSnap = await window.getDocsFromServer(savedQ);
+                            savedSnap.forEach(d => savedIdsForFeed.add(d.data().postId));
+                        } catch(e) {}
+                    }
+                    renderPosts(div, userRole, myUid, savedIdsForFeed);
+                } else {
+                    div.innerHTML = "<div style='text-align:center; color:#999; font-size:16px; padding:20px;'>لا توجد مشاركات حتى الآن</div>";
+                }
+            } catch (e) { console.warn('loadFeed initial:', e); }
             unsubscribeFeed = window.onSnapshot(q, async (snap) => {
                 if (document.hidden) return;
+                if (snap.metadata && snap.metadata.fromCache) return;
                 allLoadedPosts = [];
                 snap.forEach(doc => {
                     const d = doc.data();
@@ -4022,7 +4048,7 @@
                 if (myUid && myUid !== 'admin_super') {
                     try {
                         const savedQ = window.query(window.collection(window.db, "savedRecordings"), window.where("uid", "==", myUid));
-                        const savedSnap = await window.getDocs(savedQ);
+                        const savedSnap = await window.getDocsFromServer(savedQ);
                         savedSnap.forEach(d => savedIdsForFeed.add(d.data().postId));
                     } catch(e) {}
                 }
@@ -4279,7 +4305,7 @@
                 const col = window.collection(window.db, "savedRecordings");
                 if (isSaved) {
                     const q = window.query(col, window.where("uid", "==", myUid), window.where("postId", "==", postId));
-                    const snap = await window.getDocs(q);
+                    const snap = await window.getDocsFromServer(q);
                     for (const doc of snap.docs) await window.deleteDoc(doc.ref);
                     savedIdsForFeed.delete(postId);
                 } else {
@@ -4301,7 +4327,7 @@
             container.innerHTML = "<div style='text-align:center; color:#999; padding:20px;'>جاري التحميل...</div>";
             try {
                 const savedQ = window.query(window.collection(window.db, "savedRecordings"), window.where("uid", "==", myUid));
-                const savedSnap = await window.getDocs(savedQ);
+                const savedSnap = await window.getDocsFromServer(savedQ);
                 const items = [];
                 for (const d of savedSnap.docs) {
                     const data = d.data();
@@ -4317,7 +4343,7 @@
                 }
                 let html = "";
                 for (const it of items) {
-                    const postSnap = await window.getDoc(window.doc(window.db, "posts", it.postId));
+                    const postSnap = await window.getDocFromServer(window.doc(window.db, "posts", it.postId));
                     if (!postSnap.exists()) continue;
                     const d = { id: postSnap.id, ...postSnap.data() };
                     const fileId = d.fileId ? String(d.fileId) : '';
@@ -4423,7 +4449,7 @@
                     if (navigator.audioSession && isIOS) {
                         try { navigator.audioSession.type = 'play-and-record'; } catch(e) {}
                     }
-                    const audioConstraints = isIOS ? { audio: true } : { 
+                    const audioConstraints = isIOS ? { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } } : { 
                         echoCancellation: false, noiseSuppression: false, autoGainControl: false, 
                         sampleRate: 48000, channelCount: 1 
                     };
@@ -4464,13 +4490,16 @@
 
                     mediaRecorder.onstop = () => {
                         releaseWakeLock();
+                        rawStream.getTracks().forEach(track => track.stop());
+                        try { recCtx.close(); } catch(e) {}
+                        if (navigator.audioSession) {
+                            try { navigator.audioSession.type = 'playback'; } catch(e) {}
+                        }
                         const mimeType = mediaRecorder.mimeType || 'audio/mp4';
                         currentBlob = new Blob(chunks, { type: mimeType });
                         showReviewModal();
                         const recBtn = document.getElementById('recBtn'); if(recBtn) recBtn.classList.remove('recording');
                         clearInterval(recInterval); ui.style.display = 'none';
-                        rawStream.getTracks().forEach(track => track.stop());
-                        try { recCtx.close(); } catch(e) {}
                     };
                     mediaRecorder.start(200);
                     requestWakeLock(); 
@@ -4482,6 +4511,7 @@
                     replyTargetId = null; 
                     if (rawStream) rawStream.getTracks().forEach(t => t.stop());
                     if (recCtx) try { recCtx.close(); } catch(e2) {}
+                    if (navigator.audioSession) { try { navigator.audioSession.type = 'playback'; } catch(e3) {} }
                 }
             }
         }
@@ -4534,7 +4564,7 @@
                        });
                        if (role === 'teacher' && targetPost.role === 'student') {
                            try {
-                               const postAfter = (await window.getDoc(window.doc(window.db, "posts", replyTargetId))).data();
+                               const postAfter = (await window.getDocFromServer(window.doc(window.db, "posts", replyTargetId))).data();
                                const hasTeacherReply = postAfter && postAfter.replies && postAfter.replies.some(r => r.role === 'teacher');
                                const hasTeacherRating = postAfter && postAfter.teacherRating;
                                if (hasTeacherReply && hasTeacherRating) {
