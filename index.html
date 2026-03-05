@@ -997,11 +997,12 @@
             return lesson > 0 ? `${lesson}-${verse}` : String(globalId);
         }
         function getAssetUrl(relativePath) {
-            if (window.location.protocol === 'file:') {
-                return ASSETS_BASE + '/' + relativePath;
+            const path = ASSETS_BASE + '/' + relativePath.replace(/^\//, '');
+            try {
+                return new URL(path, window.location.origin + '/').href;
+            } catch (e) {
+                return path;
             }
-            const base = ASSETS_BASE.startsWith('/') || ASSETS_BASE.startsWith('http') ? ASSETS_BASE : '/' + ASSETS_BASE;
-            return base.replace(/\/$/, '') + '/' + relativePath.replace(/^\//, '');
         }
 
         let completedVersesCache = null;
