@@ -3165,7 +3165,7 @@
             const scrollToId = pr.scrollToId;
             const leaderboardSection = document.getElementById('leaderboard-section');
             if (leaderboardSection) leaderboardSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            const scrollToClicked = (container) => {
+                const scrollToClicked = (container) => {
                 let el = null;
                 if (scrollToId && container) {
                     const items = container.querySelectorAll('[data-lb-scroll-id]');
@@ -3175,9 +3175,13 @@
                 }
                 const target = el || container;
                 if (target) {
-                    const doScroll = () => { target.scrollIntoView({ behavior: 'smooth', block: el ? 'center' : 'start' }); };
-                    setTimeout(doScroll, 300);
-                    setTimeout(doScroll, 800);
+                    const wrapper = el ? el.closest('.lb-item-wrapper') : null;
+                    const doScroll = () => {
+                        if (wrapper) wrapper.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        target.scrollIntoView({ behavior: 'smooth', block: el ? 'center' : 'start' });
+                    };
+                    setTimeout(doScroll, 400);
+                    setTimeout(doScroll, 1000);
                 }
             };
             if (pr.source === 'likes') {
@@ -3787,6 +3791,10 @@
                 if (pr.source === 'likes') { lbLikesOpenUid = pr.uid; lbLikesOpenOffset = pr.offset || 0; }
                 else if (pr.source === 'recordings') { lbRecordingsOpenUid = pr.uid; lbRecordingsOpenOffset = pr.offset || 0; lbRecordingsOpenRole = pr.role || 'student'; }
                 else if (pr.source === 'views') { lbViewsOpenUid = pr.uid; lbViewsOpenOffset = pr.offset || 0; }
+                setTimeout(() => {
+                    const sec = document.getElementById('leaderboard-section');
+                    if (sec) sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 100);
             }
             if (!lbPendingRestore) {
                 if (typeof refreshStudentsLeaderboard === 'function') refreshStudentsLeaderboard(true);
@@ -4054,7 +4062,20 @@
                     allLoadedPosts.push({ id: doc.id, ...d });
                 });
                 if (allLoadedPosts.length > 0) {
-                    allLoadedPosts.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+                    if (activePostFilter) {
+                        const hp = allLoadedPosts.find(p => p.id === activePostFilter);
+                        if (hp) {
+                            allLoadedPosts.sort((a, b) => {
+                                if (a.id === activePostFilter) return -1;
+                                if (b.id === activePostFilter) return 1;
+                                return (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0);
+                            });
+                        } else {
+                            allLoadedPosts.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+                        }
+                    } else {
+                        allLoadedPosts.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+                    }
                     savedIdsForFeed = new Set();
                     if (myUid && myUid !== 'admin_super') {
                         try {
@@ -4070,10 +4091,12 @@
                         const postIdToScroll = activePostFilter;
                         const feedDiv = document.getElementById('community-feed');
                         if (feedDiv) feedDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                        setTimeout(() => {
+                        const scrollToPost = () => {
                             const el = document.getElementById('post-' + postIdToScroll);
                             if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        }, 400);
+                        };
+                        setTimeout(scrollToPost, 300);
+                        setTimeout(scrollToPost, 700);
                     }
                 } else {
                     div.innerHTML = "<div style='text-align:center; color:#999; font-size:16px; padding:20px;'>لا توجد مشاركات حتى الآن</div>";
@@ -4131,10 +4154,12 @@
                     const postIdToScroll = activePostFilter;
                     const feedDiv = document.getElementById('community-feed');
                     if (feedDiv) feedDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    setTimeout(() => {
+                    const scrollToPost = () => {
                         const el = document.getElementById('post-' + postIdToScroll);
                         if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    }, 400);
+                    };
+                    setTimeout(scrollToPost, 300);
+                    setTimeout(scrollToPost, 700);
                 } else {
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                 }
