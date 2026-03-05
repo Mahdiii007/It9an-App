@@ -3649,11 +3649,15 @@
                 document.getElementById('leaderboard-section').style.display = 'block';
                 loadAdminMessagesList();
                 loadLeaderboard(lbPendingRestore ? doLbRestore : undefined);
+                if (typeof refreshStudentsLeaderboard === 'function') refreshStudentsLeaderboard();
+                if (typeof refreshTeachersLeaderboard === 'function') refreshTeachersLeaderboard();
                 loadAppStats();
             } else {
                 document.getElementById('adminMenuPanel').style.display = 'none';
                 document.getElementById('leaderboard-section').style.display = 'block';
                 loadLeaderboard(lbPendingRestore ? doLbRestore : undefined);
+                if (typeof refreshStudentsLeaderboard === 'function') refreshStudentsLeaderboard();
+                if (typeof refreshTeachersLeaderboard === 'function') refreshTeachersLeaderboard();
                 loadAppStats();
             }
 
