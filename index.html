@@ -216,6 +216,7 @@
         .lb-liked-item.lb-rating-unexamined { background: #ffffff; border-color: #eee; }
         .lb-liked-item.lb-rating-accepted { background: #e8f5e9; border-color: #a5d6a7; }
         .lb-liked-item.lb-rating-needs-improvement { background: #ffebee; border-color: #ef9a9a; }
+        .lb-liked-item.lb-item-highlighted { border: 2px solid var(--primary); box-shadow: 0 0 0 2px rgba(15, 76, 58, 0.3); }
         .lb-liked-name { white-space: nowrap; }
         .lb-liked-item:last-of-type { margin-bottom: 0; }
         .lb-liked-item img { width: 45px; height: 45px; object-fit: cover; border-radius: 6px; flex-shrink: 0; }
@@ -2085,7 +2086,8 @@
                 const openRec = document.getElementById('lb-recordings-' + lbRecordingsOpenUid);
                 if (lbRecordingsOpenUid && openRec) {
                     openRec.style.display = 'block';
-                    renderLbRecordingsList(openRec, lbRecordingsOpenUid, lbRecordingsOpenOffset);
+                    const recScrollToId = (lbPendingRestore && lbPendingRestore.source === 'recordings' && lbPendingRestore.uid === lbRecordingsOpenUid) ? lbPendingRestore.scrollToId : undefined;
+                    renderLbRecordingsList(openRec, lbRecordingsOpenUid, lbRecordingsOpenOffset, recScrollToId);
                 }
                 const openLike = document.getElementById('lb-likes-' + lbLikesOpenUid);
                 if (lbLikesOpenUid && openLike) {
@@ -2377,7 +2379,8 @@
                 }
                 if (isTeacherRecOpen) {
                     const container = document.getElementById('lb-recordings-' + lbRecordingsOpenUid);
-                    if (container) { container.style.display = 'block'; renderLbRecordingsList(container, lbRecordingsOpenUid, lbRecordingsOpenOffset); }
+                    const recScrollToId = (lbPendingRestore && lbPendingRestore.source === 'recordings' && lbPendingRestore.uid === lbRecordingsOpenUid) ? lbPendingRestore.scrollToId : undefined;
+                    if (container) { container.style.display = 'block'; renderLbRecordingsList(container, lbRecordingsOpenUid, lbRecordingsOpenOffset, recScrollToId); }
                 }
                 if (onFirstRender) onFirstRender();
                 }
@@ -2439,7 +2442,8 @@
                 }
                 if (isTeacherRecOpen) {
                     const container = document.getElementById('lb-recordings-' + lbRecordingsOpenUid);
-                    if (container) { container.style.display = 'block'; renderLbRecordingsList(container, lbRecordingsOpenUid, lbRecordingsOpenOffset); }
+                    const recScrollToId = (lbPendingRestore && lbPendingRestore.source === 'recordings' && lbPendingRestore.uid === lbRecordingsOpenUid) ? lbPendingRestore.scrollToId : undefined;
+                    if (container) { container.style.display = 'block'; renderLbRecordingsList(container, lbRecordingsOpenUid, lbRecordingsOpenOffset, recScrollToId); }
                 }
                 if (onFirstRender && firstSnap) { onFirstRender(); firstSnap = false; }
             });
@@ -2800,11 +2804,12 @@
             return items.map(it => ({ ...it, type: 'post', authorUid: uid }));
         }
 
-        function renderLbRecordingsList(container, studentUid, offset) {
+        function renderLbRecordingsList(container, studentUid, offset, optScrollToId) {
             const items = lbRecordingsCache[studentUid] || [];
             const toShow = items.slice(0, offset + LB_RECORDINGS_PAGE);
             const hasMore = items.length > toShow.length;
             const isAdmin = localStorage.getItem('it9an_uid') === 'admin_super';
+            const scrollToId = optScrollToId || ((lbPendingRestore && lbPendingRestore.source === 'recordings' && lbPendingRestore.uid === studentUid) ? (lbPendingRestore.scrollToId || '') : '');
             let html = '';
             window._lbRecordingsUrls = [];
             window._lbRecordingsMainUrls = [];
@@ -2820,6 +2825,7 @@
                 const tr = it.teacherRating || null;
                 const rv = tr ? tr.verdict : null;
                 const lbRatingClass = rv ? (rv === 'accepted' ? ' lb-rating-accepted' : ' lb-rating-needs-improvement') : ' lb-rating-unexamined';
+                const highlightClass = (scrollToId && it.postId === scrollToId) ? ' lb-item-highlighted' : '';
                 let delBtn = '';
                 if (isAdmin) {
                     if (it.type === 'reply') {
@@ -2848,7 +2854,7 @@
                     </div>`;
                 }
                 html += `
-                <div class="lb-liked-item${lbRatingClass}" data-lb-scroll-id="${it.postId}">
+                <div class="lb-liked-item${lbRatingClass}${highlightClass}" data-lb-scroll-id="${it.postId}">
                     <button class="lb-verse-goto-btn" onclick="goToVerseFromRecordings('${it.fileId}', '${it.postId}', '${studentUid}', ${offset})" title="الذهاب للمقطع">${btnText}</button>
                     <div class="lb-liked-info">
                         <div class="lb-liked-name">${rv === 'accepted' ? '✓ مقبول' : rv === 'needs_improvement' ? '↻ يمكن أن يكون أفضل' : 'لم يُفحص بعد'}</div>
@@ -3214,12 +3220,12 @@
                         container.style.display = 'block';
                         fetchUserRecordings(uid, lbRecordingsOpenRole, true).then(items => {
                             lbRecordingsCache[uid] = items;
-                            renderLbRecordingsList(container, uid, offset);
+                            renderLbRecordingsList(container, uid, offset, scrollToId);
                             container.style.display = 'block';
                             scrollToClicked(container);
                         });
                     } else {
-                        renderLbRecordingsList(container, uid, offset);
+                        renderLbRecordingsList(container, uid, offset, scrollToId);
                         container.style.display = 'block';
                         scrollToClicked(container);
                     }
@@ -3792,10 +3798,21 @@
                 if (pr.source === 'likes') { lbLikesOpenUid = pr.uid; lbLikesOpenOffset = pr.offset || 0; }
                 else if (pr.source === 'recordings') { lbRecordingsOpenUid = pr.uid; lbRecordingsOpenOffset = pr.offset || 0; lbRecordingsOpenRole = pr.role || 'student'; }
                 else if (pr.source === 'views') { lbViewsOpenUid = pr.uid; lbViewsOpenOffset = pr.offset || 0; }
-                setTimeout(() => {
-                    const sec = document.getElementById('leaderboard-section');
-                    if (sec) sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }, 100);
+                const prCopy = { ...pr };
+                if (leaderboardAllUsers && leaderboardAllUsers.length > 0) {
+                    renderLeaderboardItems(leaderboardAllUsers, leaderboardVisibleCount, localStorage.getItem('it9an_uid'), true);
+                }
+                if (leaderboardAllTeachers && leaderboardAllTeachers.length > 0 && lbRecordingsOpenUid && leaderboardAllTeachers.some(t => t.uid === lbRecordingsOpenUid)) {
+                    const container = document.getElementById('lb-recordings-' + lbRecordingsOpenUid);
+                    if (container) { container.style.display = 'block'; renderLbRecordingsList(container, lbRecordingsOpenUid, lbRecordingsOpenOffset, pr.scrollToId); }
+                }
+                if (leaderboardAllTeachers && leaderboardAllTeachers.length > 0 && lbLikesOpenUid && leaderboardAllTeachers.some(t => t.uid === lbLikesOpenUid)) {
+                    const container = document.getElementById('lb-likes-' + lbLikesOpenUid);
+                    if (container) { container.style.display = 'block'; renderLbLikesList(container, lbLikesOpenUid, lbLikesOpenOffset); }
+                }
+                setTimeout(() => { const sec = document.getElementById('leaderboard-section'); if (sec) sec.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50);
+                setTimeout(() => doLbRestore(prCopy), 600);
+                setTimeout(() => doLbRestore(prCopy), 1600);
             }
             if (!lbPendingRestore) {
                 if (typeof refreshStudentsLeaderboard === 'function') refreshStudentsLeaderboard(true);
