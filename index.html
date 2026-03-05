@@ -124,6 +124,26 @@
             border-right: 2px solid #ddd; padding-right: 10px; margin-right: 5px; white-space: nowrap;
         }
 
+        /* --- STAGES VIEW --- */
+        #stages-view { display: none; width: 100%; max-width: 100%; overflow-x: hidden; padding: 20px 15px; }
+        .stages-title { text-align: center; color: var(--primary); font-size: 24px; font-weight: bold; margin-bottom: 25px; }
+        .stages-grid { display: flex; flex-direction: column; gap: 18px; max-width: 500px; margin: 0 auto; }
+        .stage-card { 
+            background: linear-gradient(135deg, #fffcf2 0%, #ffffff 100%); 
+            border: 2px solid var(--gold); border-radius: 18px; 
+            padding: 20px 18px; cursor: pointer; 
+            box-shadow: 0 6px 20px rgba(212, 175, 55, 0.2);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .stage-card:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(212, 175, 55, 0.3); }
+        .stage-card:active { transform: translateY(0); }
+        .stage-card-title { font-size: 20px; font-weight: bold; color: var(--primary); margin-bottom: 8px; }
+        .stage-card-name { font-size: 18px; color: #555; margin-bottom: 12px; }
+        .stage-progress-wrap { margin-top: 10px; }
+        .stage-progress-bar { height: 10px; background: #e0e0e0; border-radius: 5px; overflow: hidden; }
+        .stage-progress-fill { height: 100%; background: linear-gradient(90deg, var(--primary), var(--primary-light)); border-radius: 5px; transition: width 0.3s; }
+        .stage-progress-text { font-size: 14px; color: #666; margin-top: 6px; font-weight: bold; }
+
         /* --- MENU & NOTIFICATIONS --- */
         #menu-view { width: 100%; max-width: 100%; overflow-x: hidden; padding: 15px 12px 0 12px; }
         .menu-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; padding: 25px 10px; max-width: 100%; margin: 0 auto; }
@@ -650,7 +670,13 @@
         </div>
     </div>
 
+    <div id="stages-view">
+        <h2 class="stages-title">اختر المرحلة</h2>
+        <div class="stages-grid" id="stages-grid"></div>
+    </div>
+
     <div id="menu-view">
+        <button class="verse-list-btn" onclick="showStagesView()" style="margin-bottom:15px; background:var(--primary); color:white; border-color:var(--gold);">↩️ تغيير المرحلة</button>
         <button class="verse-list-btn lessons-main-btn" onclick="showLessonsView()" style="margin-bottom:15px;">📚 جميع الدروس</button>
         <button class="verse-list-btn" style="margin: 0 0 15px 0;" onclick="showSavedList()">📌 للمشاهدة لاحقاً</button>
         <div id="app-stats-card" class="leaderboard-card" style="margin-bottom:15px;">
@@ -664,7 +690,7 @@
         </div>
         <div id="leaderboard-section">
             <div class="leaderboard-card">
-                <div class="lb-title">🏆 المتصدرون الثلاثة (Top 3)</div>
+                <div class="lb-title" id="lbStageTitle">🏆 المتصدرون الثلاثة (Top 3)</div>
                 <div class="lb-motivation">"وفي ذلك فليتنافس المتنافسون"</div>
                 <ul id="leaderboard-list" class="lb-list">
                     <li style="text-align:center; color:#999; padding:10px;">جاري التحميل...</li>
@@ -790,8 +816,9 @@
         const STUDENT_PIN = "1234";
         const ADMIN_PIN = "1879";
         const TEACHER_LOTFI_PIN = "9898";
+        const TEACHER_FATHIA_PIN = "9797";
         const MAINTENANCE_EXEMPT_STUDENT_PIN = "0860";
-        const RESERVED_PINS = ["9898", "1879"];
+        const RESERVED_PINS = ["9898", "1879", "9797"];
         (function storePushParamsIfNeeded() {
             const params = new URLSearchParams(window.location.search);
             const postId = params.get('postId'), fileId = params.get('fileId'), notifId = params.get('notifId') || '';
@@ -866,29 +893,91 @@
             document.getElementById('maintenance-screen').style.display = 'block';
         };
 
-        const ASSETS_BASE = 'assets-v4';
+        const STAGES_CONFIG = [
+            { id: 1, name: 'هندسة الحروف', assetsBase: 'assets-v1' },
+            { id: 2, name: 'فن الإدغام', assetsBase: 'assets-v2' },
+            { id: 3, name: 'أسرار الإخفاء', assetsBase: 'assets-v3' },
+            { id: 4, name: 'أساليب التلاوة', assetsBase: 'assets-v4' }
+        ];
         const VERS_PRO_LEKTION_FALLBACK = [ 8, 15, 9, 15, 16 ];
+        let currentStageId = 4;
+        let ASSETS_BASE = 'assets-v4';
         function buildKursFromVerses(versesPerLesson) {
-            return versesPerLesson.map((anzahl, index) => {
+            return (versesPerLesson || []).map((anzahl, index) => {
                 let startId = 1;
                 for (let i = 0; i < index; i++) startId += versesPerLesson[i];
                 return { id: index + 1, verse: anzahl, startGlobalId: startId };
             });
         }
         let KURS_DATEN = buildKursFromVerses(VERS_PRO_LEKTION_FALLBACK);
-        async function loadManifest() {
+        function getStageConfig(stageId) { return STAGES_CONFIG.find(s => s.id === stageId) || STAGES_CONFIG[3]; }
+        async function loadManifestForStage(stageId) {
+            const cfg = getStageConfig(stageId);
             try {
-                const r = await fetch(ASSETS_BASE + '/manifest.json');
+                const r = await fetch(cfg.assetsBase + '/manifest.json');
                 if (r.ok) {
                     const j = await r.json();
                     const arr = Array.isArray(j) ? j : (j.versesPerLesson || (j.lessons && j.lessons.map(l => l.verses)));
                     if (arr && Array.isArray(arr) && arr.length > 0) {
-                        KURS_DATEN = buildKursFromVerses(arr);
+                        return buildKursFromVerses(arr);
                     }
                 }
-            } catch (e) { /* Fallback bleibt aktiv */ }
+            } catch (e) { }
+            return [];
         }
-        loadManifest();
+        async function enterStage(stageId) {
+            currentStageId = stageId;
+            const cfg = getStageConfig(stageId);
+            ASSETS_BASE = cfg.assetsBase;
+            KURS_DATEN = await loadManifestForStage(stageId);
+            if (KURS_DATEN.length === 0 && stageId === 4) KURS_DATEN = buildKursFromVerses(VERS_PRO_LEKTION_FALLBACK);
+            document.getElementById('stages-view').style.display = 'none';
+            invalidateCompletedVersesCache();
+            if (typeof window.applyNotifStageFilter === 'function') window.applyNotifStageFilter();
+            renderMenu();
+        }
+        async function getStageProgressForStudent(studentUid, stageId) {
+            const kurs = await loadManifestForStage(stageId);
+            if (kurs.length === 0 && stageId === 4) kurs.push(...buildKursFromVerses(VERS_PRO_LEKTION_FALLBACK));
+            let total = 0;
+            kurs.forEach(lek => { total += lek.verse; });
+            if (total === 0) return { completed: 0, total: 0, percent: 0 };
+            const completed = await fetchCompletedVersesForStudent(studentUid, stageId);
+            const count = completed.size;
+            return { completed: count, total, percent: Math.round((count / total) * 100) };
+        }
+        async function showStagesView() {
+            document.getElementById('menu-view').style.display = 'none';
+            document.getElementById('player-view').style.display = 'none';
+            document.getElementById('notifications-view').style.display = 'none';
+            document.getElementById('saved-list-view').style.display = 'none';
+            document.getElementById('lessons-view').style.display = 'none';
+            document.getElementById('admin-message-view').style.display = 'none';
+            const cn = document.getElementById('contact-admin-new-view'); if (cn) cn.style.display = 'none';
+            document.getElementById('stages-view').style.display = 'block';
+            const menuBtn = document.getElementById('menuBtn'); if (menuBtn) menuBtn.style.display = 'none';
+            const grid = document.getElementById('stages-grid');
+            if (!grid) return;
+            grid.innerHTML = '';
+            const myUid = localStorage.getItem('it9an_uid');
+            const userRole = localStorage.getItem('it9an_role');
+            for (const stage of STAGES_CONFIG) {
+                const div = document.createElement('div');
+                div.className = 'stage-card';
+                let progressHtml = '';
+                if (myUid && myUid !== 'admin_super' && myUid !== 'guest' && userRole === 'student') {
+                    const prog = await getStageProgressForStudent(myUid, stage.id);
+                    progressHtml = `<div class="stage-progress-wrap"><div class="stage-progress-bar"><div class="stage-progress-fill" style="width:${prog.percent}%"></div></div><div class="stage-progress-text">${prog.completed}/${prog.total} (${prog.percent}%)</div></div>`;
+                }
+                div.innerHTML = `<div class="stage-card-title">مرحلة ${stage.id}</div><div class="stage-card-name">${stage.name}</div>${progressHtml}`;
+                div.onclick = () => enterStage(stage.id);
+                grid.appendChild(div);
+            }
+        }
+        (async function initManifest() {
+            KURS_DATEN = await loadManifestForStage(4);
+            if (KURS_DATEN.length === 0) KURS_DATEN = buildKursFromVerses(VERS_PRO_LEKTION_FALLBACK);
+        })();
         function getLessonVerseFromFileId(fileId) {
             const fid = parseInt(fileId, 10);
             for (let i = 0; i < KURS_DATEN.length; i++) {
@@ -907,22 +996,27 @@
 
         let completedVersesCache = null;
         let completedVersesCacheUid = null;
-        async function fetchCompletedVersesForStudent(studentUid) {
-            if (completedVersesCache && completedVersesCacheUid === studentUid) return completedVersesCache;
+        let completedVersesCacheStage = null;
+        async function fetchCompletedVersesForStudent(studentUid, stageId) {
+            const sid = stageId != null ? stageId : currentStageId;
+            if (completedVersesCache && completedVersesCacheUid === studentUid && completedVersesCacheStage === sid) return completedVersesCache;
             const q = window.query(window.collection(window.db, "posts"), window.where("uid", "==", studentUid));
             const snap = await window.getDocs(q);
             const completed = new Set();
             snap.forEach(doc => {
                 const d = doc.data();
                 if (d.role === 'teacher' || d.uid === 'admin_super') return;
+                const postStage = d.stageId != null ? d.stageId : 4;
+                if (postStage !== sid) return;
                 const tr = d.teacherRating;
                 if (tr && tr.verdict === 'accepted' && d.fileId != null) completed.add(String(d.fileId));
             });
             completedVersesCache = completed;
             completedVersesCacheUid = studentUid;
+            completedVersesCacheStage = sid;
             return completed;
         }
-        function invalidateCompletedVersesCache() { completedVersesCache = null; completedVersesCacheUid = null; }
+        function invalidateCompletedVersesCache() { completedVersesCache = null; completedVersesCacheUid = null; completedVersesCacheStage = null; }
         function getLessonCompletion(lessonIndex, completedVerses) {
             const lek = KURS_DATEN[lessonIndex];
             if (!lek) return { completed: 0, total: 0, percent: 0 };
@@ -1275,10 +1369,31 @@
             if (!pin || pin.length !== 4) { alert("الرجاء إدخال رمز من 4 أرقام"); return; }
             if (btn) { btn.disabled = true; btn.innerText = "جاري..."; }
             try {
-            const isExemptFromMaintenance = (pin === TEACHER_LOTFI_PIN || pin === MAINTENANCE_EXEMPT_STUDENT_PIN || pin === ADMIN_PIN);
+            const isExemptFromMaintenance = (pin === TEACHER_LOTFI_PIN || pin === TEACHER_FATHIA_PIN || pin === MAINTENANCE_EXEMPT_STUDENT_PIN || pin === ADMIN_PIN);
+            if (pin === TEACHER_FATHIA_PIN) {
+                const first = "Fathia", last = "Makni", year = "0000", role = "teacher";
+                const fullNameRaw = first + " " + last;
+                const uniqueID = generateUserId(fullNameRaw, role, year);
+                const userRef = window.doc(window.db, "users", uniqueID);
+                let finalDisplayName = "فتحية مقني";
+                try {
+                    const userSnap = await withTimeout(window.getDoc(userRef), 15000);
+                    if(userSnap.exists()) {
+                        if(userSnap.data().blocked) { alert("عذراً، تم حظر هذا الحساب."); return; }
+                        if(userSnap.data().name) finalDisplayName = userSnap.data().name;
+                        const up = { lastLogin: window.serverTimestamp() };
+                        if (!userSnap.data().firstLogin) up.firstLogin = window.serverTimestamp();
+                        await withTimeout(window.updateDoc(userRef, up), 10000);
+                    } else {
+                        const ts = window.serverTimestamp();
+                        await withTimeout(window.setDoc(userRef, { name: finalDisplayName, baseName: finalDisplayName, role, uid: uniqueID, year, firstLogin: ts, createdAt: ts, lastLogin: ts, postsCount: 0, totalLikes: 0, totalVerseViews: 0, totalRepliesCount: 0, blocked: false }), 10000);
+                    }
+                } catch(e) { console.log("Login Error", e); }
+                try { localStorage.setItem('it9an_saved_pin', pin); } catch(e){}
+                doLoginSuccess(uniqueID, finalDisplayName, role, true, null);
+                return;
+            }
             if (pin === TEACHER_LOTFI_PIN) {
-                const ok = confirm("هل أنت Lotfi Fakhfakh المولود سنة 1967؟");
-                if (!ok) { if (btn) { btn.disabled = false; btn.innerText = "دخول"; } return; }
                 const first = "Lotfi", last = "Fakhfakh", year = "1967", role = "teacher";
                 const fullNameRaw = first + " " + last;
                 const uniqueID = generateUserId(fullNameRaw, role, year);
@@ -1302,8 +1417,6 @@
                 return;
             }
             if (pin === ADMIN_PIN) {
-                const ok = confirm("هل أنت المسؤول؟");
-                if (!ok) { if (btn) { btn.disabled = false; btn.innerText = "دخول"; } return; }
                 localStorage.setItem('it9an_hidden', 'true');
                 try { localStorage.setItem('it9an_saved_pin', pin); } catch(e){}
                 doLoginSuccess('admin_super', 'المسؤول', 'teacher', true, null);
@@ -1363,7 +1476,7 @@
             document.getElementById('login-screen').style.display = 'none';
             updateUIForRole();
             if (uid !== 'guest') listenForNotifications();
-            renderMenu();
+            showStagesView();
             window.scrollTo({ top: 0, behavior: 'smooth' });
             if (uid && uid !== 'admin_super' && uid !== 'guest') requestPushPermissionAndSaveToken(uid, role);
         }
@@ -1974,6 +2087,11 @@
                 const snap = await window.getDocsFromServer(q);
                 let users = [];
                 snap.forEach(doc => users.push({ ...doc.data(), uid: doc.data().uid || doc.id }));
+                const stageStats = await fetchStageLeaderboardStats();
+                users = users.map(u => {
+                    const s = stageStats[u.uid] || { postsCount: 0, totalLikes: 0 };
+                    return { ...u, postsCount: s.postsCount, totalLikes: s.totalLikes, totalVerseViews: 0 };
+                });
                 leaderboardAllUsers = applyLeaderboardSort(users);
                 const myUid = localStorage.getItem('it9an_uid');
                 renderLeaderboardItems(leaderboardAllUsers, leaderboardVisibleCount, myUid, true);
@@ -2116,6 +2234,25 @@
         let unsubscribeTeachersLeaderboard = null;
         let lastTeachersRefreshTime = 0;
 
+        async function fetchStageTeachersStats() {
+            const q = window.query(window.collection(window.db, "posts"));
+            const snap = await window.getDocs(q);
+            const map = {};
+            snap.forEach(doc => {
+                const d = doc.data();
+                const postStage = d.stageId != null ? d.stageId : 4;
+                if (postStage !== currentStageId) return;
+                if (!d.replies) return;
+                d.replies.forEach(r => {
+                    const uid = r.uid;
+                    if (!uid) return;
+                    if (!map[uid]) map[uid] = { totalRepliesCount: 0, totalLikes: 0 };
+                    map[uid].totalRepliesCount++;
+                    map[uid].totalLikes += (r.likes && r.likes.length) || 0;
+                });
+            });
+            return map;
+        }
         function loadTeachersLeaderboard(onFirstRender) {
             const panel = document.getElementById('teachersLeaderboard');
             const list = document.getElementById('leaderboard-teachers-list');
@@ -2126,11 +2263,16 @@
             if (unsubscribeTeachersLeaderboard) unsubscribeTeachersLeaderboard();
             let firstSnap = true;
             const q = window.query(window.collection(window.db, "users"), window.where("role", "==", "teacher"));
-            unsubscribeTeachersLeaderboard = window.onSnapshot(q, (snap) => {
+            unsubscribeTeachersLeaderboard = window.onSnapshot(q, async (snap) => {
                 if (document.hidden) return;
                 if (Date.now() - lastTeachersRefreshTime < 15000) { if (onFirstRender && firstSnap) { onFirstRender(); firstSnap = false; } return; }
                 let teachers = [];
                 snap.forEach(doc => teachers.push({ ...doc.data(), uid: doc.data().uid || doc.id }));
+                const stageStats = await fetchStageTeachersStats();
+                teachers = teachers.map(t => {
+                    const s = stageStats[t.uid] || { totalRepliesCount: 0, totalLikes: 0 };
+                    return { ...t, totalRepliesCount: s.totalRepliesCount, totalLikes: s.totalLikes };
+                });
                 if (leaderboardSortBy === 'alpha' && myUid === 'admin_super') {
                     teachers.sort((a,b) => (getDisplayName(a) || '').localeCompare(getDisplayName(b) || '', 'ar'));
                 } else if (leaderboardSortBy === 'date' && myUid === 'admin_super') {
@@ -2202,6 +2344,22 @@
             } catch(e) { console.warn("loadAppStats:", e); }
         }
 
+        async function fetchStageLeaderboardStats() {
+            const q = window.query(window.collection(window.db, "posts"));
+            const snap = await window.getDocs(q);
+            const map = {};
+            snap.forEach(doc => {
+                const d = doc.data();
+                const postStage = d.stageId != null ? d.stageId : 4;
+                if (postStage !== currentStageId) return;
+                const uid = d.uid;
+                if (!uid || d.role === 'teacher' || uid === 'admin_super') return;
+                if (!map[uid]) map[uid] = { postsCount: 0, totalLikes: 0 };
+                map[uid].postsCount++;
+                map[uid].totalLikes += (d.likes && d.likes.length) || 0;
+            });
+            return map;
+        }
         function loadLeaderboard(onComplete) {
             if (unsubscribeLeaderboard) unsubscribeLeaderboard();
             if (!lbPendingRestore) {
@@ -2215,12 +2373,17 @@
             const q = window.query(window.collection(window.db, "users"), window.where("role", "==", "student"));
             const myUid = localStorage.getItem('it9an_uid');
             let firstSnapshot = true;
-            const cb = (snap) => {
+            const cb = async (snap) => {
                 if (document.hidden) return;
                 const skipRender = Date.now() - lastStudentsRefreshTime < 15000;
                 if (skipRender) { if (firstSnapshot) { lbDone.students = true; checkLbComplete(); firstSnapshot = false; } return; }
                 let users = [];
                 snap.forEach(doc => users.push({ ...doc.data(), uid: doc.data().uid || doc.id }));
+                const stageStats = await fetchStageLeaderboardStats();
+                users = users.map(u => {
+                    const s = stageStats[u.uid] || { postsCount: 0, totalLikes: 0 };
+                    return { ...u, postsCount: s.postsCount, totalLikes: s.totalLikes, totalVerseViews: 0 };
+                });
                 leaderboardAllUsers = applyLeaderboardSort(users);
                 const needPin = leaderboardAllUsers.filter(u => !u.personalPin);
                 if (needPin.length > 0) {
@@ -2292,14 +2455,23 @@
             container.style.display = 'block';
         }
 
+        function getStatsDocId(stageId, fileId) {
+            return stageId === 4 ? ("file_" + fileId) : ("file_" + stageId + "_" + fileId);
+        }
+        function statsDocBelongsToStage(docId, stageId) {
+            if (stageId === 4) return /^file_\d+$/.test(docId);
+            return docId.startsWith('file_' + stageId + '_');
+        }
         async function fetchStudentViewedVerses(studentUid, fromServer) {
             const q = window.query(window.collection(window.db, "stats"));
             const snap = fromServer ? await window.getDocsFromServer(q) : await window.getDocs(q);
             const all = [];
             snap.forEach(docSnap => {
                 const id = docSnap.id;
-                if (!id.startsWith('file_')) return;
-                const fileId = parseInt(id.replace('file_', ''), 10);
+                if (!statsDocBelongsToStage(id, currentStageId)) return;
+                let fileId;
+                if (currentStageId === 4) fileId = parseInt(id.replace('file_', ''), 10);
+                else fileId = parseInt(id.split('_')[2] || '0', 10);
                 const data = docSnap.data();
                 const viewers = data.viewers && typeof data.viewers === 'object' ? data.viewers : {};
                 const v = viewers[studentUid];
@@ -2382,6 +2554,8 @@
             const all = [];
             snap.forEach(docSnap => {
                 const data = docSnap.data();
+                const postStage = data.stageId != null ? data.stageId : 4;
+                if (postStage !== currentStageId) return;
                 const postId = docSnap.id;
                 const fileId = data.fileId || '1';
                 const likesCount = (data.likes && data.likes.length) || 0;
@@ -2405,6 +2579,8 @@
                 const all = [];
                 snap.forEach(docSnap => {
                     const data = docSnap.data();
+                    const postStage = data.stageId != null ? data.stageId : 4;
+                    if (postStage !== currentStageId) return;
                     const postId = docSnap.id;
                     const fileId = data.fileId || '1';
                     if (!data.replies) return;
@@ -2531,6 +2707,8 @@
             const all = [];
             snap.forEach(docSnap => {
                 const data = docSnap.data();
+                const postStage = data.stageId != null ? data.stageId : 4;
+                if (postStage !== currentStageId) return;
                 const postId = docSnap.id;
                 const fileId = data.fileId || '1';
                 if (data.uid === studentUid && data.likes && data.likes.length) {
@@ -2984,15 +3162,21 @@
             }
 
             if(notifUnsubscribe) notifUnsubscribe();
+            let lastRawNotifs = [];
             notifUnsubscribe = window.onSnapshot(q, (snap) => {
-                let unreadCount = 0;
-                let notifs = [];
-                snap.forEach(doc => notifs.push({id: doc.id, ...doc.data()}));
+                lastRawNotifs = [];
+                snap.forEach(doc => lastRawNotifs.push({id: doc.id, ...doc.data()}));
+                if (typeof window.applyNotifStageFilter === 'function') window.applyNotifStageFilter();
+            });
+            window.applyNotifStageFilter = function() {
+                const uid = localStorage.getItem('it9an_uid');
+                const role = localStorage.getItem('it9an_role');
+                let notifs = lastRawNotifs.filter(n => { const s = n.stageId; if (n.type === 'admin_message') return true; if (s == null) return (currentStageId === 4); return s === currentStageId; });
                 if (role === 'teacher' && uid !== 'admin_super') {
                     notifs = notifs.filter(n => !(n.clearedBy || []).includes(uid));
                 }
                 notifs.sort((a,b) => (a.timestamp?.seconds || 0) - (b.timestamp?.seconds || 0));
-                unreadCount = notifs.length;
+                const unreadCount = notifs.length;
                 updateAppIconBadge(unreadCount);
                 const badge = document.getElementById('notifBadge');
                 if (badge) {
@@ -3002,6 +3186,7 @@
 
                 if (document.hidden) return;
                 const list = document.getElementById('notifList');
+                if (!list) return;
                 list.innerHTML = "";
 
                 if (notifs.length === 0) {
@@ -3029,7 +3214,7 @@
                         <div style="font-size:24px;">👈</div>
                     </div>`;
                 });
-            });
+            };
         }
 
         window.showNotifications = function() {
@@ -3068,6 +3253,8 @@
                     alert("التسجيل لم يعد في هذا المقطع. تم إزالة الإشعار.");
                     return;
                 }
+                const postStage = postData.stageId != null ? postData.stageId : 4;
+                if (postStage !== currentStageId) await enterStage(postStage);
             } catch(e) { console.warn(e); }
             let foundIndex = -1;
             let foundVerse = 1;
@@ -3373,6 +3560,9 @@
 
         function renderMenu() {
             showView('menu-view');
+            const stageCfg = getStageConfig(currentStageId);
+            const lbTitle = document.getElementById('lbStageTitle');
+            if (lbTitle) lbTitle.innerHTML = `🏆 المتصدرون الثلاثة — ${stageCfg.name}`;
             const myName = localStorage.getItem('it9an_name') || '';
             const nameClean = myName.replace(/\s*\(\d{4}\)\s*$/, '').trim();
             const uid = localStorage.getItem('it9an_uid');
@@ -3448,6 +3638,14 @@
             const grid = document.getElementById('lesson-grid');
             if (!grid) return;
             grid.innerHTML = '';
+            if (KURS_DATEN.length === 0) {
+                const stageCfg = getStageConfig(currentStageId);
+                grid.innerHTML = `<div style="text-align:center; padding:30px; color:#666; font-size:18px;">لا توجد دروس في مرحلة "${stageCfg.name}" بعد.<br><br>سيتم إضافتها قريباً إن شاء الله.</div>`;
+                showView('lessons-view');
+                const ptL = document.getElementById('pageTitle'); if (ptL) { ptL.classList.remove('header-name-pin'); ptL.innerText = 'جميع الدروس'; }
+                document.getElementById('appFooter').style.display = 'none';
+                return;
+            }
             const myUid = localStorage.getItem('it9an_uid');
             const userRole = localStorage.getItem('it9an_role');
             let completedVerses = new Set();
@@ -3580,7 +3778,7 @@
             window.currentViewersData = { viewers: {}, totalRepetitions: 0 };
             document.getElementById('viewCount').innerText = "0";
 
-            const statRef = window.doc(window.db, "stats", "file_" + globalId);
+            const statRef = window.doc(window.db, "stats", getStatsDocId(currentStageId, globalId));
             
             if(unsubscribeViews) unsubscribeViews();
             unsubscribeViews = window.onSnapshot(statRef, (snap) => {
@@ -3621,12 +3819,16 @@
             const userRole = localStorage.getItem('it9an_role');
             const myUid = localStorage.getItem('it9an_uid');
             const q = window.query(window.collection(window.db, "posts"), window.where("fileId", "==", idString));
-            
             unsubscribeFeed = window.onSnapshot(q, async (snap) => {
                 if (document.hidden) return;
-                if(snap.empty) { div.innerHTML = "<div style='text-align:center; color:#999; font-size:16px; padding:20px;'>لا توجد مشاركات حتى الآن</div>"; return; }
                 allLoadedPosts = [];
-                snap.forEach(doc => { allLoadedPosts.push({ id: doc.id, ...doc.data() }); });
+                snap.forEach(doc => {
+                    const d = doc.data();
+                    const postStage = d.stageId != null ? d.stageId : 4;
+                    if (postStage !== currentStageId) return;
+                    allLoadedPosts.push({ id: doc.id, ...d });
+                });
+                if (allLoadedPosts.length === 0) { div.innerHTML = "<div style='text-align:center; color:#999; font-size:16px; padding:20px;'>لا توجد مشاركات حتى الآن</div>"; return; }
                 
                 if (activePostFilter) {
                     const hp = allLoadedPosts.find(p => p.id === activePostFilter);
@@ -4163,6 +4365,7 @@
                            fileId: String(currentGlobalFileId),
                            postId: replyTargetId,
                            replyTimestamp: replyTs,
+                           stageId: currentStageId,
                            timestamp: window.serverTimestamp()
                        });
                        if (role === 'teacher' && targetPost.role === 'student') {
@@ -4185,7 +4388,7 @@
                     }
                     replyTargetId = null; 
                 } else {
-                    const postRef = await window.addDoc(window.collection(window.db, "posts"), { name: name, role: role, uid: uid, audioUrl: url, fileId: String(currentGlobalFileId), likes: [], timestamp: window.serverTimestamp() });
+                    const postRef = await window.addDoc(window.collection(window.db, "posts"), { name: name, role: role, uid: uid, audioUrl: url, fileId: String(currentGlobalFileId), stageId: currentStageId, likes: [], timestamp: window.serverTimestamp() });
                     
                     const userRef = window.doc(window.db, "users", uid);
                     try { await window.updateDoc(userRef, { postsCount: window.increment(1) }); } catch(e){}
@@ -4196,7 +4399,8 @@
                            senderName: stripYearFromName(name),
                            type: 'new_recording',
                            fileId: String(currentGlobalFileId),
-                           postId: postRef.id, 
+                           postId: postRef.id,
+                           stageId: currentStageId,
                            clearedBy: [],
                            timestamp: window.serverTimestamp()
                        });
@@ -4246,7 +4450,7 @@
                         try { await window.updateDoc(window.doc(window.db, "users", uid), { totalVerseViews: window.increment(1) }); } catch(e){}
                     }
                     try {
-                        const sRef = window.doc(window.db, "stats", "file_" + currentGlobalFileId);
+                        const sRef = window.doc(window.db, "stats", getStatsDocId(currentStageId, currentGlobalFileId));
                         await window.setDoc(sRef, {}, { merge: true });
                         const updates = { totalRepetitions: window.increment(1) };
                         if(verseRepeatsPlayed === 0) updates.verseViewCount = window.increment(1);
@@ -4311,7 +4515,7 @@
             }
             lbReturnSource = null; lbReturnToUid = null; lbReturnOffset = 0; lbReturnScrollToId = null; showView('menu-view'); renderMenu(); updateLbBackButton();
         } 
-        function showView(id) { document.getElementById('menu-view').style.display = 'none'; document.getElementById('player-view').style.display = 'none'; document.getElementById('notifications-view').style.display = 'none'; document.getElementById('saved-list-view').style.display = 'none'; document.getElementById('lessons-view').style.display = 'none'; document.getElementById('admin-message-view').style.display = 'none'; const cn = document.getElementById('contact-admin-new-view'); if(cn) cn.style.display = 'none'; document.getElementById(id).style.display = (id === 'menu-view') ? 'grid' : 'block'; const menuBtn = document.getElementById('menuBtn'); if(menuBtn) menuBtn.style.display = (id === 'menu-view') ? 'none' : 'flex'; const skipScroll = (id === 'menu-view' && lbPendingRestore) || (id === 'player-view' && activePostFilter); if (!skipScroll) window.scrollTo({ top: 0, behavior: 'smooth' }); }
+        function showView(id) { document.getElementById('stages-view').style.display = 'none'; document.getElementById('menu-view').style.display = 'none'; document.getElementById('player-view').style.display = 'none'; document.getElementById('notifications-view').style.display = 'none'; document.getElementById('saved-list-view').style.display = 'none'; document.getElementById('lessons-view').style.display = 'none'; document.getElementById('admin-message-view').style.display = 'none'; const cn = document.getElementById('contact-admin-new-view'); if(cn) cn.style.display = 'none'; document.getElementById(id).style.display = (id === 'menu-view') ? 'grid' : 'block'; const menuBtn = document.getElementById('menuBtn'); if(menuBtn) menuBtn.style.display = (id === 'menu-view') ? 'none' : 'flex'; const skipScroll = (id === 'menu-view' && lbPendingRestore) || (id === 'player-view' && activePostFilter); if (!skipScroll) window.scrollTo({ top: 0, behavior: 'smooth' }); }
         
         window.rateStudentPost = async function(postId, verdict) {
             const uid = localStorage.getItem('it9an_uid');
@@ -4474,6 +4678,7 @@
                             type: 'new_recording',
                             fileId: String(d.fileId || '1'),
                             postId: doc.id,
+                            stageId: (d.stageId != null ? d.stageId : 4),
                             clearedBy: [],
                             timestamp: window.serverTimestamp()
                         });
@@ -4585,7 +4790,7 @@
 
         window.resetLocalViews = async function() {
             if(confirm("تصفير مشاهدات هذا المقطع فقط؟")) {
-                try { await window.deleteDoc(window.doc(window.db, "stats", "file_" + currentGlobalFileId)); loadLeaderboard(); alert("تم التصفير"); } 
+                try { await window.deleteDoc(window.doc(window.db, "stats", getStatsDocId(currentStageId, currentGlobalFileId))); loadLeaderboard(); alert("تم التصفير"); } 
                 catch(e) { alert("خطأ"); }
             }
         }
@@ -4790,7 +4995,7 @@
             const playerView = document.getElementById('player-view');
             if (playerView && playerView.style.display !== 'none' && currentGlobalFileId != null) {
                 if (unsubscribeViews) unsubscribeViews();
-                const statRef = window.doc(window.db, "stats", "file_" + currentGlobalFileId);
+                const statRef = window.doc(window.db, "stats", getStatsDocId(currentStageId, currentGlobalFileId));
                 unsubscribeViews = window.onSnapshot(statRef, (snap) => {
                     if (document.hidden) return;
                     if (snap.exists()) {
