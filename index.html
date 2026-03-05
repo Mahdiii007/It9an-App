@@ -3648,24 +3648,20 @@
                 document.getElementById('adminMenuPanel').style.display = 'block';
                 document.getElementById('leaderboard-section').style.display = 'block';
                 loadAdminMessagesList();
+                lastStudentsRefreshTime = 0;
+                lastTeachersRefreshTime = 0;
                 loadLeaderboard(lbPendingRestore ? doLbRestore : undefined);
-                setTimeout(() => {
-                    const btnStudents = document.getElementById('lbRefreshStudentsBtn');
-                    const btnTeachers = document.getElementById('lbRefreshTeachersBtn');
-                    if (btnStudents) btnStudents.click();
-                    if (btnTeachers) btnTeachers.click();
-                }, 50);
+                if (typeof refreshStudentsLeaderboard === 'function') refreshStudentsLeaderboard();
+                if (typeof refreshTeachersLeaderboard === 'function') refreshTeachersLeaderboard();
                 loadAppStats();
             } else {
                 document.getElementById('adminMenuPanel').style.display = 'none';
                 document.getElementById('leaderboard-section').style.display = 'block';
+                lastStudentsRefreshTime = 0;
+                lastTeachersRefreshTime = 0;
                 loadLeaderboard(lbPendingRestore ? doLbRestore : undefined);
-                setTimeout(() => {
-                    const btnStudents = document.getElementById('lbRefreshStudentsBtn');
-                    const btnTeachers = document.getElementById('lbRefreshTeachersBtn');
-                    if (btnStudents) btnStudents.click();
-                    if (btnTeachers) btnTeachers.click();
-                }, 50);
+                if (typeof refreshStudentsLeaderboard === 'function') refreshStudentsLeaderboard();
+                if (typeof refreshTeachersLeaderboard === 'function') refreshTeachersLeaderboard();
                 loadAppStats();
             }
 
