@@ -212,7 +212,7 @@
         .lb-likes-click { cursor: pointer; }
         .lb-likes-click:hover { opacity: 0.9; }
         .lb-likes-list { padding: 10px 10px; background: #f9f9f9; border-radius: 0 0 10px 10px; border: 1px solid #eee; border-top: none; max-width: 100%; overflow-x: hidden; }
-        .lb-liked-item { display: flex; align-items: center; gap: 10px; padding: 10px; background: white; border-radius: 10px; margin-bottom: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.06); border: 1px solid #eee; max-width: 100%; overflow-x: hidden; }
+        .lb-liked-item { display: flex; align-items: center; gap: 10px; padding: 10px; background: white; border-radius: 10px; margin-bottom: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.06); border: 1px solid #eee; max-width: 100%; overflow-x: hidden; scroll-margin: 80px 0; }
         .lb-liked-item.lb-rating-unexamined { background: #ffffff; border-color: #eee; }
         .lb-liked-item.lb-rating-accepted { background: #e8f5e9; border-color: #a5d6a7; }
         .lb-liked-item.lb-rating-needs-improvement { background: #ffebee; border-color: #ef9a9a; }
@@ -3175,13 +3175,14 @@
                 }
                 const target = el || container;
                 if (target) {
-                    const wrapper = el ? el.closest('.lb-item-wrapper') : null;
                     const doScroll = () => {
-                        if (wrapper) wrapper.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                        target.scrollIntoView({ behavior: 'smooth', block: el ? 'center' : 'start' });
+                        target.scrollIntoView({ behavior: 'smooth', block: el ? 'center' : 'start', inline: 'nearest' });
                     };
-                    setTimeout(doScroll, 400);
-                    setTimeout(doScroll, 1000);
+                    requestAnimationFrame(() => {
+                        setTimeout(doScroll, 100);
+                        setTimeout(doScroll, 600);
+                        setTimeout(doScroll, 1300);
+                    });
                 }
             };
             if (pr.source === 'likes') {
