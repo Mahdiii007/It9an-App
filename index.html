@@ -2309,8 +2309,6 @@
             let firstSnap = true;
             const q = window.query(window.collection(window.db, "users"), window.where("role", "==", "teacher"));
             unsubscribeTeachersLeaderboard = window.onSnapshot(q, async (snap) => {
-                if (document.hidden) return;
-                if (Date.now() - lastTeachersRefreshTime < 15000) { if (onFirstRender && firstSnap) { onFirstRender(); firstSnap = false; } return; }
                 let teachers = [];
                 snap.forEach(doc => teachers.push({ ...doc.data(), uid: doc.data().uid || doc.id }));
                 const stageStats = await fetchStageTeachersStats();
@@ -2437,9 +2435,6 @@
             const myUid = localStorage.getItem('it9an_uid');
             let firstSnapshot = true;
             const cb = async (snap) => {
-                if (document.hidden) return;
-                const skipRender = Date.now() - lastStudentsRefreshTime < 15000;
-                if (skipRender) { if (firstSnapshot) { lbDone.students = true; checkLbComplete(); firstSnapshot = false; } return; }
                 let users = [];
                 snap.forEach(doc => users.push({ ...doc.data(), uid: doc.data().uid || doc.id }));
                 const stageStats = await fetchStageLeaderboardStats();
