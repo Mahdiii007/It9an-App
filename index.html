@@ -3649,15 +3649,23 @@
                 document.getElementById('leaderboard-section').style.display = 'block';
                 loadAdminMessagesList();
                 loadLeaderboard(lbPendingRestore ? doLbRestore : undefined);
-                if (typeof refreshStudentsLeaderboard === 'function') refreshStudentsLeaderboard();
-                if (typeof refreshTeachersLeaderboard === 'function') refreshTeachersLeaderboard();
+                setTimeout(() => {
+                    const btnStudents = document.getElementById('lbRefreshStudentsBtn');
+                    const btnTeachers = document.getElementById('lbRefreshTeachersBtn');
+                    if (btnStudents) btnStudents.click();
+                    if (btnTeachers) btnTeachers.click();
+                }, 50);
                 loadAppStats();
             } else {
                 document.getElementById('adminMenuPanel').style.display = 'none';
                 document.getElementById('leaderboard-section').style.display = 'block';
                 loadLeaderboard(lbPendingRestore ? doLbRestore : undefined);
-                if (typeof refreshStudentsLeaderboard === 'function') refreshStudentsLeaderboard();
-                if (typeof refreshTeachersLeaderboard === 'function') refreshTeachersLeaderboard();
+                setTimeout(() => {
+                    const btnStudents = document.getElementById('lbRefreshStudentsBtn');
+                    const btnTeachers = document.getElementById('lbRefreshTeachersBtn');
+                    if (btnStudents) btnStudents.click();
+                    if (btnTeachers) btnTeachers.click();
+                }, 50);
                 loadAppStats();
             }
 
