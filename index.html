@@ -129,20 +129,41 @@
         .stages-title { text-align: center; color: var(--primary); font-size: 24px; font-weight: bold; margin-bottom: 25px; }
         .stages-grid { display: flex; flex-direction: column; gap: 18px; max-width: 500px; margin: 0 auto; }
         .stage-card { 
-            background: linear-gradient(135deg, #fffcf2 0%, #ffffff 100%); 
-            border: 2px solid var(--gold); border-radius: 18px; 
-            padding: 20px 18px; cursor: pointer; 
-            box-shadow: 0 6px 20px rgba(212, 175, 55, 0.2);
+            border-radius: 18px; padding: 20px 18px; cursor: pointer; 
             transition: transform 0.2s, box-shadow 0.2s;
         }
-        .stage-card:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(212, 175, 55, 0.3); }
+        .stage-card:hover { transform: translateY(-2px); }
         .stage-card:active { transform: translateY(0); }
-        .stage-card-title { font-size: 20px; font-weight: bold; color: var(--primary); margin-bottom: 8px; }
-        .stage-card-name { font-size: 18px; color: #555; margin-bottom: 12px; }
+        .stage-card-1 { background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%); border: 2px solid #4caf50; box-shadow: 0 6px 20px rgba(76, 175, 80, 0.25); }
+        .stage-card-1:hover { box-shadow: 0 8px 25px rgba(76, 175, 80, 0.35); }
+        .stage-card-2 { background: linear-gradient(135deg, #fff8e1 0%, #fffde7 100%); border: 2px solid #ff9800; box-shadow: 0 6px 20px rgba(255, 152, 0, 0.25); }
+        .stage-card-2:hover { box-shadow: 0 8px 25px rgba(255, 152, 0, 0.35); }
+        .stage-card-3 { background: linear-gradient(135deg, #ffebee 0%, #fce4ec 100%); border: 2px solid #e53935; box-shadow: 0 6px 20px rgba(229, 57, 53, 0.25); }
+        .stage-card-3:hover { box-shadow: 0 8px 25px rgba(229, 57, 53, 0.35); }
+        .stage-card-4 { background: linear-gradient(135deg, #d7ccc8 0%, #8d6e63 100%); border: 2px solid #5d4037; box-shadow: 0 6px 20px rgba(93, 64, 55, 0.3); }
+        .stage-card-4:hover { box-shadow: 0 8px 25px rgba(93, 64, 55, 0.4); }
+        .stage-card-title { font-size: 20px; font-weight: bold; margin-bottom: 8px; }
+        .stage-card-1 .stage-card-title { color: #2e7d32; }
+        .stage-card-2 .stage-card-title { color: #e65100; }
+        .stage-card-3 .stage-card-title { color: #c62828; }
+        .stage-card-4 .stage-card-title { color: #3e2723; }
+        .stage-card-name { font-size: 18px; margin-bottom: 12px; }
+        .stage-card-1 .stage-card-name { color: #1b5e20; }
+        .stage-card-2 .stage-card-name { color: #bf360c; }
+        .stage-card-3 .stage-card-name { color: #b71c1c; }
+        .stage-card-4 .stage-card-name { color: #3e2723; }
         .stage-progress-wrap { margin-top: 10px; }
-        .stage-progress-bar { height: 10px; background: #e0e0e0; border-radius: 5px; overflow: hidden; }
-        .stage-progress-fill { height: 100%; background: linear-gradient(90deg, var(--primary), var(--primary-light)); border-radius: 5px; transition: width 0.3s; }
-        .stage-progress-text { font-size: 14px; color: #666; margin-top: 6px; font-weight: bold; }
+        .stage-progress-bar { height: 10px; background: rgba(0,0,0,0.1); border-radius: 5px; overflow: hidden; }
+        .stage-progress-fill { height: 100%; border-radius: 5px; transition: width 0.3s; }
+        .stage-card-1 .stage-progress-fill { background: linear-gradient(90deg, #4caf50, #66bb6a); }
+        .stage-card-2 .stage-progress-fill { background: linear-gradient(90deg, #ff9800, #ffb74d); }
+        .stage-card-3 .stage-progress-fill { background: linear-gradient(90deg, #e53935, #ef5350); }
+        .stage-card-4 .stage-progress-fill { background: linear-gradient(90deg, #5d4037, #8d6e63); }
+        .stage-progress-text { font-size: 14px; margin-top: 6px; font-weight: bold; }
+        .stage-card-1 .stage-progress-text { color: #2e7d32; }
+        .stage-card-2 .stage-progress-text { color: #e65100; }
+        .stage-card-3 .stage-progress-text { color: #c62828; }
+        .stage-card-4 .stage-progress-text { color: #3e2723; }
 
         /* --- MENU & NOTIFICATIONS --- */
         #menu-view { width: 100%; max-width: 100%; overflow-x: hidden; padding: 15px 12px 0 12px; }
@@ -966,7 +987,7 @@
             const userRole = localStorage.getItem('it9an_role');
             for (const stage of STAGES_CONFIG) {
                 const div = document.createElement('div');
-                div.className = 'stage-card';
+                div.className = 'stage-card stage-card-' + stage.id;
                 let progressHtml = '';
                 if (myUid && myUid !== 'admin_super' && myUid !== 'guest' && userRole === 'student') {
                     const prog = await getStageProgressForStudent(myUid, stage.id);
@@ -1304,7 +1325,7 @@
             } catch(e) {}
         })();
 
-        function getDisplayName(u) { return (u && (u.baseName || (u.name ? String(u.name).replace(/\s*\(\d{4}\)\s*$/, '').trim() : '') || u.name || '')).trim() || ''; }
+        function getDisplayName(u) { const n = (u && (u.baseName || (u.name ? String(u.name).replace(/\s*\(\d{4}\)\s*$/, '').trim() : '') || u.name || '')).trim() || ''; if (n === 'فتحية مقني') return 'Fathia Makni'; return n; }
         function formatDateLatin(ts) {
             if (!ts) return '—';
             let ms = 0;
@@ -1330,7 +1351,7 @@
             const namePart = getDisplayNameForAdmin(u);
             return dateStr + ' — ' + namePart;
         }
-        function stripYearFromName(n) { return (n && typeof n === 'string' ? String(n).replace(/\s*\(\d{4}\)\s*$/, '').trim() : n) || ''; }
+        function stripYearFromName(n) { const s = (n && typeof n === 'string' ? String(n).replace(/\s*\(\d{4}\)\s*$/, '').trim() : n) || ''; if (s === 'فتحية مقني') return 'Fathia Makni'; return s; }
         // --- NEW ID GENERATOR WITH YEAR ---
         function generateUserId(fullName, role, year) {
             let cleanName = fullName.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
@@ -1381,7 +1402,7 @@
                 const fullNameRaw = first + " " + last;
                 const uniqueID = generateUserId(fullNameRaw, role, year);
                 const userRef = window.doc(window.db, "users", uniqueID);
-                let finalDisplayName = "فتحية مقني";
+                let finalDisplayName = "Fathia Makni";
                 try {
                     const userSnap = await withTimeout(window.getDoc(userRef), 15000);
                     if(userSnap.exists()) {
