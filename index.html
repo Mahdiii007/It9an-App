@@ -913,16 +913,19 @@
         function getStageConfig(stageId) { return STAGES_CONFIG.find(s => s.id === stageId) || STAGES_CONFIG[3]; }
         async function loadManifestForStage(stageId) {
             const cfg = getStageConfig(stageId);
-            try {
-                const r = await fetch(cfg.assetsBase + '/manifest.json');
-                if (r.ok) {
-                    const j = await r.json();
-                    const arr = Array.isArray(j) ? j : (j.versesPerLesson || (j.lessons && j.lessons.map(l => l.verses)));
-                    if (arr && Array.isArray(arr) && arr.length > 0) {
-                        return buildKursFromVerses(arr);
+            const paths = [cfg.assetsBase + '/manifest.json', './' + cfg.assetsBase + '/manifest.json'];
+            for (const p of paths) {
+                try {
+                    const r = await fetch(p, { cache: 'no-store' });
+                    if (r.ok) {
+                        const j = await r.json();
+                        const arr = Array.isArray(j) ? j : (j.versesPerLesson || (j.lessons && j.lessons.map(l => l.verses)));
+                        if (arr && Array.isArray(arr) && arr.length > 0) {
+                            return buildKursFromVerses(arr);
+                        }
                     }
-                }
-            } catch (e) { }
+                } catch (e) { continue; }
+            }
             return [];
         }
         async function enterStage(stageId) {
@@ -2090,7 +2093,8 @@
                 const stageStats = await fetchStageLeaderboardStats();
                 users = users.map(u => {
                     const s = stageStats[u.uid] || { postsCount: 0, totalLikes: 0 };
-                    return { ...u, postsCount: s.postsCount, totalLikes: s.totalLikes, totalVerseViews: 0 };
+                    const views = (currentStageId === 4) ? (u.totalVerseViews || 0) : 0;
+                    return { ...u, postsCount: s.postsCount, totalLikes: s.totalLikes, totalVerseViews: views };
                 });
                 leaderboardAllUsers = applyLeaderboardSort(users);
                 const myUid = localStorage.getItem('it9an_uid');
@@ -2374,7 +2378,8 @@
                 const stageStats = await fetchStageLeaderboardStats();
                 users = users.map(u => {
                     const s = stageStats[u.uid] || { postsCount: 0, totalLikes: 0 };
-                    return { ...u, postsCount: s.postsCount, totalLikes: s.totalLikes, totalVerseViews: 0 };
+                    const views = (currentStageId === 4) ? (u.totalVerseViews || 0) : 0;
+                    return { ...u, postsCount: s.postsCount, totalLikes: s.totalLikes, totalVerseViews: views };
                 });
                 leaderboardAllUsers = applyLeaderboardSort(users);
                 const needPin = leaderboardAllUsers.filter(u => !u.personalPin);
