@@ -2377,11 +2377,12 @@
         }
         async function fetchStage4VerseViewsFromStats() {
             const q = window.query(window.collection(window.db, "stats"));
-            const snap = await window.getDocs(q);
+            const snap = await window.getDocsFromServer(q);
             const map = {};
             snap.forEach(docSnap => {
                 const id = docSnap.id;
-                if (!/^file_\d+$/.test(id)) return;
+                const isStage4 = /^file_\d+$/.test(id) || /^file_4_\d+$/.test(id);
+                if (!isStage4) return;
                 const data = docSnap.data();
                 const viewers = data.viewers && typeof data.viewers === 'object' ? data.viewers : {};
                 Object.entries(viewers).forEach(([uid, v]) => {
