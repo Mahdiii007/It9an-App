@@ -2612,7 +2612,14 @@
             if (!lbViewsCache[studentUid]) {
                 container.innerHTML = '<div style="padding:15px; text-align:center; color:#999;">جاري التحميل...</div>';
                 container.style.display = 'block';
-                const items = await fetchStudentViewedVerses(studentUid, true);
+                let items;
+                try {
+                    items = await fetchStudentViewedVerses(studentUid, true);
+                } catch (e) {
+                    console.warn('fetchStudentViewedVerses:', e);
+                    container.innerHTML = '<div style="padding:15px; text-align:center; color:#c00;">تعذر التحميل. تحقق من الاتصال وجرب مرة أخرى.</div>';
+                    return;
+                }
                 lbViewsCache[studentUid] = items;
             }
             renderLbViewsList(container, studentUid, 0);
@@ -2628,7 +2635,13 @@
         }
         async function fetchStudentViewedVerses(studentUid, fromServer) {
             const q = window.query(window.collection(window.db, "stats"));
-            const snap = fromServer ? await window.getDocsFromServer(q) : await window.getDocs(q);
+            let snap;
+            try {
+                snap = fromServer ? await window.getDocsFromServer(q) : await window.getDocs(q);
+            } catch (e) {
+                if (fromServer) { try { snap = await window.getDocs(q); } catch(e2) { return []; } }
+                else throw e;
+            }
             const all = [];
             snap.forEach(docSnap => {
                 const id = docSnap.id;
@@ -2706,7 +2719,14 @@
             container.innerHTML = '<div style="padding:15px; text-align:center; color:#999;">جاري التحميل...</div>';
             container.style.display = 'block';
             const role = adminUserRoles[studentUid] || 'student';
-            const items = await fetchUserRecordings(studentUid, role, true);
+            let items;
+            try {
+                items = await fetchUserRecordings(studentUid, role, true);
+            } catch (e) {
+                console.warn('fetchUserRecordings:', e);
+                container.innerHTML = '<div style="padding:15px; text-align:center; color:#c00;">تعذر التحميل. تحقق من الاتصال وجرب مرة أخرى.</div>';
+                return;
+            }
             lbRecordingsCache[studentUid] = items;
             renderLbRecordingsList(container, studentUid, 0);
             container.style.display = 'block';
@@ -2714,7 +2734,13 @@
 
         async function fetchStudentRecordings(studentUid, fromServer) {
             const q = window.query(window.collection(window.db, "posts"), window.where("uid", "==", studentUid));
-            const snap = fromServer ? await window.getDocsFromServer(q) : await window.getDocs(q);
+            let snap;
+            try {
+                snap = fromServer ? await window.getDocsFromServer(q) : await window.getDocs(q);
+            } catch (e) {
+                if (fromServer) { try { snap = await window.getDocs(q); } catch(e2) { return []; } }
+                else throw e;
+            }
             const all = [];
             snap.forEach(docSnap => {
                 const data = docSnap.data();
@@ -2736,10 +2762,19 @@
         }
 
         async function fetchUserRecordings(uid, role, fromServer) {
+            const fetchWithFallback = async (q, getFn) => {
+                try { return await getFn(q); }
+                catch (e) {
+                    if (fromServer && getFn === window.getDocsFromServer) {
+                        try { return await window.getDocs(q); } catch(e2) { return { empty: true, forEach: () => {} }; }
+                    }
+                    throw e;
+                }
+            };
             const getFn = fromServer ? window.getDocsFromServer : window.getDocs;
             if (role === 'teacher') {
                 const q = window.query(window.collection(window.db, "posts"));
-                const snap = await getFn(q);
+                const snap = await fetchWithFallback(q, getFn);
                 const all = [];
                 snap.forEach(docSnap => {
                     const data = docSnap.data();
@@ -2858,7 +2893,14 @@
             if (!lbLikesCache[studentUid]) {
                 container.innerHTML = '<div style="padding:15px; text-align:center; color:#999;">جاري التحميل...</div>';
                 container.style.display = 'block';
-                const items = await fetchLikedRecordings(studentUid);
+                let items;
+                try {
+                    items = await fetchLikedRecordings(studentUid);
+                } catch (e) {
+                    console.warn('fetchLikedRecordings:', e);
+                    container.innerHTML = '<div style="padding:15px; text-align:center; color:#c00;">تعذر التحميل. تحقق من الاتصال وجرب مرة أخرى.</div>';
+                    return;
+                }
                 lbLikesCache[studentUid] = items;
             }
             renderLbLikesList(container, studentUid, 0);
@@ -2867,7 +2909,13 @@
 
         async function fetchLikedRecordings(studentUid, fromServer) {
             const q = window.query(window.collection(window.db, "posts"));
-            const snap = fromServer ? await window.getDocsFromServer(q) : await window.getDocs(q);
+            let snap;
+            try {
+                snap = fromServer ? await window.getDocsFromServer(q) : await window.getDocs(q);
+            } catch (e) {
+                if (fromServer) { try { snap = await window.getDocs(q); } catch(e2) { return []; } }
+                else throw e;
+            }
             const all = [];
             snap.forEach(docSnap => {
                 const data = docSnap.data();
@@ -3108,13 +3156,15 @@
             else if (lbReturnSource === 'views') goBackToViewsList();
         }
 
-        function doLbRestore() {
-            const pr = lbPendingRestore;
+        function doLbRestore(restoreData) {
+            const pr = restoreData || lbPendingRestore;
             if (!pr) return;
-            lbPendingRestore = null;
+            if (!restoreData) { lbPendingRestore = null; setTimeout(() => doLbRestore(pr), 1200); }
             const uid = pr.uid;
             const offset = pr.offset || 0;
             const scrollToId = pr.scrollToId;
+            const leaderboardSection = document.getElementById('leaderboard-section');
+            if (leaderboardSection) leaderboardSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
             const scrollToClicked = (container) => {
                 let el = null;
                 if (scrollToId && container) {
@@ -3125,9 +3175,9 @@
                 }
                 const target = el || container;
                 if (target) {
-                    setTimeout(() => {
-                        target.scrollIntoView({ behavior: 'smooth', block: el ? 'center' : 'start' });
-                    }, 350);
+                    const doScroll = () => { target.scrollIntoView({ behavior: 'smooth', block: el ? 'center' : 'start' }); };
+                    setTimeout(doScroll, 300);
+                    setTimeout(doScroll, 800);
                 }
             };
             if (pr.source === 'likes') {
@@ -3993,7 +4043,9 @@
             const myUid = localStorage.getItem('it9an_uid');
             const q = window.query(window.collection(window.db, "posts"), window.where("fileId", "==", idString));
             try {
-                const snap = await window.getDocsFromServer(q);
+                let snap;
+                try { snap = await window.getDocsFromServer(q); }
+                catch (e) { snap = await window.getDocs(q); }
                 allLoadedPosts = [];
                 snap.forEach(doc => {
                     const d = doc.data();
@@ -4007,19 +4059,21 @@
                     if (myUid && myUid !== 'admin_super') {
                         try {
                             const savedQ = window.query(window.collection(window.db, "savedRecordings"), window.where("uid", "==", myUid));
-                            const savedSnap = await window.getDocsFromServer(savedQ);
+                            let savedSnap;
+                            try { savedSnap = await window.getDocsFromServer(savedQ); }
+                            catch(e) { savedSnap = await window.getDocs(savedQ); }
                             savedSnap.forEach(d => savedIdsForFeed.add(d.data().postId));
                         } catch(e) {}
                     }
                     renderPosts(div, userRole, myUid, savedIdsForFeed);
                     if (activePostFilter) {
                         const postIdToScroll = activePostFilter;
-                        requestAnimationFrame(() => {
-                            setTimeout(() => {
-                                const el = document.getElementById('post-' + postIdToScroll);
-                                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                            }, 250);
-                        });
+                        const feedDiv = document.getElementById('community-feed');
+                        if (feedDiv) feedDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        setTimeout(() => {
+                            const el = document.getElementById('post-' + postIdToScroll);
+                            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }, 400);
                     }
                 } else {
                     div.innerHTML = "<div style='text-align:center; color:#999; font-size:16px; padding:20px;'>لا توجد مشاركات حتى الآن</div>";
@@ -4065,7 +4119,9 @@
                 if (myUid && myUid !== 'admin_super') {
                     try {
                         const savedQ = window.query(window.collection(window.db, "savedRecordings"), window.where("uid", "==", myUid));
-                        const savedSnap = await window.getDocsFromServer(savedQ);
+                        let savedSnap;
+                        try { savedSnap = await window.getDocsFromServer(savedQ); }
+                        catch(e) { savedSnap = await window.getDocs(savedQ); }
                         savedSnap.forEach(d => savedIdsForFeed.add(d.data().postId));
                     } catch(e) {}
                 }
@@ -4073,12 +4129,12 @@
                 
                 if (activePostFilter) {
                     const postIdToScroll = activePostFilter;
-                    requestAnimationFrame(() => {
-                        setTimeout(() => {
-                            const el = document.getElementById('post-' + postIdToScroll);
-                            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        }, 250);
-                    });
+                    const feedDiv = document.getElementById('community-feed');
+                    if (feedDiv) feedDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    setTimeout(() => {
+                        const el = document.getElementById('post-' + postIdToScroll);
+                        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }, 400);
                 } else {
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                 }
