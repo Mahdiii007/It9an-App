@@ -2314,7 +2314,7 @@
             const q = window.query(window.collection(window.db, "users"), window.where("role", "==", "teacher"));
             unsubscribeTeachersLeaderboard = window.onSnapshot(q, async (snap) => {
                 if (document.hidden) return;
-                if (Date.now() - lastTeachersRefreshTime < 15000) { if (onFirstRender && firstSnap) { onFirstRender(); firstSnap = false; } return; }
+                try {
                 let teachers = [];
                 snap.forEach(doc => teachers.push({ ...doc.data(), uid: doc.data().uid || doc.id }));
                 const stageStats = await fetchStageTeachersStats();
@@ -2371,6 +2371,7 @@
                     if (container) { container.style.display = 'block'; renderLbRecordingsList(container, lbRecordingsOpenUid, lbRecordingsOpenOffset); }
                 }
                 if (onFirstRender && firstSnap) { onFirstRender(); firstSnap = false; }
+                } catch(e) { console.warn("loadTeachersLeaderboard:", e); if (onFirstRender && firstSnap) { onFirstRender(); firstSnap = false; } }
             });
         }
 
@@ -2442,8 +2443,7 @@
             let firstSnapshot = true;
             const cb = async (snap) => {
                 if (document.hidden) return;
-                const skipRender = Date.now() - lastStudentsRefreshTime < 15000;
-                if (skipRender) { if (firstSnapshot) { lbDone.students = true; checkLbComplete(); firstSnapshot = false; } return; }
+                try {
                 let users = [];
                 snap.forEach(doc => users.push({ ...doc.data(), uid: doc.data().uid || doc.id }));
                 const stageStats = await fetchStageLeaderboardStats();
@@ -2479,6 +2479,7 @@
                 if (typeof window.updateHeaderNamePin === 'function') window.updateHeaderNamePin();
                 if (firstSnapshot) { lbDone.students = true; checkLbComplete(); }
                 firstSnapshot = false;
+                } catch(e) { console.warn("loadLeaderboard cb:", e); if (firstSnapshot) { lbDone.students = true; checkLbComplete(); } }
             };
             unsubscribeLeaderboard = window.onSnapshot(q, cb);
         }
