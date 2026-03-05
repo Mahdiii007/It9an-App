@@ -684,15 +684,7 @@
     </div>
 
     <div id="stages-view">
-        <h2 class="stages-title">اختر المرحلة</h2>
-        <div class="stages-grid" id="stages-grid"></div>
-    </div>
-
-    <div id="menu-view">
-        <button class="verse-list-btn" onclick="showStagesView()" style="margin-bottom:15px; background:var(--primary); color:white; border-color:var(--gold);">↩️ تغيير المرحلة</button>
-        <button class="verse-list-btn lessons-main-btn" onclick="showLessonsView()" style="margin-bottom:15px;">📚 جميع الدروس</button>
-        <button class="verse-list-btn" style="margin: 0 0 15px 0;" onclick="showSavedList()">📌 للمشاهدة لاحقاً</button>
-        <div id="app-stats-card" class="leaderboard-card" style="margin-bottom:15px;">
+        <div id="app-stats-card" class="leaderboard-card" style="margin-bottom:20px;">
             <div class="lb-title">📊 إحصائيات التطبيق</div>
             <div id="appStatsContent" style="display:flex; flex-wrap:wrap; justify-content:space-around; align-items:center; gap:8px; padding:10px 0; font-size:15px;">
                 <span title="إجمالي التكرارات">👁️ <span id="statRepetitions">—</span></span>
@@ -701,6 +693,17 @@
                 <span title="عدد المعلمين">👨‍🏫 <span id="statTeachers">—</span></span>
             </div>
         </div>
+        <h2 class="stages-title">اختر المرحلة</h2>
+        <div class="stages-grid" id="stages-grid"></div>
+        <button id="addToHomeBtnStages" class="setup-step-btn" style="margin: 20px 0 8px 0; display:none;" onclick="handleAddToHomeScreen()"><span class="step-main">📱 1. إضافة إلى الشاشة الرئيسية</span><span class="step-note">(تثبيت التطبيق على الشاشة الرئيسية)</span></button>
+        <button id="pushEnableBtnStages" class="setup-step-btn" style="margin: 0 0 8px 0; display:none;" onclick="enablePushNotifications()"><span class="step-main">🔔 2. تفعيل الإشعارات على الشاشة</span><span class="step-note">(تفعيل الإشعارات في التطبيق وليس في المتصفح)</span></button>
+        <button id="microEnableBtnStages" class="setup-step-btn" style="margin: 0 0 8px 0; display:none;" onclick="enableMicrophonePermission()"><span class="step-main">🎤 3. تفعيل الميكروفون للتسجيل</span><span class="step-note">(تفعيل الميكروفون في التطبيق وليس في المتصفح)</span></button>
+        <button id="contactAdminBtnStages" class="verse-list-btn" style="margin: 15px 0 0 0; display:none; background:var(--primary); color:white; border-color:var(--gold);" onclick="showContactAdminView()">📩 تواصل مع المسؤول</button>
+    </div>
+
+    <div id="menu-view">
+        <button class="verse-list-btn" onclick="showStagesView()" style="margin-bottom:15px; background:var(--primary); color:white; border-color:var(--gold);">↩️ تغيير المرحلة</button>
+        <button class="verse-list-btn lessons-main-btn" onclick="showLessonsView()" style="margin-bottom:15px;">📚 جميع الدروس</button>
         <div id="leaderboard-section">
             <div class="leaderboard-card">
                 <div class="lb-title" id="lbStageTitle">🏆 المتصدرون الثلاثة (Top 3)</div>
@@ -721,10 +724,7 @@
                 <button id="lbRefreshTeachersBtn" class="btn-action lb-refresh-btn" style="margin-top:8px;" onclick="refreshTeachersLeaderboard()" title="تحديث القائمة">🔄 تحديث</button>
             </div>
         </div>
-        <button id="addToHomeBtn" class="setup-step-btn" style="margin: 15px 0 8px 0; display:none;" onclick="handleAddToHomeScreen()"><span class="step-main">📱 1. إضافة إلى الشاشة الرئيسية</span><span class="step-note">(تثبيت التطبيق على الشاشة الرئيسية)</span></button>
-        <button id="pushEnableBtn" class="setup-step-btn" style="margin: 0 0 8px 0; display:none;" onclick="enablePushNotifications()"><span class="step-main">🔔 2. تفعيل الإشعارات على الشاشة</span><span class="step-note">(تفعيل الإشعارات في التطبيق وليس في المتصفح)</span></button>
-        <button id="microEnableBtn" class="setup-step-btn" style="margin: 0 0 8px 0; display:none;" onclick="enableMicrophonePermission()"><span class="step-main">🎤 3. تفعيل الميكروفون للتسجيل</span><span class="step-note">(تفعيل الميكروفون في التطبيق وليس في المتصفح)</span></button>
-        <button id="contactAdminBtn" class="verse-list-btn" style="margin: 15px 0 0 0; display:none; background:var(--primary); color:white; border-color:var(--gold);" onclick="showContactAdminView()">📩 تواصل مع المسؤول</button>
+        <button class="verse-list-btn" style="margin: 15px 0 0 0;" onclick="showSavedList()">📌 للمشاهدة لاحقاً</button>
     </div>
 
     <div id="lessons-view" style="display:none; padding: 15px 10px; width: 100%; max-width: 100%; margin: 0 auto; overflow-x: hidden;">
@@ -972,11 +972,41 @@
             const cn = document.getElementById('contact-admin-new-view'); if (cn) cn.style.display = 'none';
             document.getElementById('stages-view').style.display = 'block';
             const menuBtn = document.getElementById('menuBtn'); if (menuBtn) menuBtn.style.display = 'none';
+            const myUid = localStorage.getItem('it9an_uid');
+            const userRole = localStorage.getItem('it9an_role');
+            const pt = document.getElementById('pageTitle');
+            if (pt) {
+                const myName = localStorage.getItem('it9an_name') || '';
+                const nameClean = myName.replace(/\s*\(\d{4}\)\s*$/, '').trim();
+                if (myUid && myUid !== 'admin_super') {
+                    const u = (typeof leaderboardAllUsers !== 'undefined' && leaderboardAllUsers.find(x => x.uid === myUid)) || (typeof leaderboardAllTeachers !== 'undefined' && leaderboardAllTeachers.find(x => x.uid === myUid));
+                    const pin = (u && u.personalPin) ? u.personalPin : (localStorage.getItem('it9an_pin') || '');
+                    const pinStr = pin ? (pin+'').padStart(4,'0') : '';
+                    pt.classList.add('header-name-pin');
+                    if (pin) {
+                        pt.innerHTML = `<span class="header-user-name-main" style="font-size:20px">${nameClean || ''}</span><div class="header-pin-row"><span class="header-pin">${pinStr}</span> <span>— استخدم هذا الرمز للدخول في المستقبل</span></div>`;
+                    } else {
+                        pt.innerHTML = `<span class="header-user-name-main" style="font-size:20px">${nameClean || ''}</span>`;
+                    }
+                } else {
+                    pt.classList.remove('header-name-pin');
+                    pt.innerHTML = `<span class="header-user-name-main" style="font-size:26px">${nameClean || 'إتقان'}</span>`;
+                }
+            }
+            loadAppStats();
+            const showPermBtns = (userRole === 'teacher' || userRole === 'student') && myUid && myUid !== 'admin_super';
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+            const addToHomeBtn = document.getElementById('addToHomeBtnStages');
+            const pushBtn = document.getElementById('pushEnableBtnStages');
+            const microBtn = document.getElementById('microEnableBtnStages');
+            const contactBtn = document.getElementById('contactAdminBtnStages');
+            if (addToHomeBtn) addToHomeBtn.style.display = (showPermBtns && !isStandalone) ? 'block' : 'none';
+            if (pushBtn) pushBtn.style.display = showPermBtns ? 'block' : 'none';
+            if (microBtn) microBtn.style.display = showPermBtns ? 'block' : 'none';
+            if (contactBtn) contactBtn.style.display = (myUid && myUid !== 'admin_super' && myUid !== 'guest') ? 'block' : 'none';
             const grid = document.getElementById('stages-grid');
             if (!grid) return;
             grid.innerHTML = '';
-            const myUid = localStorage.getItem('it9an_uid');
-            const userRole = localStorage.getItem('it9an_role');
             for (const stage of STAGES_CONFIG) {
                 const div = document.createElement('div');
                 div.className = 'stage-card stage-card-' + stage.id;
@@ -3574,23 +3604,29 @@
 
         window.updateHeaderNamePin = function() {
             const pt = document.getElementById('pageTitle');
-            if (!pt || document.getElementById('menu-view').style.display !== 'grid') return;
-            const myName = localStorage.getItem('it9an_name') || '';
-            const nameClean = myName.replace(/\s*\(\d{4}\)\s*$/, '').trim();
-            const uid = localStorage.getItem('it9an_uid');
-            if (uid && uid !== 'admin_super') {
-                const u = leaderboardAllUsers.find(x => x.uid === uid) || leaderboardAllTeachers.find(x => x.uid === uid);
-                const pin = (u && u.personalPin) ? u.personalPin : (localStorage.getItem('it9an_pin') || '');
-                const pinStr = pin ? (pin+'').padStart(4,'0') : '';
-                pt.classList.add('header-name-pin');
-                if (pin) {
-                    pt.innerHTML = `<span class="header-user-name-main" style="font-size:20px">${nameClean || ''}</span><div class="header-pin-row"><span class="header-pin">${pinStr}</span> <span>— استخدم هذا الرمز للدخول في المستقبل</span></div>`;
-                } else {
-                    pt.innerHTML = `<span class="header-user-name-main" style="font-size:20px">${nameClean || ''}</span>`;
-                }
-            } else {
+            if (!pt) return;
+            if (document.getElementById('menu-view').style.display === 'grid') {
+                const stageCfg = getStageConfig(currentStageId);
                 pt.classList.remove('header-name-pin');
-                pt.innerHTML = `<span class="header-user-name-main" style="font-size:26px">${nameClean || ''}</span>`;
+                pt.innerHTML = `<span class="header-user-name-main" style="font-size:22px">${stageCfg.name}</span>`;
+            } else if (document.getElementById('stages-view').style.display === 'block') {
+                const myName = localStorage.getItem('it9an_name') || '';
+                const nameClean = myName.replace(/\s*\(\d{4}\)\s*$/, '').trim();
+                const uid = localStorage.getItem('it9an_uid');
+                if (uid && uid !== 'admin_super') {
+                    const u = (typeof leaderboardAllUsers !== 'undefined' && leaderboardAllUsers.find(x => x.uid === uid)) || (typeof leaderboardAllTeachers !== 'undefined' && leaderboardAllTeachers.find(x => x.uid === uid));
+                    const pin = (u && u.personalPin) ? u.personalPin : (localStorage.getItem('it9an_pin') || '');
+                    const pinStr = pin ? (pin+'').padStart(4,'0') : '';
+                    pt.classList.add('header-name-pin');
+                    if (pin) {
+                        pt.innerHTML = `<span class="header-user-name-main" style="font-size:20px">${nameClean || ''}</span><div class="header-pin-row"><span class="header-pin">${pinStr}</span> <span>— استخدم هذا الرمز للدخول في المستقبل</span></div>`;
+                    } else {
+                        pt.innerHTML = `<span class="header-user-name-main" style="font-size:20px">${nameClean || ''}</span>`;
+                    }
+                } else {
+                    pt.classList.remove('header-name-pin');
+                    pt.innerHTML = `<span class="header-user-name-main" style="font-size:26px">${nameClean || 'إتقان'}</span>`;
+                }
             }
         };
 
@@ -3601,51 +3637,22 @@
             if (lbTitle) lbTitle.innerHTML = `🏆 المتصدرون الثلاثة — ${stageCfg.name}`;
             const lbTeachersTitle = document.getElementById('lbTeachersStageTitle');
             if (lbTeachersTitle) lbTeachersTitle.innerHTML = `🏆 أفضل المعلمين — ${stageCfg.name}`;
-            const myName = localStorage.getItem('it9an_name') || '';
-            const nameClean = myName.replace(/\s*\(\d{4}\)\s*$/, '').trim();
-            const uid = localStorage.getItem('it9an_uid');
             const pt = document.getElementById('pageTitle');
-            if (uid && uid !== 'admin_super') {
-                const u = leaderboardAllUsers.find(x => x.uid === uid) || leaderboardAllTeachers.find(x => x.uid === uid);
-                const pin = (u && u.personalPin) ? u.personalPin : (localStorage.getItem('it9an_pin') || '');
-                const pinStr = pin ? (pin+'').padStart(4,'0') : '';
-                if (pt) pt.classList.add('header-name-pin');
-                if (pin && pt) {
-                    pt.innerHTML = `<span class="header-user-name-main" style="font-size:20px">${nameClean || ''}</span><div class="header-pin-row"><span class="header-pin">${pinStr}</span> <span>— استخدم هذا الرمز للدخول في المستقبل</span></div>`;
-                } else if (pt) {
-                    pt.innerHTML = `<span class="header-user-name-main" style="font-size:20px">${nameClean || ''}</span>`;
-                }
-            } else {
-                if (pt) pt.classList.remove('header-name-pin');
-                if (pt) pt.innerHTML = `<span class="header-user-name-main" style="font-size:26px">${nameClean || ''}</span>`;
+            if (pt) {
+                pt.classList.remove('header-name-pin');
+                pt.innerHTML = `<span class="header-user-name-main" style="font-size:22px">${stageCfg.name}</span>`;
             }
             document.getElementById('appFooter').style.display = 'none';
             
             if(uid === 'admin_super') {
                 document.getElementById('adminMenuPanel').style.display = 'block';
                 document.getElementById('leaderboard-section').style.display = 'block';
-                document.getElementById('addToHomeBtn').style.display = 'none';
-                document.getElementById('pushEnableBtn').style.display = 'none';
-                document.getElementById('microEnableBtn').style.display = 'none';
-                const contactBtn = document.getElementById('contactAdminBtn');
-                if (contactBtn) contactBtn.style.display = 'none';
                 loadAdminMessagesList();
                 loadLeaderboard(lbPendingRestore ? doLbRestore : undefined);
                 loadAppStats();
             } else {
                 document.getElementById('adminMenuPanel').style.display = 'none';
                 document.getElementById('leaderboard-section').style.display = 'block';
-                const role = localStorage.getItem('it9an_role');
-                const showPermBtns = (role === 'teacher' || role === 'student');
-                const contactBtn = document.getElementById('contactAdminBtn');
-                if (contactBtn) contactBtn.style.display = (uid && uid !== 'guest') ? 'block' : 'none';
-                const addToHomeBtn = document.getElementById('addToHomeBtn');
-                const pushBtn = document.getElementById('pushEnableBtn');
-                const microBtn = document.getElementById('microEnableBtn');
-                const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
-                if (addToHomeBtn) addToHomeBtn.style.display = (showPermBtns && !isStandalone) ? 'block' : 'none';
-                if (pushBtn) pushBtn.style.display = showPermBtns ? 'block' : 'none';
-                if (microBtn) microBtn.style.display = showPermBtns ? 'block' : 'none';
                 loadLeaderboard(lbPendingRestore ? doLbRestore : undefined);
                 loadAppStats();
             }
