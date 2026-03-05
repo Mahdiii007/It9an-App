@@ -997,12 +997,7 @@
             return lesson > 0 ? `${lesson}-${verse}` : String(globalId);
         }
         function getAssetUrl(relativePath) {
-            const path = ASSETS_BASE + '/' + relativePath.replace(/^\//, '');
-            try {
-                return new URL(path, window.location.origin + '/').href;
-            } catch (e) {
-                return path;
-            }
+            return ASSETS_BASE + '/' + relativePath.replace(/^\//, '');
         }
 
         let completedVersesCache = null;
