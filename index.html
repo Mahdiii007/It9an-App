@@ -1496,6 +1496,7 @@
             updateUIForRole();
             if (uid !== 'guest') listenForNotifications();
             showStagesView();
+            checkPushNotificationParams();
             window.scrollTo({ top: 0, behavior: 'smooth' });
             if (uid && uid !== 'admin_super' && uid !== 'guest') requestPushPermissionAndSaveToken(uid, role);
         }
