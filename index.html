@@ -3127,7 +3127,7 @@
                 if (target) {
                     setTimeout(() => {
                         target.scrollIntoView({ behavior: 'smooth', block: el ? 'center' : 'start' });
-                    }, 100);
+                    }, 200);
                 }
             };
             if (pr.source === 'likes') {
@@ -3732,6 +3732,12 @@
         function renderMenu() {
             lastStudentsRefreshTime = 0;
             lastTeachersRefreshTime = 0;
+            if (lbPendingRestore) {
+                const pr = lbPendingRestore;
+                if (pr.source === 'likes') { lbLikesOpenUid = pr.uid; lbLikesOpenOffset = pr.offset || 0; }
+                else if (pr.source === 'recordings') { lbRecordingsOpenUid = pr.uid; lbRecordingsOpenOffset = pr.offset || 0; lbRecordingsOpenRole = pr.role || 'student'; }
+                else if (pr.source === 'views') { lbViewsOpenUid = pr.uid; lbViewsOpenOffset = pr.offset || 0; }
+            }
             if (typeof refreshStudentsLeaderboard === 'function') refreshStudentsLeaderboard(true);
             if (typeof refreshTeachersLeaderboard === 'function') refreshTeachersLeaderboard(true);
             showView('menu-view');
@@ -4004,6 +4010,12 @@
                         } catch(e) {}
                     }
                     renderPosts(div, userRole, myUid, savedIdsForFeed);
+                    if (activePostFilter) {
+                        setTimeout(() => {
+                            const el = document.getElementById('post-' + activePostFilter);
+                            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }, 150);
+                    }
                 } else {
                     div.innerHTML = "<div style='text-align:center; color:#999; font-size:16px; padding:20px;'>لا توجد مشاركات حتى الآن</div>";
                 }
