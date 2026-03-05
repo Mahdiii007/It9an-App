@@ -2302,7 +2302,7 @@
             });
             return map;
         }
-        function loadTeachersLeaderboard(onFirstRender) {
+        async function loadTeachersLeaderboard(onFirstRender) {
             const panel = document.getElementById('teachersLeaderboard');
             const list = document.getElementById('leaderboard-teachers-list');
             if (!panel || !list) { if (onFirstRender) onFirstRender(); return; }
@@ -2310,8 +2310,73 @@
             const isAdmin = myUid === 'admin_super';
             panel.style.display = 'block';
             if (unsubscribeTeachersLeaderboard) unsubscribeTeachersLeaderboard();
-            let firstSnap = true;
             const q = window.query(window.collection(window.db, "users"), window.where("role", "==", "teacher"));
+            try {
+                const usersSnap = await window.getDocsFromServer(q);
+                let teachers = [];
+                usersSnap.forEach(doc => {
+                    const d = doc.data();
+                    const uid = d.uid || doc.id;
+                    teachers.push({ ...d, uid });
+                });
+                const stageStats = await fetchStageTeachersStats();
+                teachers = teachers.map(t => {
+                    const s = stageStats[t.uid] || { totalRepliesCount: 0, totalLikes: 0 };
+                    return { ...t, totalRepliesCount: s.totalRepliesCount, totalLikes: s.totalLikes };
+                });
+                if (leaderboardSortBy === 'alpha' && isAdmin) {
+                    teachers.sort((a,b) => (getDisplayName(a) || '').localeCompare(getDisplayName(b) || '', 'ar'));
+                } else if (leaderboardSortBy === 'date' && isAdmin) {
+                    teachers.sort((a,b) => getTimestampMs(b) - getTimestampMs(a));
+                } else {
+                    teachers.sort((a,b) => (b.totalRepliesCount || 0) - (a.totalRepliesCount || 0));
+                }
+                leaderboardAllTeachers = teachers;
+                lastTeachersRefreshTime = Date.now();
+                list.innerHTML = "";
+                if (teachers.length === 0) { list.innerHTML = "<li style='text-align:center; color:#999; padding:10px;'>لا يوجد معلمون</li>"; if (onFirstRender) onFirstRender(); } else {
+                teachers.forEach((u, i) => {
+                    adminUserRoles[u.uid] = 'teacher';
+                    const rank = i + 1;
+                    const isBlocked = u.blocked === true;
+                    const blockBtnText = isBlocked ? "فك الحظر" : "حظر";
+                    const blockBtnClass = isBlocked ? "btn-action btn-block blocked" : "btn-action btn-block";
+                    const likesCount = u.totalLikes || 0;
+                    const repliesCount = u.totalRepliesCount || 0;
+                    const lbDisplayNameT = isAdmin ? getDisplayNameForAdminWithDate(u) : getDisplayName(u);
+                    const adminBtnsT = isAdmin ? `<button class="delete-btn" onclick="deleteUser('${u.uid}')" title="حذف">🗑️</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="editUserName('${u.uid}')" title="تعديل الاسم">✏️</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="swapFirstLastName('${u.uid}')" title="تبديل الاسم الأول واللقب">🔄</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="sendPrivateMessageToUser('${u.uid}')" title="رسالة خاصة">✉️</button><button class="${blockBtnClass}" style="padding:4px 10px; font-size:12px;" onclick="toggleBlockUser('${u.uid}', ${isBlocked})">${blockBtnText}</button>` : '';
+                    list.innerHTML += `
+                    <li class="lb-item-wrapper ${rank <= 3 ? 'lb-item-top3' : ''}">
+                        <div class="lb-item">
+                            <div style="display:flex; align-items:center; gap:4px; flex-shrink: 1; min-width: 0;">
+                                ${adminBtnsT}
+                                <span class="lb-rank">#${rank}</span>
+                                <span class="lb-name">${lbDisplayNameT}</span>
+                                <span class="role-badge badge-teacher">معلم</span>
+                            </div>
+                            <div class="lb-stats">
+                                <span class="lb-likes lb-likes-click" onclick="toggleLbLikes('${u.uid}')" title="عرض الإعجابات">👍 ${likesCount}</span>
+                                <span class="lb-score lb-likes-click" onclick="toggleLbRecordings('${u.uid}')" title="عرض الردود">🎤 ${repliesCount}</span>
+                            </div>
+                        </div>
+                        <div class="lb-likes-list" id="lb-likes-${u.uid}" style="display:none;"></div>
+                        <div class="lb-likes-list" id="lb-recordings-${u.uid}" style="display:none;"></div>
+                    </li>`;
+                });
+                const isTeacherLikesOpen = lbLikesOpenUid && leaderboardAllTeachers.some(t => t.uid === lbLikesOpenUid);
+                const isTeacherRecOpen = lbRecordingsOpenUid && leaderboardAllTeachers.some(t => t.uid === lbRecordingsOpenUid);
+                if (isTeacherLikesOpen) {
+                    const container = document.getElementById('lb-likes-' + lbLikesOpenUid);
+                    if (container) { container.style.display = 'block'; renderLbLikesList(container, lbLikesOpenUid, lbLikesOpenOffset); }
+                }
+                if (isTeacherRecOpen) {
+                    const container = document.getElementById('lb-recordings-' + lbRecordingsOpenUid);
+                    if (container) { container.style.display = 'block'; renderLbRecordingsList(container, lbRecordingsOpenUid, lbRecordingsOpenOffset); }
+                }
+                if (onFirstRender) onFirstRender();
+                }
+            } catch (e) { console.warn('loadTeachersLeaderboard initial fetch:', e); if (onFirstRender) onFirstRender(); }
+            let firstSnap = true;
             unsubscribeTeachersLeaderboard = window.onSnapshot(q, async (snap) => {
                 if (document.hidden) return;
                 if (Date.now() - lastTeachersRefreshTime < 15000) { if (onFirstRender && firstSnap) { onFirstRender(); firstSnap = false; } return; }
@@ -2427,7 +2492,7 @@
             });
             return map;
         }
-        function loadLeaderboard(onComplete) {
+        async function loadLeaderboard(onComplete) {
             if (unsubscribeLeaderboard) unsubscribeLeaderboard();
             if (!lbPendingRestore) {
                 lbLikesCache = {};
@@ -2436,9 +2501,32 @@
             }
             let lbDone = { students: false, teachers: false };
             const checkLbComplete = () => { if (lbDone.students && lbDone.teachers && onComplete) { onComplete(); onComplete = null; } };
-            loadTeachersLeaderboard(() => { lbDone.teachers = true; checkLbComplete(); });
-            const q = window.query(window.collection(window.db, "users"), window.where("role", "==", "student"));
             const myUid = localStorage.getItem('it9an_uid');
+            const q = window.query(window.collection(window.db, "users"), window.where("role", "==", "student"));
+            try {
+                const snap = await window.getDocsFromServer(q);
+                let users = [];
+                snap.forEach(doc => users.push({ ...doc.data(), uid: doc.data().uid || doc.id }));
+                const stageStats = await fetchStageLeaderboardStats();
+                let stageViews = {};
+                if (currentStageId !== 4) stageViews = await fetchStageVerseViewsFromStats(currentStageId);
+                users = users.map(u => {
+                    const s = stageStats[u.uid] || { postsCount: 0, totalLikes: 0 };
+                    const views = (currentStageId === 4) ? (u.totalVerseViews || 0) : (stageViews[u.uid] ?? 0);
+                    return { ...u, postsCount: s.postsCount, totalLikes: s.totalLikes, totalVerseViews: views };
+                });
+                leaderboardAllUsers = applyLeaderboardSort(users);
+                lastStudentsRefreshTime = Date.now();
+                if (lbPendingRestore) {
+                    if (lbPendingRestore.source === 'likes') { lbLikesOpenUid = lbPendingRestore.uid; lbLikesOpenOffset = lbPendingRestore.offset || 0; }
+                    else if (lbPendingRestore.source === 'recordings') { lbRecordingsOpenUid = lbPendingRestore.uid; lbRecordingsOpenOffset = lbPendingRestore.offset || 0; lbRecordingsOpenRole = lbPendingRestore.role || 'student'; }
+                    else if (lbPendingRestore.source === 'views') { lbViewsOpenUid = lbPendingRestore.uid; lbViewsOpenOffset = lbPendingRestore.offset || 0; }
+                }
+                renderLeaderboardItems(leaderboardAllUsers, leaderboardVisibleCount, myUid, !!lbPendingRestore);
+                if (typeof window.updateHeaderNamePin === 'function') window.updateHeaderNamePin();
+                lbDone.students = true;
+            } catch (e) { console.warn('loadLeaderboard initial fetch:', e); }
+            loadTeachersLeaderboard(() => { lbDone.teachers = true; checkLbComplete(); });
             let firstSnapshot = true;
             const cb = async (snap) => {
                 if (document.hidden) return;
@@ -3652,32 +3740,12 @@
                 document.getElementById('adminMenuPanel').style.display = 'block';
                 document.getElementById('leaderboard-section').style.display = 'block';
                 loadAdminMessagesList();
-                lastStudentsRefreshTime = 0;
-                lastTeachersRefreshTime = 0;
-                (async function loadLeaderboardViaRefresh() {
-                    try {
-                        await Promise.all([
-                            typeof refreshStudentsLeaderboard === 'function' ? refreshStudentsLeaderboard(true) : Promise.resolve(),
-                            typeof refreshTeachersLeaderboard === 'function' ? refreshTeachersLeaderboard(true) : Promise.resolve()
-                        ]);
-                    } catch (e) { console.warn('Leaderboard refresh:', e); }
-                    loadLeaderboard(lbPendingRestore ? doLbRestore : undefined);
-                })();
+                loadLeaderboard(lbPendingRestore ? doLbRestore : undefined);
                 loadAppStats();
             } else {
                 document.getElementById('adminMenuPanel').style.display = 'none';
                 document.getElementById('leaderboard-section').style.display = 'block';
-                lastStudentsRefreshTime = 0;
-                lastTeachersRefreshTime = 0;
-                (async function loadLeaderboardViaRefresh() {
-                    try {
-                        await Promise.all([
-                            typeof refreshStudentsLeaderboard === 'function' ? refreshStudentsLeaderboard(true) : Promise.resolve(),
-                            typeof refreshTeachersLeaderboard === 'function' ? refreshTeachersLeaderboard(true) : Promise.resolve()
-                        ]);
-                    } catch (e) { console.warn('Leaderboard refresh:', e); }
-                    loadLeaderboard(lbPendingRestore ? doLbRestore : undefined);
-                })();
+                loadLeaderboard(lbPendingRestore ? doLbRestore : undefined);
                 loadAppStats();
             }
 
