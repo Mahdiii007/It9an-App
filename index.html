@@ -996,6 +996,13 @@
             const { lesson, verse } = getLessonVerseFromFileId(globalId);
             return lesson > 0 ? `${lesson}-${verse}` : String(globalId);
         }
+        function getAssetUrl(relativePath) {
+            if (window.location.protocol === 'file:') {
+                return ASSETS_BASE + '/' + relativePath;
+            }
+            const base = ASSETS_BASE.startsWith('/') || ASSETS_BASE.startsWith('http') ? ASSETS_BASE : '/' + ASSETS_BASE;
+            return base.replace(/\/$/, '') + '/' + relativePath.replace(/^\//, '');
+        }
 
         let completedVersesCache = null;
         let completedVersesCacheUid = null;
@@ -3658,7 +3665,7 @@
                 const progressHtml = (myUid && myUid !== 'admin_super' && userRole === 'student') 
                     ? `<div class="lesson-progress-bar-wrap"><div class="lesson-progress-bar"><div class="lesson-progress-bar-fill" style="width:${prog.percent}%"></div></div><div class="lesson-progress-text">${prog.completed}/${prog.total} (${prog.percent}%)</div></div>` 
                     : '';
-                div.innerHTML = `<div class="menu-item-title">الدرس ${index + 1}</div><img src="${ASSETS_BASE}/T${lek.id}.png" loading="lazy" onerror="this.style.display='none'">${progressHtml}`;
+                div.innerHTML = `<div class="menu-item-title">الدرس ${index + 1}</div><img src="${getAssetUrl('T' + lek.id + '.png')}" loading="lazy" onerror="this.onerror=null;this.src=this.src.replace('.png','.jpg');this.onerror=function(){this.style.display='none'}">${progressHtml}`;
                 div.onclick = () => startLesson(index);
                 grid.appendChild(div);
             });
@@ -3709,7 +3716,7 @@
                 const statusSpan = (uid && userRole === 'student') ? `<span style="font-size:11px; color:${isCompleted?'#2e7d32':'#e65100'};">${isCompleted ? 'منجز' : 'لم يُنجز بعد'}</span>` : '';
                 const div = document.createElement('div');
                 div.className = 'verse-list-item' + (isActive ? ' active' : '');
-                div.innerHTML = `<span>المقطع ${v} ${statusSpan}</span><img src="${ASSETS_BASE}/${getVerseAssetPath(globalId)}.png" alt="Vers ${v}" onerror="this.style.display='none'">`;
+                div.innerHTML = `<span>المقطع ${v} ${statusSpan}</span><img src="${getAssetUrl(getVerseAssetPath(globalId) + '.png')}" alt="Vers ${v}" onerror="this.onerror=null;this.src=this.src.replace('.png','.jpg');this.onerror=function(){this.style.display='none'}">`;
                 div.onclick = () => { activePostFilter = null; activePostFilterNotifId = null; highlightedPostId = null; playVers(globalId, v); hideVerseList(); };
                 grid.appendChild(div);
             }
@@ -3745,10 +3752,12 @@
             else document.getElementById('adminPlayerPanel').style.display = 'none';
 
             const lessonId = KURS_DATEN[currentLessonIdx].id;
-            const ptP = document.getElementById('pageTitle'); if (ptP) { ptP.classList.remove('header-name-pin'); ptP.innerHTML = `<span class="title-text-maktaa">المقطع ${localVersNum}</span><img src="${ASSETS_BASE}/T${lessonId}.png" alt="Lesson Title">`; }
+            const ptP = document.getElementById('pageTitle'); if (ptP) { ptP.classList.remove('header-name-pin'); ptP.innerHTML = `<span class="title-text-maktaa">المقطع ${localVersNum}</span><img src="${getAssetUrl('T' + lessonId + '.png')}" alt="Lesson Title" onerror="this.onerror=null;this.src=this.src.replace('.png','.jpg');this.onerror=function(){this.style.display='none'}">`; }
 
-            document.getElementById('currentImg').src = `${ASSETS_BASE}/${getVerseAssetPath(globalId)}.png`;
-            audioEl.src = `${ASSETS_BASE}/${getVerseAssetPath(globalId)}.mp3`;
+            const imgEl = document.getElementById('currentImg');
+            imgEl.src = getAssetUrl(getVerseAssetPath(globalId) + '.png');
+            imgEl.onerror = function() { this.onerror=null; this.src=this.src.replace('.png','.jpg'); this.onerror=function(){ this.src='placeholder.png'; }; };
+            audioEl.src = getAssetUrl(getVerseAssetPath(globalId) + '.mp3');
 
             const verseBadge = document.getElementById('verseStatusBadge');
             const userRole = localStorage.getItem('it9an_role');
