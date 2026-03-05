@@ -3814,15 +3814,30 @@
             feedLimit = 3; loadFeed(globalId);
         }
 
-        window.showViewers = function() {
+        window.showViewers = async function() {
             const data = window.currentViewersData || { viewers: {}, totalRepetitions: 0 };
             const viewers = data.viewers || {};
             const total = data.totalRepetitions || 0;
-            const entries = Object.entries(viewers).map(([uid, v]) => ({ uid, name: stripYearFromName((v && v.name) || 'مستخدم'), count: (v && v.count) || 0 })).filter(e => e.count > 0);
+            let entries = Object.entries(viewers).map(([uid, v]) => ({ uid, name: stripYearFromName((v && v.name) || ''), count: (v && v.count) || 0 })).filter(e => e.count > 0);
             if(entries.length === 0 && total === 0) {
                 alert("لا يوجد مشاهدات بعد");
                 return;
             }
+            const needsName = entries.filter(e => !e.name || e.name === 'مستخدم');
+            if(needsName.length > 0) {
+                for (const e of needsName) {
+                    const u = (typeof leaderboardAllUsers !== 'undefined' && leaderboardAllUsers.find(x => x.uid === e.uid)) || (typeof leaderboardAllTeachers !== 'undefined' && leaderboardAllTeachers.find(x => x.uid === e.uid));
+                    if (u) e.name = getDisplayName(u);
+                    else {
+                        try {
+                            const snap = await window.getDoc(window.doc(window.db, "users", e.uid));
+                            if (snap.exists()) e.name = getDisplayName(snap.data());
+                            else e.name = 'مستخدم';
+                        } catch(_) { e.name = 'مستخدم'; }
+                    }
+                }
+            }
+            entries.forEach(e => { if (!e.name) e.name = 'مستخدم'; });
             let lines = ["👁️ " + total + " المجموع الكلي\n"];
             entries.sort((a,b) => (b.count || 0) - (a.count || 0)).forEach(e => { lines.push("👁️ " + e.count + "  " + e.name); });
             alert(lines.join("\n"));
