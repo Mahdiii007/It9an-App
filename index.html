@@ -3740,12 +3740,28 @@
                 document.getElementById('adminMenuPanel').style.display = 'block';
                 document.getElementById('leaderboard-section').style.display = 'block';
                 loadAdminMessagesList();
-                loadLeaderboard(lbPendingRestore ? doLbRestore : undefined);
+                lastStudentsRefreshTime = 0;
+                lastTeachersRefreshTime = 0;
+                setTimeout(function() {
+                    if (typeof refreshStudentsLeaderboard === 'function') refreshStudentsLeaderboard(true);
+                    if (typeof refreshTeachersLeaderboard === 'function') refreshTeachersLeaderboard(true);
+                    setTimeout(function() {
+                        loadLeaderboard(lbPendingRestore ? doLbRestore : undefined);
+                    }, 5000);
+                }, 0);
                 loadAppStats();
             } else {
                 document.getElementById('adminMenuPanel').style.display = 'none';
                 document.getElementById('leaderboard-section').style.display = 'block';
-                loadLeaderboard(lbPendingRestore ? doLbRestore : undefined);
+                lastStudentsRefreshTime = 0;
+                lastTeachersRefreshTime = 0;
+                setTimeout(function() {
+                    if (typeof refreshStudentsLeaderboard === 'function') refreshStudentsLeaderboard(true);
+                    if (typeof refreshTeachersLeaderboard === 'function') refreshTeachersLeaderboard(true);
+                    setTimeout(function() {
+                        loadLeaderboard(lbPendingRestore ? doLbRestore : undefined);
+                    }, 5000);
+                }, 0);
                 loadAppStats();
             }
 
