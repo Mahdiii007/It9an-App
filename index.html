@@ -127,7 +127,7 @@
         /* --- STAGES VIEW --- */
         #stages-view { display: none; width: 100%; max-width: 100%; overflow-x: hidden; padding: 20px 15px; }
         .stages-title { text-align: center; color: var(--primary); font-size: 24px; font-weight: bold; margin-bottom: 25px; }
-        .stages-grid { display: flex; flex-direction: column; gap: 20px; max-width: 500px; margin: 0 auto; }
+        .stages-grid { display: flex; flex-direction: column; gap: 20px; max-width: 500px; margin: 0 auto; margin-bottom: 40px; }
         .stage-card { 
             border-radius: 16px; padding: 24px 20px; cursor: pointer; text-align: center;
             transition: transform 0.2s ease, box-shadow 0.25s ease; border: none;
@@ -950,6 +950,12 @@
             document.getElementById('stages-view').style.display = 'none';
             invalidateCompletedVersesCache();
             if (typeof window.applyNotifStageFilter === 'function') window.applyNotifStageFilter();
+            if (typeof lastStudentsRefreshTime !== 'undefined') lastStudentsRefreshTime = 0;
+            if (typeof lastTeachersRefreshTime !== 'undefined') lastTeachersRefreshTime = 0;
+            if (typeof lbViewsCache !== 'undefined') lbViewsCache = {};
+            if (typeof lbRecordingsCache !== 'undefined') lbRecordingsCache = {};
+            if (typeof lbLikesCache !== 'undefined') lbLikesCache = {};
+            if (typeof lbPendingRestore !== 'undefined') lbPendingRestore = null;
             renderMenu();
         }
         async function getStageProgressForStudent(studentUid, stageId) {
