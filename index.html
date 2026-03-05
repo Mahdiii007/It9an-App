@@ -950,12 +950,10 @@
             document.getElementById('stages-view').style.display = 'none';
             invalidateCompletedVersesCache();
             if (typeof window.applyNotifStageFilter === 'function') window.applyNotifStageFilter();
-            if (typeof lastStudentsRefreshTime !== 'undefined') lastStudentsRefreshTime = 0;
-            if (typeof lastTeachersRefreshTime !== 'undefined') lastTeachersRefreshTime = 0;
-            if (typeof lbViewsCache !== 'undefined') lbViewsCache = {};
-            if (typeof lbRecordingsCache !== 'undefined') lbRecordingsCache = {};
-            if (typeof lbLikesCache !== 'undefined') lbLikesCache = {};
-            if (typeof lbPendingRestore !== 'undefined') lbPendingRestore = null;
+            lbViewsCache = {};
+            lbRecordingsCache = {};
+            lbLikesCache = {};
+            lbPendingRestore = null;
             renderMenu();
         }
         async function getStageProgressForStudent(studentUid, stageId) {
