@@ -2127,7 +2127,7 @@
             }
         }
 
-        window.refreshStudentsLeaderboard = async function() {
+        window.refreshStudentsLeaderboard = async function(suppressToast) {
             const btn = document.getElementById('lbRefreshStudentsBtn');
             if (btn) { btn.disabled = true; btn.innerText = 'جاري التحديث...'; }
             lastStudentsRefreshTime = Date.now();
@@ -2165,16 +2165,18 @@
                     const container = document.getElementById('lb-likes-' + lbLikesOpenUid);
                     if (container) container.style.display = 'block';
                 }
-                const toast = document.createElement('div');
-                toast.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--primary);color:white;padding:10px 20px;border-radius:10px;font-size:14px;z-index:9999;animation:fadeOut 2s forwards;';
-                toast.textContent = 'تم التحديث';
-                document.body.appendChild(toast);
-                setTimeout(() => toast.remove(), 2000);
-            } catch(e) { console.warn("refreshStudentsLeaderboard:", e); alert("خطأ في التحديث"); }
+                if (!suppressToast) {
+                    const toast = document.createElement('div');
+                    toast.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--primary);color:white;padding:10px 20px;border-radius:10px;font-size:14px;z-index:9999;animation:fadeOut 2s forwards;';
+                    toast.textContent = 'تم التحديث';
+                    document.body.appendChild(toast);
+                    setTimeout(() => toast.remove(), 2000);
+                }
+            } catch(e) { console.warn("refreshStudentsLeaderboard:", e); if (!suppressToast) alert("خطأ في التحديث"); }
             finally { if (btn) { btn.disabled = false; btn.innerText = '🔄 تحديث'; } }
         }
 
-        window.refreshTeachersLeaderboard = async function() {
+        window.refreshTeachersLeaderboard = async function(suppressToast) {
             const btn = document.getElementById('lbRefreshTeachersBtn');
             if (btn) { btn.disabled = true; btn.innerText = 'جاري التحديث...'; }
             lastTeachersRefreshTime = Date.now();
@@ -2242,12 +2244,14 @@
                     const container = document.getElementById('lb-recordings-' + lbRecordingsOpenUid);
                     if (container) container.style.display = 'block';
                 }
-                const toast = document.createElement('div');
-                toast.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--primary);color:white;padding:10px 20px;border-radius:10px;font-size:14px;z-index:9999;animation:fadeOut 2s forwards;';
-                toast.textContent = 'تم التحديث';
-                document.body.appendChild(toast);
-                setTimeout(() => toast.remove(), 2000);
-            } catch(e) { console.warn("refreshTeachersLeaderboard:", e); alert("خطأ في التحديث"); }
+                if (!suppressToast) {
+                    const toast = document.createElement('div');
+                    toast.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--primary);color:white;padding:10px 20px;border-radius:10px;font-size:14px;z-index:9999;animation:fadeOut 2s forwards;';
+                    toast.textContent = 'تم التحديث';
+                    document.body.appendChild(toast);
+                    setTimeout(() => toast.remove(), 2000);
+                }
+            } catch(e) { console.warn("refreshTeachersLeaderboard:", e); if (!suppressToast) alert("خطأ في التحديث"); }
             finally { if (btn) { btn.disabled = false; btn.innerText = '🔄 تحديث'; } }
         }
 
@@ -3650,22 +3654,30 @@
                 loadAdminMessagesList();
                 lastStudentsRefreshTime = 0;
                 lastTeachersRefreshTime = 0;
-                const btnStudents = document.getElementById('lbRefreshStudentsBtn');
-                const btnTeachers = document.getElementById('lbRefreshTeachersBtn');
-                if (btnStudents) btnStudents.click();
-                if (btnTeachers) btnTeachers.click();
-                loadLeaderboard(lbPendingRestore ? doLbRestore : undefined);
+                (async function loadLeaderboardViaRefresh() {
+                    try {
+                        await Promise.all([
+                            typeof refreshStudentsLeaderboard === 'function' ? refreshStudentsLeaderboard(true) : Promise.resolve(),
+                            typeof refreshTeachersLeaderboard === 'function' ? refreshTeachersLeaderboard(true) : Promise.resolve()
+                        ]);
+                    } catch (e) { console.warn('Leaderboard refresh:', e); }
+                    loadLeaderboard(lbPendingRestore ? doLbRestore : undefined);
+                })();
                 loadAppStats();
             } else {
                 document.getElementById('adminMenuPanel').style.display = 'none';
                 document.getElementById('leaderboard-section').style.display = 'block';
                 lastStudentsRefreshTime = 0;
                 lastTeachersRefreshTime = 0;
-                const btnStudents = document.getElementById('lbRefreshStudentsBtn');
-                const btnTeachers = document.getElementById('lbRefreshTeachersBtn');
-                if (btnStudents) btnStudents.click();
-                if (btnTeachers) btnTeachers.click();
-                loadLeaderboard(lbPendingRestore ? doLbRestore : undefined);
+                (async function loadLeaderboardViaRefresh() {
+                    try {
+                        await Promise.all([
+                            typeof refreshStudentsLeaderboard === 'function' ? refreshStudentsLeaderboard(true) : Promise.resolve(),
+                            typeof refreshTeachersLeaderboard === 'function' ? refreshTeachersLeaderboard(true) : Promise.resolve()
+                        ]);
+                    } catch (e) { console.warn('Leaderboard refresh:', e); }
+                    loadLeaderboard(lbPendingRestore ? doLbRestore : undefined);
+                })();
                 loadAppStats();
             }
 
