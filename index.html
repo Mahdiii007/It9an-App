@@ -2108,11 +2108,11 @@
                 let users = [];
                 snap.forEach(doc => users.push({ ...doc.data(), uid: doc.data().uid || doc.id }));
                 const stageStats = await fetchStageLeaderboardStats();
-                let stage4Views = {};
-                if (currentStageId === 4) stage4Views = await fetchStage4VerseViewsFromStats();
+                let stageViews = {};
+                if (currentStageId !== 4) stageViews = await fetchStageVerseViewsFromStats(currentStageId);
                 users = users.map(u => {
                     const s = stageStats[u.uid] || { postsCount: 0, totalLikes: 0 };
-                    const views = (currentStageId === 4) ? (stage4Views[u.uid] ?? u.totalVerseViews ?? 0) : 0;
+                    const views = (currentStageId === 4) ? (u.totalVerseViews || 0) : (stageViews[u.uid] ?? 0);
                     return { ...u, postsCount: s.postsCount, totalLikes: s.totalLikes, totalVerseViews: views };
                 });
                 leaderboardAllUsers = applyLeaderboardSort(users);
@@ -2375,14 +2375,14 @@
             });
             return map;
         }
-        async function fetchStage4VerseViewsFromStats() {
+        async function fetchStageVerseViewsFromStats(stageId) {
             const q = window.query(window.collection(window.db, "stats"));
             const snap = await window.getDocsFromServer(q);
             const map = {};
+            const prefix = 'file_' + stageId + '_';
             snap.forEach(docSnap => {
                 const id = docSnap.id;
-                const isStage4 = /^file_\d+$/.test(id) || /^file_4_\d+$/.test(id);
-                if (!isStage4) return;
+                if (!id.startsWith(prefix)) return;
                 const data = docSnap.data();
                 const viewers = data.viewers && typeof data.viewers === 'object' ? data.viewers : {};
                 Object.entries(viewers).forEach(([uid, v]) => {
@@ -2413,11 +2413,11 @@
                 let users = [];
                 snap.forEach(doc => users.push({ ...doc.data(), uid: doc.data().uid || doc.id }));
                 const stageStats = await fetchStageLeaderboardStats();
-                let stage4Views = {};
-                if (currentStageId === 4) stage4Views = await fetchStage4VerseViewsFromStats();
+                let stageViews = {};
+                if (currentStageId !== 4) stageViews = await fetchStageVerseViewsFromStats(currentStageId);
                 users = users.map(u => {
                     const s = stageStats[u.uid] || { postsCount: 0, totalLikes: 0 };
-                    const views = (currentStageId === 4) ? (stage4Views[u.uid] ?? u.totalVerseViews ?? 0) : 0;
+                    const views = (currentStageId === 4) ? (u.totalVerseViews || 0) : (stageViews[u.uid] ?? 0);
                     return { ...u, postsCount: s.postsCount, totalLikes: s.totalLikes, totalVerseViews: views };
                 });
                 leaderboardAllUsers = applyLeaderboardSort(users);
