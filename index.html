@@ -2285,7 +2285,7 @@
 
         async function fetchStageTeachersStats() {
             const q = window.query(window.collection(window.db, "posts"));
-            const snap = await window.getDocs(q);
+            const snap = await window.getDocsFromServer(q);
             const map = {};
             snap.forEach(doc => {
                 const d = doc.data();
@@ -2460,7 +2460,7 @@
 
         async function fetchStageLeaderboardStats() {
             const q = window.query(window.collection(window.db, "posts"));
-            const snap = await window.getDocs(q);
+            const snap = await window.getDocsFromServer(q);
             const map = {};
             snap.forEach(doc => {
                 const d = doc.data();
