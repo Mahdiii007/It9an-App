@@ -534,7 +534,7 @@
         .stat-chart-btn:hover { background: rgba(15, 76, 58, 0.08); }
         .stat-chart-btn.active { background: var(--primary); color: white; }
         .stat-chart-title { font-weight: bold; color: var(--primary); margin-bottom: 10px; font-size: 16px; }
-        .stat-bar-wrap { display: flex; align-items: flex-end; gap: 4px; height: 150px; padding: 10px 0; }
+        .stat-bar-wrap { display: flex; align-items: flex-end; gap: 4px; height: 150px; padding: 10px 0; overflow-x: auto; overflow-y: hidden; }
         .stat-bar-item { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; justify-content: flex-end; }
         .stat-bar-fill { width: 100%; min-height: 4px; background: linear-gradient(180deg, var(--primary) 0%, var(--primary-light) 100%); border-radius: 4px 4px 0 0; transition: height 0.3s ease; }
         .stat-bar-label { font-size: 11px; color: #666; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; text-align: center; }
@@ -716,7 +716,7 @@
                     <button class="stat-chart-btn" data-days="365">365 يوم</button>
                 </div>
                 <div class="stat-chart-title">التكرارات يومياً</div>
-                <div id="statChartRepetitionsCanvas" style="height:180px; position:relative;"></div>
+                <div id="statChartRepetitionsCanvas" style="height:180px; position:relative; overflow-x:auto;"></div>
             </div>
             <div id="statChartRecordings" class="stat-chart-wrap" style="display:none; margin-top:15px; padding:15px; background:#f9f9f9; border-radius:12px;">
                 <div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;">
@@ -725,7 +725,7 @@
                     <button class="stat-chart-btn" data-days="365">365 يوم</button>
                 </div>
                 <div class="stat-chart-title">التسجيلات يومياً</div>
-                <div id="statChartRecordingsCanvas" style="height:180px; position:relative;"></div>
+                <div id="statChartRecordingsCanvas" style="height:180px; position:relative; overflow-x:auto;"></div>
             </div>
         </div>
         <h2 class="stages-title">اختر المرحلة</h2>
@@ -2535,13 +2535,23 @@
                     const id = doc.id;
                     if (id >= startStr && id <= endStr) map[id] = doc.data().repetitions || 0;
                 });
+                const hasAny = Object.values(map).some(v => v > 0);
+                if (!hasAny) {
+                    const statsSnap = await window.getDocs(window.query(window.collection(window.db, "stats")));
+                    let total = 0;
+                    statsSnap.forEach(d => { total += (d.data().totalRepetitions || 0); });
+                    if (total > 0) map[endStr] = total;
+                }
             } else {
                 const postsSnap = await window.getDocs(window.query(window.collection(window.db, "posts"), window.where("role", "==", "student")));
+                startDate.setHours(0, 0, 0, 0);
+                const endDate = new Date(now);
+                endDate.setHours(23, 59, 59, 999);
                 const startMs = startDate.getTime();
-                const endMs = now.getTime() + 86400000;
+                const endMs = endDate.getTime();
                 postsSnap.forEach(doc => {
                     const ts = doc.data().timestamp;
-                    const ms = ts && ts.toMillis ? ts.toMillis() : (ts || 0);
+                    const ms = (ts && typeof ts.toMillis === 'function') ? ts.toMillis() : (typeof ts === 'number' ? ts : (ts && ts.seconds ? ts.seconds * 1000 : 0));
                     if (ms >= startMs && ms <= endMs) {
                         const dateStr = getDateStr(new Date(ms));
                         if (map.hasOwnProperty(dateStr)) map[dateStr] = (map[dateStr] || 0) + 1;
@@ -2557,22 +2567,24 @@
             const maxVal = Math.max(1, ...data.map(x => x.val));
             const wrap = document.createElement('div');
             wrap.className = 'stat-bar-wrap';
+            const minW = data.length > 60 ? 6 : (data.length > 14 ? 14 : 24);
             let html = '';
             data.forEach(({ date, val }) => {
                 const pct = maxVal > 0 ? (val / maxVal) * 100 : 0;
                 const shortDate = date.slice(5);
-                html += `<div class="stat-bar-item" title="${date}: ${val}"><div class="stat-bar-fill" style="height:${Math.max(4, pct)}%"></div><div class="stat-bar-label">${shortDate}<br>${val}</div></div>`;
+                const h = val > 0 ? Math.max(8, pct) : 0;
+                html += `<div class="stat-bar-item" style="min-width:${minW}px" title="${date}: ${val}"><div class="stat-bar-fill" style="height:${h}%"></div><div class="stat-bar-label">${shortDate}<br>${val}</div></div>`;
             });
             wrap.innerHTML = html;
             container.appendChild(wrap);
         }
         let lastOpenStatChart = null;
-        async function showStatChart(type, days) {
+        async function showStatChart(type, days, fromPeriodBtn) {
             const field = type === 'repetitions' ? 'repetitions' : 'recordings';
             const chartEl = type === 'repetitions' ? document.getElementById('statChartRepetitions') : document.getElementById('statChartRecordings');
             const otherEl = type === 'repetitions' ? document.getElementById('statChartRecordings') : document.getElementById('statChartRepetitions');
             const canvasId = type === 'repetitions' ? 'statChartRepetitionsCanvas' : 'statChartRecordingsCanvas';
-            if (lastOpenStatChart === type) { chartEl.style.display = 'none'; lastOpenStatChart = null; return; }
+            if (!fromPeriodBtn && lastOpenStatChart === type) { chartEl.style.display = 'none'; lastOpenStatChart = null; return; }
             lastOpenStatChart = type;
             otherEl.style.display = 'none';
             chartEl.style.display = 'block';
@@ -2586,9 +2598,10 @@
             document.getElementById('statRecordingsWrap').onclick = () => { const d = document.querySelector('#statChartRecordings .stat-chart-btn.active'); showStatChart('recordings', d ? parseInt(d.dataset.days,10) : 7); };
             document.querySelectorAll('#statChartRepetitions .stat-chart-btn, #statChartRecordings .stat-chart-btn').forEach(btn => {
                 btn.onclick = (e) => {
+                    e.stopPropagation();
                     const days = parseInt(e.target.dataset.days, 10);
                     const isRep = e.target.closest('#statChartRepetitions');
-                    showStatChart(isRep ? 'repetitions' : 'recordings', days);
+                    showStatChart(isRep ? 'repetitions' : 'recordings', days, true);
                 };
             });
         }
