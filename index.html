@@ -527,6 +527,17 @@
         .btn-play { background: var(--primary); border: 4px solid #fff; box-shadow: 0 4px 15px rgba(15, 76, 58, 0.3); }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
         @keyframes fadeOut { 0% { opacity: 1; } 70% { opacity: 1; } 100% { opacity: 0; } }
+        .stat-clickable { cursor: pointer; padding: 4px 8px; border-radius: 8px; }
+        .stat-clickable:hover { background: rgba(15, 76, 58, 0.1); }
+        .stat-chart-wrap { border: 1px solid #eee; }
+        .stat-chart-btn { padding: 6px 12px; border-radius: 8px; border: 1px solid var(--primary); background: white; color: var(--primary); font-family: 'Amiri'; font-size: 14px; cursor: pointer; }
+        .stat-chart-btn:hover { background: rgba(15, 76, 58, 0.08); }
+        .stat-chart-btn.active { background: var(--primary); color: white; }
+        .stat-chart-title { font-weight: bold; color: var(--primary); margin-bottom: 10px; font-size: 16px; }
+        .stat-bar-wrap { display: flex; align-items: flex-end; gap: 4px; height: 150px; padding: 10px 0; }
+        .stat-bar-item { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; justify-content: flex-end; }
+        .stat-bar-fill { width: 100%; min-height: 4px; background: linear-gradient(180deg, var(--primary) 0%, var(--primary-light) 100%); border-radius: 4px 4px 0 0; transition: height 0.3s ease; }
+        .stat-bar-label { font-size: 11px; color: #666; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; text-align: center; }
     </style>
 
     <script type="module">
@@ -693,10 +704,28 @@
         <div id="app-stats-card" class="leaderboard-card" style="margin-bottom:20px;">
             <div class="lb-title">📊 إحصائيات التطبيق</div>
             <div id="appStatsContent" style="display:flex; flex-wrap:wrap; justify-content:space-around; align-items:center; gap:8px; padding:10px 0; font-size:15px;">
-                <span title="إجمالي التكرارات">👁️ <span id="statRepetitions">—</span></span>
-                <span title="تسجيلات الطلاب">🎤 <span id="statStudentRecordings">—</span></span>
+                <span class="stat-clickable" id="statRepetitionsWrap" title="اضغط لعرض الرسم البياني"><span title="إجمالي التكرارات">👁️ <span id="statRepetitions">—</span></span></span>
+                <span class="stat-clickable" id="statRecordingsWrap" title="اضغط لعرض الرسم البياني"><span title="تسجيلات الطلاب">🎤 <span id="statStudentRecordings">—</span></span></span>
                 <span title="عدد الطلاب">🎓 <span id="statStudents">—</span></span>
                 <span title="عدد المعلمين">👨‍🏫 <span id="statTeachers">—</span></span>
+            </div>
+            <div id="statChartRepetitions" class="stat-chart-wrap" style="display:none; margin-top:15px; padding:15px; background:#f9f9f9; border-radius:12px;">
+                <div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;">
+                    <button class="stat-chart-btn active" data-days="7">7 أيام</button>
+                    <button class="stat-chart-btn" data-days="30">30 يوم</button>
+                    <button class="stat-chart-btn" data-days="365">365 يوم</button>
+                </div>
+                <div class="stat-chart-title">التكرارات يومياً</div>
+                <div id="statChartRepetitionsCanvas" style="height:180px; position:relative;"></div>
+            </div>
+            <div id="statChartRecordings" class="stat-chart-wrap" style="display:none; margin-top:15px; padding:15px; background:#f9f9f9; border-radius:12px;">
+                <div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;">
+                    <button class="stat-chart-btn active" data-days="7">7 أيام</button>
+                    <button class="stat-chart-btn" data-days="30">30 يوم</button>
+                    <button class="stat-chart-btn" data-days="365">365 يوم</button>
+                </div>
+                <div class="stat-chart-title">التسجيلات يومياً</div>
+                <div id="statChartRecordingsCanvas" style="height:180px; position:relative;"></div>
             </div>
         </div>
         <h2 class="stages-title">اختر المرحلة</h2>
@@ -1034,6 +1063,7 @@
                 grid.appendChild(div);
             }
             if (typeof window.updateStageNotifBadges === 'function') window.updateStageNotifBadges();
+            if (typeof initStatCharts === 'function') initStatCharts();
         }
         (async function initManifest() {
             KURS_DATEN = await loadManifestForStage(4);
@@ -1047,6 +1077,17 @@
                 if (fid >= start && fid <= end) {
                     return { lesson: i + 1, verse: fid - start + 1 };
                 }
+            }
+            return { lesson: 0, verse: fid };
+        }
+        async function getLessonVerseForStageFile(stageId, fileId) {
+            let kurs = await loadManifestForStage(stageId);
+            if (kurs.length === 0 && stageId === 4) kurs = buildKursFromVerses(VERS_PRO_LEKTION_FALLBACK);
+            const fid = parseInt(fileId, 10);
+            for (let i = 0; i < kurs.length; i++) {
+                const start = kurs[i].startGlobalId;
+                const end = start + kurs[i].verse - 1;
+                if (fid >= start && fid <= end) return { lesson: i + 1, verse: fid - start + 1 };
             }
             return { lesson: 0, verse: fid };
         }
@@ -2476,6 +2517,82 @@
             } catch(e) { console.warn("loadAppStats:", e); }
         }
 
+        function getDateStr(d) { return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+        async function fetchDailyStats(days, field) {
+            const map = {};
+            const now = new Date();
+            for (let i = days - 1; i >= 0; i--) {
+                const d = new Date(now); d.setDate(d.getDate() - i);
+                map[getDateStr(d)] = 0;
+            }
+            const startDate = new Date(now); startDate.setDate(startDate.getDate() - days + 1);
+            const startStr = getDateStr(startDate);
+            const endStr = getDateStr(now);
+            if (field === 'repetitions') {
+                const q = window.query(window.collection(window.db, "dailyStats"));
+                const snap = await window.getDocs(q);
+                snap.forEach(doc => {
+                    const id = doc.id;
+                    if (id >= startStr && id <= endStr) map[id] = doc.data().repetitions || 0;
+                });
+            } else {
+                const postsSnap = await window.getDocs(window.query(window.collection(window.db, "posts"), window.where("role", "==", "student")));
+                const startMs = startDate.getTime();
+                const endMs = now.getTime() + 86400000;
+                postsSnap.forEach(doc => {
+                    const ts = doc.data().timestamp;
+                    const ms = ts && ts.toMillis ? ts.toMillis() : (ts || 0);
+                    if (ms >= startMs && ms <= endMs) {
+                        const dateStr = getDateStr(new Date(ms));
+                        if (map.hasOwnProperty(dateStr)) map[dateStr] = (map[dateStr] || 0) + 1;
+                    }
+                });
+            }
+            return Object.entries(map).sort((a,b) => a[0].localeCompare(b[0])).map(([date, val]) => ({ date, val }));
+        }
+        function renderStatChart(containerId, data) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            container.innerHTML = '';
+            const maxVal = Math.max(1, ...data.map(x => x.val));
+            const wrap = document.createElement('div');
+            wrap.className = 'stat-bar-wrap';
+            let html = '';
+            data.forEach(({ date, val }) => {
+                const pct = maxVal > 0 ? (val / maxVal) * 100 : 0;
+                const shortDate = date.slice(5);
+                html += `<div class="stat-bar-item" title="${date}: ${val}"><div class="stat-bar-fill" style="height:${Math.max(4, pct)}%"></div><div class="stat-bar-label">${shortDate}<br>${val}</div></div>`;
+            });
+            wrap.innerHTML = html;
+            container.appendChild(wrap);
+        }
+        let lastOpenStatChart = null;
+        async function showStatChart(type, days) {
+            const field = type === 'repetitions' ? 'repetitions' : 'recordings';
+            const chartEl = type === 'repetitions' ? document.getElementById('statChartRepetitions') : document.getElementById('statChartRecordings');
+            const otherEl = type === 'repetitions' ? document.getElementById('statChartRecordings') : document.getElementById('statChartRepetitions');
+            const canvasId = type === 'repetitions' ? 'statChartRepetitionsCanvas' : 'statChartRecordingsCanvas';
+            if (lastOpenStatChart === type) { chartEl.style.display = 'none'; lastOpenStatChart = null; return; }
+            lastOpenStatChart = type;
+            otherEl.style.display = 'none';
+            chartEl.style.display = 'block';
+            chartEl.querySelectorAll('.stat-chart-btn').forEach(btn => { btn.classList.toggle('active', parseInt(btn.dataset.days,10) === days); });
+            document.getElementById(canvasId).innerHTML = '<div style="text-align:center; padding:40px; color:#999;">جاري التحميل...</div>';
+            const data = await fetchDailyStats(days, field);
+            renderStatChart(canvasId, data);
+        }
+        function initStatCharts() {
+            document.getElementById('statRepetitionsWrap').onclick = () => { const d = document.querySelector('#statChartRepetitions .stat-chart-btn.active'); showStatChart('repetitions', d ? parseInt(d.dataset.days,10) : 7); };
+            document.getElementById('statRecordingsWrap').onclick = () => { const d = document.querySelector('#statChartRecordings .stat-chart-btn.active'); showStatChart('recordings', d ? parseInt(d.dataset.days,10) : 7); };
+            document.querySelectorAll('#statChartRepetitions .stat-chart-btn, #statChartRecordings .stat-chart-btn').forEach(btn => {
+                btn.onclick = (e) => {
+                    const days = parseInt(e.target.dataset.days, 10);
+                    const isRep = e.target.closest('#statChartRepetitions');
+                    showStatChart(isRep ? 'repetitions' : 'recordings', days);
+                };
+            });
+        }
+
         async function fetchStageLeaderboardStats() {
             const q = window.query(window.collection(window.db, "posts"));
             const snap = await window.getDocsFromServer(q);
@@ -3437,8 +3554,17 @@
 
                 notifs.forEach(n => {
                     let text = "";
-                    if(n.type === 'new_recording') text = `🎤 تسجيل جديد من ${stripYearFromName(n.senderName || '')}`;
-                    if(n.type === 'reply') text = `✍️ رد جديد من ${stripYearFromName(n.senderName || '')}`;
+                    const stageNum = n.stageId != null ? n.stageId : '';
+                    const stageName = (n.stageName || '').trim();
+                    const lessonNum = n.lessonNum != null ? n.lessonNum : '';
+                    const verseNum = n.verseNum != null ? n.verseNum : '';
+                    const parts = [];
+                    if (stageNum) parts.push('مرحلة ' + stageNum + (stageName ? ' ' + stageName : ''));
+                    if (lessonNum) parts.push('درس ' + lessonNum);
+                    if (verseNum) parts.push('مقطع ' + verseNum);
+                    const detailSuffix = parts.length ? ' — ' + parts.join(' • ') : '';
+                    if(n.type === 'new_recording') text = `🎤 تسجيل جديد من الطالب ${stripYearFromName(n.senderName || '')}` + detailSuffix;
+                    if(n.type === 'reply') text = `✍️ رد جديد من المعلم ${stripYearFromName(n.senderName || '')}` + detailSuffix;
                     if(n.type === 'admin_message') text = n.subtype === 'private_reply' ? `💬 رد من ${stripYearFromName(n.senderName || '')}` : (n.subtype === 'user_contact' ? `📩 رسالة من ${stripYearFromName(n.senderName || '')}` : `📩 رسالة من المسؤول`);
                     let notifDateStr = formatDateTime(n.timestamp);
                     const fileId = n.fileId || '';
@@ -4729,14 +4855,19 @@
                     }
                     const targetPost = allLoadedPosts.find(p => p.id === replyTargetId);
                     if(targetPost) {
-                       await window.addDoc(window.collection(window.db, "notifications"), {
+                        const lv = getLessonVerseFromFileId(currentGlobalFileId);
+                        const stageCfg = getStageConfig(currentStageId);
+                        await window.addDoc(window.collection(window.db, "notifications"), {
                            to: targetPost.uid,
-                           senderName: role === 'teacher' ? "المعلم" : stripYearFromName(name),
+                           senderName: stripYearFromName(name || ''),
                            type: 'reply',
                            fileId: String(currentGlobalFileId),
                            postId: replyTargetId,
                            replyTimestamp: replyTs,
                            stageId: currentStageId,
+                           stageName: stageCfg.name,
+                           lessonNum: lv.lesson,
+                           verseNum: lv.verse,
                            timestamp: window.serverTimestamp()
                        });
                        if (role === 'teacher' && targetPost.role === 'student') {
@@ -4765,6 +4896,10 @@
                     try { await window.updateDoc(userRef, { postsCount: window.increment(1) }); } catch(e){}
 
                     if(role === 'student') {
+                        const today = (function(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); })();
+                        window.setDoc(window.doc(window.db, "dailyStats", today), { recordings: window.increment(1) }, { merge: true }).catch(()=>{});
+                        const lv = getLessonVerseFromFileId(currentGlobalFileId);
+                        const stageCfg = getStageConfig(currentStageId);
                         await window.addDoc(window.collection(window.db, "notifications"), {
                            to: "teachers",
                            senderName: stripYearFromName(name),
@@ -4772,6 +4907,9 @@
                            fileId: String(currentGlobalFileId),
                            postId: postRef.id,
                            stageId: currentStageId,
+                           stageName: stageCfg.name,
+                           lessonNum: lv.lesson,
+                           verseNum: lv.verse,
                            clearedBy: [],
                            timestamp: window.serverTimestamp()
                        });
@@ -4830,6 +4968,8 @@
                         if(uid === 'guest') updates[`viewers.${uid}.name`] = 'ضيف';
                         else if(myName && !isHidden) updates[`viewers.${uid}.name`] = myName;
                         await window.updateDoc(sRef, updates);
+                        const today = (function(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); })();
+                        window.setDoc(window.doc(window.db, "dailyStats", today), { repetitions: window.increment(1) }, { merge: true }).catch(()=>{});
                     } catch(e){}
                 }
                 if(document.getElementById('globalGap').checked) {
@@ -5043,13 +5183,19 @@
                     const nq = window.query(window.collection(window.db, "notifications"), window.where("to", "==", "teachers"), window.where("postId", "==", doc.id), window.where("type", "==", "new_recording"));
                     const nsnap = await window.getDocs(nq);
                     if (nsnap.empty) {
+                        const stageId = d.stageId != null ? d.stageId : 4;
+                        const lv = await getLessonVerseForStageFile(stageId, d.fileId || '1');
+                        const stageCfg = getStageConfig(stageId);
                         await window.addDoc(window.collection(window.db, "notifications"), {
                             to: "teachers",
                             senderName: stripYearFromName(d.name || 'طالب'),
                             type: 'new_recording',
                             fileId: String(d.fileId || '1'),
                             postId: doc.id,
-                            stageId: (d.stageId != null ? d.stageId : 4),
+                            stageId: stageId,
+                            stageName: stageCfg.name,
+                            lessonNum: lv.lesson,
+                            verseNum: lv.verse,
                             clearedBy: [],
                             timestamp: window.serverTimestamp()
                         });
@@ -5417,8 +5563,8 @@
           }
           if (tokens.length === 0) return;
           let title = 'تطبيق إتقان'; let body = 'إشعار جديد';
-          if (d.type === 'reply') body = 'رد جديد من ' + (d.senderName || '');
-          if (d.type === 'new_recording') body = 'تسجيل جديد من ' + (d.senderName || '');
+          if (d.type === 'reply') body = 'رد جديد من المعلم ' + (d.senderName || '');
+          if (d.type === 'new_recording') body = 'تسجيل جديد من الطالب ' + (d.senderName || '');
           if (d.type === 'admin_message') body = (d.subtype === 'user_contact' && d.senderName) ? ('رسالة من ' + d.senderName) : 'رسالة من المسؤول';
           await admin.messaging().sendEachForMulticast({ tokens, notification: { title, body }, webpush: { notification: { vibrate: [200,100,200], requireInteraction: false } }, android: { priority: 'high', notification: { sound: 'default', defaultVibrateTimings: true } }, apns: { payload: { aps: { sound: 'default', contentAvailable: true } } } });
         });
