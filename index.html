@@ -329,16 +329,17 @@
         .nav-btn:active { background: var(--gold-light); }
         .arrow-icon { direction: ltr; display: inline-block; }
 
-        #verse-list-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; max-width: 100vw; height: 100%; background: rgba(0,0,0,0.7); z-index: 3000; overflow-x: hidden; overflow-y: auto; padding: 10px; box-sizing: border-box; }
+        #verse-list-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; max-width: 100vw; height: 100%; background: rgba(0,0,0,0.92); z-index: 3000; overflow-x: hidden; overflow-y: auto; padding: 10px; box-sizing: border-box; }
         .verse-list-content { position: relative; background: var(--surface); border-radius: 15px; padding: 15px; width: 100%; max-width: calc(100vw - 20px); margin: 0 auto; box-sizing: border-box; }
         .verse-list-header { position: relative; padding-right: 44px; margin-bottom: 15px; }
         .verse-list-title { text-align: center; font-weight: bold; color: var(--primary); margin: 0; font-size: 18px; }
         .verse-list-grid { display: flex; flex-direction: column; gap: 12px; }
-        .verse-list-item { background: var(--surface); border-radius: 12px; overflow: hidden; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border: 2px solid transparent; display: flex; flex-direction: column; width: 100%; }
-        .verse-list-item:not(.verse-current) { border: 2px solid transparent !important; box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important; }
+        .verse-list-item { background: var(--surface); border-radius: 12px; overflow: hidden; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border: 2px solid transparent; display: flex; flex-direction: column; width: 100%; outline: none; }
+        .verse-list-item:not(.verse-current) { border: 2px solid transparent !important; box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important; outline: none !important; }
         .verse-list-item:hover:not(.verse-current) { border-color: rgba(212, 175, 55, 0.4) !important; }
         .verse-list-item.verse-current { border: 4px solid var(--gold) !important; box-shadow: 0 0 0 3px var(--gold) !important; }
-        .verse-list-item img { width: 100%; max-width: 100%; height: auto; display: block; object-fit: contain; }
+        #verse-list-grid .verse-list-item:first-child:not(.verse-current) { border: 2px solid transparent !important; box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important; outline: none !important; }
+        .verse-list-item img { width: 100%; max-width: 100%; height: auto; display: block; object-fit: contain; border: none; outline: none; }
         .verse-list-item span { text-align: center; padding: 8px; font-size: 14px; font-weight: bold; color: var(--primary); }
 
         /* SETTINGS: one line - pause, checkbox, repeats input and label */
@@ -4393,6 +4394,7 @@
                     el.classList.add('verse-current');
                 }
             });
+            if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
             document.getElementById('verse-list-modal').style.display = 'block';
         }
         window.hideVerseList = function() { document.getElementById('verse-list-modal').style.display = 'none'; }
