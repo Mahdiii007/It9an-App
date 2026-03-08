@@ -125,7 +125,7 @@
         }
 
         /* --- STAGES VIEW --- */
-        #stages-view { display: none; width: 100%; max-width: 100%; overflow-x: hidden; overflow-y: visible; padding: 20px 15px; min-height: 300px; }
+        #stages-view { display: none; width: 100%; max-width: 100%; overflow-x: hidden; padding: 20px 15px; }
         .stages-title { text-align: center; color: var(--primary); font-size: 24px; font-weight: bold; margin-bottom: 25px; }
         .stages-grid { display: flex; flex-direction: column; gap: 20px; max-width: 500px; margin: 0 auto; }
         .stage-card { 
@@ -784,18 +784,15 @@
         </div>
         <h2 class="stages-title">اختر المرحلة</h2>
         <div class="stages-grid" id="stages-grid"></div>
-        <button id="stagesSettingsToggleBtn" class="verse-list-btn" style="margin-top:20px; width:100%; max-width:500px; margin-left:auto; margin-right:auto; display:block;" onclick="toggleStagesSettings()">⚙️ الإعدادات ▲</button>
-        <div id="stages-settings-panel" style="display:block; margin-top:12px;">
-            <button id="addToHomeBtnStages" class="setup-step-btn" style="margin: 0 0 8px 0; display:none;" onclick="handleAddToHomeScreen()"><span class="step-main">📱 1. إضافة إلى الشاشة الرئيسية</span><span class="step-note">(تثبيت التطبيق على الشاشة الرئيسية)</span></button>
-            <button id="pushEnableBtnStages" class="setup-step-btn" style="margin: 0 0 8px 0; display:none;" onclick="enablePushNotifications()"><span class="step-main">🔔 2. تفعيل الإشعارات على الشاشة</span><span class="step-note">(تفعيل الإشعارات في التطبيق وليس في المتصفح)</span></button>
-            <button id="microEnableBtnStages" class="setup-step-btn" style="margin: 0 0 8px 0; display:none;" onclick="enableMicrophonePermission()"><span class="step-main">🎤 3. تفعيل الميكروفون للتسجيل</span><span class="step-note">(تفعيل الميكروفون في التطبيق وليس في المتصفح)</span></button>
-            <button id="contactAdminBtnStages" class="verse-list-btn" style="margin: 0 0 0 0; display:none; background:var(--primary); color:white; border-color:var(--gold);" onclick="showContactAdminView()">📩 تواصل مع المسؤول</button>
-            <div id="teacher-notif-stages-section" class="leaderboard-card" style="margin-top:15px; display:none;">
-                <div class="lb-title">🔔 إشعارات المراحل</div>
-                <div style="font-size:14px; color:#666; margin-bottom:10px;">اختر المراحل التي تريد استقبال إشعاراتها (تسجيلات وردود)</div>
-                <div id="teacher-notif-stages-checkboxes" style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:10px;"></div>
-                <button id="teacherNotifStagesSaveBtn" class="verse-list-btn" style="font-size:14px; padding:8px 14px;" onclick="saveTeacherNotifStages()">💾 حفظ</button>
-            </div>
+        <button id="addToHomeBtnStages" class="setup-step-btn" style="margin: 20px 0 8px 0; display:none;" onclick="handleAddToHomeScreen()"><span class="step-main">📱 1. إضافة إلى الشاشة الرئيسية</span><span class="step-note">(تثبيت التطبيق على الشاشة الرئيسية)</span></button>
+        <button id="pushEnableBtnStages" class="setup-step-btn" style="margin: 0 0 8px 0; display:none;" onclick="enablePushNotifications()"><span class="step-main">🔔 2. تفعيل الإشعارات على الشاشة</span><span class="step-note">(تفعيل الإشعارات في التطبيق وليس في المتصفح)</span></button>
+        <button id="microEnableBtnStages" class="setup-step-btn" style="margin: 0 0 8px 0; display:none;" onclick="enableMicrophonePermission()"><span class="step-main">🎤 3. تفعيل الميكروفون للتسجيل</span><span class="step-note">(تفعيل الميكروفون في التطبيق وليس في المتصفح)</span></button>
+        <button id="contactAdminBtnStages" class="verse-list-btn" style="margin: 15px 0 0 0; display:none; background:var(--primary); color:white; border-color:var(--gold);" onclick="showContactAdminView()">📩 تواصل مع المسؤول</button>
+        <div id="teacher-notif-stages-section" class="leaderboard-card" style="margin-top:20px; display:none;">
+            <div class="lb-title">🔔 إشعارات المراحل</div>
+            <div style="font-size:14px; color:#666; margin-bottom:10px;">اختر المراحل التي تريد استقبال إشعاراتها (تسجيلات وردود)</div>
+            <div id="teacher-notif-stages-checkboxes" style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:10px;"></div>
+            <button id="teacherNotifStagesSaveBtn" class="verse-list-btn" style="font-size:14px; padding:8px 14px;" onclick="saveTeacherNotifStages()">💾 حفظ</button>
         </div>
     </div>
 
@@ -1166,14 +1163,6 @@
             if (typeof window.updateStageNotifBadges === 'function') window.updateStageNotifBadges();
             setTimeout(() => { if (typeof window.updateStageNotifBadges === 'function') window.updateStageNotifBadges(); }, 400);
             if (typeof initStatCharts === 'function') initStatCharts();
-        }
-        window.toggleStagesSettings = function() {
-            const panel = document.getElementById('stages-settings-panel');
-            const btn = document.getElementById('stagesSettingsToggleBtn');
-            if (!panel || !btn) return;
-            const isOpen = panel.style.display !== 'none';
-            panel.style.display = isOpen ? 'none' : 'block';
-            btn.innerHTML = isOpen ? '⚙️ الإعدادات ▼' : '⚙️ الإعدادات ▲';
         }
         (async function initManifest() {
             KURS_DATEN = await loadManifestForStage(4);
