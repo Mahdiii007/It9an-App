@@ -652,6 +652,18 @@
         </div>
     </div>
 
+    <div id="guest-register-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:5001; overflow-y:auto; padding:15px; box-sizing:border-box;" onclick="if(event.target===this) hideGuestRegisterModal()">
+        <div class="verse-list-content" onclick="event.stopPropagation()" style="max-width:420px; margin:40px auto;">
+            <div class="verse-list-title" style="margin-bottom:15px;">🎤 التسجيل الصوتي</div>
+            <div style="text-align:right; line-height:1.7; font-size:15px; color:#333; margin-bottom:20px;">
+                <p style="margin:0 0 12px 0;">يجب عليك التسجيل كطالب للتسجيل الصوتي.</p>
+                <p style="margin:0 0 12px 0;">إذا رغبت، <a href="#" onclick="hideGuestRegisterModal(); showGuestRegistrationFlow(); return false;" style="color:var(--primary); font-weight:bold; text-decoration:underline;">انقر هنا</a> – وستحصل على رمز شخصي يجب أن تحفظه وتستخدمه في المستقبل بدلاً من رمز الضيف 0000.</p>
+                <p style="margin:0;">للتسجيل استخدم الرمز <strong>1234</strong>.</p>
+            </div>
+            <button class="verse-list-btn" onclick="hideGuestRegisterModal()">إغلاق</button>
+        </div>
+    </div>
+
     <div id="install-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:5001; overflow-y:auto; padding:15px; box-sizing:border-box;" onclick="if(event.target===this) hideInstallModal()">
         <div class="verse-list-content" onclick="event.stopPropagation()" style="max-width:400px; margin:20px auto;">
             <div class="verse-list-title">📱 إضافة إلى الشاشة الرئيسية</div>
@@ -921,8 +933,9 @@
         const ADMIN_PIN = "1879";
         const TEACHER_LOTFI_PIN = "9898";
         const TEACHER_FATHIA_PIN = "9797";
+        const TEACHER_MAHDI_PIN = "9696";
         const MAINTENANCE_EXEMPT_STUDENT_PIN = "0860";
-        const RESERVED_PINS = ["9898", "1879", "9797"];
+        const RESERVED_PINS = ["9898", "1879", "9797", "9696"];
         (function storePushParamsIfNeeded() {
             const params = new URLSearchParams(window.location.search);
             const postId = params.get('postId'), fileId = params.get('fileId'), notifId = params.get('notifId') || '';
@@ -949,6 +962,24 @@
             document.getElementById('login-pin-mode').style.display = 'none';
             document.getElementById('login-classic-mode').style.display = 'block';
             document.getElementById('pinInput').value = '';
+        }
+        window.hideGuestRegisterModal = function() {
+            const m = document.getElementById('guest-register-modal');
+            if (m) m.style.display = 'none';
+        }
+        window.showGuestRegisterModal = function() {
+            const m = document.getElementById('guest-register-modal');
+            if (m) m.style.display = 'block';
+        }
+        window.showGuestRegistrationFlow = function() {
+            localStorage.removeItem('it9an_uid');
+            localStorage.removeItem('it9an_role');
+            localStorage.removeItem('it9an_name');
+            localStorage.removeItem('it9an_pin');
+            document.getElementById('login-screen').style.display = 'flex';
+            showClassicLogin();
+            const pinEl = document.getElementById('classicPinInput');
+            if (pinEl) pinEl.value = '1234';
         }
         window.showPinLogin = function() {
             document.getElementById('login-classic-mode').style.display = 'none';
@@ -1583,7 +1614,7 @@
             } catch(e) {}
         })();
 
-        function getDisplayName(u) { const n = (u && (u.baseName || (u.name ? String(u.name).replace(/\s*\(\d{4}\)\s*$/, '').trim() : '') || u.name || '')).trim() || ''; if (n === 'فتحية مقني') return 'Fathia Makni'; return n; }
+        function getDisplayName(u) { if (u && String(u.personalPin || '').trim() === '9797') return 'Fathia Makni'; const n = (u && (u.baseName || (u.name ? String(u.name).replace(/\s*\(\d{4}\)\s*$/, '').trim() : '') || u.name || '')).trim() || ''; if (n === 'فتحية مقني') return 'Fathia Makni'; return n; }
         function formatDateLatin(ts) {
             if (!ts) return '—';
             let ms = 0;
@@ -1654,7 +1685,30 @@
             if (!pin || pin.length !== 4) { alert("الرجاء إدخال رمز من 4 أرقام"); return; }
             if (btn) { btn.disabled = true; btn.innerText = "جاري..."; }
             try {
-            const isExemptFromMaintenance = (pin === TEACHER_LOTFI_PIN || pin === TEACHER_FATHIA_PIN || pin === MAINTENANCE_EXEMPT_STUDENT_PIN || pin === ADMIN_PIN);
+            const isExemptFromMaintenance = (pin === TEACHER_LOTFI_PIN || pin === TEACHER_FATHIA_PIN || pin === TEACHER_MAHDI_PIN || pin === MAINTENANCE_EXEMPT_STUDENT_PIN || pin === ADMIN_PIN);
+            if (pin === TEACHER_MAHDI_PIN) {
+                const first = "Mahdi", last = "Fakhfakh", year = "1990", role = "teacher";
+                const fullNameRaw = first + " " + last;
+                const uniqueID = generateUserId(fullNameRaw, role, year);
+                const userRef = window.doc(window.db, "users", uniqueID);
+                let finalDisplayName = "Mahdi Fakhfakh";
+                try {
+                    const userSnap = await withTimeout(window.getDoc(userRef), 15000);
+                    if(userSnap.exists()) {
+                        if(userSnap.data().blocked) { alert("عذراً، تم حظر هذا الحساب."); return; }
+                        if(userSnap.data().name) finalDisplayName = userSnap.data().name;
+                        const up = { lastLogin: window.serverTimestamp(), personalPin: "9696" };
+                        if (!userSnap.data().firstLogin) up.firstLogin = window.serverTimestamp();
+                        await withTimeout(window.updateDoc(userRef, up), 10000);
+                    } else {
+                        const ts = window.serverTimestamp();
+                        await withTimeout(window.setDoc(userRef, { name: finalDisplayName, baseName: finalDisplayName, role, uid: uniqueID, year, personalPin: "9696", firstLogin: ts, createdAt: ts, lastLogin: ts, postsCount: 0, totalLikes: 0, totalVerseViews: 0, totalRepliesCount: 0, blocked: false }), 10000);
+                    }
+                } catch(e) { console.log("Login Error", e); }
+                try { localStorage.setItem('it9an_saved_pin', pin); } catch(e){}
+                doLoginSuccess(uniqueID, finalDisplayName, role, true, "9696");
+                return;
+            }
             if (pin === TEACHER_FATHIA_PIN) {
                 const first = "Fathia", last = "Makni", year = "0000", role = "teacher";
                 const fullNameRaw = first + " " + last;
@@ -1949,16 +2003,25 @@
             if (uid === 'admin_super') {
                 if(notifContainer) notifContainer.style.display = 'none';
                 recBtn.style.display = 'flex';
+                recBtn.style.opacity = '';
+                recBtn.style.cursor = '';
+                recBtn.title = '';
                 updateAppIconBadge(0);
                 getMaintenanceMode().then(on => updateMaintenanceButtonState(on));
             } else if (uid === 'guest' || role === 'guest') {
                 if(notifContainer) notifContainer.style.display = 'none';
-                recBtn.style.display = 'none';
+                recBtn.style.display = 'flex';
+                recBtn.style.opacity = '0.5';
+                recBtn.style.cursor = 'pointer';
+                recBtn.title = 'التسجيل مطلوب للتسجيل الصوتي - انقر للتفاصيل';
                 updateAppIconBadge(0);
                 if(adminMenuPanel) adminMenuPanel.style.display = 'none';
                 if(adminPlayerPanel) adminPlayerPanel.style.display = 'none';
             } else {
                 if(notifContainer) notifContainer.style.display = 'flex';
+                recBtn.style.opacity = '';
+                recBtn.style.cursor = '';
+                recBtn.title = '';
                 if (role === 'student') {
                     recBtn.style.display = 'flex';
                     if(adminMenuPanel) adminMenuPanel.style.display = 'none';
@@ -2436,11 +2499,12 @@
                 } else {
                     teachers.sort((a,b) => (b.totalRepliesCount || 0) - (a.totalRepliesCount || 0));
                 }
+                teachers = teachers.filter(t => (t.totalRepliesCount || 0) > 0);
                 leaderboardAllTeachers = teachers;
                 const list = document.getElementById('leaderboard-teachers-list');
                 if (!list) return;
                 list.innerHTML = "";
-                if (teachers.length === 0) { list.innerHTML = "<li style='text-align:center; color:#999; padding:10px;'>لا يوجد معلمون</li>"; return; }
+                if (teachers.length === 0) { list.innerHTML = "<li style='text-align:center; color:#999; padding:10px;'>لا يوجد معلمون في هذه المرحلة بعد</li>"; return; }
                 teachers.forEach((u, i) => {
                     adminUserRoles[u.uid] = 'teacher';
                     const rank = i + 1;
@@ -2568,10 +2632,11 @@
                 } else {
                     teachers.sort((a,b) => (b.totalRepliesCount || 0) - (a.totalRepliesCount || 0));
                 }
+                teachers = teachers.filter(t => (t.totalRepliesCount || 0) > 0);
                 leaderboardAllTeachers = teachers;
                 lastTeachersRefreshTime = Date.now();
                 list.innerHTML = "";
-                if (teachers.length === 0) { list.innerHTML = "<li style='text-align:center; color:#999; padding:10px;'>لا يوجد معلمون</li>"; if (onFirstRender) onFirstRender(); } else {
+                if (teachers.length === 0) { list.innerHTML = "<li style='text-align:center; color:#999; padding:10px;'>لا يوجد معلمون في هذه المرحلة بعد</li>"; if (onFirstRender) onFirstRender(); } else {
                 teachers.forEach((u, i) => {
                     adminUserRoles[u.uid] = 'teacher';
                     const rank = i + 1;
@@ -2632,9 +2697,10 @@
                 } else {
                     teachers.sort((a,b) => (b.totalRepliesCount || 0) - (a.totalRepliesCount || 0));
                 }
+                teachers = teachers.filter(t => (t.totalRepliesCount || 0) > 0);
                 leaderboardAllTeachers = teachers;
                 list.innerHTML = "";
-                if (teachers.length === 0) { list.innerHTML = "<li style='text-align:center; color:#999; padding:10px;'>لا يوجد معلمون</li>"; if (onFirstRender && firstSnap) { onFirstRender(); firstSnap = false; } return; }
+                if (teachers.length === 0) { list.innerHTML = "<li style='text-align:center; color:#999; padding:10px;'>لا يوجد معلمون في هذه المرحلة بعد</li>"; if (onFirstRender && firstSnap) { onFirstRender(); firstSnap = false; } return; }
                 teachers.forEach((u, i) => {
                     adminUserRoles[u.uid] = 'teacher';
                     const rank = i + 1;
@@ -5030,6 +5096,10 @@
         window.startReply = function(postId) { replyTargetId = postId; toggleRecord(); }
 
         window.toggleRecord = async function() {
+            if (localStorage.getItem('it9an_uid') === 'guest') {
+                showGuestRegisterModal();
+                return;
+            }
             if(isPlaying) stopLoop();
             const ui = document.getElementById('recording-ui');
             const statusText = document.getElementById('recText');
