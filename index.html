@@ -1157,13 +1157,16 @@
             return completed;
         }
         function invalidateCompletedVersesCache() { completedVersesCache = null; completedVersesCacheUid = null; completedVersesCacheStage = null; }
-        async function fetchAllStudentsWithProgress(mode, stageId, lessonIndex) {
+        async function fetchAllStudentsWithProgress(mode, stageId, lessonIndex, opts = {}) {
+            const { limit, offset = 0 } = opts;
             const q = window.query(window.collection(window.db, "users"), window.where("role", "==", "student"));
             const snap = await window.getDocsFromServer(q);
-            const students = [];
-            snap.forEach(doc => students.push({ ...doc.data(), uid: doc.data().uid || doc.id }));
-            const results = [];
-            for (const u of students) {
+            const allStudents = [];
+            snap.forEach(doc => allStudents.push({ ...doc.data(), uid: doc.data().uid || doc.id }));
+            const toProcess = limit != null
+                ? allStudents.slice(offset, offset + limit)
+                : allStudents.slice(offset);
+            const results = await Promise.all(toProcess.map(async (u) => {
                 let prog;
                 if (mode === 'stage') {
                     prog = await getStageProgressForStudent(u.uid, stageId);
@@ -1171,14 +1174,15 @@
                     const completed = await fetchCompletedVersesForStudent(u.uid, stageId);
                     prog = getLessonCompletion(lessonIndex, completed);
                 }
-                results.push({ ...u, ...prog });
-            }
+                return { ...u, ...prog };
+            }));
             invalidateCompletedVersesCache();
             return results.sort((a, b) => (b.percent || 0) - (a.percent || 0));
         }
         let studentsProgressModalAllStudents = [];
         let studentsProgressModalVisibleCount = 3;
         let studentsProgressModalIsLesson = false;
+        let studentsProgressModalLoadingRest = false;
         function renderStudentsProgressList() {
             const listEl = document.getElementById('students-progress-list');
             const showMoreBtn = document.getElementById('studentsProgressShowMoreBtn');
@@ -1201,6 +1205,9 @@
                 if (rank === 4) html += '<div class="lb-motivation" style="margin:15px 0 8px 0; font-size:14px; color:#666;">باقي الطلاب</div>';
                 html += `<li class="${cls}"><div class="lb-item"><div style="display:flex; align-items:center; gap:4px; flex-shrink:1; min-width:0;"><span class="lb-rank">#${rank}</span><span class="lb-name">${name || '—'}</span></div><div style="display:flex; align-items:center; gap:10px; flex-shrink:0;"><div style="width:80px; min-width:80px;"><div class="stage-progress-bar" style="height:8px;"><div class="stage-progress-fill" style="width:${u.percent || 0}%; background:${barClr};"></div></div></div><span class="lb-score">${u.completed || 0}/${u.total || 0} (${u.percent || 0}%)</span></div></div></li>`;
             });
+            if (studentsProgressModalLoadingRest) {
+                html += '<li style="text-align:center; color:#999; font-size:13px; padding:8px 0;">جاري تحميل الباقي...</li>';
+            }
             listEl.innerHTML = html;
         }
         window.showMoreStudentsProgress = function() {
@@ -1216,18 +1223,24 @@
             document.getElementById('students-progress-modal').style.display = 'block';
             document.getElementById('studentsProgressShowMoreBtn').style.display = 'none';
             try {
-                const students = await fetchAllStudentsWithProgress('stage', stageId, null);
-                studentsProgressModalAllStudents = students;
+                const first3 = await fetchAllStudentsWithProgress('stage', stageId, null, { limit: 3 });
+                studentsProgressModalAllStudents = first3;
                 studentsProgressModalVisibleCount = 3;
                 studentsProgressModalIsLesson = false;
+                studentsProgressModalLoadingRest = true;
                 if (!listEl) return;
-                if (students.length === 0) {
+                if (first3.length === 0) {
                     listEl.innerHTML = '<li style="text-align:center; color:#999; padding:15px;">لا يوجد طلاب بعد</li>';
                     return;
                 }
                 renderStudentsProgressList();
+                const rest = await fetchAllStudentsWithProgress('stage', stageId, null, { offset: 3 });
+                studentsProgressModalAllStudents = [...first3, ...rest].sort((a, b) => (b.percent || 0) - (a.percent || 0));
+                studentsProgressModalLoadingRest = false;
+                renderStudentsProgressList();
             } catch (e) {
                 console.error('showStudentsProgressForStage:', e);
+                studentsProgressModalLoadingRest = false;
                 if (listEl) listEl.innerHTML = '<li style="text-align:center; color:#c00; padding:15px;">خطأ في التحميل</li>';
             }
         };
@@ -1239,18 +1252,24 @@
             document.getElementById('students-progress-modal').style.display = 'block';
             document.getElementById('studentsProgressShowMoreBtn').style.display = 'none';
             try {
-                const students = await fetchAllStudentsWithProgress('lesson', currentStageId, lessonIndex);
-                studentsProgressModalAllStudents = students;
+                const first3 = await fetchAllStudentsWithProgress('lesson', currentStageId, lessonIndex, { limit: 3 });
+                studentsProgressModalAllStudents = first3;
                 studentsProgressModalVisibleCount = 3;
                 studentsProgressModalIsLesson = true;
+                studentsProgressModalLoadingRest = true;
                 if (!listEl) return;
-                if (students.length === 0) {
+                if (first3.length === 0) {
                     listEl.innerHTML = '<li style="text-align:center; color:#999; padding:15px;">لا يوجد طلاب بعد</li>';
                     return;
                 }
                 renderStudentsProgressList();
+                const rest = await fetchAllStudentsWithProgress('lesson', currentStageId, lessonIndex, { offset: 3 });
+                studentsProgressModalAllStudents = [...first3, ...rest].sort((a, b) => (b.percent || 0) - (a.percent || 0));
+                studentsProgressModalLoadingRest = false;
+                renderStudentsProgressList();
             } catch (e) {
                 console.error('showStudentsProgressForLesson:', e);
+                studentsProgressModalLoadingRest = false;
                 if (listEl) listEl.innerHTML = '<li style="text-align:center; color:#c00; padding:15px;">خطأ في التحميل</li>';
             }
         };
@@ -3827,7 +3846,7 @@
                 document.getElementById('menu-view').style.display = 'none';
                 document.getElementById('notifications-view').style.display = 'none';
                 document.getElementById('player-view').style.display = 'block';
-                document.getElementById('appFooter').style.display = '';
+                document.getElementById('appFooter').style.display = 'flex';
                 const menuBtn = document.getElementById('menuBtn'); if (menuBtn) menuBtn.style.display = 'flex';
                 if (currentLessonIdx !== null && KURS_DATEN[currentLessonIdx]) {
                     const lessonId = KURS_DATEN[currentLessonIdx].id;
@@ -4340,15 +4359,18 @@
             }
             for(let v = 1; v <= lesson.verse; v++) {
                 const globalId = lesson.startGlobalId + v - 1;
-                const isActive = (globalId === currentGlobalFileId);
                 const isCompleted = completedVerses.has(String(globalId));
                 const statusSpan = (uid && userRole === 'student') ? `<span style="font-size:11px; color:${isCompleted?'#2e7d32':'#e65100'};">${isCompleted ? 'منجز' : 'لم يُنجز بعد'}</span>` : '';
                 const div = document.createElement('div');
-                div.className = 'verse-list-item' + (isActive ? ' active' : '');
+                div.className = 'verse-list-item';
+                div.dataset.globalId = String(globalId);
                 div.innerHTML = `<span>المقطع ${v} ${statusSpan}</span><img src="${getAssetUrl(getVerseAssetPath(globalId) + '.png')}" alt="Vers ${v}" onerror="this.onerror=null;this.src=this.src.replace('.png','.jpg');this.onerror=function(){this.style.display='none'}">`;
                 div.onclick = () => { activePostFilter = null; activePostFilterNotifId = null; highlightedPostId = null; playVers(globalId, v); hideVerseList(); };
                 grid.appendChild(div);
             }
+            grid.querySelectorAll('.verse-list-item').forEach(el => {
+                el.classList.toggle('active', Number(el.dataset.globalId) === Number(currentGlobalFileId));
+            });
             document.getElementById('verse-list-modal').style.display = 'block';
         }
         window.hideVerseList = function() { document.getElementById('verse-list-modal').style.display = 'none'; }
