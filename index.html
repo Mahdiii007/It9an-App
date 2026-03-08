@@ -4837,10 +4837,6 @@
                         if (lastRecStream) { lastRecStream.getTracks().forEach(t => t.stop()); lastRecStream = null; }
                         if (lastRecCtx && lastRecCtx.state !== 'closed') { try { await lastRecCtx.close(); } catch(e) {} lastRecCtx = null; }
                         await new Promise(r => setTimeout(r, 100));
-                    } else {
-                        lastRecStream = null;
-                        lastRecCtx = null;
-                        await new Promise(r => setTimeout(r, 1200));
                     }
                     if (navigator.audioSession && isIOS) {
                         try { navigator.audioSession.type = 'play-and-record'; } catch(e) {}
@@ -4848,14 +4844,12 @@
                     let dur = audioEl.duration; if(!dur || isNaN(dur)) dur = 15;
                     const role = localStorage.getItem('it9an_role');
                     maxRecDuration = (replyTargetId && role === 'teacher') ? 180 : Math.ceil(dur * 2);
-                    let getStream = () => navigator.mediaDevices.getUserMedia({ audio: audioConstraints });
-                    try {
-                        rawStream = await getStream();
-                    } catch (firstErr) {
-                        if (isMacDesktop) {
-                            await new Promise(r => setTimeout(r, 1000));
-                            rawStream = await getStream();
-                        } else throw firstErr;
+                    const canReuse = isMacDesktop && lastRecStream && lastRecStream.getTracks().every(t => t.readyState === 'live');
+                    if (canReuse) {
+                        rawStream = lastRecStream;
+                    } else {
+                        if (isMacDesktop && lastRecStream) { lastRecStream.getTracks().forEach(t => t.stop()); lastRecStream = null; }
+                        rawStream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints });
                     }
                     lastRecStream = rawStream;
                     let stream = rawStream;
@@ -4904,13 +4898,14 @@
                         const recBtn = document.getElementById('recBtn'); if(recBtn) recBtn.classList.remove('recording');
                         clearInterval(recInterval); ui.style.display = 'none';
                         const doRelease = () => {
-                            streamToRelease.getTracks().forEach(track => track.stop());
-                            if (lastRecStream === streamToRelease) lastRecStream = null;
+                            if (!isMacDesktop) {
+                                streamToRelease.getTracks().forEach(track => track.stop());
+                                if (lastRecStream === streamToRelease) lastRecStream = null;
+                            }
                             if (ctxToRelease) { try { ctxToRelease.close(); } catch(e) {} if (lastRecCtx === ctxToRelease) lastRecCtx = null; }
                             if (navigator.audioSession) { try { navigator.audioSession.type = 'playback'; } catch(e) {} }
                         };
-                        if (isMacDesktop) setTimeout(doRelease, 1500);
-                        else doRelease();
+                        doRelease();
                     };
                     mediaRecorder.start(200);
                     requestWakeLock(); 
@@ -4919,7 +4914,8 @@
                     recInterval = setInterval(() => { recSeconds++; let m = Math.floor(recSeconds / 60); let s = recSeconds % 60; document.getElementById('recTimer').innerText = (m<10?"0"+m:m)+":"+(s<10?"0"+s:s); if(recSeconds >= maxRecDuration) stopRecordingAndReview(); }, 1000);
                 } catch(e) { 
                     console.error('Microphone error:', e);
-                    alert("خطأ في الميكروفون");
+                    const errMsg = (e && (e.message || e.name)) ? String(e.message || e.name) : '';
+                    alert("خطأ في الميكروفون" + (errMsg ? "\n" + errMsg : ""));
                     replyTargetId = null; 
                     if (rawStream) { rawStream.getTracks().forEach(t => t.stop()); if (lastRecStream === rawStream) lastRecStream = null; }
                     if (recCtx) { try { recCtx.close(); } catch(e2) {} if (lastRecCtx === recCtx) lastRecCtx = null; }
