@@ -932,6 +932,7 @@
     <audio id="mainAudio"></audio>
 
     <script>
+        var notifUnsubscribe = null;
         const STUDENT_PIN = "1234";
         const ADMIN_PIN = "1879";
         const TEACHER_LOTFI_PIN = "9898";
@@ -3829,7 +3830,6 @@
         }
 
         // --- NOTIFICATIONS ---
-        let notifUnsubscribe = null;
         function updateAppIconBadge(count) {
             if ('setAppBadge' in navigator) {
                 try {
