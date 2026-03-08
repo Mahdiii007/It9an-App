@@ -125,7 +125,7 @@
         }
 
         /* --- STAGES VIEW --- */
-        #stages-view { display: none; width: 100%; max-width: 100%; overflow-x: hidden; padding: 20px 15px; }
+        #stages-view { display: none; width: 100%; max-width: 100%; overflow-x: hidden; overflow-y: visible; padding: 20px 15px; min-height: 300px; }
         .stages-title { text-align: center; color: var(--primary); font-size: 24px; font-weight: bold; margin-bottom: 25px; }
         .stages-grid { display: flex; flex-direction: column; gap: 20px; max-width: 500px; margin: 0 auto; }
         .stage-card { 
@@ -784,8 +784,8 @@
         </div>
         <h2 class="stages-title">اختر المرحلة</h2>
         <div class="stages-grid" id="stages-grid"></div>
-        <button id="stagesSettingsToggleBtn" class="verse-list-btn" style="margin-top:20px; width:100%; max-width:500px; margin-left:auto; margin-right:auto; display:block;" onclick="toggleStagesSettings()">⚙️ الإعدادات</button>
-        <div id="stages-settings-panel" style="display:none; margin-top:12px;">
+        <button id="stagesSettingsToggleBtn" class="verse-list-btn" style="margin-top:20px; width:100%; max-width:500px; margin-left:auto; margin-right:auto; display:block;" onclick="toggleStagesSettings()">⚙️ الإعدادات ▲</button>
+        <div id="stages-settings-panel" style="display:block; margin-top:12px;">
             <button id="addToHomeBtnStages" class="setup-step-btn" style="margin: 0 0 8px 0; display:none;" onclick="handleAddToHomeScreen()"><span class="step-main">📱 1. إضافة إلى الشاشة الرئيسية</span><span class="step-note">(تثبيت التطبيق على الشاشة الرئيسية)</span></button>
             <button id="pushEnableBtnStages" class="setup-step-btn" style="margin: 0 0 8px 0; display:none;" onclick="enablePushNotifications()"><span class="step-main">🔔 2. تفعيل الإشعارات على الشاشة</span><span class="step-note">(تفعيل الإشعارات في التطبيق وليس في المتصفح)</span></button>
             <button id="microEnableBtnStages" class="setup-step-btn" style="margin: 0 0 8px 0; display:none;" onclick="enableMicrophonePermission()"><span class="step-main">🎤 3. تفعيل الميكروفون للتسجيل</span><span class="step-note">(تفعيل الميكروفون في التطبيق وليس في المتصفح)</span></button>
@@ -1096,7 +1096,9 @@
             document.getElementById('lessons-view').style.display = 'none';
             document.getElementById('admin-message-view').style.display = 'none';
             const cn = document.getElementById('contact-admin-new-view'); if (cn) cn.style.display = 'none';
-            document.getElementById('stages-view').style.display = 'block';
+            const adminPanel = document.getElementById('adminMenuPanel'); if (adminPanel) adminPanel.style.display = 'none';
+            const stagesEl = document.getElementById('stages-view');
+            if (stagesEl) stagesEl.style.display = 'block';
             const menuBtn = document.getElementById('menuBtn'); if (menuBtn) menuBtn.style.display = 'none';
             const notifContainer = document.querySelector('.notif-container');
             if (notifContainer) notifContainer.style.display = 'none';
@@ -1134,24 +1136,28 @@
             const grid = document.getElementById('stages-grid');
             if (!grid) return;
             grid.innerHTML = '';
-            for (const stage of STAGES_CONFIG) {
-                const div = document.createElement('div');
-                div.className = 'stage-card stage-card-' + stage.id;
-                let progressHtml = '';
-                if (myUid && myUid !== 'admin_super' && myUid !== 'guest' && userRole === 'student') {
-                    const prog = await getStageProgressForStudent(myUid, stage.id);
-                    progressHtml = `<div class="stage-progress-wrap"><div class="stage-progress-bar"><div class="stage-progress-fill" style="width:${prog.percent}%"></div></div><div class="stage-progress-text">${prog.completed}/${prog.total} (${prog.percent}%)</div></div>`;
+            try {
+                for (const stage of (typeof STAGES_CONFIG !== 'undefined' ? STAGES_CONFIG : [])) {
+                    const div = document.createElement('div');
+                    div.className = 'stage-card stage-card-' + stage.id;
+                    let progressHtml = '';
+                    if (myUid && myUid !== 'admin_super' && myUid !== 'guest' && userRole === 'student') {
+                        try {
+                            const prog = await getStageProgressForStudent(myUid, stage.id);
+                            progressHtml = `<div class="stage-progress-wrap"><div class="stage-progress-bar"><div class="stage-progress-fill" style="width:${prog.percent}%"></div></div><div class="stage-progress-text">${prog.completed}/${prog.total} (${prog.percent}%)</div></div>`;
+                        } catch (e) { console.warn('getStageProgressForStudent:', e); }
+                    }
+                    div.innerHTML = `<div class="stage-notif-bell" data-stage-id="${stage.id}" onclick="event.stopPropagation(); showNotificationsForStage(${stage.id})"><span class="stage-notif-icon">🔔</span><span class="stage-notif-badge" id="stage-notif-badge-${stage.id}">0</span></div><div class="stage-students-icon" onclick="event.stopPropagation(); showStudentsProgressForStage(${stage.id})" title="عرض قائمة الطلاب">👥</div><div class="stage-card-title">مرحلة ${stage.id}</div><div class="stage-card-name">${stage.name}</div>${progressHtml}`;
+                    div.onclick = () => {
+                        lastStudentsRefreshTime = 0;
+                        lastTeachersRefreshTime = 0;
+                        if (typeof refreshStudentsLeaderboard === 'function') refreshStudentsLeaderboard(true);
+                        if (typeof refreshTeachersLeaderboard === 'function') refreshTeachersLeaderboard(true);
+                        enterStage(stage.id);
+                    };
+                    grid.appendChild(div);
                 }
-                div.innerHTML = `<div class="stage-notif-bell" data-stage-id="${stage.id}" onclick="event.stopPropagation(); showNotificationsForStage(${stage.id})"><span class="stage-notif-icon">🔔</span><span class="stage-notif-badge" id="stage-notif-badge-${stage.id}">0</span></div><div class="stage-students-icon" onclick="event.stopPropagation(); showStudentsProgressForStage(${stage.id})" title="عرض قائمة الطلاب">👥</div><div class="stage-card-title">مرحلة ${stage.id}</div><div class="stage-card-name">${stage.name}</div>${progressHtml}`;
-                div.onclick = () => {
-                    lastStudentsRefreshTime = 0;
-                    lastTeachersRefreshTime = 0;
-                    if (typeof refreshStudentsLeaderboard === 'function') refreshStudentsLeaderboard(true);
-                    if (typeof refreshTeachersLeaderboard === 'function') refreshTeachersLeaderboard(true);
-                    enterStage(stage.id);
-                };
-                grid.appendChild(div);
-            }
+            } catch (e) { console.error('showStagesView grid:', e); }
             const teacherNotifSection = document.getElementById('teacher-notif-stages-section');
             if (teacherNotifSection) {
                 teacherNotifSection.style.display = (userRole === 'teacher' && myUid && myUid !== 'admin_super') ? 'block' : 'none';
