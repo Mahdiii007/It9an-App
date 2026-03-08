@@ -4003,7 +4003,7 @@
                     const ptP = document.getElementById('pageTitle');
                     if (ptP) {
                         ptP.classList.remove('header-name-pin');
-                        const lessonPart = lek.title ? `<span class="title-text-maktaa" style="font-size:18px;">${lek.title}</span>` : `<img src="${getAssetUrl('T' + lek.id + '.png')}" alt="Lesson Title" onerror="this.onerror=null;this.src=this.src.replace('.png','.jpg');this.onerror=function(){this.style.display='none'}">`;
+                        const lessonPart = lek.title ? `<span class="title-text-maktaa lesson-title-text" style="font-size:24px; color:var(--red);">${lek.title}</span>` : `<img src="${getAssetUrl('T' + lek.id + '.png')}" alt="Lesson Title" onerror="this.onerror=null;this.src=this.src.replace('.png','.jpg');this.onerror=function(){this.style.display='none'}">`;
                         ptP.innerHTML = `<span class="title-text-maktaa">المقطع ${currentLocalVers}</span>${lessonPart}`;
                     }
                 }
@@ -4466,7 +4466,7 @@
                     ? `<div class="lesson-progress-bar-wrap"><div class="lesson-progress-bar"><div class="lesson-progress-bar-fill" style="width:${prog.percent}%"></div></div><div class="lesson-progress-text">${prog.completed}/${prog.total} (${prog.percent}%)</div></div>` 
                     : '';
                 const titleContent = lek.title 
-                    ? `<div class="menu-item-title" style="padding:20px 15px; font-size:20px; line-height:1.5;">${lek.title}</div>` 
+                    ? `<div class="menu-item-title lesson-title-text" style="padding:24px 15px; font-size:26px; line-height:1.5; color:var(--red);">${lek.title}</div>` 
                     : `<div class="menu-item-title">الدرس ${index + 1}</div><img src="${getAssetUrl('T' + lek.id + '.png')}" loading="lazy" onerror="this.onerror=null;this.src=this.src.replace('.png','.jpg');this.onerror=function(){this.style.display='none'}">`;
                 div.innerHTML = `<div class="menu-item-students-icon" onclick="event.stopPropagation(); showStudentsProgressForLesson(${index})" title="عرض قائمة الطلاب">👥</div>${titleContent}${progressHtml}`;
                 div.onclick = () => startLesson(index);
@@ -4568,7 +4568,7 @@
             const ptP = document.getElementById('pageTitle');
             if (ptP) {
                 ptP.classList.remove('header-name-pin');
-                const lessonPart = lek.title ? `<span class="title-text-maktaa" style="font-size:18px;">${lek.title}</span>` : `<img src="${getAssetUrl('T' + lek.id + '.png')}" alt="Lesson Title" onerror="this.onerror=null;this.src=this.src.replace('.png','.jpg');this.onerror=function(){this.style.display='none'}">`;
+                const lessonPart = lek.title ? `<span class="title-text-maktaa lesson-title-text" style="font-size:24px; color:var(--red);">${lek.title}</span>` : `<img src="${getAssetUrl('T' + lek.id + '.png')}" alt="Lesson Title" onerror="this.onerror=null;this.src=this.src.replace('.png','.jpg');this.onerror=function(){this.style.display='none'}">`;
                 ptP.innerHTML = `<span class="title-text-maktaa">المقطع ${localVersNum}</span>${lessonPart}`;
             }
 
