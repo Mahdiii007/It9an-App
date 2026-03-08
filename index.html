@@ -1036,6 +1036,8 @@
             { id: 4, name: 'أساليب التلاوة', assetsBase: 'assets-v4' }
         ];
         const VERS_PRO_LEKTION_FALLBACK = [ 8, 15, 9, 15, 16 ];
+        const VERS_PRO_LEKTION_FALLBACK_STAGE4 = [ 8, 15, 9, 15, 16, 10, 12, 6, 4, 8, 3, 27, 4, 4, 10, 4 ];
+        const LESSON_TITLES_FALLBACK_STAGE4 = [ "لا النّافية", "لا النّاهية", "لا الدّعائية", "القصر والحصر", "الشرط", "الترغيب والترجي", "التوكيد", "ما الموصوليّة", "ما النّافية", "ما الاستفهاميّة", "الاستفهام الحقيقي", "الاستفهام الإنكاري", "الاستفهام التعجّبي", "الاستفهام التّهديدي", "الاستفهام التّوبيخي", "الاستفهام التّقريري" ];
         let currentStageId = 4;
         let ASSETS_BASE = 'assets-v4';
         function buildKursFromVerses(versesPerLesson, lessonTitles) {
@@ -1047,7 +1049,7 @@
                 return lek;
             });
         }
-        let KURS_DATEN = buildKursFromVerses(VERS_PRO_LEKTION_FALLBACK);
+        let KURS_DATEN = buildKursFromVerses(VERS_PRO_LEKTION_FALLBACK_STAGE4, LESSON_TITLES_FALLBACK_STAGE4);
         function getStageConfig(stageId) { return STAGES_CONFIG.find(s => s.id === stageId) || STAGES_CONFIG[3]; }
         async function loadManifestForStage(stageId) {
             const cfg = getStageConfig(stageId);
@@ -1072,7 +1074,7 @@
             const cfg = getStageConfig(stageId);
             ASSETS_BASE = cfg.assetsBase;
             KURS_DATEN = await loadManifestForStage(stageId);
-            if (KURS_DATEN.length === 0 && stageId === 4) KURS_DATEN = buildKursFromVerses(VERS_PRO_LEKTION_FALLBACK);
+            if (KURS_DATEN.length === 0 && stageId === 4) KURS_DATEN = buildKursFromVerses(VERS_PRO_LEKTION_FALLBACK_STAGE4, LESSON_TITLES_FALLBACK_STAGE4);
             document.getElementById('stages-view').style.display = 'none';
             invalidateCompletedVersesCache();
             if (typeof window.applyNotifStageFilter === 'function') window.applyNotifStageFilter();
@@ -1080,7 +1082,7 @@
         }
         async function getStageProgressForStudent(studentUid, stageId) {
             const kurs = await loadManifestForStage(stageId);
-            if (kurs.length === 0 && stageId === 4) kurs.push(...buildKursFromVerses(VERS_PRO_LEKTION_FALLBACK));
+            if (kurs.length === 0 && stageId === 4) kurs.push(...buildKursFromVerses(VERS_PRO_LEKTION_FALLBACK_STAGE4, LESSON_TITLES_FALLBACK_STAGE4));
             let total = 0;
             kurs.forEach(lek => { total += lek.verse; });
             if (total === 0) return { completed: 0, total: 0, percent: 0 };
@@ -1198,7 +1200,7 @@
         }
         (async function initManifest() {
             KURS_DATEN = await loadManifestForStage(4);
-            if (KURS_DATEN.length === 0) KURS_DATEN = buildKursFromVerses(VERS_PRO_LEKTION_FALLBACK);
+            if (KURS_DATEN.length === 0) KURS_DATEN = buildKursFromVerses(VERS_PRO_LEKTION_FALLBACK_STAGE4, LESSON_TITLES_FALLBACK_STAGE4);
         })();
         function getLessonVerseFromFileId(fileId) {
             const fid = parseInt(fileId, 10);
@@ -1213,7 +1215,7 @@
         }
         async function getLessonVerseForStageFile(stageId, fileId) {
             let kurs = await loadManifestForStage(stageId);
-            if (kurs.length === 0 && stageId === 4) kurs = buildKursFromVerses(VERS_PRO_LEKTION_FALLBACK);
+            if (kurs.length === 0 && stageId === 4) kurs = buildKursFromVerses(VERS_PRO_LEKTION_FALLBACK_STAGE4, LESSON_TITLES_FALLBACK_STAGE4);
             const fid = parseInt(fileId, 10);
             for (let i = 0; i < kurs.length; i++) {
                 const start = kurs[i].startGlobalId;
