@@ -4829,8 +4829,8 @@
                 try {
                     if (lastRecStream) { lastRecStream.getTracks().forEach(t => t.stop()); lastRecStream = null; }
                     if (lastRecCtx && lastRecCtx.state !== 'closed') { try { await lastRecCtx.close(); } catch(e) {} lastRecCtx = null; }
-                    const isMac = navigator.platform === 'MacIntel' && !navigator.maxTouchPoints;
-                    await new Promise(r => setTimeout(r, isMac ? 250 : 100));
+                    const isMacDesktop = /Mac|Macintosh/.test(navigator.platform) && !navigator.maxTouchPoints;
+                    await new Promise(r => setTimeout(r, isMacDesktop ? 500 : 100));
                     let dur = audioEl.duration; if(!dur || isNaN(dur)) dur = 15;
                     const role = localStorage.getItem('it9an_role');
                     maxRecDuration = (replyTargetId && role === 'teacher') ? 180 : Math.ceil(dur * 2);
@@ -4838,14 +4838,22 @@
                     if (navigator.audioSession && isIOS) {
                         try { navigator.audioSession.type = 'play-and-record'; } catch(e) {}
                     }
-                    const audioConstraints = isIOS ? { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } } : (isMac ? { audio: true } : { 
+                    const audioConstraints = isIOS ? { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } } : (isMacDesktop ? { audio: true } : { 
                         echoCancellation: false, noiseSuppression: false, autoGainControl: false, 
                         sampleRate: 48000, channelCount: 1 
                     });
-                    rawStream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints });
+                    let getStream = () => navigator.mediaDevices.getUserMedia({ audio: audioConstraints });
+                    try {
+                        rawStream = await getStream();
+                    } catch (firstErr) {
+                        if (isMacDesktop) {
+                            await new Promise(r => setTimeout(r, 800));
+                            rawStream = await getStream();
+                        } else throw firstErr;
+                    }
                     lastRecStream = rawStream;
                     let stream = rawStream;
-                    if (!isMac) {
+                    if (!isMacDesktop) {
                         recCtx = new (window.AudioContext || window.webkitAudioContext)();
                         lastRecCtx = recCtx;
                         if (recCtx.state === 'suspended') await recCtx.resume();
@@ -4880,19 +4888,23 @@
                     
                     if(replyTargetId) statusText.innerText = "تسجيل رد..."; else statusText.innerText = "تسجيل تلاوة...";
 
+                    const streamToRelease = rawStream;
+                    const ctxToRelease = recCtx;
                     mediaRecorder.onstop = async () => {
                         releaseWakeLock();
-                        rawStream.getTracks().forEach(track => track.stop());
-                        if (lastRecStream === rawStream) lastRecStream = null;
-                        if (recCtx) { try { await recCtx.close(); } catch(e) {} if (lastRecCtx === recCtx) lastRecCtx = null; }
-                        if (navigator.audioSession) {
-                            try { navigator.audioSession.type = 'playback'; } catch(e) {}
-                        }
                         const mimeType = mediaRecorder.mimeType || 'audio/mp4';
                         currentBlob = new Blob(chunks, { type: mimeType });
                         showReviewModal();
                         const recBtn = document.getElementById('recBtn'); if(recBtn) recBtn.classList.remove('recording');
                         clearInterval(recInterval); ui.style.display = 'none';
+                        const doRelease = () => {
+                            streamToRelease.getTracks().forEach(track => track.stop());
+                            if (lastRecStream === streamToRelease) lastRecStream = null;
+                            if (ctxToRelease) { try { ctxToRelease.close(); } catch(e) {} if (lastRecCtx === ctxToRelease) lastRecCtx = null; }
+                            if (navigator.audioSession) { try { navigator.audioSession.type = 'playback'; } catch(e) {} }
+                        };
+                        if (isMacDesktop) setTimeout(doRelease, 600);
+                        else doRelease();
                     };
                     mediaRecorder.start(200);
                     requestWakeLock(); 
