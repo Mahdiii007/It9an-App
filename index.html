@@ -3511,9 +3511,7 @@
             });
             try {
                 await window.updateDoc(window.doc(window.db, 'users', uid), { notifStages, notifStagesUpdatedAt: window.serverTimestamp() });
-                const fcmRef = window.doc(window.db, 'fcmTokens', uid);
-                const fcmSnap = await window.getDoc(fcmRef);
-                if (fcmSnap.exists()) await window.setDoc(fcmRef, { notifStages, updatedAt: window.serverTimestamp() }, { merge: true });
+                await window.setDoc(window.doc(window.db, 'fcmTokens', uid), { notifStages, updatedAt: window.serverTimestamp() }, { merge: true });
                 alert('تم حفظ إعدادات الإشعارات.');
             } catch (e) {
                 console.error('saveTeacherNotifStages:', e);
