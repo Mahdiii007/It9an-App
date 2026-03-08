@@ -4838,7 +4838,7 @@
                         if (lastRecCtx && lastRecCtx.state !== 'closed') { try { await lastRecCtx.close(); } catch(e) {} lastRecCtx = null; }
                         await new Promise(r => setTimeout(r, 100));
                     }
-                    if (navigator.audioSession && isIOS) {
+                    if (navigator.audioSession) {
                         try { navigator.audioSession.type = 'play-and-record'; } catch(e) {}
                     }
                     let dur = audioEl.duration; if(!dur || isNaN(dur)) dur = 15;
