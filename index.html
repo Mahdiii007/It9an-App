@@ -1038,11 +1038,13 @@
         const VERS_PRO_LEKTION_FALLBACK = [ 8, 15, 9, 15, 16 ];
         let currentStageId = 4;
         let ASSETS_BASE = 'assets-v4';
-        function buildKursFromVerses(versesPerLesson) {
+        function buildKursFromVerses(versesPerLesson, lessonTitles) {
             return (versesPerLesson || []).map((anzahl, index) => {
                 let startId = 1;
                 for (let i = 0; i < index; i++) startId += versesPerLesson[i];
-                return { id: index + 1, verse: anzahl, startGlobalId: startId };
+                const lek = { id: index + 1, verse: anzahl, startGlobalId: startId };
+                if (lessonTitles && Array.isArray(lessonTitles) && lessonTitles[index]) lek.title = lessonTitles[index];
+                return lek;
             });
         }
         let KURS_DATEN = buildKursFromVerses(VERS_PRO_LEKTION_FALLBACK);
@@ -1056,8 +1058,9 @@
                     if (r.ok) {
                         const j = await r.json();
                         const arr = Array.isArray(j) ? j : (j.versesPerLesson || (j.lessons && j.lessons.map(l => l.verses)));
+                        const titles = j.lessonTitles || (j.lessons && j.lessons.map(l => l.title));
                         if (arr && Array.isArray(arr) && arr.length > 0) {
-                            return buildKursFromVerses(arr);
+                            return buildKursFromVerses(arr, titles);
                         }
                     }
                 } catch (e) { continue; }
@@ -3996,9 +3999,13 @@
                 document.getElementById('appFooter').style.display = 'flex';
                 const menuBtn = document.getElementById('menuBtn'); if (menuBtn) menuBtn.style.display = 'flex';
                 if (currentLessonIdx !== null && KURS_DATEN[currentLessonIdx]) {
-                    const lessonId = KURS_DATEN[currentLessonIdx].id;
+                    const lek = KURS_DATEN[currentLessonIdx];
                     const ptP = document.getElementById('pageTitle');
-                    if (ptP) { ptP.classList.remove('header-name-pin'); ptP.innerHTML = `<span class="title-text-maktaa">المقطع ${currentLocalVers}</span><img src="${getAssetUrl('T' + lessonId + '.png')}" alt="Lesson Title" onerror="this.onerror=null;this.src=this.src.replace('.png','.jpg');this.onerror=function(){this.style.display='none'}">`; }
+                    if (ptP) {
+                        ptP.classList.remove('header-name-pin');
+                        const lessonPart = lek.title ? `<span class="title-text-maktaa" style="font-size:18px;">${lek.title}</span>` : `<img src="${getAssetUrl('T' + lek.id + '.png')}" alt="Lesson Title" onerror="this.onerror=null;this.src=this.src.replace('.png','.jpg');this.onerror=function(){this.style.display='none'}">`;
+                        ptP.innerHTML = `<span class="title-text-maktaa">المقطع ${currentLocalVers}</span>${lessonPart}`;
+                    }
                 }
             } else {
                 goToMenu();
@@ -4458,7 +4465,10 @@
                 const progressHtml = (myUid && myUid !== 'admin_super' && userRole === 'student') 
                     ? `<div class="lesson-progress-bar-wrap"><div class="lesson-progress-bar"><div class="lesson-progress-bar-fill" style="width:${prog.percent}%"></div></div><div class="lesson-progress-text">${prog.completed}/${prog.total} (${prog.percent}%)</div></div>` 
                     : '';
-                div.innerHTML = `<div class="menu-item-students-icon" onclick="event.stopPropagation(); showStudentsProgressForLesson(${index})" title="عرض قائمة الطلاب">👥</div><div class="menu-item-title">الدرس ${index + 1}</div><img src="${getAssetUrl('T' + lek.id + '.png')}" loading="lazy" onerror="this.onerror=null;this.src=this.src.replace('.png','.jpg');this.onerror=function(){this.style.display='none'}">${progressHtml}`;
+                const titleContent = lek.title 
+                    ? `<div class="menu-item-title" style="padding:20px 15px; font-size:20px; line-height:1.5;">${lek.title}</div>` 
+                    : `<div class="menu-item-title">الدرس ${index + 1}</div><img src="${getAssetUrl('T' + lek.id + '.png')}" loading="lazy" onerror="this.onerror=null;this.src=this.src.replace('.png','.jpg');this.onerror=function(){this.style.display='none'}">`;
+                div.innerHTML = `<div class="menu-item-students-icon" onclick="event.stopPropagation(); showStudentsProgressForLesson(${index})" title="عرض قائمة الطلاب">👥</div>${titleContent}${progressHtml}`;
                 div.onclick = () => startLesson(index);
                 grid.appendChild(div);
             });
@@ -4554,8 +4564,13 @@
             if(uid === 'admin_super') document.getElementById('adminPlayerPanel').style.display = 'block';
             else document.getElementById('adminPlayerPanel').style.display = 'none';
 
-            const lessonId = KURS_DATEN[currentLessonIdx].id;
-            const ptP = document.getElementById('pageTitle'); if (ptP) { ptP.classList.remove('header-name-pin'); ptP.innerHTML = `<span class="title-text-maktaa">المقطع ${localVersNum}</span><img src="${getAssetUrl('T' + lessonId + '.png')}" alt="Lesson Title" onerror="this.onerror=null;this.src=this.src.replace('.png','.jpg');this.onerror=function(){this.style.display='none'}">`; }
+            const lek = KURS_DATEN[currentLessonIdx];
+            const ptP = document.getElementById('pageTitle');
+            if (ptP) {
+                ptP.classList.remove('header-name-pin');
+                const lessonPart = lek.title ? `<span class="title-text-maktaa" style="font-size:18px;">${lek.title}</span>` : `<img src="${getAssetUrl('T' + lek.id + '.png')}" alt="Lesson Title" onerror="this.onerror=null;this.src=this.src.replace('.png','.jpg');this.onerror=function(){this.style.display='none'}">`;
+                ptP.innerHTML = `<span class="title-text-maktaa">المقطع ${localVersNum}</span>${lessonPart}`;
+            }
 
             const imgEl = document.getElementById('currentImg');
             imgEl.src = getAssetUrl(getVerseAssetPath(globalId) + '.png');
