@@ -735,16 +735,16 @@
         <button id="pushEnableBtnStages" class="setup-step-btn" style="margin: 0 0 8px 0; display:none;" onclick="enablePushNotifications()"><span class="step-main">🔔 2. تفعيل الإشعارات على الشاشة</span><span class="step-note">(تفعيل الإشعارات في التطبيق وليس في المتصفح)</span></button>
         <button id="microEnableBtnStages" class="setup-step-btn" style="margin: 0 0 8px 0; display:none;" onclick="enableMicrophonePermission()"><span class="step-main">🎤 3. تفعيل الميكروفون للتسجيل</span><span class="step-note">(تفعيل الميكروفون في التطبيق وليس في المتصفح)</span></button>
         <button id="contactAdminBtnStages" class="verse-list-btn" style="margin: 15px 0 0 0; display:none; background:var(--primary); color:white; border-color:var(--gold);" onclick="showContactAdminView()">📩 تواصل مع المسؤول</button>
-    </div>
-
-    <div id="menu-view">
-        <button class="verse-list-btn" onclick="showStagesView()" style="margin-bottom:15px; background:var(--primary); color:white; border-color:var(--gold);">↩️ تغيير المرحلة</button>
-        <div id="teacher-notif-stages-section" class="leaderboard-card" style="margin-bottom:15px; display:none;">
+        <div id="teacher-notif-stages-section" class="leaderboard-card" style="margin-top:20px; display:none;">
             <div class="lb-title">🔔 إشعارات المراحل</div>
             <div style="font-size:14px; color:#666; margin-bottom:10px;">اختر المراحل التي تريد استقبال إشعاراتها (تسجيلات وردود)</div>
             <div id="teacher-notif-stages-checkboxes" style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:10px;"></div>
             <button id="teacherNotifStagesSaveBtn" class="verse-list-btn" style="font-size:14px; padding:8px 14px;" onclick="saveTeacherNotifStages()">💾 حفظ</button>
         </div>
+    </div>
+
+    <div id="menu-view">
+        <button class="verse-list-btn" onclick="showStagesView()" style="margin-bottom:15px; background:var(--primary); color:white; border-color:var(--gold);">↩️ تغيير المرحلة</button>
         <button class="verse-list-btn lessons-main-btn" onclick="showLessonsView()" style="margin-bottom:15px;">📚 جميع الدروس</button>
         <div id="leaderboard-section">
             <div class="leaderboard-card">
@@ -1069,7 +1069,13 @@
                 };
                 grid.appendChild(div);
             }
+            const teacherNotifSection = document.getElementById('teacher-notif-stages-section');
+            if (teacherNotifSection) {
+                teacherNotifSection.style.display = (userRole === 'teacher' && myUid && myUid !== 'admin_super') ? 'block' : 'none';
+                if (userRole === 'teacher' && myUid && myUid !== 'admin_super') loadTeacherNotifStagesUI();
+            }
             if (typeof window.updateStageNotifBadges === 'function') window.updateStageNotifBadges();
+            setTimeout(() => { if (typeof window.updateStageNotifBadges === 'function') window.updateStageNotifBadges(); }, 400);
             if (typeof initStatCharts === 'function') initStatCharts();
         }
         (async function initManifest() {
@@ -3595,6 +3601,7 @@
                 lastRawNotifs = [];
                 snap.forEach(doc => lastRawNotifs.push({id: doc.id, ...doc.data()}));
                 lastRawNotifsGlobal = [...lastRawNotifs];
+                if (typeof window.updateStageNotifBadges === 'function') window.updateStageNotifBadges();
                 if (typeof window.applyNotifStageFilter === 'function') window.applyNotifStageFilter();
             });
             window.applyNotifStageFilter = function() {
@@ -4102,12 +4109,6 @@
                 loadLeaderboard(lbPendingRestore ? doLbRestore : undefined);
                 loadAppStats();
             }
-            const teacherNotifSection = document.getElementById('teacher-notif-stages-section');
-            if (teacherNotifSection) {
-                teacherNotifSection.style.display = (role === 'teacher' && uid && uid !== 'admin_super') ? 'block' : 'none';
-                if (role === 'teacher' && uid && uid !== 'admin_super') loadTeacherNotifStagesUI();
-            }
-
             activePostFilter = null; 
             checkPushNotificationParams();
         }
