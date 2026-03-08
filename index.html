@@ -643,6 +643,7 @@
         <div class="leaderboard-card" onclick="event.stopPropagation()" style="max-width:500px; margin:20px auto;">
             <div class="lb-title" id="studentsProgressModalTitle">📊 الطلاب</div>
             <ul id="students-progress-list" class="lb-list"></ul>
+            <button id="studentsProgressShowMoreBtn" class="lb-show-more-btn" onclick="showMoreStudentsProgress()" style="display:none;">عرض المزيد (+10)</button>
             <button class="verse-list-btn" style="margin-top:15px;" onclick="hideStudentsProgressModal()">إغلاق</button>
         </div>
     </div>
@@ -1167,6 +1168,37 @@
             invalidateCompletedVersesCache();
             return results.sort((a, b) => (b.percent || 0) - (a.percent || 0));
         }
+        let studentsProgressModalAllStudents = [];
+        let studentsProgressModalVisibleCount = 3;
+        let studentsProgressModalIsLesson = false;
+        function renderStudentsProgressList() {
+            const listEl = document.getElementById('students-progress-list');
+            const showMoreBtn = document.getElementById('studentsProgressShowMoreBtn');
+            if (!listEl) return;
+            const students = studentsProgressModalAllStudents;
+            const visibleCount = Math.min(studentsProgressModalVisibleCount, students.length);
+            const toShow = students.slice(0, visibleCount);
+            if (showMoreBtn) showMoreBtn.style.display = students.length > visibleCount ? 'block' : 'none';
+            let html = '';
+            if (students.length > 0) {
+                const top3Label = studentsProgressModalIsLesson ? 'أفضل 3 في هذا الدرس' : 'أفضل 3 في هذه المرحلة';
+                html = '<div class="lb-motivation" style="margin-bottom:12px; font-size:15px;">🏆 ' + top3Label + '</div>';
+            }
+            toShow.forEach((u, i) => {
+                const rank = i + 1;
+                const isTop3 = rank <= 3;
+                const cls = 'lb-item-wrapper' + (isTop3 ? ' lb-item-top3' : '');
+                const name = getDisplayName(u);
+                const barClr = isTop3 ? 'linear-gradient(90deg, #1a6b54, #0f4c3a)' : 'var(--primary)';
+                if (rank === 4) html += '<div class="lb-motivation" style="margin:15px 0 8px 0; font-size:14px; color:#666;">باقي الطلاب</div>';
+                html += `<li class="${cls}"><div class="lb-item"><div style="display:flex; align-items:center; gap:4px; flex-shrink:1; min-width:0;"><span class="lb-rank">#${rank}</span><span class="lb-name">${name || '—'}</span></div><div style="display:flex; align-items:center; gap:10px; flex-shrink:0;"><div style="width:80px; min-width:80px;"><div class="stage-progress-bar" style="height:8px;"><div class="stage-progress-fill" style="width:${u.percent || 0}%; background:${barClr};"></div></div></div><span class="lb-score">${u.completed || 0}/${u.total || 0} (${u.percent || 0}%)</span></div></div></li>`;
+            });
+            listEl.innerHTML = html;
+        }
+        window.showMoreStudentsProgress = function() {
+            studentsProgressModalVisibleCount = Math.min(studentsProgressModalVisibleCount + 10, studentsProgressModalAllStudents.length);
+            renderStudentsProgressList();
+        };
         window.showStudentsProgressForStage = async function(stageId) {
             const stageCfg = getStageConfig(stageId);
             const titleEl = document.getElementById('studentsProgressModalTitle');
@@ -1174,38 +1206,18 @@
             if (titleEl) titleEl.innerHTML = `👥 الطلاب — مرحلة ${stageId}: ${stageCfg.name}`;
             if (listEl) listEl.innerHTML = '<li style="text-align:center; color:#999; padding:15px;">جاري التحميل...</li>';
             document.getElementById('students-progress-modal').style.display = 'block';
+            document.getElementById('studentsProgressShowMoreBtn').style.display = 'none';
             try {
                 const students = await fetchAllStudentsWithProgress('stage', stageId, null);
+                studentsProgressModalAllStudents = students;
+                studentsProgressModalVisibleCount = 3;
+                studentsProgressModalIsLesson = false;
                 if (!listEl) return;
-                listEl.innerHTML = '';
                 if (students.length === 0) {
                     listEl.innerHTML = '<li style="text-align:center; color:#999; padding:15px;">لا يوجد طلاب بعد</li>';
                     return;
                 }
-                if (students.length > 0) {
-                    listEl.innerHTML = '<div class="lb-motivation" style="margin-bottom:12px; font-size:15px;">🏆 أفضل 3 في هذه المرحلة</div>';
-                }
-                students.forEach((u, i) => {
-                    const rank = i + 1;
-                    const isTop3 = rank <= 3;
-                    const cls = 'lb-item-wrapper' + (isTop3 ? ' lb-item-top3' : '');
-                    const name = getDisplayName(u);
-                    const barClr = isTop3 ? 'linear-gradient(90deg, #1a6b54, #0f4c3a)' : 'var(--primary)';
-                    if (rank === 4) listEl.innerHTML += '<div class="lb-motivation" style="margin:15px 0 8px 0; font-size:14px; color:#666;">باقي الطلاب</div>';
-                    listEl.innerHTML += `
-                    <li class="${cls}">
-                        <div class="lb-item">
-                            <div style="display:flex; align-items:center; gap:4px; flex-shrink:1; min-width:0;">
-                                <span class="lb-rank">#${rank}</span>
-                                <span class="lb-name">${name || '—'}</span>
-                            </div>
-                            <div style="display:flex; align-items:center; gap:10px; flex-shrink:0;">
-                                <div style="width:80px; min-width:80px;"><div class="stage-progress-bar" style="height:8px;"><div class="stage-progress-fill" style="width:${u.percent || 0}%; background:${barClr};"></div></div></div>
-                                <span class="lb-score">${u.completed || 0}/${u.total || 0} (${u.percent || 0}%)</span>
-                            </div>
-                        </div>
-                    </li>`;
-                });
+                renderStudentsProgressList();
             } catch (e) {
                 console.error('showStudentsProgressForStage:', e);
                 if (listEl) listEl.innerHTML = '<li style="text-align:center; color:#c00; padding:15px;">خطأ في التحميل</li>';
@@ -1217,36 +1229,18 @@
             if (titleEl) titleEl.innerHTML = `👥 الطلاب — الدرس ${lessonIndex + 1}`;
             if (listEl) listEl.innerHTML = '<li style="text-align:center; color:#999; padding:15px;">جاري التحميل...</li>';
             document.getElementById('students-progress-modal').style.display = 'block';
+            document.getElementById('studentsProgressShowMoreBtn').style.display = 'none';
             try {
                 const students = await fetchAllStudentsWithProgress('lesson', currentStageId, lessonIndex);
+                studentsProgressModalAllStudents = students;
+                studentsProgressModalVisibleCount = 3;
+                studentsProgressModalIsLesson = true;
                 if (!listEl) return;
-                listEl.innerHTML = '';
                 if (students.length === 0) {
                     listEl.innerHTML = '<li style="text-align:center; color:#999; padding:15px;">لا يوجد طلاب بعد</li>';
                     return;
                 }
-                listEl.innerHTML = '<div class="lb-motivation" style="margin-bottom:12px; font-size:15px;">🏆 أفضل 3 في هذا الدرس</div>';
-                students.forEach((u, i) => {
-                    const rank = i + 1;
-                    const isTop3 = rank <= 3;
-                    const cls = 'lb-item-wrapper' + (isTop3 ? ' lb-item-top3' : '');
-                    const name = getDisplayName(u);
-                    const barClr = isTop3 ? 'linear-gradient(90deg, #1a6b54, #0f4c3a)' : 'var(--primary)';
-                    if (rank === 4) listEl.innerHTML += '<div class="lb-motivation" style="margin:15px 0 8px 0; font-size:14px; color:#666;">باقي الطلاب</div>';
-                    listEl.innerHTML += `
-                    <li class="${cls}">
-                        <div class="lb-item">
-                            <div style="display:flex; align-items:center; gap:4px; flex-shrink:1; min-width:0;">
-                                <span class="lb-rank">#${rank}</span>
-                                <span class="lb-name">${name || '—'}</span>
-                            </div>
-                            <div style="display:flex; align-items:center; gap:10px; flex-shrink:0;">
-                                <div style="width:80px; min-width:80px;"><div class="stage-progress-bar" style="height:8px;"><div class="stage-progress-fill" style="width:${u.percent || 0}%; background:${barClr};"></div></div></div>
-                                <span class="lb-score">${u.completed || 0}/${u.total || 0} (${u.percent || 0}%)</span>
-                            </div>
-                        </div>
-                    </li>`;
-                });
+                renderStudentsProgressList();
             } catch (e) {
                 console.error('showStudentsProgressForLesson:', e);
                 if (listEl) listEl.innerHTML = '<li style="text-align:center; color:#c00; padding:15px;">خطأ في التحميل</li>';
@@ -3801,6 +3795,7 @@
         };
 
         window.showNotificationsForStage = function(stageId) {
+            if (isPlaying) stopLoop();
             notificationsFilterStageId = stageId;
             notificationsReturnToStages = true;
             document.getElementById('stages-view').style.display = 'none';
@@ -3823,6 +3818,7 @@
         };
 
         window.showNotifications = function() {
+            if (isPlaying) stopLoop();
             notificationsFilterStageId = null;
             notificationsReturnToStages = false;
             document.getElementById('menu-view').style.display = 'none';
@@ -4249,6 +4245,7 @@
         }
 
         window.showLessonsView = async function() {
+            if (isPlaying) stopLoop();
             const grid = document.getElementById('lesson-grid');
             if (!grid) return;
             grid.innerHTML = '';
@@ -4307,6 +4304,7 @@
         }
         
         window.showVerseList = async function() {
+            if (isPlaying) stopLoop();
             if(currentLessonIdx === null) return;
             const lesson = KURS_DATEN[currentLessonIdx];
             const grid = document.getElementById('verse-list-grid');
