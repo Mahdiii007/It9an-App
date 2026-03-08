@@ -739,6 +739,12 @@
 
     <div id="menu-view">
         <button class="verse-list-btn" onclick="showStagesView()" style="margin-bottom:15px; background:var(--primary); color:white; border-color:var(--gold);">↩️ تغيير المرحلة</button>
+        <div id="teacher-notif-stages-section" class="leaderboard-card" style="margin-bottom:15px; display:none;">
+            <div class="lb-title">🔔 إشعارات المراحل</div>
+            <div style="font-size:14px; color:#666; margin-bottom:10px;">اختر المراحل التي تريد استقبال إشعاراتها (تسجيلات وردود)</div>
+            <div id="teacher-notif-stages-checkboxes" style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:10px;"></div>
+            <button id="teacherNotifStagesSaveBtn" class="verse-list-btn" style="font-size:14px; padding:8px 14px;" onclick="saveTeacherNotifStages()">💾 حفظ</button>
+        </div>
         <button class="verse-list-btn lessons-main-btn" onclick="showLessonsView()" style="margin-bottom:15px;">📚 جميع الدروس</button>
         <div id="leaderboard-section">
             <div class="leaderboard-card">
@@ -3437,7 +3443,14 @@
                     if (showResult) alert('فشل الحصول على رمز الإشعارات. تأكد أن firebase-messaging-sw.js في نفس المجلد.');
                     return false;
                 }
-                await window.setDoc(window.doc(window.db, 'fcmTokens', uid), { token, uid, role, updatedAt: window.serverTimestamp() }, { merge: true });
+                let notifStages = [];
+                if (role === 'teacher') {
+                    try {
+                        const userSnap = await window.getDoc(window.doc(window.db, 'users', uid));
+                        if (userSnap.exists() && Array.isArray(userSnap.data().notifStages)) notifStages = userSnap.data().notifStages;
+                    } catch (e) {}
+                }
+                await window.setDoc(window.doc(window.db, 'fcmTokens', uid), { token, uid, role, notifStages, updatedAt: window.serverTimestamp() }, { merge: true });
                 if (showResult) alert('تم تفعيل الإشعارات بنجاح.');
                 return true;
             } catch(e) {
@@ -3460,6 +3473,46 @@
             if (!uid || uid === 'admin_super' || uid === 'guest') return;
             requestPushPermissionAndSaveToken(uid, role, true);
         }
+
+        async function loadTeacherNotifStagesUI() {
+            const uid = localStorage.getItem('it9an_uid');
+            if (!uid || uid === 'admin_super') return;
+            const container = document.getElementById('teacher-notif-stages-checkboxes');
+            if (!container) return;
+            let notifStages = [];
+            try {
+                const userSnap = await window.getDoc(window.doc(window.db, 'users', uid));
+                if (userSnap.exists() && userSnap.data().notifStages) notifStages = userSnap.data().notifStages;
+            } catch (e) { console.warn('loadTeacherNotifStages:', e); }
+            if (!Array.isArray(notifStages)) notifStages = [];
+            const stages = typeof STAGES_CONFIG !== 'undefined' ? STAGES_CONFIG : [{ id: 1, name: 'هندسة الحروف' }, { id: 2, name: 'فن الإدغام' }, { id: 3, name: 'أسرار الإخفاء' }, { id: 4, name: 'أساليب التلاوة' }];
+            container.innerHTML = stages.map(s => {
+                const checked = notifStages.length === 0 || notifStages.includes(s.id);
+                return `<label style="display:flex; align-items:center; gap:6px; cursor:pointer;"><input type="checkbox" data-stage-id="${s.id}" ${checked ? 'checked' : ''}> مرحلة ${s.id}: ${s.name}</label>`;
+            }).join('');
+        }
+        window.saveTeacherNotifStages = async function() {
+            const uid = localStorage.getItem('it9an_uid');
+            const role = localStorage.getItem('it9an_role');
+            if (!uid || uid === 'admin_super' || role !== 'teacher') return;
+            const container = document.getElementById('teacher-notif-stages-checkboxes');
+            if (!container) return;
+            const checkboxes = container.querySelectorAll('input[type="checkbox"]');
+            const notifStages = [];
+            checkboxes.forEach(cb => {
+                if (cb.checked) notifStages.push(parseInt(cb.dataset.stageId, 10));
+            });
+            try {
+                await window.updateDoc(window.doc(window.db, 'users', uid), { notifStages, notifStagesUpdatedAt: window.serverTimestamp() });
+                const fcmRef = window.doc(window.db, 'fcmTokens', uid);
+                const fcmSnap = await window.getDoc(fcmRef);
+                if (fcmSnap.exists()) await window.updateDoc(fcmRef, { notifStages, updatedAt: window.serverTimestamp() });
+                alert('تم حفظ إعدادات الإشعارات.');
+            } catch (e) {
+                console.error('saveTeacherNotifStages:', e);
+                alert('خطأ في الحفظ.');
+            }
+        };
 
         window.enableMicrophonePermission = async function() {
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -4035,6 +4088,8 @@
             }
             document.getElementById('appFooter').style.display = 'none';
             
+            const uid = localStorage.getItem('it9an_uid');
+            const role = localStorage.getItem('it9an_role');
             if(uid === 'admin_super') {
                 document.getElementById('adminMenuPanel').style.display = 'block';
                 document.getElementById('leaderboard-section').style.display = 'block';
@@ -4046,6 +4101,11 @@
                 document.getElementById('leaderboard-section').style.display = 'block';
                 loadLeaderboard(lbPendingRestore ? doLbRestore : undefined);
                 loadAppStats();
+            }
+            const teacherNotifSection = document.getElementById('teacher-notif-stages-section');
+            if (teacherNotifSection) {
+                teacherNotifSection.style.display = (role === 'teacher' && uid && uid !== 'admin_super') ? 'block' : 'none';
+                if (role === 'teacher' && uid && uid !== 'admin_super') loadTeacherNotifStagesUI();
             }
 
             activePostFilter = null; 
