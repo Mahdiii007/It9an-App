@@ -121,8 +121,9 @@
         .header-user-name-main { color: var(--primary); font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; text-align: center; display: block; min-width: 0; flex: 1; }
         .title-text-maktaa { 
             font-size: clamp(14px, 4vw, 18px); color: var(--primary); font-weight: bold; 
-            border-right: 2px solid #ddd; padding-right: 10px; margin-right: 5px; white-space: nowrap;
+            white-space: nowrap;
         }
+        .title-text-maktaa.verse-num-maktaa { border-right: 2px solid #ddd; padding-right: 10px; margin-right: 5px; }
         .title-text-maktaa.lesson-title-text { border-right: none; padding-right: 0; margin-right: 0; }
 
         /* --- STAGES VIEW --- */
@@ -4009,7 +4010,7 @@
                     if (ptP) {
                         ptP.classList.remove('header-name-pin');
                         const lessonPart = lek.title ? `<span class="title-text-maktaa lesson-title-text" style="font-size:24px; color:var(--red); white-space:nowrap;">${lek.title}</span>` : `<img src="${getAssetUrl('T' + lek.id + '.png')}" alt="Lesson Title" onerror="this.onerror=null;this.src=this.src.replace('.png','.jpg');this.onerror=function(){this.style.display='none'}">`;
-                        ptP.innerHTML = `<span class="title-text-maktaa">المقطع ${currentLocalVers}</span>${lessonPart}`;
+                        ptP.innerHTML = `<span class="title-text-maktaa verse-num-maktaa">المقطع ${currentLocalVers}</span>${lessonPart}`;
                     }
                 }
             } else {
@@ -4575,7 +4576,7 @@
             if (ptP) {
                 ptP.classList.remove('header-name-pin');
                 const lessonPart = lek.title ? `<span class="title-text-maktaa lesson-title-text" style="font-size:24px; color:var(--red); white-space:nowrap;">${lek.title}</span>` : `<img src="${getAssetUrl('T' + lek.id + '.png')}" alt="Lesson Title" onerror="this.onerror=null;this.src=this.src.replace('.png','.jpg');this.onerror=function(){this.style.display='none'}">`;
-                ptP.innerHTML = `<span class="title-text-maktaa">المقطع ${localVersNum}</span>${lessonPart}`;
+                ptP.innerHTML = `<span class="title-text-maktaa verse-num-maktaa">المقطع ${localVersNum}</span>${lessonPart}`;
             }
 
             const imgEl = document.getElementById('currentImg');
