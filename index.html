@@ -1212,10 +1212,10 @@
                 const start = KURS_DATEN[i].startGlobalId;
                 const end = start + KURS_DATEN[i].verse - 1;
                 if (fid >= start && fid <= end) {
-                    return { lesson: i + 1, verse: fid - start + 1 };
+                    return { lesson: i + 1, verse: fid - start + 1, lessonTitle: KURS_DATEN[i].title || '' };
                 }
             }
-            return { lesson: 0, verse: fid };
+            return { lesson: 0, verse: fid, lessonTitle: '' };
         }
         async function getLessonVerseForStageFile(stageId, fileId) {
             let kurs = await loadManifestForStage(stageId);
@@ -1224,9 +1224,9 @@
             for (let i = 0; i < kurs.length; i++) {
                 const start = kurs[i].startGlobalId;
                 const end = start + kurs[i].verse - 1;
-                if (fid >= start && fid <= end) return { lesson: i + 1, verse: fid - start + 1 };
+                if (fid >= start && fid <= end) return { lesson: i + 1, verse: fid - start + 1, lessonTitle: kurs[i].title || '' };
             }
-            return { lesson: 0, verse: fid };
+            return { lesson: 0, verse: fid, lessonTitle: '' };
         }
         function getVerseAssetPath(globalId) {
             const { lesson, verse } = getLessonVerseFromFileId(globalId);
@@ -3932,10 +3932,11 @@
                     const stageNum = n.stageId != null ? n.stageId : '';
                     const stageName = (n.stageName || '').trim();
                     const lessonNum = n.lessonNum != null ? n.lessonNum : '';
+                    const lessonTitle = (n.lessonTitle || '').trim();
                     const verseNum = n.verseNum != null ? n.verseNum : '';
                     const parts = [];
                     if (stageNum) parts.push('مرحلة ' + stageNum + (stageName ? ' ' + stageName : ''));
-                    if (lessonNum) parts.push('درس ' + lessonNum);
+                    if (lessonNum) parts.push(lessonTitle ? 'درس ' + lessonNum + ': ' + lessonTitle : 'درس ' + lessonNum);
                     if (verseNum) parts.push('مقطع ' + verseNum);
                     const detailSuffix = parts.length ? ' — ' + parts.join(' • ') : '';
                     if(n.type === 'new_recording') text = `🎤 تسجيل جديد من الطالب ${stripYearFromName(n.senderName || '')}` + detailSuffix;
@@ -5308,6 +5309,7 @@
                            stageId: currentStageId,
                            stageName: stageCfg.name,
                            lessonNum: lv.lesson,
+                           lessonTitle: lv.lessonTitle || '',
                            verseNum: lv.verse,
                            timestamp: window.serverTimestamp()
                        });
@@ -5350,6 +5352,7 @@
                            stageId: currentStageId,
                            stageName: stageCfg.name,
                            lessonNum: lv.lesson,
+                           lessonTitle: lv.lessonTitle || '',
                            verseNum: lv.verse,
                            clearedBy: [],
                            timestamp: window.serverTimestamp()
@@ -5636,6 +5639,7 @@
                             stageId: stageId,
                             stageName: stageCfg.name,
                             lessonNum: lv.lesson,
+                            lessonTitle: lv.lessonTitle || '',
                             verseNum: lv.verse,
                             clearedBy: [],
                             timestamp: window.serverTimestamp()
