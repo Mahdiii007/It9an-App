@@ -1,5 +1,6 @@
 {
   "stageId": 1,
   "stageName": "هندسة الحروف",
-  "versesPerLesson": [ 7, 7, 4, 7]
+  "versesPerLesson": [7, 7, 4, 4],
+  "lessonTitles": ["حرف الواو", "حرف الياء", "حرف الهمزة", "حرف الهاء"]
 }
