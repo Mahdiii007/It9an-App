@@ -831,7 +831,7 @@
     </div>
 
     <div id="lessons-view" style="display:none; padding: 15px 10px; width: 100%; max-width: 100%; margin: 0 auto; overflow-x: hidden;">
-        <h3 style="text-align:center; color:var(--primary); font-size:22px; margin-bottom:15px;">📚 جميع الدروس</h3>
+        <h3 id="lessons-view-title" style="text-align:center; color:var(--primary); font-size:22px; margin-bottom:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">📚 جميع الدروس</h3>
         <div class="menu-grid" id="lesson-grid"></div>
     </div>
 
@@ -4451,11 +4451,13 @@
             const grid = document.getElementById('lesson-grid');
             if (!grid) return;
             grid.innerHTML = '';
+            const stageCfg = getStageConfig(currentStageId);
+            const titleEl = document.getElementById('lessons-view-title');
+            if (titleEl) titleEl.innerHTML = stageCfg.name ? `📚 ${stageCfg.name} — جميع الدروس` : '📚 جميع الدروس';
             if (KURS_DATEN.length === 0) {
-                const stageCfg = getStageConfig(currentStageId);
                 grid.innerHTML = `<div style="text-align:center; padding:30px; color:#666; font-size:18px;">لا توجد دروس في مرحلة "${stageCfg.name}" بعد.<br><br>سيتم إضافتها قريباً إن شاء الله.</div>`;
                 showView('lessons-view');
-                const ptL = document.getElementById('pageTitle'); if (ptL) { ptL.classList.remove('header-name-pin'); ptL.innerText = 'جميع الدروس'; }
+                const ptL = document.getElementById('pageTitle'); if (ptL) { ptL.classList.remove('header-name-pin'); ptL.innerText = stageCfg.name ? stageCfg.name + ' — جميع الدروس' : 'جميع الدروس'; }
                 document.getElementById('appFooter').style.display = 'none';
                 return;
             }
@@ -4481,7 +4483,7 @@
                 grid.appendChild(div);
             });
             showView('lessons-view');
-            const ptL = document.getElementById('pageTitle'); if (ptL) { ptL.classList.remove('header-name-pin'); ptL.innerText = 'جميع الدروس'; }
+            const ptL = document.getElementById('pageTitle'); if (ptL) { ptL.classList.remove('header-name-pin'); ptL.innerText = stageCfg.name ? stageCfg.name + ' — جميع الدروس' : 'جميع الدروس'; }
             document.getElementById('appFooter').style.display = 'none';
         };
 
