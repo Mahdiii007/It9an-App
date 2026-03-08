@@ -267,6 +267,12 @@
         }
         .lb-likes { background: var(--gold); }
         .lb-motivation { margin-top: 15px; font-size: 16px; color: var(--primary); font-style: italic; font-weight: bold; }
+        .lb-title-row { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 15px; position: relative; }
+        .lb-title-row .lb-title { margin-bottom: 0; }
+        .lb-refresh-icon-btn { width: 36px; height: 36px; padding: 0; border: none; background: var(--primary); color: white; border-radius: 8px; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .lb-refresh-icon-btn:hover { opacity: 0.9; }
+        .verse-nav-buttons-row { display: flex; gap: 12px; margin-bottom: 8px; flex-wrap: wrap; }
+        .verse-nav-buttons-row .verse-list-btn { flex: 1; min-width: 0; margin-bottom: 0; }
 
         /* --- PLAYER --- */
         #player-view { display: none; padding: 15px 10px; width: 100%; max-width: 100%; margin: 0 auto; overflow-x: hidden; }
@@ -645,7 +651,10 @@
 
     <div id="students-progress-modal" onclick="if(event.target===this) hideStudentsProgressModal()" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:5000; overflow-y:auto; padding:15px; box-sizing:border-box;">
         <div class="leaderboard-card" onclick="event.stopPropagation()" style="max-width:500px; margin:20px auto;">
-            <div class="lb-title" id="studentsProgressModalTitle">📊 الطلاب</div>
+            <div class="verse-list-header" style="margin-bottom:15px;">
+                <div class="lb-title" id="studentsProgressModalTitle" style="margin:0;">📊 الطلاب</div>
+                <button class="modal-close-x" onclick="hideStudentsProgressModal()" title="إغلاق">✕</button>
+            </div>
             <ul id="students-progress-list" class="lb-list"></ul>
             <button id="studentsProgressShowMoreBtn" class="lb-show-more-btn" onclick="showMoreStudentsProgress()" style="display:none;">عرض المزيد (+10)</button>
             <button class="verse-list-btn" style="margin-top:15px;" onclick="hideStudentsProgressModal()">إغلاق</button>
@@ -667,6 +676,7 @@
             <button class="modal-close-x" onclick="goBackFromNotifications()" title="إغلاق">✕</button>
         </div>
         <div id="notifList"></div>
+        <button class="login-btn" style="margin-top:15px;" onclick="goBackFromNotifications()">عودة</button>
     </div>
 
     <div id="saved-list-view" style="display:none; padding: 15px 10px; width: 100%; max-width: 100%; margin: 0 auto; overflow-x: hidden;">
@@ -768,7 +778,10 @@
         <button class="verse-list-btn lessons-main-btn" onclick="showLessonsView()" style="margin-bottom:15px;">📚 جميع الدروس</button>
         <div id="leaderboard-section">
             <div class="leaderboard-card">
-                <div class="lb-title" id="lbStageTitle">🏆 المتصدرون الثلاثة (Top 3)</div>
+                <div class="lb-title-row">
+                    <div class="lb-title" id="lbStageTitle" style="margin:0;">🏆 المتصدرون الثلاثة (Top 3)</div>
+                    <button id="lbRefreshStudentsBtn" class="lb-refresh-icon-btn" onclick="refreshStudentsLeaderboard()" title="تحديث القائمة">🔄</button>
+                </div>
                 <div class="lb-motivation">"وفي ذلك فليتنافس المتنافسون"</div>
                 <ul id="leaderboard-list" class="lb-list">
                     <li style="text-align:center; color:#999; padding:10px;">جاري التحميل...</li>
@@ -778,12 +791,13 @@
                 <button id="lbShowTop3Btn" class="lb-show-more-btn" style="display:none; margin-top:8px; background:#888;" onclick="showTop3Only()">عرض Top 3 فقط</button>
                 <button id="lbSyncNamesBtn" class="btn-action lb-refresh-btn" style="display:none; margin-top:8px;" onclick="syncAllUserNames()" title="تحديث الأسماء في جميع التسجيلات والإعجابات والمشاهدات">🔄 مزامنة الأسماء</button>
                 <button id="lbSortAlphaBtn" class="btn-action lb-refresh-btn" style="display:none; margin-top:8px;" onclick="toggleLeaderboardSort()" title="ترتيب أبجدي">🔤 ترتيب أبجدي</button>
-                <button id="lbRefreshStudentsBtn" class="btn-action lb-refresh-btn" style="margin-top:8px;" onclick="refreshStudentsLeaderboard()" title="تحديث القائمة">🔄 تحديث</button>
             </div>
             <div id="teachersLeaderboard" class="leaderboard-card" style="margin-top:15px;">
-                <div class="lb-title" id="lbTeachersStageTitle">🏆 أفضل المعلمين</div>
+                <div class="lb-title-row">
+                    <div class="lb-title" id="lbTeachersStageTitle" style="margin:0;">🏆 أفضل المعلمين</div>
+                    <button id="lbRefreshTeachersBtn" class="lb-refresh-icon-btn" onclick="refreshTeachersLeaderboard()" title="تحديث القائمة">🔄</button>
+                </div>
                 <ul id="leaderboard-teachers-list" class="lb-list"></ul>
-                <button id="lbRefreshTeachersBtn" class="btn-action lb-refresh-btn" style="margin-top:8px;" onclick="refreshTeachersLeaderboard()" title="تحديث القائمة">🔄 تحديث</button>
             </div>
         </div>
         <button class="verse-list-btn" style="margin: 15px 0 0 0;" onclick="showSavedList()">📌 للمشاهدة لاحقاً</button>
@@ -812,8 +826,10 @@
 
         <div class="verse-section">
             <button id="lbBackToLikesBtn" class="verse-list-btn lb-back-btn" onclick="goBackToLbList()" style="display:none;">↩️ العودة</button>
-            <button class="verse-list-btn" onclick="showVerseList()">📋 قائمة مقاطع الدرس</button>
-            <button class="verse-list-btn" onclick="showLessonsView()">📚 العودة لقائمة الدروس</button>
+            <div class="verse-nav-buttons-row">
+                <button class="verse-list-btn" onclick="showVerseList()">📋 قائمة مقاطع الدرس</button>
+                <button class="verse-list-btn" onclick="showLessonsView()">📚 العودة لقائمة الدروس</button>
+            </div>
             <div id="verseStatusBadge" class="verse-status-badge" style="display:none;"></div>
             <div class="quran-frame">
                 <div class="player-container">
