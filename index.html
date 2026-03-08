@@ -2355,7 +2355,7 @@
 
         window.refreshStudentsLeaderboard = async function(suppressToast) {
             const btn = document.getElementById('lbRefreshStudentsBtn');
-            if (btn) { btn.disabled = true; btn.innerText = 'جاري التحديث...'; }
+            if (btn) { btn.disabled = true; btn.innerText = '🔄'; }
             lastStudentsRefreshTime = Date.now();
             try {
                 lbRecordingsCache = {}; lbLikesCache = {}; lbViewsCache = {};
@@ -2399,12 +2399,12 @@
                     setTimeout(() => toast.remove(), 2000);
                 }
             } catch(e) { console.warn("refreshStudentsLeaderboard:", e); if (!suppressToast) alert("خطأ في التحديث"); }
-            finally { if (btn) { btn.disabled = false; btn.innerText = '🔄 تحديث'; } }
+            finally { if (btn) { btn.disabled = false; btn.innerText = '🔄'; } }
         }
 
         window.refreshTeachersLeaderboard = async function(suppressToast) {
             const btn = document.getElementById('lbRefreshTeachersBtn');
-            if (btn) { btn.disabled = true; btn.innerText = 'جاري التحديث...'; }
+            if (btn) { btn.disabled = true; btn.innerText = '🔄'; }
             lastTeachersRefreshTime = Date.now();
             try {
                 const usersSnap = await window.getDocsFromServer(window.query(window.collection(window.db, "users"), window.where("role", "==", "teacher")));
@@ -2478,7 +2478,7 @@
                     setTimeout(() => toast.remove(), 2000);
                 }
             } catch(e) { console.warn("refreshTeachersLeaderboard:", e); if (!suppressToast) alert("خطأ في التحديث"); }
-            finally { if (btn) { btn.disabled = false; btn.innerText = '🔄 تحديث'; } }
+            finally { if (btn) { btn.disabled = false; btn.innerText = '🔄'; } }
         }
 
         window.syncAllUserNames = async function() {
