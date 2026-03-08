@@ -831,7 +831,7 @@
     </div>
 
     <div id="lessons-view" style="display:none; padding: 15px 10px; width: 100%; max-width: 100%; margin: 0 auto; overflow-x: hidden;">
-        <h3 id="lessons-view-title" style="text-align:center; color:var(--primary); font-size:22px; margin-bottom:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">📚 جميع الدروس</h3>
+        <h3 id="lessons-view-title" style="text-align:center; color:var(--primary); font-size:clamp(14px, 5vw, 22px); margin-bottom:15px; white-space:nowrap;">📚 جميع الدروس</h3>
         <div class="menu-grid" id="lesson-grid"></div>
     </div>
 
@@ -4010,7 +4010,7 @@
                     const ptP = document.getElementById('pageTitle');
                     if (ptP) {
                         ptP.classList.remove('header-name-pin');
-                        const lessonPart = lek.title ? `<span class="title-text-maktaa lesson-title-text" style="font-size:24px; color:var(--red); white-space:nowrap;">${lek.title}</span>` : `<img src="${getAssetUrl('T' + lek.id + '.png')}" alt="Lesson Title" onerror="this.onerror=null;this.src=this.src.replace('.png','.jpg');this.onerror=function(){this.style.display='none'}">`;
+                        const lessonPart = lek.title ? `<span class="title-text-maktaa lesson-title-text" style="font-size:clamp(14px, 4vw, 24px); color:var(--red); white-space:nowrap;">${lek.title}</span>` : `<img src="${getAssetUrl('T' + lek.id + '.png')}" alt="Lesson Title" onerror="this.onerror=null;this.src=this.src.replace('.png','.jpg');this.onerror=function(){this.style.display='none'}">`;
                         ptP.innerHTML = `<span class="title-text-maktaa verse-num-maktaa">المقطع ${currentLocalVers}</span>${lessonPart}`;
                     }
                 }
@@ -4475,7 +4475,7 @@
                     ? `<div class="lesson-progress-bar-wrap"><div class="lesson-progress-bar"><div class="lesson-progress-bar-fill" style="width:${prog.percent}%"></div></div><div class="lesson-progress-text">${prog.completed}/${prog.total} (${prog.percent}%)</div></div>` 
                     : '';
                 const titleContent = lek.title 
-                    ? `<div class="menu-item-title lesson-title-text" style="padding:24px 15px; font-size:26px; line-height:1.2; color:var(--red); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${lek.title}</div>` 
+                    ? `<div class="menu-item-title lesson-title-text" style="padding:24px 15px; font-size:clamp(11px, 3.5vw, 26px); line-height:1.2; color:var(--red); white-space:nowrap;">${lek.title}</div>` 
                     : `<div class="menu-item-title">الدرس ${index + 1}</div><img src="${getAssetUrl('T' + lek.id + '.png')}" loading="lazy" onerror="this.onerror=null;this.src=this.src.replace('.png','.jpg');this.onerror=function(){this.style.display='none'}">`;
                 const footerHtml = `<div class="lesson-card-footer"><div class="menu-item-students-icon" onclick="event.stopPropagation(); showStudentsProgressForLesson(${index})" title="عرض قائمة الطلاب">👥</div>${progressPart}</div>`;
                 div.innerHTML = `${titleContent}${footerHtml}`;
@@ -4578,7 +4578,7 @@
             const ptP = document.getElementById('pageTitle');
             if (ptP) {
                 ptP.classList.remove('header-name-pin');
-                const lessonPart = lek.title ? `<span class="title-text-maktaa lesson-title-text" style="font-size:24px; color:var(--red); white-space:nowrap;">${lek.title}</span>` : `<img src="${getAssetUrl('T' + lek.id + '.png')}" alt="Lesson Title" onerror="this.onerror=null;this.src=this.src.replace('.png','.jpg');this.onerror=function(){this.style.display='none'}">`;
+                const lessonPart = lek.title ? `<span class="title-text-maktaa lesson-title-text" style="font-size:clamp(14px, 4vw, 24px); color:var(--red); white-space:nowrap;">${lek.title}</span>` : `<img src="${getAssetUrl('T' + lek.id + '.png')}" alt="Lesson Title" onerror="this.onerror=null;this.src=this.src.replace('.png','.jpg');this.onerror=function(){this.style.display='none'}">`;
                 ptP.innerHTML = `<span class="title-text-maktaa verse-num-maktaa">المقطع ${localVersNum}</span>${lessonPart}`;
             }
 
