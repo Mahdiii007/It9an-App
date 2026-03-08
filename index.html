@@ -4827,27 +4827,33 @@
             else {
                 let rawStream = null, recCtx = null;
                 try {
-                    if (lastRecStream) { lastRecStream.getTracks().forEach(t => t.stop()); lastRecStream = null; }
-                    if (lastRecCtx && lastRecCtx.state !== 'closed') { try { await lastRecCtx.close(); } catch(e) {} lastRecCtx = null; }
                     const isMacDesktop = /Mac|Macintosh/.test(navigator.platform) && !navigator.maxTouchPoints;
-                    await new Promise(r => setTimeout(r, isMacDesktop ? 500 : 100));
-                    let dur = audioEl.duration; if(!dur || isNaN(dur)) dur = 15;
-                    const role = localStorage.getItem('it9an_role');
-                    maxRecDuration = (replyTargetId && role === 'teacher') ? 180 : Math.ceil(dur * 2);
                     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-                    if (navigator.audioSession && isIOS) {
-                        try { navigator.audioSession.type = 'play-and-record'; } catch(e) {}
-                    }
                     const audioConstraints = isIOS ? { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } } : (isMacDesktop ? { audio: true } : { 
                         echoCancellation: false, noiseSuppression: false, autoGainControl: false, 
                         sampleRate: 48000, channelCount: 1 
                     });
+                    if (!isMacDesktop) {
+                        if (lastRecStream) { lastRecStream.getTracks().forEach(t => t.stop()); lastRecStream = null; }
+                        if (lastRecCtx && lastRecCtx.state !== 'closed') { try { await lastRecCtx.close(); } catch(e) {} lastRecCtx = null; }
+                        await new Promise(r => setTimeout(r, 100));
+                    } else {
+                        lastRecStream = null;
+                        lastRecCtx = null;
+                        await new Promise(r => setTimeout(r, 1200));
+                    }
+                    if (navigator.audioSession && isIOS) {
+                        try { navigator.audioSession.type = 'play-and-record'; } catch(e) {}
+                    }
+                    let dur = audioEl.duration; if(!dur || isNaN(dur)) dur = 15;
+                    const role = localStorage.getItem('it9an_role');
+                    maxRecDuration = (replyTargetId && role === 'teacher') ? 180 : Math.ceil(dur * 2);
                     let getStream = () => navigator.mediaDevices.getUserMedia({ audio: audioConstraints });
                     try {
                         rawStream = await getStream();
                     } catch (firstErr) {
                         if (isMacDesktop) {
-                            await new Promise(r => setTimeout(r, 800));
+                            await new Promise(r => setTimeout(r, 1000));
                             rawStream = await getStream();
                         } else throw firstErr;
                     }
@@ -4903,7 +4909,7 @@
                             if (ctxToRelease) { try { ctxToRelease.close(); } catch(e) {} if (lastRecCtx === ctxToRelease) lastRecCtx = null; }
                             if (navigator.audioSession) { try { navigator.audioSession.type = 'playback'; } catch(e) {} }
                         };
-                        if (isMacDesktop) setTimeout(doRelease, 600);
+                        if (isMacDesktop) setTimeout(doRelease, 1500);
                         else doRelease();
                     };
                     mediaRecorder.start(200);
