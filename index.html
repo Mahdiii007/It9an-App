@@ -1155,6 +1155,7 @@
 
         let mediaRecorder, chunks = [], recInterval = null, recSeconds = 0;
         let currentBlob = null, replyTargetId = null, maxRecDuration = 0;
+        let lastRecStream = null, lastRecCtx = null;
         
         window.currentViewersData = { viewers: {}, totalRepetitions: 0 }; 
         
@@ -3512,7 +3513,7 @@
                 await window.updateDoc(window.doc(window.db, 'users', uid), { notifStages, notifStagesUpdatedAt: window.serverTimestamp() });
                 const fcmRef = window.doc(window.db, 'fcmTokens', uid);
                 const fcmSnap = await window.getDoc(fcmRef);
-                if (fcmSnap.exists()) await window.updateDoc(fcmRef, { notifStages, updatedAt: window.serverTimestamp() });
+                if (fcmSnap.exists()) await window.setDoc(fcmRef, { notifStages, updatedAt: window.serverTimestamp() }, { merge: true });
                 alert('تم حفظ إعدادات الإشعارات.');
             } catch (e) {
                 console.error('saveTeacherNotifStages:', e);
@@ -4826,6 +4827,9 @@
             else {
                 let rawStream = null, recCtx = null;
                 try {
+                    if (lastRecStream) { lastRecStream.getTracks().forEach(t => t.stop()); lastRecStream = null; }
+                    if (lastRecCtx && lastRecCtx.state !== 'closed') { try { await lastRecCtx.close(); } catch(e) {} lastRecCtx = null; }
+                    await new Promise(r => setTimeout(r, 100));
                     let dur = audioEl.duration; if(!dur || isNaN(dur)) dur = 15;
                     const role = localStorage.getItem('it9an_role');
                     maxRecDuration = (replyTargetId && role === 'teacher') ? 180 : Math.ceil(dur * 2);
@@ -4838,9 +4842,11 @@
                         sampleRate: 48000, channelCount: 1 
                     };
                     rawStream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints });
+                    lastRecStream = rawStream;
                     // iPhone/iPad Safari ignoriert channelCount – liefert oft Stereo (leiser, schlechtere Qualität).
                     // Explizites L+R-Mix via ChannelSplitter/ChannelMerger erzwingt Mono auf allen Geräten.
                     recCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    lastRecCtx = recCtx;
                     if (recCtx.state === 'suspended') await recCtx.resume();
                     const sourceNode = recCtx.createMediaStreamSource(rawStream);
                     const splitter = recCtx.createChannelSplitter(2);
@@ -4872,10 +4878,12 @@
                     
                     if(replyTargetId) statusText.innerText = "تسجيل رد..."; else statusText.innerText = "تسجيل تلاوة...";
 
-                    mediaRecorder.onstop = () => {
+                    mediaRecorder.onstop = async () => {
                         releaseWakeLock();
                         rawStream.getTracks().forEach(track => track.stop());
-                        try { recCtx.close(); } catch(e) {}
+                        if (lastRecStream === rawStream) lastRecStream = null;
+                        try { await recCtx.close(); } catch(e) {}
+                        if (lastRecCtx === recCtx) lastRecCtx = null;
                         if (navigator.audioSession) {
                             try { navigator.audioSession.type = 'playback'; } catch(e) {}
                         }
@@ -4893,8 +4901,8 @@
                 } catch(e) { 
                     alert("خطأ في الميكروفون"); 
                     replyTargetId = null; 
-                    if (rawStream) rawStream.getTracks().forEach(t => t.stop());
-                    if (recCtx) try { recCtx.close(); } catch(e2) {}
+                    if (rawStream) { rawStream.getTracks().forEach(t => t.stop()); if (lastRecStream === rawStream) lastRecStream = null; }
+                    if (recCtx) { try { recCtx.close(); } catch(e2) {} if (lastRecCtx === recCtx) lastRecCtx = null; }
                     if (navigator.audioSession) { try { navigator.audioSession.type = 'playback'; } catch(e3) {} }
                 }
             }
