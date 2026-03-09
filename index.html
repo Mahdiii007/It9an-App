@@ -492,6 +492,9 @@
         .reply-row1 { display: flex; align-items: center; gap: 6px; margin-bottom: 2px; flex-wrap: wrap; }
         .reply-delete-wrap { flex-shrink: 0; order: 1; }
         .reply-name-badge { font-size: 13px; font-weight: bold; color: var(--primary); flex-shrink: 0; order: 2; }
+        .reply-listened-badge { font-size: 11px; padding: 2px 6px; border-radius: 6px; font-weight: normal; margin-right: 6px; }
+        .reply-listened-badge.listened { background: #e8f5e9; color: #2e7d32; }
+        .reply-listened-badge.not-listened { background: #fff3e0; color: #e65100; }
         .reply-like-wrap { flex-shrink: 0; order: 3; margin-right: auto; }
         .reply-row2 { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
         .reply-datetime { font-size: 10px; color: #888; flex-shrink: 0; }
@@ -1554,10 +1557,15 @@
                             const ns = await window.getDocs(nq);
                             for (const nd of ns.docs) {
                                 if (nd.data().replyTimestamp === replyTs) {
-                                    await window.deleteDoc(window.doc(window.db, "notifications", nd.id));
+                                    await window.updateDoc(window.doc(window.db, "notifications", nd.id), { listenedByStudent: true });
                                     break;
                                 }
                             }
+                            const updatedReplies = post.replies.map(r => (r.timestamp === replyTs && r.role === 'teacher') ? { ...r, listenedByStudent: true } : r);
+                            await window.updateDoc(window.doc(window.db, "posts", postId), { replies: updatedReplies });
+                            post.replies = updatedReplies;
+                            const feedDiv = document.getElementById('community-feed');
+                            if (feedDiv && typeof renderPosts === 'function') renderPosts(feedDiv, localStorage.getItem('it9an_role'), localStorage.getItem('it9an_uid'), savedIdsForFeed || new Set());
                         } catch(e) {}
                     }
                 }
@@ -3260,7 +3268,7 @@
                         if (r.uid === uid) {
                             const likesCount = (r.likes && r.likes.length) || 0;
                             const ts = r.timestamp || 0;
-                            all.push({ type: 'reply', postId, replyIdx: idx, replyTimestamp: ts, audioUrl: r.audioUrl, mainAudioUrl, fileId, likesCount, timestamp: ts, authorUid: uid, teacherRating: mainTeacherRating });
+                            all.push({ type: 'reply', postId, replyIdx: idx, replyTimestamp: ts, audioUrl: r.audioUrl, mainAudioUrl, fileId, likesCount, timestamp: ts, authorUid: uid, teacherRating: mainTeacherRating, listenedByStudent: r.listenedByStudent });
                         }
                     });
                 });
@@ -3320,11 +3328,12 @@
                         <button class="cp-btn" id="btn-${playId}" onclick="playFeedAudio(window._lbRecordingsUrls[${idx}]||'','${playId}')">▶</button>
                     </div>`;
                 }
+                const listenedBadge = (it.type === 'reply') ? (it.listenedByStudent ? ' <span class="reply-listened-badge listened">تم الاستماع</span>' : ' <span class="reply-listened-badge not-listened">لم يُستمع بعد</span>') : '';
                 html += `
                 <div class="lb-liked-item${lbRatingClass}${highlightClass}" data-lb-scroll-id="${it.postId}">
                     <button class="lb-verse-goto-btn" onclick="goToVerseFromRecordings('${it.fileId}', '${it.postId}', '${studentUid}', ${offset})" title="الذهاب للمقطع">${btnText}</button>
                     <div class="lb-liked-info">
-                        <div class="lb-liked-name">${rv === 'accepted' ? '✓ مقبول' : rv === 'needs_improvement' ? '↻ يمكن أن يكون أفضل' : 'لم يُفحص بعد'}</div>
+                        <div class="lb-liked-name">${rv === 'accepted' ? '✓ مقبول' : rv === 'needs_improvement' ? '↻ يمكن أن يكون أفضل' : 'لم يُفحص بعد'}${listenedBadge}</div>
                         <div class="lb-liked-date">${dateStr}</div>
                     </div>
                     ${playSection}
@@ -3920,9 +3929,16 @@
                 if (role === 'teacher' && uid !== 'admin_super') {
                     notifs = notifs.filter(n => !(n.clearedBy || []).includes(uid));
                 }
+                if (role === 'student' && uid) {
+                    notifs = notifs.filter(n => !n.listenedByStudent);
+                }
                 notifs.sort((a,b) => (a.timestamp?.seconds || 0) - (b.timestamp?.seconds || 0));
                 const unreadCount = notifs.length;
-                const totalForAppBadge = lastRawNotifs.filter(n => { if (role === 'teacher' && uid !== 'admin_super' && (n.clearedBy || []).includes(uid)) return false; return true; }).length;
+                const totalForAppBadge = lastRawNotifs.filter(n => {
+                    if (role === 'teacher' && uid !== 'admin_super' && (n.clearedBy || []).includes(uid)) return false;
+                    if (role === 'student' && uid && n.listenedByStudent) return false;
+                    return true;
+                }).length;
                 updateAppIconBadge(totalForAppBadge);
                 const badge = document.getElementById('notifBadge');
                 if (badge) {
@@ -3985,6 +4001,7 @@
                     const stageMatch = n.type === 'admin_message' ? true : (s == null ? (stage.id === 4) : s === stage.id);
                     if (!stageMatch) return false;
                     if (role === 'teacher' && uid !== 'admin_super' && (n.clearedBy || []).includes(uid)) return false;
+                    if (role === 'student' && n.listenedByStudent) return false;
                     return true;
                 }).length;
                 const badge = document.getElementById('stage-notif-badge-' + stage.id);
@@ -4910,13 +4927,14 @@
                         let rUniqueId = d.id + "-reply-" + idx;
                         let rDateStr = r.timestamp ? (function(ts){ let dt=new Date(ts); return dt.getFullYear()+'-'+('0'+(dt.getMonth()+1)).slice(-2)+'-'+('0'+dt.getDate()).slice(-2)+' '+('0'+dt.getHours()).slice(-2)+':'+('0'+dt.getMinutes()).slice(-2); })(r.timestamp) : '';
                         let rBadge = rIsAdmin ? '<span class="role-badge badge-admin">المسؤول</span>' : (rIsTeacher ? '<span class="role-badge badge-teacher">معلم</span>' : '<span class="role-badge badge-student">طالب</span>');
+                        let rListenBadge = (isStudentPost && rIsTeacher) ? (r.listenedByStudent ? '<span class="reply-listened-badge listened">تم الاستماع</span>' : '<span class="reply-listened-badge not-listened">لم يُستمع بعد</span>') : '';
 
                         let rDelWrap = rDeleteBtn ? `<div class="reply-delete-wrap">${rDeleteBtn}</div>` : '';
                         repliesInner += `
                         <div class="${rBoxClass}">
                             <div class="reply-row1">
                                 ${rDelWrap}
-                                <div class="reply-name-badge">${stripYearFromName(r.name)} ${rBadge}</div>
+                                <div class="reply-name-badge">${stripYearFromName(r.name)} ${rBadge} ${rListenBadge}</div>
                                 <div class="reply-like-wrap">
                                     <div class="like-btn ${rLikeClass}">
                                         <div class="like-action ${rLockedClass}" onclick="${rLikeAction}">👍</div>
@@ -5112,8 +5130,9 @@
                             }
                             let rDateStr = r.timestamp ? (function(ts){ let dt=new Date(ts); return dt.getFullYear()+'-'+('0'+(dt.getMonth()+1)).slice(-2)+'-'+('0'+dt.getDate()).slice(-2)+' '+('0'+dt.getHours()).slice(-2)+':'+('0'+dt.getMinutes()).slice(-2); })(r.timestamp) : '';
                             let rBadge = r.uid === 'admin_super' ? '<span class="role-badge badge-admin">المسؤول</span>' : (r.role === 'teacher' ? '<span class="role-badge badge-teacher">معلم</span>' : '<span class="role-badge badge-student">طالب</span>');
+                            let rListenBadge = (isStudentPost && r.role === 'teacher') ? (r.listenedByStudent ? '<span class="reply-listened-badge listened">تم الاستماع</span>' : '<span class="reply-listened-badge not-listened">لم يُستمع بعد</span>') : '';
                             let rUniqueId = d.id + "-saved-reply-" + idx;
-                            repliesInner += `<div class="${rBoxClass}"><div class="reply-row1"><div class="reply-name-badge">${r.name} ${rBadge}</div></div><div class="reply-row2">${rDateStr ? '<span class="reply-datetime">'+rDateStr+'</span>' : ''}<div class="reply-player-wrap"><div class="custom-player"><button class="cp-btn" id="btn-${rUniqueId}" onclick="playFeedAudio('${r.audioUrl}', '${rUniqueId}')">▶</button><input type="range" class="cp-slider" id="seek-${rUniqueId}" value="0" min="0" step="0.1" oninput="seekFeedAudio(this.value)"><span class="cp-time" id="time-${rUniqueId}">00:00</span></div></div></div></div>`;
+                            repliesInner += `<div class="${rBoxClass}"><div class="reply-row1"><div class="reply-name-badge">${r.name} ${rBadge} ${rListenBadge}</div></div><div class="reply-row2">${rDateStr ? '<span class="reply-datetime">'+rDateStr+'</span>' : ''}<div class="reply-player-wrap"><div class="custom-player"><button class="cp-btn" id="btn-${rUniqueId}" onclick="playFeedAudio('${r.audioUrl}', '${rUniqueId}')">▶</button><input type="range" class="cp-slider" id="seek-${rUniqueId}" value="0" min="0" step="0.1" oninput="seekFeedAudio(this.value)"><span class="cp-time" id="time-${rUniqueId}">00:00</span></div></div></div></div>`;
                         });
                         repliesHtml = `<div class="replies-wrapper"><div class="replies-title">الردود</div>${repliesInner}</div>`;
                     }
@@ -5688,6 +5707,7 @@
                                     to: postOwnerUid,
                                     senderName: stripYearFromName(r.name || 'المعلم'),
                                     type: 'reply',
+                                    listenedByStudent: false,
                                     fileId: String(d.fileId || '1'),
                                     postId: doc.id,
                                     replyTimestamp: replyTs,
@@ -5702,6 +5722,7 @@
                             } else {
                                 for (const nd of nsnap.docs) {
                                     const data = nd.data();
+                                    if (data.listenedByStudent) continue;
                                     if (data.clearedBy && data.clearedBy.length > 0) {
                                         await window.updateDoc(window.doc(window.db, "notifications", nd.id), { clearedBy: [] });
                                         updated++;
