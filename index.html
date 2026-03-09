@@ -179,6 +179,7 @@
         .menu-item img { width: 100%; height: auto; display: block; padding: 15px; }
         
         #notifications-view { display: none; padding: 15px 10px; width: 100%; max-width: 100%; margin: 0 auto; overflow-x: hidden; }
+        .notif-student-hint { background: #fff8e1; border: 1px solid var(--gold); border-radius: 10px; padding: 12px 15px; margin-bottom: 15px; font-size: 15px; color: #5d4e37; text-align: center; }
         .modal-close-x { position: absolute; top: 0; right: 0; width: 44px; height: 44px; padding: 0; border: none; background: transparent; font-size: 28px; cursor: pointer; color: #888; line-height: 1; display: flex; align-items: center; justify-content: center; border-radius: 8px; }
         .modal-close-x:hover { color: var(--primary); background: rgba(0,0,0,0.05); }
         .notif-view-header { position: relative; padding-right: 44px; margin-bottom: 15px; }
@@ -702,6 +703,7 @@
             <h3 style="text-align:center; color:var(--primary); font-size:24px; margin:0;">الإشعارات</h3>
             <button class="modal-close-x" onclick="goBackFromNotifications()" title="إغلاق">✕</button>
         </div>
+        <div id="notifStudentHint" class="notif-student-hint" style="display:none;">تأكد من سماع رد المعلم حتى النهاية لكي يختفي الإشعار من هذه القائمة.</div>
         <div id="notifList"></div>
         <button class="login-btn" style="margin-top:15px;" onclick="goBackFromNotifications()">عودة</button>
     </div>
@@ -749,7 +751,7 @@
 
         <div class="admin-actions">
             <button id="maintenanceModeBtn" class="btn-admin-reset" onclick="toggleMaintenanceMode()" title="إصلاح التطبيق: إظهار رسالة للجميع ما عدا المعلم 9898 والطالب 0860">🔧 وضع الإصلاح</button>
-            <button class="btn-admin-reset" onclick="restoreStudentRecordingNotifications()" title="إعادة إشعارات التسجيلات التي لا تزال تحتاج رد أو تقييم من المعلم (يتم تشغيله تلقائياً كل 24 ساعة)">🔔 استعادة إشعارات التسجيلات</button>
+            <button class="btn-admin-reset" onclick="restoreStudentRecordingNotifications()" title="إعادة إشعارات التسجيلات والردود لجميع المستخدمين في جميع المراحل (يتم تشغيله تلقائياً يومياً الساعة 6 صباحاً)">🔔 استعادة إشعارات التسجيلات</button>
             <button class="btn-admin-reset" onclick="resetAllNotifications()">🔔 تصفير كل الإشعارات</button>
             <button class="btn-admin-reset" onclick="resetAllViews()">👁️ تصفير كل المشاهدات</button>
             <button class="btn-admin-reset" onclick="resetAllLikes()">👍 تصفير كل الإعجابات</button>
@@ -1054,22 +1056,33 @@
             });
         }
         let KURS_DATEN = buildKursFromVerses(VERS_PRO_LEKTION_FALLBACK_STAGE4, LESSON_TITLES_FALLBACK_STAGE4);
-        function getStageConfig(stageId) { return STAGES_CONFIG.find(s => s.id === stageId) || STAGES_CONFIG[3]; }
+        function getStageConfig(stageId) {
+            const id = stageId != null ? Number(stageId) : 4;
+            return STAGES_CONFIG.find(s => s.id === id) || { id, name: '', assetsBase: 'assets-v' + id };
+        }
         async function loadManifestForStage(stageId) {
+            const id = stageId != null ? Number(stageId) : 4;
             const cfg = getStageConfig(stageId);
-            const paths = [cfg.assetsBase + '/manifest.json', './' + cfg.assetsBase + '/manifest.json'];
-            for (const p of paths) {
-                try {
-                    const r = await fetch(p, { cache: 'no-store' });
-                    if (r.ok) {
-                        const j = await r.json();
-                        const arr = Array.isArray(j) ? j : (j.versesPerLesson || (j.lessons && j.lessons.map(l => l.verses)));
-                        const titles = j.lessonTitles || (j.lessons && j.lessons.map(l => l.title));
-                        if (arr && Array.isArray(arr) && arr.length > 0) {
-                            return buildKursFromVerses(arr, titles);
+            const basePaths = cfg.assetsBase ? [cfg.assetsBase, './' + cfg.assetsBase] : [];
+            basePaths.push('assets-v' + id, './assets-v' + id);
+            const seen = new Set();
+            for (const base of basePaths) {
+                if (seen.has(base)) continue;
+                seen.add(base);
+                const paths = [base + '/manifest.json'];
+                for (const p of paths) {
+                    try {
+                        const r = await fetch(p, { cache: 'no-store' });
+                        if (r.ok) {
+                            const j = await r.json();
+                            const arr = Array.isArray(j) ? j : (j.versesPerLesson || (j.lessons && j.lessons.map(l => l.verses)));
+                            const titles = j.lessonTitles || (j.lessons && j.lessons.map(l => l.title));
+                            if (arr && Array.isArray(arr) && arr.length > 0) {
+                                return buildKursFromVerses(arr, titles);
+                            }
                         }
-                    }
-                } catch (e) { continue; }
+                    } catch (e) { continue; }
+                }
             }
             return [];
         }
@@ -3985,6 +3998,8 @@
             notificationsReturnToStages = true;
             document.getElementById('stages-view').style.display = 'none';
             document.getElementById('notifications-view').style.display = 'block';
+            const hint = document.getElementById('notifStudentHint');
+            if (hint) hint.style.display = (localStorage.getItem('it9an_role') === 'student') ? 'block' : 'none';
             const ptN = document.getElementById('pageTitle'); if (ptN) { ptN.classList.remove('header-name-pin'); ptN.innerText = "الإشعارات — " + (getStageConfig && getStageConfig(stageId) ? getStageConfig(stageId).name : "مرحلة " + stageId); }
             document.getElementById('appFooter').style.display = 'none';
             const menuBtn = document.getElementById('menuBtn'); if (menuBtn) menuBtn.style.display = 'flex';
@@ -4023,6 +4038,8 @@
             if (isPlaying) stopLoop();
             notificationsFilterStageId = null;
             notificationsReturnToStages = false;
+            const hint = document.getElementById('notifStudentHint');
+            if (hint) hint.style.display = (localStorage.getItem('it9an_role') === 'student') ? 'block' : 'none';
             notificationsReturnToPlayer = (document.getElementById('player-view').style.display === 'block');
             document.getElementById('menu-view').style.display = 'none';
             document.getElementById('player-view').style.display = 'none';
@@ -5616,41 +5633,81 @@
 
         window.restoreStudentRecordingNotifications = async function() {
             if (localStorage.getItem('it9an_uid') !== 'admin_super') return;
-            if (!confirm("إعادة إشعارات التسجيلات التي لا تزال تحتاج رد أو تقييم من المعلم لجميع المعلمين؟")) return;
+            if (!confirm("إعادة إشعارات التسجيلات والردود لجميع المستخدمين (معلمين وطلاب) في جميع المراحل والدروس والمقاطع؟")) return;
             try {
                 const postsSnap = await window.getDocs(window.collection(window.db, "posts"));
                 let created = 0, updated = 0;
                 for (const doc of postsSnap.docs) {
                     const d = doc.data();
-                    if (d.uid === 'admin_super' || d.role === 'teacher') continue;
-                    const hasTeacherReply = d.replies && d.replies.some(r => r.role === 'teacher');
-                    const hasTeacherRating = d.teacherRating && (d.teacherRating.verdict === 'accepted' || d.teacherRating.verdict === 'needs_improvement');
-                    if (hasTeacherReply && hasTeacherRating) continue;
-                    const nq = window.query(window.collection(window.db, "notifications"), window.where("to", "==", "teachers"), window.where("postId", "==", doc.id), window.where("type", "==", "new_recording"));
-                    const nsnap = await window.getDocs(nq);
-                    if (nsnap.empty) {
-                        const stageId = d.stageId != null ? d.stageId : 4;
-                        const lv = await getLessonVerseForStageFile(stageId, d.fileId || '1');
-                        const stageCfg = getStageConfig(stageId);
-                        await window.addDoc(window.collection(window.db, "notifications"), {
-                            to: "teachers",
-                            senderName: stripYearFromName(d.name || 'طالب'),
-                            type: 'new_recording',
-                            fileId: String(d.fileId || '1'),
-                            postId: doc.id,
-                            stageId: stageId,
-                            stageName: stageCfg.name,
-                            lessonNum: lv.lesson,
-                            lessonTitle: lv.lessonTitle || '',
-                            verseNum: lv.verse,
-                            clearedBy: [],
-                            timestamp: window.serverTimestamp()
-                        });
-                        created++;
-                    } else {
-                        for (const nd of nsnap.docs) {
-                            await window.updateDoc(window.doc(window.db, "notifications", nd.id), { clearedBy: [] });
-                            updated++;
+                    const stageId = d.stageId != null ? d.stageId : 4;
+                    const lv = await getLessonVerseForStageFile(stageId, d.fileId || '1');
+                    const stageCfg = getStageConfig(stageId);
+
+                    /* 1) Lehrer: new_recording für Schüleraufnahmen ohne Bewertung/Antwort */
+                    if (d.uid !== 'admin_super' && d.role !== 'teacher') {
+                        const hasTeacherReply = d.replies && d.replies.some(r => r.role === 'teacher');
+                        const hasTeacherRating = d.teacherRating && (d.teacherRating.verdict === 'accepted' || d.teacherRating.verdict === 'needs_improvement');
+                        if (!hasTeacherReply || !hasTeacherRating) {
+                            const nq = window.query(window.collection(window.db, "notifications"), window.where("to", "==", "teachers"), window.where("postId", "==", doc.id), window.where("type", "==", "new_recording"));
+                            const nsnap = await window.getDocs(nq);
+                            if (nsnap.empty) {
+                                await window.addDoc(window.collection(window.db, "notifications"), {
+                                    to: "teachers",
+                                    senderName: stripYearFromName(d.name || 'طالب'),
+                                    type: 'new_recording',
+                                    fileId: String(d.fileId || '1'),
+                                    postId: doc.id,
+                                    stageId: stageId,
+                                    stageName: stageCfg.name,
+                                    lessonNum: lv.lesson,
+                                    lessonTitle: lv.lessonTitle || '',
+                                    verseNum: lv.verse,
+                                    clearedBy: [],
+                                    timestamp: window.serverTimestamp()
+                                });
+                                created++;
+                            } else {
+                                for (const nd of nsnap.docs) {
+                                    await window.updateDoc(window.doc(window.db, "notifications", nd.id), { clearedBy: [] });
+                                    updated++;
+                                }
+                            }
+                        }
+                    }
+
+                    /* 2) Schüler: reply-Benachrichtigungen für jede Lehrer-Antwort */
+                    const teacherReplies = (d.replies || []).filter(r => r.role === 'teacher');
+                    const postOwnerUid = d.uid;
+                    if (postOwnerUid && postOwnerUid !== 'admin_super' && teacherReplies.length > 0) {
+                        for (const r of teacherReplies) {
+                            const replyTs = r.timestamp || 0;
+                            const nq = window.query(window.collection(window.db, "notifications"), window.where("to", "==", postOwnerUid), window.where("postId", "==", doc.id), window.where("type", "==", "reply"), window.where("replyTimestamp", "==", replyTs));
+                            const nsnap = await window.getDocs(nq);
+                            if (nsnap.empty) {
+                                await window.addDoc(window.collection(window.db, "notifications"), {
+                                    to: postOwnerUid,
+                                    senderName: stripYearFromName(r.name || 'المعلم'),
+                                    type: 'reply',
+                                    fileId: String(d.fileId || '1'),
+                                    postId: doc.id,
+                                    replyTimestamp: replyTs,
+                                    stageId: stageId,
+                                    stageName: stageCfg.name,
+                                    lessonNum: lv.lesson,
+                                    lessonTitle: lv.lessonTitle || '',
+                                    verseNum: lv.verse,
+                                    timestamp: window.serverTimestamp()
+                                });
+                                created++;
+                            } else {
+                                for (const nd of nsnap.docs) {
+                                    const data = nd.data();
+                                    if (data.clearedBy && data.clearedBy.length > 0) {
+                                        await window.updateDoc(window.doc(window.db, "notifications", nd.id), { clearedBy: [] });
+                                        updated++;
+                                    }
+                                }
+                            }
                         }
                     }
                 }
