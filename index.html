@@ -888,7 +888,7 @@
         
         <div class="view-counter" onclick="showViewers()">👁️ <span id="viewCount">0</span> مشاهدة</div>
 
-        <h4 style="text-align:center; color:var(--primary); margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:10px; font-size:20px;">المشاركات</h4>
+        <h4 id="participations-header" style="text-align:center; color:var(--primary); margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:10px; font-size:20px;"><span id="participationsCount">(0)</span> المشاركات</h4>
         <div id="community-feed" class="feed-container">جاري التحميل...</div>
     </div>
 
@@ -1565,7 +1565,7 @@
                             await window.updateDoc(window.doc(window.db, "posts", postId), { replies: updatedReplies });
                             post.replies = updatedReplies;
                             const feedDiv = document.getElementById('community-feed');
-                            if (feedDiv && typeof renderPosts === 'function') renderPosts(feedDiv, localStorage.getItem('it9an_role'), localStorage.getItem('it9an_uid'), savedIdsForFeed || new Set());
+                            if (feedDiv && typeof renderPosts === 'function') { renderPosts(feedDiv, localStorage.getItem('it9an_role'), localStorage.getItem('it9an_uid'), savedIdsForFeed || new Set()); updateParticipationsCount(); }
                         } catch(e) {}
                     }
                 }
@@ -4126,6 +4126,7 @@
             const userRole = localStorage.getItem('it9an_role');
             const myUid = localStorage.getItem('it9an_uid');
             renderPosts(div, userRole, myUid, savedIdsForFeed);
+            updateParticipationsCount();
         }
 
         let currentAdminMessageId = null;
@@ -4739,6 +4740,7 @@
                         } catch(e) {}
                     }
                     renderPosts(div, userRole, myUid, savedIdsForFeed);
+                    updateParticipationsCount();
                     if (activePostFilter) {
                         const postIdToScroll = activePostFilter;
                         const feedDiv = document.getElementById('community-feed');
@@ -4752,6 +4754,7 @@
                     }
                 } else {
                     div.innerHTML = "<div style='text-align:center; color:#999; font-size:16px; padding:20px;'>لا توجد مشاركات حتى الآن</div>";
+                    updateParticipationsCount();
                 }
             } catch (e) { console.warn('loadFeed initial:', e); }
             unsubscribeFeed = window.onSnapshot(q, async (snap) => {
@@ -4764,7 +4767,7 @@
                     if (postStage !== currentStageId) return;
                     allLoadedPosts.push({ id: doc.id, ...d });
                 });
-                if (allLoadedPosts.length === 0) { div.innerHTML = "<div style='text-align:center; color:#999; font-size:16px; padding:20px;'>لا توجد مشاركات حتى الآن</div>"; return; }
+                if (allLoadedPosts.length === 0) { div.innerHTML = "<div style='text-align:center; color:#999; font-size:16px; padding:20px;'>لا توجد مشاركات حتى الآن</div>"; updateParticipationsCount(); return; }
                 
                 if (activePostFilter) {
                     const hp = allLoadedPosts.find(p => p.id === activePostFilter);
@@ -4801,6 +4804,7 @@
                     } catch(e) {}
                 }
                 renderPosts(div, userRole, myUid, savedIdsForFeed);
+                updateParticipationsCount();
                 
                 if (activePostFilter) {
                     const postIdToScroll = activePostFilter;
@@ -4816,6 +4820,12 @@
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                 }
             });
+        }
+
+        function updateParticipationsCount() {
+            const cnt = (allLoadedPosts || []).filter(p => p.role === 'student').length;
+            const el = document.getElementById('participationsCount');
+            if (el) el.textContent = '(' + cnt + ')';
         }
 
         function renderPosts(container, userRole, myUid, savedIds) {
@@ -5049,6 +5059,7 @@
             const myUid = localStorage.getItem('it9an_uid');
             const scrollY = window.scrollY;
             renderPosts(div, userRole, myUid, savedIdsForFeed);
+            updateParticipationsCount();
             window.scrollTo(0, scrollY);
         }
 
@@ -5067,7 +5078,7 @@
                     savedIdsForFeed.add(postId);
                 }
                 const div = document.getElementById('community-feed');
-                if (div) renderPosts(div, localStorage.getItem('it9an_role'), myUid, savedIdsForFeed);
+                if (div) { renderPosts(div, localStorage.getItem('it9an_role'), myUid, savedIdsForFeed); updateParticipationsCount(); }
             } catch (e) { console.error(e); alert("حدث خطأ"); }
         }
 
@@ -5528,7 +5539,7 @@
                 if (idx >= 0) allLoadedPosts[idx].teacherRating = teacherRating;
                 if (data.uid) invalidateCompletedVersesCache();
                 const div = document.getElementById('community-feed');
-                if (div) renderPosts(div, localStorage.getItem('it9an_role'), uid, savedIdsForFeed);
+                if (div) { renderPosts(div, localStorage.getItem('it9an_role'), uid, savedIdsForFeed); updateParticipationsCount(); }
                 const hasTeacherReply = data.replies && data.replies.some(r => r.role === 'teacher');
                 if (hasTeacherReply) {
                     try {
