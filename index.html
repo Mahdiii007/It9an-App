@@ -585,7 +585,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, addDoc, query, where, orderBy, onSnapshot, serverTimestamp, doc, setDoc, updateDoc, increment, arrayUnion, arrayRemove, deleteDoc, getDoc, getDocFromServer, getDocs, getDocsFromServer, enableIndexedDbPersistence, limit, deleteField } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
-        import { getMessaging, getToken, isSupported } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging.js";
+        import { getMessaging, getToken, onMessage, isSupported } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDoZLFvGknKztMIFAtS2-AgX6DYw4fssUA",
@@ -608,7 +608,7 @@
         window.uploadBytes = uploadBytes; window.getDownloadURL = getDownloadURL;
         window.doc = doc; window.setDoc = setDoc; window.updateDoc = updateDoc; window.increment = increment; window.arrayUnion = arrayUnion; window.arrayRemove = arrayRemove; window.deleteDoc = deleteDoc; window.getDoc = getDoc; window.getDocFromServer = getDocFromServer; window.getDocs = getDocs; window.getDocsFromServer = getDocsFromServer; window.deleteField = deleteField; 
         window.deleteObject = deleteObject; window.limit = limit;
-        window.getMessaging = getMessaging; window.getToken = getToken; window.isSupportedFcm = isSupported;
+        window.getMessaging = getMessaging; window.getToken = getToken; window.onMessage = onMessage; window.isSupportedFcm = isSupported;
     </script>
 </head>
 <body>
@@ -1883,6 +1883,7 @@
             document.getElementById('login-screen').style.display = 'none';
             updateUIForRole();
             if (uid !== 'guest') listenForNotifications();
+            setupForegroundPushHandler();
             showStagesView();
             checkPushNotificationParams();
             window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -3741,6 +3742,52 @@
 
         // --- PUSH NOTIFICATIONS (FCM) ---
         const FCM_VAPID_KEY = 'BKl57KGTMjrbUmQq2lYI3gJDqQZMb1F0DePQJEBIjaHPHJBGqbYg2OqQxuPUyuoBc4590EZM5i66I7SLfn35hwc';
+        let _foregroundPushSetup = false;
+        function setupForegroundPushHandler() {
+            if (_foregroundPushSetup) return;
+            if (!('Notification' in window) || Notification.permission !== 'granted') return;
+            const uid = localStorage.getItem('it9an_uid');
+            if (!uid || uid === 'guest') return;
+            try {
+                const messaging = window.getMessaging(window.firebaseApp);
+                window.onMessage(messaging, (payload) => {
+                    const data = payload.data || {};
+                    const title = data.title || 'تطبيق إتقان';
+                    const body = data.body || 'إشعار جديد';
+                    const badgeCount = parseInt(data.badge || '1', 10) || 1;
+                    const tag = data.tag || 'it9an-' + (data.postId || Date.now());
+                    if ('setAppBadge' in navigator) {
+                        try { navigator.setAppBadge(badgeCount); } catch(e) {}
+                    }
+                    const iconUrl = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect fill='%230f4c3a' width='192' height='192' rx='24'/%3E%3Ctext x='96' y='120' font-size='100' text-anchor='middle' fill='%23d4af37' font-family='serif'%3Eٱ%3C/text%3E%3C/svg%3E";
+                    const urlParams = new URLSearchParams();
+                    if (data.postId) urlParams.set('postId', data.postId);
+                    if (data.fileId) urlParams.set('fileId', data.fileId);
+                    if (data.notifId) urlParams.set('notifId', data.notifId);
+                    if (data.replyTimestamp) urlParams.set('replyTimestamp', data.replyTimestamp);
+                    const url = urlParams.toString() ? window.location.origin + window.location.pathname + '?' + urlParams.toString() : window.location.href;
+                    const n = new Notification(title, {
+                        body,
+                        icon: iconUrl,
+                        tag,
+                        renotify: true,
+                        requireInteraction: false,
+                        vibrate: [200, 100, 200, 100, 200],
+                        data: { url, postId: data.postId || '', fileId: data.fileId || '', notifId: data.notifId || '', replyTimestamp: data.replyTimestamp || '' }
+                    });
+                    n.onclick = () => {
+                        n.close();
+                        window.focus();
+                        if (data.postId && data.fileId) {
+                            try { sessionStorage.setItem('it9an_pushParams', JSON.stringify({ postId: data.postId, fileId: data.fileId, notifId: data.notifId || '' })); } catch(e){}
+                            checkPushNotificationParams();
+                        }
+                    };
+                    if (typeof window.applyNotifStageFilter === 'function') window.applyNotifStageFilter();
+                });
+                _foregroundPushSetup = true;
+            } catch (e) { console.warn('Foreground push setup:', e); }
+        }
         async function requestPushPermissionAndSaveToken(uid, role, showResult) {
             try {
                 if (!('Notification' in window)) {
@@ -3777,6 +3824,7 @@
                     } catch (e) {}
                 }
                 await window.setDoc(window.doc(window.db, 'fcmTokens', uid), { token, uid, role, notifStages, updatedAt: window.serverTimestamp() }, { merge: true });
+                setupForegroundPushHandler();
                 if (showResult) alert('تم تفعيل الإشعارات بنجاح.');
                 return true;
             } catch(e) {
