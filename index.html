@@ -953,6 +953,14 @@
             const postId = params.get('postId'), fileId = params.get('fileId'), notifId = params.get('notifId') || '';
             if (postId && fileId) { try { sessionStorage.setItem('it9an_pushParams', JSON.stringify({ postId, fileId, notifId })); } catch(e){} }
         })();
+        navigator.serviceWorker.addEventListener('message', (e) => {
+            const m = e.data;
+            if (m && m.type === 'IT9AN_OPEN_NOTIF' && m.postId && m.fileId) {
+                try { sessionStorage.setItem('it9an_pushParams', JSON.stringify({ postId: m.postId, fileId: m.fileId, notifId: m.notifId || '' })); } catch(x){}
+                if (typeof checkPushNotificationParams === 'function') setTimeout(checkPushNotificationParams, 100);
+                else if (m.url) window.location.href = m.url;
+            }
+        });
 
         function generatePersonalPin(existingPins) {
             const used = new Set([...RESERVED_PINS, ...(existingPins || [])]);
@@ -3775,14 +3783,17 @@
                         vibrate: [200, 100, 200, 100, 200],
                         data: { url, postId: data.postId || '', fileId: data.fileId || '', notifId: data.notifId || '', replyTimestamp: data.replyTimestamp || '' }
                     });
-                    n.onclick = () => {
+                    const handleNotifClick = () => {
                         n.close();
                         window.focus();
-                        if (data.postId && data.fileId) {
-                            try { sessionStorage.setItem('it9an_pushParams', JSON.stringify({ postId: data.postId, fileId: data.fileId, notifId: data.notifId || '' })); } catch(e){}
-                            checkPushNotificationParams();
+                        const postId = String(data.postId || '').trim();
+                        const fileId = String(data.fileId || '').trim();
+                        const notifId = (data.notifId || '').trim();
+                        if (postId && fileId && typeof window.openFromNotif === 'function') {
+                            setTimeout(() => window.openFromNotif(notifId, fileId, postId), 150);
                         }
                     };
+                    n.addEventListener('click', handleNotifClick);
                     if (typeof window.applyNotifStageFilter === 'function') window.applyNotifStageFilter();
                 });
                 _foregroundPushSetup = true;
