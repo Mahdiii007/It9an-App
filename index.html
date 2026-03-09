@@ -3894,6 +3894,40 @@
         }
         let lastRawNotifsGlobal = [];
         let notificationsFilterStageId = null;
+
+        function hasUnlistenedNotificationsForStage(stageId) {
+            const uid = localStorage.getItem('it9an_uid');
+            const role = localStorage.getItem('it9an_role');
+            if (!uid || uid === 'guest' || role !== 'student') return false;
+            const raw = lastRawNotifsGlobal || [];
+            const sid = stageId != null ? stageId : 4;
+            return raw.some(n => {
+                if (n.type !== 'reply') return false;
+                if (n.listenedByStudent) return false;
+                const s = n.stageId;
+                const stageMatch = (s == null) ? (sid === 4) : (s === sid);
+                return stageMatch;
+            });
+        }
+
+        function updateRecButtonForStudentNotifications() {
+            const recBtn = document.getElementById('recBtn');
+            const playerView = document.getElementById('player-view');
+            if (!recBtn || !playerView || playerView.style.display !== 'block') return;
+            const role = localStorage.getItem('it9an_role');
+            const uid = localStorage.getItem('it9an_uid');
+            if (role !== 'student' || !uid || uid === 'guest') return;
+            const blocked = hasUnlistenedNotificationsForStage(currentStageId);
+            if (blocked) {
+                recBtn.style.opacity = '0.5';
+                recBtn.style.cursor = 'pointer';
+                recBtn.title = 'استخدم إشعارات الجرس لسماع جميع ردود المعلم لهذه المرحلة حتى النهاية';
+            } else {
+                recBtn.style.opacity = '';
+                recBtn.style.cursor = '';
+                recBtn.title = '';
+            }
+        }
         let notificationsReturnToStages = false;
         let notificationsReturnToPlayer = false;
 
@@ -3919,6 +3953,7 @@
                 lastRawNotifsGlobal = [...lastRawNotifs];
                 if (typeof window.updateStageNotifBadges === 'function') window.updateStageNotifBadges();
                 if (typeof window.applyNotifStageFilter === 'function') window.applyNotifStageFilter();
+                if (typeof updateRecButtonForStudentNotifications === 'function') updateRecButtonForStudentNotifications();
             });
             window.applyNotifStageFilter = function() {
                 const uid = localStorage.getItem('it9an_uid');
@@ -4036,6 +4071,7 @@
                 document.getElementById('notifications-view').style.display = 'none';
                 document.getElementById('player-view').style.display = 'block';
                 document.getElementById('appFooter').style.display = 'flex';
+                if (typeof updateRecButtonForStudentNotifications === 'function') updateRecButtonForStudentNotifications();
                 const menuBtn = document.getElementById('menuBtn'); if (menuBtn) menuBtn.style.display = 'flex';
                 if (currentLessonIdx !== null && KURS_DATEN[currentLessonIdx]) {
                     const lek = KURS_DATEN[currentLessonIdx];
@@ -4606,6 +4642,7 @@
             if (!activePostFilter) window.scrollTo({ top: 0, behavior: 'smooth' });
             updateLbBackButton();
             document.getElementById('appFooter').style.display = 'flex';
+            if (typeof updateRecButtonForStudentNotifications === 'function') updateRecButtonForStudentNotifications();
             
             document.getElementById('adminMenuPanel').style.display = 'none'; 
             const uid = localStorage.getItem('it9an_uid');
@@ -5204,9 +5241,15 @@
 
         window.startReply = function(postId) { replyTargetId = postId; toggleRecord(); }
 
+        const REC_BLOCKED_MSG = 'يرجى استخدام إشعارات الجرس لسماع جميع ردود المعلم لهذه المرحلة حتى النهاية. يمكنك التسجيل في هذه المرحلة مرة أخرى فقط عندما تكون جميع ردود المعلم قد سُمعت حتى النهاية. هكذا تتعلم بشكل أفضل.';
+
         window.toggleRecord = async function() {
             if (localStorage.getItem('it9an_uid') === 'guest') {
                 showGuestRegisterModal();
+                return;
+            }
+            if (localStorage.getItem('it9an_role') === 'student' && hasUnlistenedNotificationsForStage(currentStageId)) {
+                alert(REC_BLOCKED_MSG);
                 return;
             }
             if(isPlaying) stopLoop();
