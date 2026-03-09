@@ -3328,12 +3328,11 @@
                         <button class="cp-btn" id="btn-${playId}" onclick="playFeedAudio(window._lbRecordingsUrls[${idx}]||'','${playId}')">▶</button>
                     </div>`;
                 }
-                const listenedBadge = (it.type === 'reply') ? (it.listenedByStudent ? ' <span class="reply-listened-badge listened">تم الاستماع</span>' : ' <span class="reply-listened-badge not-listened">لم يُستمع بعد</span>') : '';
                 html += `
                 <div class="lb-liked-item${lbRatingClass}${highlightClass}" data-lb-scroll-id="${it.postId}">
                     <button class="lb-verse-goto-btn" onclick="goToVerseFromRecordings('${it.fileId}', '${it.postId}', '${studentUid}', ${offset})" title="الذهاب للمقطع">${btnText}</button>
                     <div class="lb-liked-info">
-                        <div class="lb-liked-name">${rv === 'accepted' ? '✓ مقبول' : rv === 'needs_improvement' ? '↻ يمكن أن يكون أفضل' : 'لم يُفحص بعد'}${listenedBadge}</div>
+                        <div class="lb-liked-name">${rv === 'accepted' ? '✓ مقبول' : rv === 'needs_improvement' ? '↻ يمكن أن يكون أفضل' : 'لم يُفحص بعد'}</div>
                         <div class="lb-liked-date">${dateStr}</div>
                     </div>
                     ${playSection}
