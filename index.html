@@ -4010,6 +4010,7 @@
 
         window.showNotificationsForStage = function(stageId) {
             if (isPlaying) stopLoop();
+            pauseFeedAudio();
             notificationsFilterStageId = stageId;
             notificationsReturnToStages = true;
             document.getElementById('stages-view').style.display = 'none';
@@ -4052,6 +4053,7 @@
 
         window.showNotifications = function() {
             if (isPlaying) stopLoop();
+            pauseFeedAudio();
             notificationsFilterStageId = null;
             notificationsReturnToStages = false;
             const hint = document.getElementById('notifStudentHint');
@@ -4482,6 +4484,7 @@
 
         window.showLessonsView = async function() {
             if (isPlaying) stopLoop();
+            pauseFeedAudio();
             const grid = document.getElementById('lesson-grid');
             if (!grid) return;
             grid.innerHTML = '';
@@ -4547,6 +4550,7 @@
         
         window.showVerseList = async function() {
             if (isPlaying) stopLoop();
+            pauseFeedAudio();
             if(currentLessonIdx === null) return;
             const lesson = KURS_DATEN[currentLessonIdx];
             const grid = document.getElementById('verse-list-grid');
