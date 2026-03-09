@@ -57,7 +57,8 @@ messaging.onBackgroundMessage((payload) => {
   if (data.fileId) urlParams.set('fileId', data.fileId);
   if (data.notifId) urlParams.set('notifId', data.notifId);
   if (data.replyTimestamp) urlParams.set('replyTimestamp', data.replyTimestamp);
-  const url = urlParams.toString() ? './index.html?' + urlParams.toString() : './index.html';
+  const base = new URL('index.html', self.registration.scope).href.replace(/\/index\.html$/, '');
+  const url = urlParams.toString() ? (base + '/index.html?' + urlParams.toString()) : (base + '/index.html');
   const options = {
     body,
     icon: iconUrl,
@@ -74,9 +75,23 @@ messaging.onBackgroundMessage((payload) => {
 self.addEventListener('notificationclick', (e) => {
   e.notification.close();
   const d = e.notification.data || {};
-  const url = d.url || './index.html';
-  e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((c) => {
-    if (c.length) { c[0].focus(); if (c[0].navigate) c[0].navigate(url); }
-    else if (self.clients.openWindow) self.clients.openWindow(url);
+  const base = new URL('index.html', self.registration.scope).href.replace(/\/index\.html$/, '');
+  const urlParams = new URLSearchParams();
+  if (d.postId) urlParams.set('postId', d.postId);
+  if (d.fileId) urlParams.set('fileId', d.fileId);
+  if (d.notifId) urlParams.set('notifId', d.notifId);
+  if (d.replyTimestamp) urlParams.set('replyTimestamp', d.replyTimestamp);
+  const url = urlParams.toString() ? (base + '/index.html?' + urlParams.toString()) : (base + '/index.html');
+  e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+    if (clients.length > 0) {
+      const client = clients[0];
+      client.focus();
+      if (client.navigate) {
+        return client.navigate(url).catch(() => self.clients.openWindow(url));
+      }
+      client.postMessage({ type: 'IT9AN_OPEN_NOTIF', postId: d.postId, fileId: d.fileId, notifId: d.notifId, url });
+    } else if (self.clients.openWindow) {
+      return self.clients.openWindow(url);
+    }
   }));
 });
