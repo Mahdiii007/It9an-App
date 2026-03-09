@@ -522,7 +522,15 @@
         .stop-ui-btn { background: var(--red); color: white; border: none; padding: 8px 20px; border-radius: 20px; font-size: 14px; font-weight: bold; cursor: pointer; font-family: 'Amiri'; flex-shrink: 0; }
 
         #review-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(3px); z-index: 6000; justify-content: center; align-items: center; }
-        .review-box { background: white; padding: 30px; border-radius: 25px; width: 85%; max-width: 350px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.3); border: 2px solid var(--primary); }
+        .review-box { background: white; padding: 30px; padding-right: 50px; border-radius: 25px; width: 85%; max-width: 380px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.3); border: 2px solid var(--primary); position: relative; }
+        .review-close-x { position: absolute; top: 8px; right: 8px; width: 36px; height: 36px; padding: 0; border: none; background: transparent; font-size: 24px; cursor: pointer; color: #888; line-height: 1; display: flex; align-items: center; justify-content: center; border-radius: 8px; }
+        .review-close-x:hover { color: var(--primary); background: rgba(0,0,0,0.05); }
+        .review-box .review-title { font-size: 24px; font-weight: bold; margin-bottom: 15px; color: var(--primary); }
+        .review-box .review-verse-img { width: 100%; max-width: 100%; height: auto; border-radius: 8px; margin-bottom: 12px; display: block; }
+        .review-box .review-player-wrap { margin: 12px 0; width: 100%; }
+        .review-box .review-player-wrap .custom-player { width: 100%; }
+        .review-box .review-note { font-size: 14px; color: #666; margin: 12px 0; text-align: center; line-height: 1.5; }
+        .review-box .review-btns { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; }
         #ffmpeg-load-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 7000; justify-content: center; align-items: center; }
         .ffmpeg-load-box { background: white; padding: 30px; border-radius: 25px; width: 90%; max-width: 360px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.3); border: 2px solid var(--primary); }
         .ffmpeg-load-title { font-size: 20px; font-weight: bold; margin-bottom: 20px; color: var(--primary); }
@@ -530,8 +538,6 @@
         .ffmpeg-progress-fill { height: 100%; background: linear-gradient(90deg, var(--primary), var(--primary-light)); transition: width 0.2s; }
         .ffmpeg-progress-text { font-size: 18px; font-weight: bold; color: var(--primary); margin: 8px 0; }
         .ffmpeg-eta-text { font-size: 14px; color: #666; }
-        .review-title { font-size: 24px; font-weight: bold; margin-bottom: 25px; color: var(--primary); }
-        .review-btns { display: flex; flex-direction: column; gap: 15px; margin-top: 20px; }
         .r-btn { padding: 15px; border: none; border-radius: 12px; font-size: 18px; font-weight: bold; cursor: pointer; font-family: 'Amiri'; }
         .btn-send { background: var(--primary); color: white; }
         .btn-retry { background: var(--gold); color: white; }
@@ -911,13 +917,9 @@
 
     <div id="review-modal">
         <div class="review-box">
-            <div class="review-title">مراجعة التسجيل</div>
-            <audio id="reviewAudio" controls style="width:100%; margin: 10px 0;"></audio>
-            <div class="review-btns">
-                <button class="r-btn btn-send" onclick="confirmSend()">✅ إرسال</button>
-                <button class="r-btn btn-retry" onclick="retryRecord()">🔄 إعادة</button>
-                <button class="r-btn btn-cancel" onclick="cancelRecord()">❌ إلغاء</button>
-            </div>
+            <button class="review-close-x" onclick="cancelRecord()" title="إغلاق">✕</button>
+            <div id="review-content"></div>
+            <audio id="reviewAudio" style="display:none;"></audio>
         </div>
     </div>
 
@@ -5357,9 +5359,82 @@
         }
 
         window.stopRecordingAndReview = function() { if(mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop(); }
-        function showReviewModal() { const modal = document.getElementById('review-modal'); const audio = document.getElementById('reviewAudio'); if(currentBlob) { audio.src = URL.createObjectURL(currentBlob); modal.style.display = 'flex'; } }
+        function showReviewModal() {
+            const modal = document.getElementById('review-modal');
+            const audio = document.getElementById('reviewAudio');
+            const content = document.getElementById('review-content');
+            if (!currentBlob || !modal || !audio || !content) return;
+            audio.src = URL.createObjectURL(currentBlob);
+            const isReply = !!replyTargetId;
+            const verseImgHtml = !isReply && currentGlobalFileId != null ? `<img class="review-verse-img" src="${getAssetUrl(getVerseAssetPath(currentGlobalFileId) + '.png')}" alt="المقطع" onerror="this.onerror=null;this.src=this.src.replace('.png','.jpg');this.onerror=function(){this.style.display='none'}">` : '';
+            const noteHtml = !isReply ? `<div class="review-note">يرجى التأكد من أن التسجيل يتطابق مع المقطع.</div>` : '';
+            content.innerHTML = `
+                <div class="review-title">${isReply ? 'مراجعة الرد' : 'مراجعة التسجيل'}</div>
+                ${verseImgHtml}
+                <div class="review-player-wrap">
+                    <div class="custom-player">
+                        <button class="cp-btn" id="review-play-btn" onclick="toggleReviewAudio()">▶</button>
+                        <input type="range" class="cp-slider" id="review-seek" value="0" min="0" step="0.1" oninput="seekReviewAudio(this.value)">
+                        <span class="cp-time" id="review-time">00:00</span>
+                    </div>
+                </div>
+                ${noteHtml}
+                <div class="review-btns">
+                    <button class="r-btn btn-retry" onclick="retryRecord()">🔄 إعادة</button>
+                    <button class="r-btn btn-send" onclick="confirmSend()">✅ إرسال</button>
+                </div>`;
+            modal.style.display = 'flex';
+            setupReviewAudioListeners();
+        }
+        let _reviewAudioHandlers = null;
+        function setupReviewAudioListeners() {
+            const audio = document.getElementById('reviewAudio');
+            const seek = document.getElementById('review-seek');
+            const timeEl = document.getElementById('review-time');
+            const btn = document.getElementById('review-play-btn');
+            if (!audio || !seek || !timeEl || !btn) return;
+            if (_reviewAudioHandlers) {
+                audio.removeEventListener('timeupdate', _reviewAudioHandlers.timeupdate);
+                audio.removeEventListener('loadedmetadata', _reviewAudioHandlers.loadedmetadata);
+                audio.removeEventListener('ended', _reviewAudioHandlers.ended);
+                audio.removeEventListener('play', _reviewAudioHandlers.play);
+                audio.removeEventListener('pause', _reviewAudioHandlers.pause);
+            }
+            _reviewAudioHandlers = {
+                timeupdate: () => {
+                    if (audio.duration && !isNaN(audio.duration)) {
+                        seek.max = audio.duration;
+                        seek.value = audio.currentTime;
+                    }
+                    timeEl.textContent = formatTime(audio.currentTime);
+                },
+                loadedmetadata: () => { seek.max = audio.duration; },
+                ended: () => { btn.textContent = '▶'; seek.value = 0; timeEl.textContent = '00:00'; },
+                play: () => { btn.textContent = '⏸'; },
+                pause: () => { btn.textContent = '▶'; }
+            };
+            audio.addEventListener('timeupdate', _reviewAudioHandlers.timeupdate);
+            audio.addEventListener('loadedmetadata', _reviewAudioHandlers.loadedmetadata);
+            audio.addEventListener('ended', _reviewAudioHandlers.ended);
+            audio.addEventListener('play', _reviewAudioHandlers.play);
+            audio.addEventListener('pause', _reviewAudioHandlers.pause);
+            seek.value = 0; timeEl.textContent = '00:00'; btn.textContent = '▶';
+        }
+        window.toggleReviewAudio = function() {
+            const audio = document.getElementById('reviewAudio');
+            const btn = document.getElementById('review-play-btn');
+            if (!audio || !btn) return;
+            if (audio.paused) { audio.play(); btn.textContent = '⏸'; }
+            else { audio.pause(); btn.textContent = '▶'; }
+        };
+        window.seekReviewAudio = function(val) {
+            const audio = document.getElementById('reviewAudio');
+            if (audio) audio.currentTime = parseFloat(val);
+        };
 
         window.confirmSend = async function() {
+            const ra = document.getElementById('reviewAudio');
+            if (ra) { ra.pause(); ra.src = ''; }
             document.getElementById('review-modal').style.display = 'none';
             const name = localStorage.getItem('it9an_name');
             const role = localStorage.getItem('it9an_role');
@@ -5459,8 +5534,19 @@
             } catch(e) { alert("خطأ في الإرسال"); }
         }
 
-        window.retryRecord = function() { document.getElementById('review-modal').style.display = 'none'; toggleRecord(); }
-        window.cancelRecord = function() { document.getElementById('review-modal').style.display = 'none'; currentBlob = null; replyTargetId = null; }
+        window.retryRecord = function() {
+            const ra = document.getElementById('reviewAudio');
+            if (ra) { ra.pause(); ra.src = ''; }
+            document.getElementById('review-modal').style.display = 'none';
+            toggleRecord();
+        }
+        window.cancelRecord = function() {
+            const ra = document.getElementById('reviewAudio');
+            if (ra) { ra.pause(); ra.src = ''; }
+            document.getElementById('review-modal').style.display = 'none';
+            currentBlob = null;
+            replyTargetId = null;
+        }
 
         window.toggleSmartLoop = function() {
             if (isPlaying) {
