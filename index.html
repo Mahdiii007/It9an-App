@@ -710,6 +710,14 @@
         </div>
     </div>
 
+    <div id="micro-locked-modal" onclick="if(event.target===this) hideMicroLockedModal()" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:5001; overflow-y:auto; padding:15px; box-sizing:border-box;">
+        <div class="verse-list-content" onclick="event.stopPropagation()" style="max-width:420px; margin:40px auto;">
+            <div class="verse-list-title" style="margin-bottom:15px;">🎤</div>
+            <div id="micro-locked-modal-body" style="text-align:right; line-height:1.8; font-size:17px; color:#333; margin:15px 0;"></div>
+            <button class="verse-list-btn" style="margin-top:15px; width:100%;" onclick="hideMicroLockedModal()">فهمت</button>
+        </div>
+    </div>
+
     <div id="students-progress-modal" onclick="if(event.target===this) hideStudentsProgressModal()" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:5000; overflow-y:auto; padding:15px; box-sizing:border-box;">
         <div class="leaderboard-card" onclick="event.stopPropagation()" style="max-width:500px; margin:20px auto;">
             <div class="verse-list-header" style="margin-bottom:15px;">
@@ -1171,6 +1179,56 @@
             const count = completed.size;
             return { completed: count, total, percent: Math.round((count / total) * 100) };
         }
+        const MICRO_CUTOFF_MS = new Date('2025-03-10T00:00:00Z').getTime();
+        let stagesWithLessonsCache = null;
+        async function getStagesWithLessons() {
+            if (stagesWithLessonsCache) return stagesWithLessonsCache;
+            const result = [];
+            for (const stage of (typeof STAGES_CONFIG !== 'undefined' ? STAGES_CONFIG : [])) {
+                let kurs = await loadManifestForStage(stage.id);
+                if (kurs.length === 0 && stage.id === 4) kurs = buildKursFromVerses(VERS_PRO_LEKTION_FALLBACK_STAGE4, LESSON_TITLES_FALLBACK_STAGE4);
+                if (kurs.length > 0) result.push(stage.id);
+            }
+            stagesWithLessonsCache = result;
+            return result;
+        }
+        function getPreviousStageWithLessons(stageId, stagesWithLessons) {
+            const idx = stagesWithLessons.indexOf(stageId);
+            if (idx <= 0) return null;
+            return stagesWithLessons[idx - 1];
+        }
+        async function canStudentRecordInStage(uid, stageId) {
+            const userRef = window.doc(window.db, "users", uid);
+            const snap = await window.getDoc(userRef);
+            const data = snap.exists() ? snap.data() : {};
+            let firstLoginMs = 0;
+            if (data.firstLogin) firstLoginMs = (typeof data.firstLogin.toMillis === 'function' ? data.firstLogin.toMillis() : (typeof data.firstLogin === 'number' ? data.firstLogin : 0));
+            else if (data.createdAt) firstLoginMs = (typeof data.createdAt.toMillis === 'function' ? data.createdAt.toMillis() : (typeof data.createdAt === 'number' ? data.createdAt : 0));
+            const isOldStudent = firstLoginMs > 0 && firstLoginMs < MICRO_CUTOFF_MS;
+            if (isOldStudent) return { allowed: true };
+            const blocked = (data.microBlockedStages || []).includes(stageId);
+            if (blocked) {
+                const stages = await getStagesWithLessons();
+                const prevId = getPreviousStageWithLessons(stageId, stages);
+                const prevCfg = prevId != null ? getStageConfig(prevId) : null;
+                return { allowed: false, prevStageId: prevId, prevStageName: prevCfg ? prevCfg.name : ('مرحلة ' + prevId) };
+            }
+            const allowed = (data.microAllowedStages || []).includes(stageId);
+            if (allowed) return { allowed: true };
+            const stages = await getStagesWithLessons();
+            const prevId = getPreviousStageWithLessons(stageId, stages);
+            if (prevId == null) return { allowed: true };
+            const prog = await getStageProgressForStudent(uid, prevId);
+            if ((prog.percent || 0) >= 80) return { allowed: true };
+            const prevCfg = getStageConfig(prevId);
+            return { allowed: false, prevStageId: prevId, prevStageName: prevCfg ? prevCfg.name : ('مرحلة ' + prevId) };
+        }
+        window.showMicroLockedModal = function(prevStageName) {
+            const body = document.getElementById('micro-locked-modal-body');
+            if (body) body.innerText = 'يجب عليك تحقيق 80% على الأقل في المرحلة السابقة (' + (prevStageName || '') + ') لفتح الميكروفون في هذه المرحلة.';
+            document.getElementById('micro-locked-modal').style.display = 'block';
+        }
+        window.hideMicroLockedModal = function() { document.getElementById('micro-locked-modal').style.display = 'none'; }
         async function showStagesView() {
             document.getElementById('menu-view').style.display = 'none';
             document.getElementById('player-view').style.display = 'none';
@@ -2187,6 +2245,28 @@
         window.toggleBlockUser = async function(uid, currentStatus) {
             try { await window.updateDoc(window.doc(window.db, "users", uid), { blocked: !currentStatus }); } catch(e) { alert("خطأ"); }
         }
+        window.toggleMicroBlockStage = async function(uid, stageId, currentlyBlocked) {
+            try {
+                const userRef = window.doc(window.db, "users", uid);
+                const snap = await window.getDoc(userRef);
+                let arr = (snap.exists() ? snap.data().microBlockedStages : []) || [];
+                if (currentlyBlocked) arr = arr.filter(s => s !== stageId);
+                else if (!arr.includes(stageId)) arr = [...arr, stageId];
+                await window.updateDoc(userRef, { microBlockedStages: arr });
+                if (typeof refreshStudentsLeaderboard === 'function') refreshStudentsLeaderboard(true);
+            } catch(e) { alert("خطأ: " + (e.message || e)); }
+        }
+        window.toggleMicroAllowStage = async function(uid, stageId, currentlyAllowed) {
+            try {
+                const userRef = window.doc(window.db, "users", uid);
+                const snap = await window.getDoc(userRef);
+                let arr = (snap.exists() ? snap.data().microAllowedStages : []) || [];
+                if (currentlyAllowed) arr = arr.filter(s => s !== stageId);
+                else if (!arr.includes(stageId)) arr = [...arr, stageId];
+                await window.updateDoc(userRef, { microAllowedStages: arr });
+                if (typeof refreshStudentsLeaderboard === 'function') refreshStudentsLeaderboard(true);
+            } catch(e) { alert("خطأ: " + (e.message || e)); }
+        }
 
         async function deleteUserInternal(uid) {
             const userSnap = await window.getDoc(window.doc(window.db, "users", uid));
@@ -2496,9 +2576,13 @@
                 const isBlocked = u.blocked === true;
                 const blockBtnText = isBlocked ? "فك الحظر" : "حظر";
                 const blockBtnClass = isBlocked ? "btn-action btn-block blocked" : "btn-action btn-block";
+                const microBlocked = (u.microBlockedStages || []).includes(currentStageId);
+                const microAllowed = (u.microAllowedStages || []).includes(currentStageId);
+                const microBlockBtn = microBlocked ? `<button class="btn-action" style="padding:4px 8px; font-size:11px;" onclick="toggleMicroBlockStage('${u.uid}', ${currentStageId}, true)" title="إلغاء منع التسجيل في مرحلة ${currentStageId}">🎤✓</button>` : `<button class="btn-action" style="padding:4px 8px; font-size:11px;" onclick="toggleMicroBlockStage('${u.uid}', ${currentStageId}, false)" title="منع التسجيل في مرحلة ${currentStageId}">🎤✗</button>`;
+                const microAllowBtn = microAllowed ? `<button class="btn-action" style="padding:4px 8px; font-size:11px;" onclick="toggleMicroAllowStage('${u.uid}', ${currentStageId}, true)" title="إلغاء السماح المبكر في مرحلة ${currentStageId}">🎤+</button>` : `<button class="btn-action" style="padding:4px 8px; font-size:11px;" onclick="toggleMicroAllowStage('${u.uid}', ${currentStageId}, false)" title="سماح التسجيل المبكر في مرحلة ${currentStageId}">🎤+</button>`;
                 const lbDisplayName = isAdmin ? getDisplayNameForAdminWithDate(u) : getDisplayName(u);
                 const pinBadge = isAdmin ? `<span class="lb-pin" title="الرمز الشخصي">${u.personalPin ? String(u.personalPin).padStart(4,'0') : '—'}</span>` : '';
-                const adminBtns = isAdmin ? `<button class="delete-btn" onclick="deleteUser('${u.uid}')" title="حذف">🗑️</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="editUserName('${u.uid}')" title="تعديل الاسم">✏️</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="swapFirstLastName('${u.uid}')" title="تبديل الاسم الأول واللقب">🔄</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="sendPrivateMessageToUser('${u.uid}')" title="رسالة خاصة">✉️</button><button class="${blockBtnClass}" style="padding:4px 10px; font-size:12px;" onclick="toggleBlockUser('${u.uid}', ${isBlocked})">${blockBtnText}</button>` : '';
+                const adminBtns = isAdmin ? `${microBlockBtn}${microAllowBtn}<button class="delete-btn" onclick="deleteUser('${u.uid}')" title="حذف">🗑️</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="editUserName('${u.uid}')" title="تعديل الاسم">✏️</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="swapFirstLastName('${u.uid}')" title="تبديل الاسم الأول واللقب">🔄</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="sendPrivateMessageToUser('${u.uid}')" title="رسالة خاصة">✉️</button><button class="${blockBtnClass}" style="padding:4px 10px; font-size:12px;" onclick="toggleBlockUser('${u.uid}', ${isBlocked})">${blockBtnText}</button>` : '';
                 list.innerHTML += `
                 <li class="${cls}">
                     <div class="lb-item">
@@ -4044,18 +4128,28 @@
             });
         }
 
-        function updateRecButtonForStudentNotifications() {
+        async function updateRecButtonForStudentNotifications() {
             const recBtn = document.getElementById('recBtn');
             const playerView = document.getElementById('player-view');
             if (!recBtn || !playerView || playerView.style.display !== 'block') return;
             const role = localStorage.getItem('it9an_role');
             const uid = localStorage.getItem('it9an_uid');
             if (role !== 'student' || !uid || uid === 'guest') return;
-            const blocked = hasUnlistenedNotificationsForStage(currentStageId);
+            const notifBlocked = hasUnlistenedNotificationsForStage(currentStageId);
+            let microBlocked = false;
+            let microBlockTitle = '';
+            try {
+                const microCheck = await canStudentRecordInStage(uid, currentStageId);
+                if (!microCheck.allowed) {
+                    microBlocked = true;
+                    microBlockTitle = 'يجب عليك تحقيق 80% على الأقل في المرحلة السابقة (' + (microCheck.prevStageName || '') + ') لفتح الميكروفون في هذه المرحلة. انقر للتفاصيل.';
+                }
+            } catch (e) { console.warn('canStudentRecordInStage:', e); }
+            const blocked = notifBlocked || microBlocked;
             if (blocked) {
                 recBtn.style.opacity = '0.5';
                 recBtn.style.cursor = 'pointer';
-                recBtn.title = 'استخدم إشعارات الجرس لسماع جميع ردود المعلم لهذه المرحلة حتى النهاية';
+                recBtn.title = microBlocked ? microBlockTitle : 'استخدم إشعارات الجرس لسماع جميع ردود المعلم لهذه المرحلة حتى النهاية';
             } else {
                 recBtn.style.opacity = '';
                 recBtn.style.cursor = '';
@@ -5385,6 +5479,18 @@
             if (localStorage.getItem('it9an_role') === 'student' && hasUnlistenedNotificationsForStage(currentStageId)) {
                 alert(REC_BLOCKED_MSG);
                 return;
+            }
+            if (localStorage.getItem('it9an_role') === 'student') {
+                const uid = localStorage.getItem('it9an_uid');
+                if (uid && uid !== 'guest') {
+                    try {
+                        const microCheck = await canStudentRecordInStage(uid, currentStageId);
+                        if (!microCheck.allowed) {
+                            showMicroLockedModal(microCheck.prevStageName);
+                            return;
+                        }
+                    } catch (e) { console.warn('canStudentRecordInStage:', e); }
+                }
             }
             if(isPlaying) stopLoop();
             const ui = document.getElementById('recording-ui');
