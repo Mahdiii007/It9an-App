@@ -1160,6 +1160,7 @@
         }
         async function enterStage(stageId) {
             currentStageId = stageId;
+            stagesWithLessonsCache = null;
             const cfg = getStageConfig(stageId);
             ASSETS_BASE = cfg.assetsBase;
             KURS_DATEN = await loadManifestForStage(stageId);
@@ -2590,7 +2591,7 @@
                 const isBlocked = u.blocked === true;
                 const blockBtnText = isBlocked ? "فك الحظر" : "حظر";
                 const blockBtnClass = isBlocked ? "btn-action btn-block blocked" : "btn-action btn-block";
-                const prevPercent = u.prevStagePercent != null ? u.prevStagePercent : 100;
+                const prevPercent = u.prevStagePercent != null ? u.prevStagePercent : 0;
                 const microBtnGrayed = prevPercent >= 80;
                 const microStageBtn = microBtnGrayed
                     ? `<button class="btn-action" style="padding:4px 8px; font-size:11px; opacity:0.5; cursor:not-allowed; pointer-events:none;" title="الطالب حقق 80% في المرحلة السابقة بالفعل">🎤</button>`
@@ -2694,7 +2695,7 @@
                 users = await Promise.all(users.map(async (u) => {
                     const s = stageStats[u.uid] || { postsCount: 0, totalLikes: 0 };
                     const views = (currentStageId === 4) ? (u.totalVerseViews || 0) : (stageViews[u.uid] ?? 0);
-                    let prevStagePercent = 100;
+                    let prevStagePercent = prevStageId == null ? 0 : 100;
                     if (prevStageId != null) {
                         try {
                             const prog = await getStageProgressForStudent(u.uid, prevStageId);
@@ -3187,11 +3188,20 @@
                 const stageStats = await fetchStageLeaderboardStats();
                 let stageViews = {};
                 if (currentStageId !== 4) stageViews = await fetchStageVerseViewsFromStats(currentStageId);
-                users = users.map(u => {
+                const stagesWithLessons = await getStagesWithLessons();
+                const prevStageId = getPreviousStageWithLessons(currentStageId, stagesWithLessons);
+                users = await Promise.all(users.map(async (u) => {
                     const s = stageStats[u.uid] || { postsCount: 0, totalLikes: 0 };
                     const views = (currentStageId === 4) ? (u.totalVerseViews || 0) : (stageViews[u.uid] ?? 0);
-                    return { ...u, postsCount: s.postsCount, totalLikes: s.totalLikes, totalVerseViews: views };
-                });
+                    let prevStagePercent = prevStageId == null ? 0 : 100;
+                    if (prevStageId != null) {
+                        try {
+                            const prog = await getStageProgressForStudent(u.uid, prevStageId);
+                            prevStagePercent = prog.percent || 0;
+                        } catch (e) {}
+                    }
+                    return { ...u, postsCount: s.postsCount, totalLikes: s.totalLikes, totalVerseViews: views, prevStagePercent };
+                }));
                 leaderboardAllUsers = applyLeaderboardSort(users);
                 lastStudentsRefreshTime = Date.now();
                 if (lbPendingRestore) {
@@ -3214,11 +3224,20 @@
                 const stageStats = await fetchStageLeaderboardStats();
                 let stageViews = {};
                 if (currentStageId !== 4) stageViews = await fetchStageVerseViewsFromStats(currentStageId);
-                users = users.map(u => {
+                const stagesWithLessons = await getStagesWithLessons();
+                const prevStageId = getPreviousStageWithLessons(currentStageId, stagesWithLessons);
+                users = await Promise.all(users.map(async (u) => {
                     const s = stageStats[u.uid] || { postsCount: 0, totalLikes: 0 };
                     const views = (currentStageId === 4) ? (u.totalVerseViews || 0) : (stageViews[u.uid] ?? 0);
-                    return { ...u, postsCount: s.postsCount, totalLikes: s.totalLikes, totalVerseViews: views };
-                });
+                    let prevStagePercent = prevStageId == null ? 0 : 100;
+                    if (prevStageId != null) {
+                        try {
+                            const prog = await getStageProgressForStudent(u.uid, prevStageId);
+                            prevStagePercent = prog.percent || 0;
+                        } catch (e) {}
+                    }
+                    return { ...u, postsCount: s.postsCount, totalLikes: s.totalLikes, totalVerseViews: views, prevStagePercent };
+                }));
                 leaderboardAllUsers = applyLeaderboardSort(users);
                 const needPin = leaderboardAllUsers.filter(u => !u.personalPin);
                 if (needPin.length > 0) {
