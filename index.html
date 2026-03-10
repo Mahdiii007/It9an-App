@@ -1319,6 +1319,17 @@
         function getAssetUrl(relativePath) {
             return ASSETS_BASE + '/' + relativePath.replace(/^\//, '');
         }
+        function getVerseImgOnError(img, usePlaceholder) {
+            return function() {
+                img.onerror = null;
+                var s = img.src || '';
+                if (s.endsWith('.png')) { img.src = s.replace('.png', '.PNG'); img.onerror = getVerseImgOnError(img, usePlaceholder); }
+                else if (s.endsWith('.PNG')) { img.src = s.replace('.PNG', '.jpg'); img.onerror = getVerseImgOnError(img, usePlaceholder); }
+                else if (usePlaceholder) { img.src = 'placeholder.png'; img.onerror = function(){ img.style.display = 'none'; }; }
+                else { img.style.display = 'none'; }
+            };
+        }
+        window.verseImgFallback = function(img) { getVerseImgOnError(img, false)(); };
 
         let completedVersesCache = null;
         let completedVersesCacheUid = null;
@@ -4738,7 +4749,7 @@
                 const div = document.createElement('div');
                 div.className = 'verse-list-item';
                 div.setAttribute('data-global-id', String(globalId));
-                div.innerHTML = `<span>المقطع ${v} ${statusSpan}</span><img src="${getAssetUrl(getVerseAssetPath(globalId) + '.png')}" alt="Vers ${v}" onerror="this.onerror=null;this.src=this.src.replace('.png','.jpg');this.onerror=function(){this.style.display='none'}">`;
+                div.innerHTML = `<span>المقطع ${v} ${statusSpan}</span><img src="${getAssetUrl(getVerseAssetPath(globalId) + '.png')}" alt="Vers ${v}" onerror="verseImgFallback(this)">`;
                 div.onclick = () => { activePostFilter = null; activePostFilterNotifId = null; highlightedPostId = null; playVers(globalId, v); hideVerseList(); };
                 grid.appendChild(div);
             }
@@ -4793,7 +4804,7 @@
 
             const imgEl = document.getElementById('currentImg');
             imgEl.src = getAssetUrl(getVerseAssetPath(globalId) + '.png');
-            imgEl.onerror = function() { this.onerror=null; this.src=this.src.replace('.png','.jpg'); this.onerror=function(){ this.src='placeholder.png'; }; };
+            imgEl.onerror = getVerseImgOnError(imgEl, true);
             audioEl.src = getAssetUrl(getVerseAssetPath(globalId) + '.mp3');
 
             const verseBadge = document.getElementById('verseStatusBadge');
@@ -5498,7 +5509,7 @@
             if (!currentBlob || !modal || !audio || !content) return;
             audio.src = URL.createObjectURL(currentBlob);
             const isReply = !!replyTargetId;
-            const verseImgHtml = !isReply && currentGlobalFileId != null ? `<img class="review-verse-img" src="${getAssetUrl(getVerseAssetPath(currentGlobalFileId) + '.png')}" alt="المقطع" onerror="this.onerror=null;this.src=this.src.replace('.png','.jpg');this.onerror=function(){this.style.display='none'}">` : '';
+            const verseImgHtml = !isReply && currentGlobalFileId != null ? `<img class="review-verse-img" src="${getAssetUrl(getVerseAssetPath(currentGlobalFileId) + '.png')}" alt="المقطع" onerror="verseImgFallback(this)">` : '';
             const noteHtml = !isReply ? `<div class="review-note">يرجى التأكد من أن التسجيل يتطابق مع المقطع.</div>` : '';
             content.innerHTML = `
                 <div class="review-title">${isReply ? 'مراجعة الرد' : 'مراجعة التسجيل'}</div>
