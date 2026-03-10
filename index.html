@@ -2560,6 +2560,17 @@
                 lbViewsOpenUid = null;
             }
             const list = document.getElementById('leaderboard-list');
+            if (!list._microBtnDelegate) {
+                list._microBtnDelegate = true;
+                list.addEventListener('click', function(e) {
+                    const btn = e.target.closest('.lb-micro-btn');
+                    if (btn && !btn.disabled) {
+                        const uid = btn.getAttribute('data-uid');
+                        const stageId = parseInt(btn.getAttribute('data-stage-id'), 10);
+                        if (uid && stageId) toggleMicroStageAccess(uid, stageId);
+                    }
+                });
+            }
             const isAdmin = myUid === 'admin_super';
             list.innerHTML = "";
             if(users.length === 0) {
@@ -2594,8 +2605,8 @@
                 const prevPercent = u.prevStagePercent != null ? u.prevStagePercent : 0;
                 const microBtnGrayed = prevPercent >= 80;
                 const microStageBtn = microBtnGrayed
-                    ? `<button class="btn-action" style="padding:4px 8px; font-size:11px; opacity:0.5; cursor:not-allowed; pointer-events:none;" title="الطالب حقق 80% في المرحلة السابقة بالفعل">🎤</button>`
-                    : `<button class="btn-action" style="padding:4px 8px; font-size:11px;" onclick="toggleMicroStageAccess('${u.uid}', ${currentStageId})" title="منع/سماح التسجيل في مرحلة ${currentStageId}">🎤</button>`;
+                    ? `<button type="button" class="btn-action" style="padding:4px 8px; font-size:11px; opacity:0.5; cursor:not-allowed; pointer-events:none;" title="الطالب حقق 80% في المرحلة السابقة بالفعل">🎤</button>`
+                    : `<button type="button" class="btn-action lb-micro-btn" data-uid="${String(u.uid).replace(/"/g, '&quot;')}" data-stage-id="${currentStageId}" title="منع/سماح التسجيل في مرحلة ${currentStageId}">🎤</button>`;
                 const lbDisplayName = isAdmin ? getDisplayNameForAdminWithDate(u) : getDisplayName(u);
                 const pinBadge = isAdmin ? `<span class="lb-pin" title="الرمز الشخصي">${u.personalPin ? String(u.personalPin).padStart(4,'0') : '—'}</span>` : '';
                 const adminBtns = isAdmin ? `${microStageBtn}<button class="delete-btn" onclick="deleteUser('${u.uid}')" title="حذف">🗑️</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="editUserName('${u.uid}')" title="تعديل الاسم">✏️</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="swapFirstLastName('${u.uid}')" title="تبديل الاسم الأول واللقب">🔄</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="sendPrivateMessageToUser('${u.uid}')" title="رسالة خاصة">✉️</button><button class="${blockBtnClass}" style="padding:4px 10px; font-size:12px;" onclick="toggleBlockUser('${u.uid}', ${isBlocked})">${blockBtnText}</button>` : '';
