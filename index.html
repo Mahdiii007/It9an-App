@@ -1346,7 +1346,14 @@
                 return { ...u, ...prog };
             }));
             invalidateCompletedVersesCache();
-            return results.sort((a, b) => (b.percent || 0) - (a.percent || 0));
+            return results.sort(sortStudentsCompleteFirstThenByProgress);
+        }
+        function sortStudentsCompleteFirstThenByProgress(a, b) {
+            const aComplete = (a.percent || 0) >= 100;
+            const bComplete = (b.percent || 0) >= 100;
+            if (aComplete && !bComplete) return -1;
+            if (!aComplete && bComplete) return 1;
+            return (b.percent || 0) - (a.percent || 0);
         }
         let studentsProgressModalAllStudents = [];
         let studentsProgressModalVisibleCount = 3;
@@ -1359,21 +1366,33 @@
             const students = studentsProgressModalAllStudents;
             const visibleCount = Math.min(studentsProgressModalVisibleCount, students.length);
             const toShow = students.slice(0, visibleCount);
+            const completed = toShow.filter(u => (u.percent || 0) >= 100);
+            const inProgress = toShow.filter(u => (u.percent || 0) < 100);
             if (showMoreBtn) showMoreBtn.style.display = students.length > visibleCount ? 'block' : 'none';
             let html = '';
-            if (students.length > 0) {
-                const top3Label = studentsProgressModalIsLesson ? 'أفضل 3 في هذا الدرس' : 'أفضل 3 في هذه المرحلة';
-                html = '<div class="lb-motivation" style="margin-bottom:12px; font-size:15px;">🏆 ' + top3Label + '</div>';
+            let rank = 0;
+            if (completed.length > 0) {
+                const completeLabel = studentsProgressModalIsLesson ? 'أكملوا الدرس (100%)' : 'أكملوا المرحلة (100%)';
+                html += '<div class="lb-motivation" style="margin-bottom:12px; font-size:15px;">✅ ' + completeLabel + '</div>';
+                completed.forEach((u) => {
+                    rank++;
+                    const cls = 'lb-item-wrapper lb-item-top3';
+                    const name = getDisplayName(u);
+                    const barClr = 'linear-gradient(90deg, #1a6b54, #0f4c3a)';
+                    html += `<li class="${cls}"><div class="lb-item"><div style="display:flex; align-items:center; gap:4px; flex-shrink:1; min-width:0;"><span class="lb-rank">#${rank}</span><span class="lb-name">${name || '—'}</span></div><div style="display:flex; align-items:center; gap:10px; flex-shrink:0;"><div style="width:80px; min-width:80px;"><div class="stage-progress-bar" style="height:8px;"><div class="stage-progress-fill" style="width:${u.percent || 0}%; background:${barClr};"></div></div></div><span class="lb-score">${u.completed || 0}/${u.total || 0} (${u.percent || 0}%)</span></div></div></li>`;
+                });
             }
-            toShow.forEach((u, i) => {
-                const rank = i + 1;
-                const isTop3 = rank <= 3;
-                const cls = 'lb-item-wrapper' + (isTop3 ? ' lb-item-top3' : '');
-                const name = getDisplayName(u);
-                const barClr = isTop3 ? 'linear-gradient(90deg, #1a6b54, #0f4c3a)' : 'var(--primary)';
-                if (rank === 4) html += '<div class="lb-motivation" style="margin:15px 0 8px 0; font-size:14px; color:#666;">باقي الطلاب</div>';
-                html += `<li class="${cls}"><div class="lb-item"><div style="display:flex; align-items:center; gap:4px; flex-shrink:1; min-width:0;"><span class="lb-rank">#${rank}</span><span class="lb-name">${name || '—'}</span></div><div style="display:flex; align-items:center; gap:10px; flex-shrink:0;"><div style="width:80px; min-width:80px;"><div class="stage-progress-bar" style="height:8px;"><div class="stage-progress-fill" style="width:${u.percent || 0}%; background:${barClr};"></div></div></div><span class="lb-score">${u.completed || 0}/${u.total || 0} (${u.percent || 0}%)</span></div></div></li>`;
-            });
+            if (inProgress.length > 0) {
+                const progressLabel = studentsProgressModalIsLesson ? 'قيد التقدم في الدرس' : 'قيد التقدم في المرحلة';
+                html += '<div class="lb-motivation" style="margin:15px 0 8px 0; font-size:14px; color:#666;">📈 ' + progressLabel + '</div>';
+                inProgress.forEach((u) => {
+                    rank++;
+                    const cls = 'lb-item-wrapper';
+                    const name = getDisplayName(u);
+                    const barClr = 'var(--primary)';
+                    html += `<li class="${cls}"><div class="lb-item"><div style="display:flex; align-items:center; gap:4px; flex-shrink:1; min-width:0;"><span class="lb-rank">#${rank}</span><span class="lb-name">${name || '—'}</span></div><div style="display:flex; align-items:center; gap:10px; flex-shrink:0;"><div style="width:80px; min-width:80px;"><div class="stage-progress-bar" style="height:8px;"><div class="stage-progress-fill" style="width:${u.percent || 0}%; background:${barClr};"></div></div></div><span class="lb-score">${u.completed || 0}/${u.total || 0} (${u.percent || 0}%)</span></div></div></li>`;
+                });
+            }
             if (studentsProgressModalLoadingRest) {
                 html += '<li style="text-align:center; color:#999; font-size:13px; padding:8px 0;">جاري تحميل الباقي...</li>';
             }
@@ -1404,7 +1423,7 @@
                 }
                 renderStudentsProgressList();
                 const rest = await fetchAllStudentsWithProgress('stage', stageId, null, { offset: 3 });
-                studentsProgressModalAllStudents = [...first3, ...rest].sort((a, b) => (b.percent || 0) - (a.percent || 0));
+                studentsProgressModalAllStudents = [...first3, ...rest].sort(sortStudentsCompleteFirstThenByProgress);
                 studentsProgressModalLoadingRest = false;
                 renderStudentsProgressList();
             } catch (e) {
@@ -1433,7 +1452,7 @@
                 }
                 renderStudentsProgressList();
                 const rest = await fetchAllStudentsWithProgress('lesson', currentStageId, lessonIndex, { offset: 3 });
-                studentsProgressModalAllStudents = [...first3, ...rest].sort((a, b) => (b.percent || 0) - (a.percent || 0));
+                studentsProgressModalAllStudents = [...first3, ...rest].sort(sortStudentsCompleteFirstThenByProgress);
                 studentsProgressModalLoadingRest = false;
                 renderStudentsProgressList();
             } catch (e) {
