@@ -221,9 +221,6 @@
         .btn-del { background: var(--red); }
         .btn-block { background: var(--orange); }
         .btn-block.blocked { background: #333; }
-        .lb-micro-btn { cursor: pointer; position: relative; z-index: 2; min-width: 36px; min-height: 32px; }
-        .lb-micro-btn.lb-micro-on { background: #2e7d32; color: white; }
-        .lb-micro-btn.lb-micro-off { background: #9e9e9e; color: white; opacity: 0.85; }
         .btn-group-del { background: var(--red); color: white; border: none; padding: 8px 20px; border-radius: 20px; font-size: 14px; cursor: pointer; }
         .user-card .record-count-badge { background: var(--primary-light); color: white; padding: 2px 6px; border-radius: 6px; font-size: 11px; }
         .user-card .lb-score, .user-card .lb-likes { padding: 2px 6px; font-size: 11px; }
@@ -713,14 +710,6 @@
         </div>
     </div>
 
-    <div id="micro-locked-modal" onclick="if(event.target===this) hideMicroLockedModal()" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:5001; overflow-y:auto; padding:15px; box-sizing:border-box;">
-        <div class="verse-list-content" onclick="event.stopPropagation()" style="max-width:420px; margin:40px auto;">
-            <div class="verse-list-title" style="margin-bottom:15px;">🎤</div>
-            <div id="micro-locked-modal-body" style="text-align:right; line-height:1.8; font-size:17px; color:#333; margin:15px 0;"></div>
-            <button class="verse-list-btn" style="margin-top:15px; width:100%;" onclick="hideMicroLockedModal()">فهمت</button>
-        </div>
-    </div>
-
     <div id="students-progress-modal" onclick="if(event.target===this) hideStudentsProgressModal()" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:5000; overflow-y:auto; padding:15px; box-sizing:border-box;">
         <div class="leaderboard-card" onclick="event.stopPropagation()" style="max-width:500px; margin:20px auto;">
             <div class="verse-list-header" style="margin-bottom:15px;">
@@ -1163,7 +1152,6 @@
         }
         async function enterStage(stageId) {
             currentStageId = stageId;
-            stagesWithLessonsCache = null;
             const cfg = getStageConfig(stageId);
             ASSETS_BASE = cfg.assetsBase;
             KURS_DATEN = await loadManifestForStage(stageId);
@@ -1183,60 +1171,6 @@
             const count = completed.size;
             return { completed: count, total, percent: Math.round((count / total) * 100) };
         }
-        const MICRO_CUTOFF_MS = new Date('2025-03-10T00:00:00Z').getTime();
-        let stagesWithLessonsCache = null;
-        async function getStagesWithLessons() {
-            if (stagesWithLessonsCache) return stagesWithLessonsCache;
-            const result = [];
-            for (const stage of (typeof STAGES_CONFIG !== 'undefined' ? STAGES_CONFIG : [])) {
-                let kurs = await loadManifestForStage(stage.id);
-                if (kurs.length === 0 && stage.id === 4) kurs = buildKursFromVerses(VERS_PRO_LEKTION_FALLBACK_STAGE4, LESSON_TITLES_FALLBACK_STAGE4);
-                if (kurs.length > 0) result.push(stage.id);
-            }
-            stagesWithLessonsCache = result;
-            return result;
-        }
-        function getPreviousStageWithLessons(stageId, stagesWithLessons) {
-            const idx = stagesWithLessons.indexOf(stageId);
-            if (idx <= 0) return null;
-            return stagesWithLessons[idx - 1];
-        }
-        async function canStudentRecordInStage(uid, stageId) {
-            const userRef = window.doc(window.db, "users", uid);
-            const snap = await window.getDoc(userRef);
-            const data = snap.exists() ? snap.data() : {};
-            let firstLoginMs = 0;
-            if (data.firstLogin) firstLoginMs = (typeof data.firstLogin.toMillis === 'function' ? data.firstLogin.toMillis() : (typeof data.firstLogin === 'number' ? data.firstLogin : 0));
-            else if (data.createdAt) firstLoginMs = (typeof data.createdAt.toMillis === 'function' ? data.createdAt.toMillis() : (typeof data.createdAt === 'number' ? data.createdAt : 0));
-            const isOldStudent = firstLoginMs > 0 && firstLoginMs < MICRO_CUTOFF_MS;
-            const stages = await getStagesWithLessons();
-            const prevId = getPreviousStageWithLessons(stageId, stages);
-            const prevCfg = prevId != null ? getStageConfig(prevId) : null;
-            const prevStageName = prevCfg ? prevCfg.name : ('مرحلة ' + (prevId || ''));
-            let prevPercent = 100;
-            if (prevId != null) {
-                const prog = await getStageProgressForStudent(uid, prevId);
-                prevPercent = prog.percent || 0;
-            }
-            const blocked = (data.microBlockedStages || []).includes(stageId);
-            const allowedEarly = (data.microAllowedStages || []).includes(stageId);
-            if (isOldStudent) {
-                if (blocked && prevPercent >= 80) return { allowed: true };
-                if (blocked) return { allowed: false, prevStageId: prevId, prevStageName };
-                return { allowed: true };
-            }
-            if (blocked) return { allowed: false, prevStageId: prevId, prevStageName };
-            if (allowedEarly) return { allowed: true };
-            if (prevId == null) return { allowed: true };
-            if (prevPercent >= 80) return { allowed: true };
-            return { allowed: false, prevStageId: prevId, prevStageName };
-        }
-        window.showMicroLockedModal = function(prevStageName) {
-            const body = document.getElementById('micro-locked-modal-body');
-            if (body) body.innerText = 'يجب عليك تحقيق 80% على الأقل في المرحلة السابقة (' + (prevStageName || '') + ') لفتح الميكروفون في هذه المرحلة.';
-            document.getElementById('micro-locked-modal').style.display = 'block';
-        }
-        window.hideMicroLockedModal = function() { document.getElementById('micro-locked-modal').style.display = 'none'; }
         async function showStagesView() {
             document.getElementById('menu-view').style.display = 'none';
             document.getElementById('player-view').style.display = 'none';
@@ -2253,38 +2187,6 @@
         window.toggleBlockUser = async function(uid, currentStatus) {
             try { await window.updateDoc(window.doc(window.db, "users", uid), { blocked: !currentStatus }); } catch(e) { alert("خطأ"); }
         }
-        window.toggleMicroStageAccess = async function(uid, stageId) {
-            try {
-                const userRef = window.doc(window.db, "users", uid);
-                const snap = await window.getDoc(userRef);
-                const data = snap.exists() ? snap.data() : {};
-                let firstLoginMs = 0;
-                if (data.firstLogin) firstLoginMs = (typeof data.firstLogin.toMillis === 'function' ? data.firstLogin.toMillis() : (typeof data.firstLogin === 'number' ? data.firstLogin : 0));
-                else if (data.createdAt) firstLoginMs = (typeof data.createdAt.toMillis === 'function' ? data.createdAt.toMillis() : (typeof data.createdAt === 'number' ? data.createdAt : 0));
-                const isOldStudent = firstLoginMs > 0 && firstLoginMs < MICRO_CUTOFF_MS;
-                const blocked = (data.microBlockedStages || []).includes(stageId);
-                const allowedEarly = (data.microAllowedStages || []).includes(stageId);
-                const canRecord = await canStudentRecordInStage(uid, stageId);
-                if (canRecord.allowed) {
-                    if (isOldStudent) {
-                        const blockArr = (data.microBlockedStages || []).filter(s => s !== stageId);
-                        await window.updateDoc(userRef, { microBlockedStages: [...blockArr, stageId] });
-                    } else {
-                        const allowArr = (data.microAllowedStages || []).filter(s => s !== stageId);
-                        await window.updateDoc(userRef, { microAllowedStages: allowArr });
-                    }
-                } else {
-                    if (isOldStudent) {
-                        const blockArr = (data.microBlockedStages || []).filter(s => s !== stageId);
-                        await window.updateDoc(userRef, { microBlockedStages: blockArr });
-                    } else {
-                        const allowArr = (data.microAllowedStages || []).filter(s => s !== stageId);
-                        await window.updateDoc(userRef, { microAllowedStages: [...allowArr, stageId] });
-                    }
-                }
-                if (typeof refreshStudentsLeaderboard === 'function') refreshStudentsLeaderboard(true);
-            } catch(e) { alert("خطأ: " + (e.message || e)); }
-        }
 
         async function deleteUserInternal(uid) {
             const userSnap = await window.getDoc(window.doc(window.db, "users", uid));
@@ -2594,27 +2496,14 @@
                 const isBlocked = u.blocked === true;
                 const blockBtnText = isBlocked ? "فك الحظر" : "حظر";
                 const blockBtnClass = isBlocked ? "btn-action btn-block blocked" : "btn-action btn-block";
-                const prevPercent = u.prevStagePercent != null ? u.prevStagePercent : 0;
-                const microBlocked = (u.microBlockedStages || []).includes(currentStageId);
-                const microAllowedEarly = (u.microAllowedStages || []).includes(currentStageId);
-                let firstLoginMs = 0;
-                if (u.firstLogin) firstLoginMs = (typeof u.firstLogin.toMillis === 'function' ? u.firstLogin.toMillis() : (typeof u.firstLogin === 'number' ? u.firstLogin : 0));
-                else if (u.createdAt) firstLoginMs = (typeof u.createdAt.toMillis === 'function' ? u.createdAt.toMillis() : (typeof u.createdAt === 'number' ? u.createdAt : 0));
-                const isOldStudent = firstLoginMs > 0 && firstLoginMs < MICRO_CUTOFF_MS;
-                const microOn = !microBlocked && (isOldStudent || microAllowedEarly || prevPercent >= 80);
-                const microBtnGrayed = prevPercent >= 80;
-                const microOnClass = microOn ? 'lb-micro-on' : 'lb-micro-off';
-                const microStageBtn = microBtnGrayed
-                    ? `<button type="button" class="btn-action lb-micro-on" style="padding:4px 8px; font-size:11px; background:#2e7d32; color:white; opacity:0.7; cursor:not-allowed; pointer-events:none;" title="الطالب حقق 80% في المرحلة السابقة بالفعل">🎤</button>`
-                    : `<button type="button" class="btn-action lb-micro-btn ${microOnClass}" data-uid="${String(u.uid).replace(/"/g, '&quot;')}" data-stage-id="${currentStageId}" title="الميكروفون ${microOn ? 'مفتوح' : 'مغلق'} — انقر للتغيير">🎤</button>`;
                 const lbDisplayName = isAdmin ? getDisplayNameForAdminWithDate(u) : getDisplayName(u);
                 const pinBadge = isAdmin ? `<span class="lb-pin" title="الرمز الشخصي">${u.personalPin ? String(u.personalPin).padStart(4,'0') : '—'}</span>` : '';
-                const adminBtns = isAdmin ? `${microStageBtn}<button class="delete-btn" onclick="deleteUser('${u.uid}')" title="حذف">🗑️</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="editUserName('${u.uid}')" title="تعديل الاسم">✏️</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="swapFirstLastName('${u.uid}')" title="تبديل الاسم الأول واللقب">🔄</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="sendPrivateMessageToUser('${u.uid}')" title="رسالة خاصة">✉️</button><button class="${blockBtnClass}" style="padding:4px 10px; font-size:12px;" onclick="toggleBlockUser('${u.uid}', ${isBlocked})">${blockBtnText}</button>` : '';
+                const adminBtns = isAdmin ? `<button class="delete-btn" onclick="deleteUser('${u.uid}')" title="حذف">🗑️</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="editUserName('${u.uid}')" title="تعديل الاسم">✏️</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="swapFirstLastName('${u.uid}')" title="تبديل الاسم الأول واللقب">🔄</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="sendPrivateMessageToUser('${u.uid}')" title="رسالة خاصة">✉️</button><button class="${blockBtnClass}" style="padding:4px 10px; font-size:12px;" onclick="toggleBlockUser('${u.uid}', ${isBlocked})">${blockBtnText}</button>` : '';
                 list.innerHTML += `
                 <li class="${cls}">
                     <div class="lb-item">
                         <div style="display:flex; align-items:center; gap:4px; flex-shrink: 1; min-width: 0;">
-                            <div style="display:flex; align-items:center; gap:4px; flex-shrink: 0;">${adminBtns}</div>
+                            ${adminBtns}
                             ${pinBadge}
                             <span class="lb-rank">#${rank}</span>
                             <span class="lb-name">${lbDisplayName}</span>
@@ -2629,13 +2518,6 @@
                     <div class="lb-likes-list" id="lb-recordings-${u.uid}" style="display:none;"></div>
                     <div class="lb-likes-list" id="lb-likes-${u.uid}" style="display:none;"></div>
                 </li>`;
-            });
-            list.querySelectorAll('.lb-micro-btn').forEach(function(btn) {
-                btn.onclick = function() {
-                    var uid = btn.getAttribute('data-uid');
-                    var stageId = parseInt(btn.getAttribute('data-stage-id'), 10);
-                    if (uid && !isNaN(stageId) && typeof window.toggleMicroStageAccess === 'function') window.toggleMicroStageAccess(uid, stageId);
-                };
             });
             if (preserveOpen) {
                 const openViews = document.getElementById('lb-views-' + lbViewsOpenUid);
@@ -2708,20 +2590,11 @@
                 const stageStats = await fetchStageLeaderboardStats();
                 let stageViews = {};
                 if (currentStageId !== 4) stageViews = await fetchStageVerseViewsFromStats(currentStageId);
-                const stagesWithLessons = await getStagesWithLessons();
-                const prevStageId = getPreviousStageWithLessons(currentStageId, stagesWithLessons);
-                users = await Promise.all(users.map(async (u) => {
+                users = users.map(u => {
                     const s = stageStats[u.uid] || { postsCount: 0, totalLikes: 0 };
                     const views = (currentStageId === 4) ? (u.totalVerseViews || 0) : (stageViews[u.uid] ?? 0);
-                    let prevStagePercent = prevStageId == null ? 0 : 100;
-                    if (prevStageId != null) {
-                        try {
-                            const prog = await getStageProgressForStudent(u.uid, prevStageId);
-                            prevStagePercent = prog.percent || 0;
-                        } catch (e) {}
-                    }
-                    return { ...u, postsCount: s.postsCount, totalLikes: s.totalLikes, totalVerseViews: views, prevStagePercent };
-                }));
+                    return { ...u, postsCount: s.postsCount, totalLikes: s.totalLikes, totalVerseViews: views };
+                });
                 leaderboardAllUsers = applyLeaderboardSort(users);
                 const myUid = localStorage.getItem('it9an_uid');
                 renderLeaderboardItems(leaderboardAllUsers, leaderboardVisibleCount, myUid, true);
@@ -3206,20 +3079,11 @@
                 const stageStats = await fetchStageLeaderboardStats();
                 let stageViews = {};
                 if (currentStageId !== 4) stageViews = await fetchStageVerseViewsFromStats(currentStageId);
-                const stagesWithLessons = await getStagesWithLessons();
-                const prevStageId = getPreviousStageWithLessons(currentStageId, stagesWithLessons);
-                users = await Promise.all(users.map(async (u) => {
+                users = users.map(u => {
                     const s = stageStats[u.uid] || { postsCount: 0, totalLikes: 0 };
                     const views = (currentStageId === 4) ? (u.totalVerseViews || 0) : (stageViews[u.uid] ?? 0);
-                    let prevStagePercent = prevStageId == null ? 0 : 100;
-                    if (prevStageId != null) {
-                        try {
-                            const prog = await getStageProgressForStudent(u.uid, prevStageId);
-                            prevStagePercent = prog.percent || 0;
-                        } catch (e) {}
-                    }
-                    return { ...u, postsCount: s.postsCount, totalLikes: s.totalLikes, totalVerseViews: views, prevStagePercent };
-                }));
+                    return { ...u, postsCount: s.postsCount, totalLikes: s.totalLikes, totalVerseViews: views };
+                });
                 leaderboardAllUsers = applyLeaderboardSort(users);
                 lastStudentsRefreshTime = Date.now();
                 if (lbPendingRestore) {
@@ -3242,20 +3106,11 @@
                 const stageStats = await fetchStageLeaderboardStats();
                 let stageViews = {};
                 if (currentStageId !== 4) stageViews = await fetchStageVerseViewsFromStats(currentStageId);
-                const stagesWithLessons = await getStagesWithLessons();
-                const prevStageId = getPreviousStageWithLessons(currentStageId, stagesWithLessons);
-                users = await Promise.all(users.map(async (u) => {
+                users = users.map(u => {
                     const s = stageStats[u.uid] || { postsCount: 0, totalLikes: 0 };
                     const views = (currentStageId === 4) ? (u.totalVerseViews || 0) : (stageViews[u.uid] ?? 0);
-                    let prevStagePercent = prevStageId == null ? 0 : 100;
-                    if (prevStageId != null) {
-                        try {
-                            const prog = await getStageProgressForStudent(u.uid, prevStageId);
-                            prevStagePercent = prog.percent || 0;
-                        } catch (e) {}
-                    }
-                    return { ...u, postsCount: s.postsCount, totalLikes: s.totalLikes, totalVerseViews: views, prevStagePercent };
-                }));
+                    return { ...u, postsCount: s.postsCount, totalLikes: s.totalLikes, totalVerseViews: views };
+                });
                 leaderboardAllUsers = applyLeaderboardSort(users);
                 const needPin = leaderboardAllUsers.filter(u => !u.personalPin);
                 if (needPin.length > 0) {
@@ -4189,28 +4044,18 @@
             });
         }
 
-        async function updateRecButtonForStudentNotifications() {
+        function updateRecButtonForStudentNotifications() {
             const recBtn = document.getElementById('recBtn');
             const playerView = document.getElementById('player-view');
             if (!recBtn || !playerView || playerView.style.display !== 'block') return;
             const role = localStorage.getItem('it9an_role');
             const uid = localStorage.getItem('it9an_uid');
             if (role !== 'student' || !uid || uid === 'guest') return;
-            const notifBlocked = hasUnlistenedNotificationsForStage(currentStageId);
-            let microBlocked = false;
-            let microBlockTitle = '';
-            try {
-                const microCheck = await canStudentRecordInStage(uid, currentStageId);
-                if (!microCheck.allowed) {
-                    microBlocked = true;
-                    microBlockTitle = 'يجب عليك تحقيق 80% على الأقل في المرحلة السابقة (' + (microCheck.prevStageName || '') + ') لفتح الميكروفون في هذه المرحلة. انقر للتفاصيل.';
-                }
-            } catch (e) { console.warn('canStudentRecordInStage:', e); }
-            const blocked = notifBlocked || microBlocked;
+            const blocked = hasUnlistenedNotificationsForStage(currentStageId);
             if (blocked) {
                 recBtn.style.opacity = '0.5';
                 recBtn.style.cursor = 'pointer';
-                recBtn.title = microBlocked ? microBlockTitle : 'استخدم إشعارات الجرس لسماع جميع ردود المعلم لهذه المرحلة حتى النهاية';
+                recBtn.title = 'استخدم إشعارات الجرس لسماع جميع ردود المعلم لهذه المرحلة حتى النهاية';
             } else {
                 recBtn.style.opacity = '';
                 recBtn.style.cursor = '';
@@ -5540,18 +5385,6 @@
             if (localStorage.getItem('it9an_role') === 'student' && hasUnlistenedNotificationsForStage(currentStageId)) {
                 alert(REC_BLOCKED_MSG);
                 return;
-            }
-            if (localStorage.getItem('it9an_role') === 'student') {
-                const uid = localStorage.getItem('it9an_uid');
-                if (uid && uid !== 'guest') {
-                    try {
-                        const microCheck = await canStudentRecordInStage(uid, currentStageId);
-                        if (!microCheck.allowed) {
-                            showMicroLockedModal(microCheck.prevStageName);
-                            return;
-                        }
-                    } catch (e) { console.warn('canStudentRecordInStage:', e); }
-                }
             }
             if(isPlaying) stopLoop();
             const ui = document.getElementById('recording-ui');
