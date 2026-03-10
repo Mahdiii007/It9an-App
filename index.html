@@ -1205,23 +1205,27 @@
             if (data.firstLogin) firstLoginMs = (typeof data.firstLogin.toMillis === 'function' ? data.firstLogin.toMillis() : (typeof data.firstLogin === 'number' ? data.firstLogin : 0));
             else if (data.createdAt) firstLoginMs = (typeof data.createdAt.toMillis === 'function' ? data.createdAt.toMillis() : (typeof data.createdAt === 'number' ? data.createdAt : 0));
             const isOldStudent = firstLoginMs > 0 && firstLoginMs < MICRO_CUTOFF_MS;
-            if (isOldStudent) return { allowed: true };
-            const blocked = (data.microBlockedStages || []).includes(stageId);
-            if (blocked) {
-                const stages = await getStagesWithLessons();
-                const prevId = getPreviousStageWithLessons(stageId, stages);
-                const prevCfg = prevId != null ? getStageConfig(prevId) : null;
-                return { allowed: false, prevStageId: prevId, prevStageName: prevCfg ? prevCfg.name : ('مرحلة ' + prevId) };
-            }
-            const allowed = (data.microAllowedStages || []).includes(stageId);
-            if (allowed) return { allowed: true };
             const stages = await getStagesWithLessons();
             const prevId = getPreviousStageWithLessons(stageId, stages);
+            const prevCfg = prevId != null ? getStageConfig(prevId) : null;
+            const prevStageName = prevCfg ? prevCfg.name : ('مرحلة ' + (prevId || ''));
+            let prevPercent = 100;
+            if (prevId != null) {
+                const prog = await getStageProgressForStudent(uid, prevId);
+                prevPercent = prog.percent || 0;
+            }
+            const blocked = (data.microBlockedStages || []).includes(stageId);
+            const allowedEarly = (data.microAllowedStages || []).includes(stageId);
+            if (isOldStudent) {
+                if (blocked && prevPercent >= 80) return { allowed: true };
+                if (blocked) return { allowed: false, prevStageId: prevId, prevStageName };
+                return { allowed: true };
+            }
+            if (blocked) return { allowed: false, prevStageId: prevId, prevStageName };
+            if (allowedEarly) return { allowed: true };
             if (prevId == null) return { allowed: true };
-            const prog = await getStageProgressForStudent(uid, prevId);
-            if ((prog.percent || 0) >= 80) return { allowed: true };
-            const prevCfg = getStageConfig(prevId);
-            return { allowed: false, prevStageId: prevId, prevStageName: prevCfg ? prevCfg.name : ('مرحلة ' + prevId) };
+            if (prevPercent >= 80) return { allowed: true };
+            return { allowed: false, prevStageId: prevId, prevStageName };
         }
         window.showMicroLockedModal = function(prevStageName) {
             const body = document.getElementById('micro-locked-modal-body');
@@ -2245,25 +2249,35 @@
         window.toggleBlockUser = async function(uid, currentStatus) {
             try { await window.updateDoc(window.doc(window.db, "users", uid), { blocked: !currentStatus }); } catch(e) { alert("خطأ"); }
         }
-        window.toggleMicroBlockStage = async function(uid, stageId, currentlyBlocked) {
+        window.toggleMicroStageAccess = async function(uid, stageId) {
             try {
                 const userRef = window.doc(window.db, "users", uid);
                 const snap = await window.getDoc(userRef);
-                let arr = (snap.exists() ? snap.data().microBlockedStages : []) || [];
-                if (currentlyBlocked) arr = arr.filter(s => s !== stageId);
-                else if (!arr.includes(stageId)) arr = [...arr, stageId];
-                await window.updateDoc(userRef, { microBlockedStages: arr });
-                if (typeof refreshStudentsLeaderboard === 'function') refreshStudentsLeaderboard(true);
-            } catch(e) { alert("خطأ: " + (e.message || e)); }
-        }
-        window.toggleMicroAllowStage = async function(uid, stageId, currentlyAllowed) {
-            try {
-                const userRef = window.doc(window.db, "users", uid);
-                const snap = await window.getDoc(userRef);
-                let arr = (snap.exists() ? snap.data().microAllowedStages : []) || [];
-                if (currentlyAllowed) arr = arr.filter(s => s !== stageId);
-                else if (!arr.includes(stageId)) arr = [...arr, stageId];
-                await window.updateDoc(userRef, { microAllowedStages: arr });
+                const data = snap.exists() ? snap.data() : {};
+                let firstLoginMs = 0;
+                if (data.firstLogin) firstLoginMs = (typeof data.firstLogin.toMillis === 'function' ? data.firstLogin.toMillis() : (typeof data.firstLogin === 'number' ? data.firstLogin : 0));
+                else if (data.createdAt) firstLoginMs = (typeof data.createdAt.toMillis === 'function' ? data.createdAt.toMillis() : (typeof data.createdAt === 'number' ? data.createdAt : 0));
+                const isOldStudent = firstLoginMs > 0 && firstLoginMs < MICRO_CUTOFF_MS;
+                const blocked = (data.microBlockedStages || []).includes(stageId);
+                const allowedEarly = (data.microAllowedStages || []).includes(stageId);
+                const canRecord = await canStudentRecordInStage(uid, stageId);
+                if (canRecord.allowed) {
+                    if (isOldStudent) {
+                        const blockArr = (data.microBlockedStages || []).filter(s => s !== stageId);
+                        await window.updateDoc(userRef, { microBlockedStages: [...blockArr, stageId] });
+                    } else {
+                        const allowArr = (data.microAllowedStages || []).filter(s => s !== stageId);
+                        await window.updateDoc(userRef, { microAllowedStages: allowArr });
+                    }
+                } else {
+                    if (isOldStudent) {
+                        const blockArr = (data.microBlockedStages || []).filter(s => s !== stageId);
+                        await window.updateDoc(userRef, { microBlockedStages: blockArr });
+                    } else {
+                        const allowArr = (data.microAllowedStages || []).filter(s => s !== stageId);
+                        await window.updateDoc(userRef, { microAllowedStages: [...allowArr, stageId] });
+                    }
+                }
                 if (typeof refreshStudentsLeaderboard === 'function') refreshStudentsLeaderboard(true);
             } catch(e) { alert("خطأ: " + (e.message || e)); }
         }
@@ -2576,13 +2590,14 @@
                 const isBlocked = u.blocked === true;
                 const blockBtnText = isBlocked ? "فك الحظر" : "حظر";
                 const blockBtnClass = isBlocked ? "btn-action btn-block blocked" : "btn-action btn-block";
-                const microBlocked = (u.microBlockedStages || []).includes(currentStageId);
-                const microAllowed = (u.microAllowedStages || []).includes(currentStageId);
-                const microBlockBtn = microBlocked ? `<button class="btn-action" style="padding:4px 8px; font-size:11px;" onclick="toggleMicroBlockStage('${u.uid}', ${currentStageId}, true)" title="إلغاء منع التسجيل في مرحلة ${currentStageId}">🎤✓</button>` : `<button class="btn-action" style="padding:4px 8px; font-size:11px;" onclick="toggleMicroBlockStage('${u.uid}', ${currentStageId}, false)" title="منع التسجيل في مرحلة ${currentStageId}">🎤✗</button>`;
-                const microAllowBtn = microAllowed ? `<button class="btn-action" style="padding:4px 8px; font-size:11px;" onclick="toggleMicroAllowStage('${u.uid}', ${currentStageId}, true)" title="إلغاء السماح المبكر في مرحلة ${currentStageId}">🎤+</button>` : `<button class="btn-action" style="padding:4px 8px; font-size:11px;" onclick="toggleMicroAllowStage('${u.uid}', ${currentStageId}, false)" title="سماح التسجيل المبكر في مرحلة ${currentStageId}">🎤+</button>`;
+                const prevPercent = u.prevStagePercent != null ? u.prevStagePercent : 100;
+                const microBtnGrayed = prevPercent >= 80;
+                const microStageBtn = microBtnGrayed
+                    ? `<button class="btn-action" style="padding:4px 8px; font-size:11px; opacity:0.5; cursor:not-allowed; pointer-events:none;" title="الطالب حقق 80% في المرحلة السابقة بالفعل">🎤</button>`
+                    : `<button class="btn-action" style="padding:4px 8px; font-size:11px;" onclick="toggleMicroStageAccess('${u.uid}', ${currentStageId})" title="منع/سماح التسجيل في مرحلة ${currentStageId}">🎤</button>`;
                 const lbDisplayName = isAdmin ? getDisplayNameForAdminWithDate(u) : getDisplayName(u);
                 const pinBadge = isAdmin ? `<span class="lb-pin" title="الرمز الشخصي">${u.personalPin ? String(u.personalPin).padStart(4,'0') : '—'}</span>` : '';
-                const adminBtns = isAdmin ? `${microBlockBtn}${microAllowBtn}<button class="delete-btn" onclick="deleteUser('${u.uid}')" title="حذف">🗑️</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="editUserName('${u.uid}')" title="تعديل الاسم">✏️</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="swapFirstLastName('${u.uid}')" title="تبديل الاسم الأول واللقب">🔄</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="sendPrivateMessageToUser('${u.uid}')" title="رسالة خاصة">✉️</button><button class="${blockBtnClass}" style="padding:4px 10px; font-size:12px;" onclick="toggleBlockUser('${u.uid}', ${isBlocked})">${blockBtnText}</button>` : '';
+                const adminBtns = isAdmin ? `${microStageBtn}<button class="delete-btn" onclick="deleteUser('${u.uid}')" title="حذف">🗑️</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="editUserName('${u.uid}')" title="تعديل الاسم">✏️</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="swapFirstLastName('${u.uid}')" title="تبديل الاسم الأول واللقب">🔄</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="sendPrivateMessageToUser('${u.uid}')" title="رسالة خاصة">✉️</button><button class="${blockBtnClass}" style="padding:4px 10px; font-size:12px;" onclick="toggleBlockUser('${u.uid}', ${isBlocked})">${blockBtnText}</button>` : '';
                 list.innerHTML += `
                 <li class="${cls}">
                     <div class="lb-item">
@@ -2674,11 +2689,20 @@
                 const stageStats = await fetchStageLeaderboardStats();
                 let stageViews = {};
                 if (currentStageId !== 4) stageViews = await fetchStageVerseViewsFromStats(currentStageId);
-                users = users.map(u => {
+                const stagesWithLessons = await getStagesWithLessons();
+                const prevStageId = getPreviousStageWithLessons(currentStageId, stagesWithLessons);
+                users = await Promise.all(users.map(async (u) => {
                     const s = stageStats[u.uid] || { postsCount: 0, totalLikes: 0 };
                     const views = (currentStageId === 4) ? (u.totalVerseViews || 0) : (stageViews[u.uid] ?? 0);
-                    return { ...u, postsCount: s.postsCount, totalLikes: s.totalLikes, totalVerseViews: views };
-                });
+                    let prevStagePercent = 100;
+                    if (prevStageId != null) {
+                        try {
+                            const prog = await getStageProgressForStudent(u.uid, prevStageId);
+                            prevStagePercent = prog.percent || 0;
+                        } catch (e) {}
+                    }
+                    return { ...u, postsCount: s.postsCount, totalLikes: s.totalLikes, totalVerseViews: views, prevStagePercent };
+                }));
                 leaderboardAllUsers = applyLeaderboardSort(users);
                 const myUid = localStorage.getItem('it9an_uid');
                 renderLeaderboardItems(leaderboardAllUsers, leaderboardVisibleCount, myUid, true);
