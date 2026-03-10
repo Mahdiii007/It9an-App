@@ -221,6 +221,7 @@
         .btn-del { background: var(--red); }
         .btn-block { background: var(--orange); }
         .btn-block.blocked { background: #333; }
+        .lb-micro-btn { cursor: pointer; }
         .lb-micro-btn.lb-micro-on { background: #2e7d32; color: white; }
         .lb-micro-btn.lb-micro-off { background: #9e9e9e; color: white; opacity: 0.85; }
         .btn-group-del { background: var(--red); color: white; border: none; padding: 8px 20px; border-radius: 20px; font-size: 14px; cursor: pointer; }
@@ -2252,6 +2253,21 @@
         window.toggleBlockUser = async function(uid, currentStatus) {
             try { await window.updateDoc(window.doc(window.db, "users", uid), { blocked: !currentStatus }); } catch(e) { alert("خطأ"); }
         }
+        (function initMicroBtnDelegation() {
+            function handleMicroClick(e) {
+                const btn = e.target.closest('.lb-micro-btn');
+                if (btn && !btn.disabled) {
+                    const uid = btn.getAttribute('data-uid');
+                    const stageId = parseInt(btn.getAttribute('data-stage-id'), 10);
+                    if (uid && !isNaN(stageId) && typeof window.toggleMicroStageAccess === 'function') {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        window.toggleMicroStageAccess(uid, stageId);
+                    }
+                }
+            }
+            document.addEventListener('click', handleMicroClick, true);
+        })();
         window.toggleMicroStageAccess = async function(uid, stageId) {
             try {
                 const userRef = window.doc(window.db, "users", uid);
@@ -2562,17 +2578,6 @@
                 lbViewsOpenUid = null;
             }
             const list = document.getElementById('leaderboard-list');
-            if (!list._microBtnDelegate) {
-                list._microBtnDelegate = true;
-                list.addEventListener('click', function(e) {
-                    const btn = e.target.closest('.lb-micro-btn');
-                    if (btn && !btn.disabled) {
-                        const uid = btn.getAttribute('data-uid');
-                        const stageId = parseInt(btn.getAttribute('data-stage-id'), 10);
-                        if (uid && stageId) toggleMicroStageAccess(uid, stageId);
-                    }
-                });
-            }
             const isAdmin = myUid === 'admin_super';
             list.innerHTML = "";
             if(users.length === 0) {
@@ -2616,7 +2621,7 @@
                 const microOnClass = microOn ? 'lb-micro-on' : 'lb-micro-off';
                 const microStageBtn = microBtnGrayed
                     ? `<button type="button" class="btn-action lb-micro-on" style="padding:4px 8px; font-size:11px; background:#2e7d32; color:white; opacity:0.7; cursor:not-allowed; pointer-events:none;" title="الطالب حقق 80% في المرحلة السابقة بالفعل">🎤</button>`
-                    : `<button type="button" class="btn-action lb-micro-btn ${microOnClass}" data-uid="${String(u.uid).replace(/"/g, '&quot;')}" data-stage-id="${currentStageId}" title="الميكروفون ${microOn ? 'مفتوح' : 'مغلق'} — انقر للتغيير">🎤</button>`;
+                    : `<button type="button" class="btn-action lb-micro-btn ${microOnClass}" data-uid="${String(u.uid).replace(/"/g, '&quot;')}" data-stage-id="${currentStageId}" onclick="var b=this;if(b.dataset.uid&&b.dataset.stageId)window.toggleMicroStageAccess(b.dataset.uid,parseInt(b.dataset.stageId,10))" title="الميكروفون ${microOn ? 'مفتوح' : 'مغلق'} — انقر للتغيير">🎤</button>`;
                 const lbDisplayName = isAdmin ? getDisplayNameForAdminWithDate(u) : getDisplayName(u);
                 const pinBadge = isAdmin ? `<span class="lb-pin" title="الرمز الشخصي">${u.personalPin ? String(u.personalPin).padStart(4,'0') : '—'}</span>` : '';
                 const adminBtns = isAdmin ? `${microStageBtn}<button class="delete-btn" onclick="deleteUser('${u.uid}')" title="حذف">🗑️</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="editUserName('${u.uid}')" title="تعديل الاسم">✏️</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="swapFirstLastName('${u.uid}')" title="تبديل الاسم الأول واللقب">🔄</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="sendPrivateMessageToUser('${u.uid}')" title="رسالة خاصة">✉️</button><button class="${blockBtnClass}" style="padding:4px 10px; font-size:12px;" onclick="toggleBlockUser('${u.uid}', ${isBlocked})">${blockBtnText}</button>` : '';
@@ -2624,7 +2629,7 @@
                 <li class="${cls}">
                     <div class="lb-item">
                         <div style="display:flex; align-items:center; gap:4px; flex-shrink: 1; min-width: 0;">
-                            ${adminBtns}
+                            <div style="display:flex; align-items:center; gap:4px; flex-shrink: 0;">${adminBtns}</div>
                             ${pinBadge}
                             <span class="lb-rank">#${rank}</span>
                             <span class="lb-name">${lbDisplayName}</span>
