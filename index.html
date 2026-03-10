@@ -2253,21 +2253,11 @@
         window.toggleBlockUser = async function(uid, currentStatus) {
             try { await window.updateDoc(window.doc(window.db, "users", uid), { blocked: !currentStatus }); } catch(e) { alert("خطأ"); }
         }
-        (function initMicroBtnDelegation() {
-            function handleMicroClick(e) {
-                const btn = e.target.closest('.lb-micro-btn');
-                if (btn && !btn.disabled) {
-                    const uid = btn.getAttribute('data-uid');
-                    const stageId = parseInt(btn.getAttribute('data-stage-id'), 10);
-                    if (uid && !isNaN(stageId) && typeof window.toggleMicroStageAccess === 'function') {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        window.toggleMicroStageAccess(uid, stageId);
-                    }
-                }
-            }
-            document.addEventListener('click', handleMicroClick, true);
-        })();
+        window.handleMicroBtnClick = function(btn) {
+            var uid = btn.getAttribute('data-uid');
+            var stageId = parseInt(btn.getAttribute('data-stage-id'), 10);
+            if (uid && !isNaN(stageId) && typeof window.toggleMicroStageAccess === 'function') window.toggleMicroStageAccess(uid, stageId);
+        };
         window.toggleMicroStageAccess = async function(uid, stageId) {
             try {
                 const userRef = window.doc(window.db, "users", uid);
@@ -2621,7 +2611,7 @@
                 const microOnClass = microOn ? 'lb-micro-on' : 'lb-micro-off';
                 const microStageBtn = microBtnGrayed
                     ? `<button type="button" class="btn-action lb-micro-on" style="padding:4px 8px; font-size:11px; background:#2e7d32; color:white; opacity:0.7; cursor:not-allowed; pointer-events:none;" title="الطالب حقق 80% في المرحلة السابقة بالفعل">🎤</button>`
-                    : `<button type="button" class="btn-action lb-micro-btn ${microOnClass}" data-uid="${String(u.uid).replace(/"/g, '&quot;')}" data-stage-id="${currentStageId}" onclick="var b=this;if(b.dataset.uid&&b.dataset.stageId)window.toggleMicroStageAccess(b.dataset.uid,parseInt(b.dataset.stageId,10))" title="الميكروفون ${microOn ? 'مفتوح' : 'مغلق'} — انقر للتغيير">🎤</button>`;
+                    : `<button type="button" class="btn-action lb-micro-btn ${microOnClass}" data-uid="${String(u.uid).replace(/"/g, '&quot;')}" data-stage-id="${currentStageId}" onclick="handleMicroBtnClick(this)" title="الميكروفون ${microOn ? 'مفتوح' : 'مغلق'} — انقر للتغيير">🎤</button>`;
                 const lbDisplayName = isAdmin ? getDisplayNameForAdminWithDate(u) : getDisplayName(u);
                 const pinBadge = isAdmin ? `<span class="lb-pin" title="الرمز الشخصي">${u.personalPin ? String(u.personalPin).padStart(4,'0') : '—'}</span>` : '';
                 const adminBtns = isAdmin ? `${microStageBtn}<button class="delete-btn" onclick="deleteUser('${u.uid}')" title="حذف">🗑️</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="editUserName('${u.uid}')" title="تعديل الاسم">✏️</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="swapFirstLastName('${u.uid}')" title="تبديل الاسم الأول واللقب">🔄</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="sendPrivateMessageToUser('${u.uid}')" title="رسالة خاصة">✉️</button><button class="${blockBtnClass}" style="padding:4px 10px; font-size:12px;" onclick="toggleBlockUser('${u.uid}', ${isBlocked})">${blockBtnText}</button>` : '';
