@@ -1370,27 +1370,21 @@
             const inProgress = toShow.filter(u => (u.percent || 0) < 100);
             if (showMoreBtn) showMoreBtn.style.display = students.length > visibleCount ? 'block' : 'none';
             let html = '';
-            let rank = 0;
             if (completed.length > 0) {
                 const completeLabel = studentsProgressModalIsLesson ? 'أكملوا الدرس (100%)' : 'أكملوا المرحلة (100%)';
                 html += '<div class="lb-motivation" style="margin-bottom:12px; font-size:15px;">✅ ' + completeLabel + '</div>';
                 completed.forEach((u) => {
-                    rank++;
-                    const cls = 'lb-item-wrapper lb-item-top3';
                     const name = getDisplayName(u);
-                    const barClr = 'linear-gradient(90deg, #1a6b54, #0f4c3a)';
-                    html += `<li class="${cls}"><div class="lb-item"><div style="display:flex; align-items:center; gap:4px; flex-shrink:1; min-width:0;"><span class="lb-rank">#${rank}</span><span class="lb-name">${name || '—'}</span></div><div style="display:flex; align-items:center; gap:10px; flex-shrink:0;"><div style="width:80px; min-width:80px;"><div class="stage-progress-bar" style="height:8px;"><div class="stage-progress-fill" style="width:${u.percent || 0}%; background:${barClr};"></div></div></div><span class="lb-score">${u.completed || 0}/${u.total || 0} (${u.percent || 0}%)</span></div></div></li>`;
+                    html += `<li class="lb-item-wrapper"><div class="lb-item"><div style="display:flex; align-items:center; gap:4px; flex-shrink:1; min-width:0;"><span class="lb-name">${name || '—'}</span></div><div style="display:flex; align-items:center; gap:10px; flex-shrink:0;"><div style="width:80px; min-width:80px;"><div class="stage-progress-bar" style="height:8px;"><div class="stage-progress-fill" style="width:${u.percent || 0}%; background:var(--primary);"></div></div></div><span class="lb-score">${u.completed || 0}/${u.total || 0} (${u.percent || 0}%)</span></div></div></li>`;
                 });
             }
             if (inProgress.length > 0) {
                 const progressLabel = studentsProgressModalIsLesson ? 'قيد التقدم في الدرس' : 'قيد التقدم في المرحلة';
                 html += '<div class="lb-motivation" style="margin:15px 0 8px 0; font-size:14px; color:#666;">📈 ' + progressLabel + '</div>';
-                inProgress.forEach((u) => {
-                    rank++;
-                    const cls = 'lb-item-wrapper';
+                inProgress.forEach((u, i) => {
+                    const rank = i + 1;
                     const name = getDisplayName(u);
-                    const barClr = 'var(--primary)';
-                    html += `<li class="${cls}"><div class="lb-item"><div style="display:flex; align-items:center; gap:4px; flex-shrink:1; min-width:0;"><span class="lb-rank">#${rank}</span><span class="lb-name">${name || '—'}</span></div><div style="display:flex; align-items:center; gap:10px; flex-shrink:0;"><div style="width:80px; min-width:80px;"><div class="stage-progress-bar" style="height:8px;"><div class="stage-progress-fill" style="width:${u.percent || 0}%; background:${barClr};"></div></div></div><span class="lb-score">${u.completed || 0}/${u.total || 0} (${u.percent || 0}%)</span></div></div></li>`;
+                    html += `<li class="lb-item-wrapper"><div class="lb-item"><div style="display:flex; align-items:center; gap:4px; flex-shrink:1; min-width:0;"><span class="lb-rank">#${rank}</span><span class="lb-name">${name || '—'}</span></div><div style="display:flex; align-items:center; gap:10px; flex-shrink:0;"><div style="width:80px; min-width:80px;"><div class="stage-progress-bar" style="height:8px;"><div class="stage-progress-fill" style="width:${u.percent || 0}%; background:var(--primary);"></div></div></div><span class="lb-score">${u.completed || 0}/${u.total || 0} (${u.percent || 0}%)</span></div></div></li>`;
                 });
             }
             if (studentsProgressModalLoadingRest) {
