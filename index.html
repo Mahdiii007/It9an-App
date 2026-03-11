@@ -4099,6 +4099,13 @@
             });
         }
 
+        function getMyRepetitionCountForCurrentVerse() {
+            const uid = localStorage.getItem('it9an_uid');
+            if (!uid || uid === 'guest') return 0;
+            const data = window.currentViewersData || { viewers: {} };
+            const v = data.viewers && data.viewers[uid];
+            return (v && v.count) || 0;
+        }
         function updateRecButtonForStudentNotifications() {
             const recBtn = document.getElementById('recBtn');
             const playerView = document.getElementById('player-view');
@@ -4106,11 +4113,17 @@
             const role = localStorage.getItem('it9an_role');
             const uid = localStorage.getItem('it9an_uid');
             if (role !== 'student' || !uid || uid === 'guest') return;
-            const blocked = hasUnlistenedNotificationsForStage(currentStageId);
-            if (blocked) {
+            const notifBlocked = hasUnlistenedNotificationsForStage(currentStageId);
+            const repCount = getMyRepetitionCountForCurrentVerse();
+            const repBlocked = repCount < MIN_REPETITIONS_FOR_REC;
+            if (notifBlocked) {
                 recBtn.style.opacity = '0.5';
                 recBtn.style.cursor = 'pointer';
                 recBtn.title = 'استخدم إشعارات الجرس لسماع جميع ردود المعلم لهذه المرحلة حتى النهاية';
+            } else if (repBlocked) {
+                recBtn.style.opacity = '0.5';
+                recBtn.style.cursor = 'pointer';
+                recBtn.title = 'مطلوب 30 تكرار على الأقل - انقر للتفاصيل';
             } else {
                 recBtn.style.opacity = '';
                 recBtn.style.cursor = '';
@@ -4827,6 +4840,7 @@
         async function playVers(globalId, localVersNum, isAuto = false) {
             if (typeof window.hideVerseList === 'function') window.hideVerseList();
             currentGlobalFileId = globalId; currentLocalVers = localVersNum;
+            window.currentViewersData = { viewers: {}, totalRepetitions: 0 };
             feedLimit = 3; loadFeed(globalId);
             pauseFeedAudio();
             showView('player-view');
@@ -4884,7 +4898,6 @@
                 }
             }
             
-            window.currentViewersData = { viewers: {}, totalRepetitions: 0 };
             document.getElementById('viewCount').innerText = "0";
 
             const statRef = window.doc(window.db, "stats", getStatsDocId(currentStageId, globalId));
@@ -4901,6 +4914,7 @@
                     window.currentViewersData = { viewers: {}, totalRepetitions: 0 }; 
                     document.getElementById('viewCount').innerText = 0;
                 }
+                if (typeof updateRecButtonForStudentNotifications === 'function') updateRecButtonForStudentNotifications();
             });
         }
 
@@ -5440,15 +5454,23 @@
         window.startReply = function(postId) { replyTargetId = postId; toggleRecord(); }
 
         const REC_BLOCKED_MSG = 'يرجى استخدام إشعارات الجرس لسماع جميع ردود المعلم لهذه المرحلة حتى النهاية. يمكنك التسجيل في هذه المرحلة مرة أخرى فقط عندما تكون جميع ردود المعلم قد سُمعت حتى النهاية. هكذا تتعلم بشكل أفضل.';
+        const MIN_REPETITIONS_FOR_REC = 30;
+        const REC_REPETITIONS_MSG = 'معلمو هذه المنصة متفقون على أن الطلاب يُفضّل أن يكرّروا المقاطع 30 مرة على الأقل قبل البدء بالتسجيل. يُنصح بـ 100 تكرار على الأقل. بعد 30 تكرار يُفتح الميكروفون لهذا المقطع.';
 
         window.toggleRecord = async function() {
             if (localStorage.getItem('it9an_uid') === 'guest') {
                 showGuestRegisterModal();
                 return;
             }
-            if (localStorage.getItem('it9an_role') === 'student' && hasUnlistenedNotificationsForStage(currentStageId)) {
-                alert(REC_BLOCKED_MSG);
-                return;
+            if (localStorage.getItem('it9an_role') === 'student') {
+                if (hasUnlistenedNotificationsForStage(currentStageId)) {
+                    alert(REC_BLOCKED_MSG);
+                    return;
+                }
+                if (getMyRepetitionCountForCurrentVerse() < MIN_REPETITIONS_FOR_REC) {
+                    alert(REC_REPETITIONS_MSG);
+                    return;
+                }
             }
             if(isPlaying) stopLoop();
             const ui = document.getElementById('recording-ui');
