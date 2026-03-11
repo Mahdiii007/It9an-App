@@ -1888,7 +1888,7 @@
                 return;
             }
             if (pin === TEACHER_FATHIA_PIN) {
-                const first = "Fathia", last = "Makni", year = "1974", role = "teacher";
+                const first = "Fathia", last = "Makni", year = "0000", role = "teacher";
                 const fullNameRaw = first + " " + last;
                 const uniqueID = generateUserId(fullNameRaw, role, year);
                 const userRef = window.doc(window.db, "users", uniqueID);
@@ -1903,7 +1903,7 @@
                         await withTimeout(window.updateDoc(userRef, up), 10000);
                     } else {
                         const ts = window.serverTimestamp();
-                        await withTimeout(window.setDoc(userRef, { name: finalDisplayName, baseName: finalDisplayName, role, uid: uniqueID, year, personalPin: '9797', firstLogin: ts, createdAt: ts, lastLogin: ts, postsCount: 0, totalLikes: 0, totalVerseViews: 0, totalRepliesCount: 0, blocked: false }), 10000);
+                        await withTimeout(window.setDoc(userRef, { name: finalDisplayName, baseName: finalDisplayName, role, uid: uniqueID, year, firstLogin: ts, createdAt: ts, lastLogin: ts, postsCount: 0, totalLikes: 0, totalVerseViews: 0, totalRepliesCount: 0, blocked: false }), 10000);
                     }
                 } catch(e) { console.log("Login Error", e); }
                 try { localStorage.setItem('it9an_saved_pin', pin); } catch(e){}
