@@ -1354,6 +1354,23 @@
             return completed;
         }
         function invalidateCompletedVersesCache() { completedVersesCache = null; completedVersesCacheUid = null; completedVersesCacheStage = null; }
+        async function refreshVerseStatusUI() {
+            invalidateCompletedVersesCache();
+            const uid = localStorage.getItem('it9an_uid');
+            const userRole = localStorage.getItem('it9an_role');
+            if (!uid || uid === 'admin_super' || uid === 'guest' || userRole !== 'student') return;
+            const verseBadge = document.getElementById('verseStatusBadge');
+            if (verseBadge && verseBadge.style.display !== 'none') {
+                const completed = await fetchCompletedVersesForStudent(uid);
+                const isCompleted = completed.has(String(currentGlobalFileId));
+                verseBadge.className = 'verse-status-badge ' + (isCompleted ? 'completed' : 'not-completed');
+                verseBadge.innerText = isCompleted ? 'منجز' : 'لم يُنجز بعد';
+            }
+            const verseListModal = document.getElementById('verse-list-modal');
+            if (verseListModal && verseListModal.style.display !== 'none') {
+                if (typeof window.showVerseList === 'function') window.showVerseList();
+            }
+        }
         async function fetchAllStudentsWithProgress(mode, stageId, lessonIndex, opts = {}) {
             const { limit, offset = 0 } = opts;
             const q = window.query(window.collection(window.db, "users"), window.where("role", "==", "student"));
@@ -1500,7 +1517,7 @@
         }
 
         let currentLessonIdx = null, currentGlobalFileId = null, currentLocalVers = null;
-        let unsubscribeFeed = null, unsubscribeViews = null, unsubscribeLeaderboard = null;
+        let unsubscribeFeed = null, unsubscribeViews = null, unsubscribeLeaderboard = null, unsubscribeCompletedVerses = null;
         let isPlaying = false, isPaused = false, repeatsLeft = 0, pauseInterval = null, pauseSecondsLeft = 0;
         let verseRepeatsPlayed = 0; 
 
@@ -4104,7 +4121,7 @@
                 const uid = localStorage.getItem('it9an_uid');
                 const role = localStorage.getItem('it9an_role');
                 const filterStage = notificationsFilterStageId != null ? notificationsFilterStageId : currentStageId;
-                let notifs = lastRawNotifs.filter(n => { const s = n.stageId; if (n.type === 'admin_message') return true; if (s == null) return (filterStage === 4); return s === filterStage; });
+                let notifs = lastRawNotifs.filter(n => { const s = n.stageId; if (n.type === 'admin_message') return true; if (s == null || s === undefined) return (Number(filterStage) === 4); return Number(s) === Number(filterStage); });
                 if (role === 'teacher' && uid !== 'admin_super') {
                     notifs = notifs.filter(n => !(n.clearedBy || []).includes(uid));
                 }
@@ -4177,7 +4194,7 @@
             for (const stage of (typeof STAGES_CONFIG !== 'undefined' ? STAGES_CONFIG : [])) {
                 const count = raw.filter(n => {
                     const s = n.stageId;
-                    const stageMatch = n.type === 'admin_message' ? true : (s == null ? (stage.id === 4) : s === stage.id);
+                    const stageMatch = n.type === 'admin_message' ? true : (s == null || s === undefined ? (stage.id === 4) : Number(s) === Number(stage.id));
                     if (!stageMatch) return false;
                     if (role === 'teacher' && uid !== 'admin_super' && (n.clearedBy || []).includes(uid)) return false;
                     if (role === 'student' && n.listenedByStudent) return false;
@@ -4247,6 +4264,7 @@
             document.getElementById('appFooter').style.display = 'none';
             const menuBtn = document.getElementById('menuBtn'); if(menuBtn) menuBtn.style.display = 'flex';
             window.scrollTo({ top: 0, behavior: 'smooth' });
+            if (typeof window.applyNotifStageFilter === 'function') window.applyNotifStageFilter();
         }
 
         window.openFromAdminMessageNotif = async function(notifId, messageId) {
@@ -4815,8 +4833,15 @@
                 verseBadge.style.display = 'block';
                 verseBadge.className = 'verse-status-badge ' + (isCompleted ? 'completed' : 'not-completed');
                 verseBadge.innerText = isCompleted ? 'منجز' : 'لم يُنجز بعد';
-            } else if (verseBadge) {
-                verseBadge.style.display = 'none';
+                if (unsubscribeCompletedVerses) unsubscribeCompletedVerses();
+                const q = window.query(window.collection(window.db, "posts"), window.where("uid", "==", uid));
+                unsubscribeCompletedVerses = window.onSnapshot(q, () => {
+                    if (document.hidden) return;
+                    refreshVerseStatusUI();
+                });
+            } else {
+                if (unsubscribeCompletedVerses) { unsubscribeCompletedVerses(); unsubscribeCompletedVerses = null; }
+                if (verseBadge) verseBadge.style.display = 'none';
             }
             
             if(!isAuto) {
@@ -5662,7 +5687,7 @@
                            type: 'new_recording',
                            fileId: String(currentGlobalFileId),
                            postId: postRef.id,
-                           stageId: currentStageId,
+                           stageId: Number(currentStageId),
                            stageName: stageCfg.name,
                            lessonNum: lv.lesson,
                            lessonTitle: lv.lessonTitle || '',
@@ -6305,6 +6330,7 @@
                 if (unsubscribeFeed) { unsubscribeFeed(); unsubscribeFeed = null; }
                 if (unsubscribeLeaderboard) { unsubscribeLeaderboard(); unsubscribeLeaderboard = null; }
                 if (unsubscribeTeachersLeaderboard) { unsubscribeTeachersLeaderboard(); unsubscribeTeachersLeaderboard = null; }
+                if (unsubscribeCompletedVerses) { unsubscribeCompletedVerses(); unsubscribeCompletedVerses = null; }
                 if (notifUnsubscribe) { notifUnsubscribe(); notifUnsubscribe = null; }
                 if (adminMessageViewUnsub) { adminMessageViewUnsub(); adminMessageViewUnsub = null; }
                 if (adminMessagesUnsub) { adminMessagesUnsub(); adminMessagesUnsub = null; }
@@ -6337,6 +6363,15 @@
                     }
                 });
                 loadFeed(currentGlobalFileId);
+                const userRole = localStorage.getItem('it9an_role');
+                if (uid && uid !== 'admin_super' && uid !== 'guest' && userRole === 'student') {
+                    if (unsubscribeCompletedVerses) unsubscribeCompletedVerses();
+                    const q = window.query(window.collection(window.db, "posts"), window.where("uid", "==", uid));
+                    unsubscribeCompletedVerses = window.onSnapshot(q, () => {
+                        if (document.hidden) return;
+                        refreshVerseStatusUI();
+                    });
+                }
             }
             const adminMsgView = document.getElementById('admin-message-view');
             if (adminMsgView && adminMsgView.style.display !== 'none' && currentAdminMessageId) {
