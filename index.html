@@ -238,9 +238,10 @@
         .lb-item-wrapper { border-bottom: 1px solid #eee; }
         .lb-item-wrapper:last-child { border-bottom: none; }
         .lb-item { 
-            padding: 14px 10px; display: flex; justify-content: space-between; font-size: 18px; 
-            align-items: center;
+            padding: 14px 10px; display: flex; flex-direction: column; font-size: 18px; 
+            align-items: stretch; gap: 0;
         }
+        .lb-item .lb-item-top-row { flex-shrink: 0; }
         .lb-item-wrapper.lb-item-top3 .lb-item { background: linear-gradient(90deg, rgba(212, 175, 55, 0.25), rgba(212, 175, 55, 0.1)); border-radius: 8px; margin-bottom: 4px; }
         .lb-item-wrapper.lb-item-me .lb-item { background: linear-gradient(90deg, rgba(192, 57, 43, 0.25), rgba(192, 57, 43, 0.1)); border-radius: 8px; border: 1px solid rgba(192, 57, 43, 0.4); }
         .lb-likes-click { cursor: pointer; }
@@ -2530,40 +2531,54 @@
                 list.innerHTML += `
                 <li class="${cls}">
                     <div class="lb-item">
-                        <div style="display:flex; align-items:center; gap:4px; flex-shrink: 1; min-width: 0;">
-                            ${adminBtns}
-                            ${pinBadge}
-                            <span class="lb-rank">#${rank}</span>
-                            <span class="lb-name">${lbDisplayName}</span>
+                        <div class="lb-item-top-row" style="display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%; min-width:0;">
+                            <div class="lb-name-pin-wrap" style="display:flex; align-items:center; gap:6px; flex:1; min-width:0; overflow:hidden;">
+                                ${pinBadge}
+                                <span class="lb-rank">#${rank}</span>
+                                <span class="lb-name">${lbDisplayName}</span>
+                            </div>
+                            <div class="lb-stats">
+                                <span class="lb-score lb-likes-click" onclick="toggleLbViews('${u.uid}')" title="عرض المشاهدات">👁️ ${u.totalVerseViews || 0}</span>
+                                <span class="lb-score lb-likes-click" onclick="toggleLbRecordings('${u.uid}')" title="عرض التسجيلات">🎤 ${u.postsCount || 0}</span>
+                                <span class="lb-likes lb-likes-click" onclick="toggleLbLikes('${u.uid}')" title="عرض الإعجابات">👍 ${likesCount}</span>
+                            </div>
                         </div>
-                        <div class="lb-stats">
-                            <span class="lb-score lb-likes-click" onclick="toggleLbViews('${u.uid}')" title="عرض المشاهدات">👁️ ${u.totalVerseViews || 0}</span>
-                            <span class="lb-score lb-likes-click" onclick="toggleLbRecordings('${u.uid}')" title="عرض التسجيلات">🎤 ${u.postsCount || 0}</span>
-                            <span class="lb-likes lb-likes-click" onclick="toggleLbLikes('${u.uid}')" title="عرض الإعجابات">👍 ${likesCount}</span>
-                        </div>
+                        ${isAdmin ? `<div class="lb-admin-btns-row" style="display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; flex-shrink:0;">${adminBtns}</div>` : ''}
                     </div>
                     <div class="lb-likes-list" id="lb-views-${u.uid}" style="display:none;"></div>
                     <div class="lb-likes-list" id="lb-recordings-${u.uid}" style="display:none;"></div>
                     <div class="lb-likes-list" id="lb-likes-${u.uid}" style="display:none;"></div>
                 </li>`;
             });
-            if (preserveOpen) {
-                const openViews = document.getElementById('lb-views-' + lbViewsOpenUid);
-                if (lbViewsOpenUid && openViews) {
-                    openViews.style.display = 'block';
-                    renderLbViewsList(openViews, lbViewsOpenUid, lbViewsOpenOffset);
-                }
+            if (preserveOpen && isAdmin) {
                 const openRec = document.getElementById('lb-recordings-' + lbRecordingsOpenUid);
                 if (lbRecordingsOpenUid && openRec) {
+                    lbViewsOpenUid = null; lbLikesOpenUid = null;
                     openRec.style.display = 'block';
                     const recScrollToId = (lbPendingRestore && lbPendingRestore.source === 'recordings' && lbPendingRestore.uid === lbRecordingsOpenUid) ? lbPendingRestore.scrollToId : undefined;
                     renderLbRecordingsList(openRec, lbRecordingsOpenUid, lbRecordingsOpenOffset, recScrollToId);
+                } else {
+                    const openLike = document.getElementById('lb-likes-' + lbLikesOpenUid);
+                    if (lbLikesOpenUid && openLike) {
+                        lbViewsOpenUid = null; lbRecordingsOpenUid = null;
+                        openLike.style.display = 'block';
+                        renderLbLikesList(openLike, lbLikesOpenUid, lbLikesOpenOffset);
+                    } else {
+                        const openViews = document.getElementById('lb-views-' + lbViewsOpenUid);
+                        if (lbViewsOpenUid && openViews) {
+                            lbRecordingsOpenUid = null; lbLikesOpenUid = null;
+                            openViews.style.display = 'block';
+                            renderLbViewsList(openViews, lbViewsOpenUid, lbViewsOpenOffset);
+                        }
+                    }
                 }
+            } else if (preserveOpen && !isAdmin) {
+                const openViews = document.getElementById('lb-views-' + lbViewsOpenUid);
+                if (lbViewsOpenUid && openViews) { openViews.style.display = 'block'; renderLbViewsList(openViews, lbViewsOpenUid, lbViewsOpenOffset); }
+                const openRec = document.getElementById('lb-recordings-' + lbRecordingsOpenUid);
+                if (lbRecordingsOpenUid && openRec) { openRec.style.display = 'block'; const recScrollToId = (lbPendingRestore && lbPendingRestore.source === 'recordings' && lbPendingRestore.uid === lbRecordingsOpenUid) ? lbPendingRestore.scrollToId : undefined; renderLbRecordingsList(openRec, lbRecordingsOpenUid, lbRecordingsOpenOffset, recScrollToId); }
                 const openLike = document.getElementById('lb-likes-' + lbLikesOpenUid);
-                if (lbLikesOpenUid && openLike) {
-                    openLike.style.display = 'block';
-                    renderLbLikesList(openLike, lbLikesOpenUid, lbLikesOpenOffset);
-                }
+                if (lbLikesOpenUid && openLike) { openLike.style.display = 'block'; renderLbLikesList(openLike, lbLikesOpenUid, lbLikesOpenOffset); }
             }
         }
 
@@ -2628,20 +2643,28 @@
                 renderLeaderboardItems(leaderboardAllUsers, leaderboardVisibleCount, myUid, true);
                 if (typeof window.updateHeaderNamePin === 'function') window.updateHeaderNamePin();
                 await refreshOpenSubLists();
+                const isAdmin = localStorage.getItem('it9an_uid') === 'admin_super';
                 const isStudentViewsOpen = lbViewsOpenUid && leaderboardAllUsers.some(u => u.uid === lbViewsOpenUid);
                 const isStudentRecOpen = lbRecordingsOpenUid && leaderboardAllUsers.some(u => u.uid === lbRecordingsOpenUid);
                 const isStudentLikesOpen = lbLikesOpenUid && leaderboardAllUsers.some(u => u.uid === lbLikesOpenUid);
-                if (isStudentViewsOpen) {
-                    const container = document.getElementById('lb-views-' + lbViewsOpenUid);
-                    if (container) container.style.display = 'block';
-                }
-                if (isStudentRecOpen) {
-                    const container = document.getElementById('lb-recordings-' + lbRecordingsOpenUid);
-                    if (container) container.style.display = 'block';
-                }
-                if (isStudentLikesOpen) {
-                    const container = document.getElementById('lb-likes-' + lbLikesOpenUid);
-                    if (container) container.style.display = 'block';
+                if (isAdmin) {
+                    if (isStudentRecOpen) {
+                        lbViewsOpenUid = null; lbLikesOpenUid = null;
+                        const container = document.getElementById('lb-recordings-' + lbRecordingsOpenUid);
+                        if (container) container.style.display = 'block';
+                    } else if (isStudentLikesOpen) {
+                        lbViewsOpenUid = null; lbRecordingsOpenUid = null;
+                        const container = document.getElementById('lb-likes-' + lbLikesOpenUid);
+                        if (container) container.style.display = 'block';
+                    } else if (isStudentViewsOpen) {
+                        lbRecordingsOpenUid = null; lbLikesOpenUid = null;
+                        const container = document.getElementById('lb-views-' + lbViewsOpenUid);
+                        if (container) container.style.display = 'block';
+                    }
+                } else {
+                    if (isStudentViewsOpen) { const container = document.getElementById('lb-views-' + lbViewsOpenUid); if (container) container.style.display = 'block'; }
+                    if (isStudentRecOpen) { const container = document.getElementById('lb-recordings-' + lbRecordingsOpenUid); if (container) container.style.display = 'block'; }
+                    if (isStudentLikesOpen) { const container = document.getElementById('lb-likes-' + lbLikesOpenUid); if (container) container.style.display = 'block'; }
                 }
                 if (!suppressToast) {
                     const toast = document.createElement('div');
@@ -2696,16 +2719,18 @@
                     list.innerHTML += `
                     <li class="lb-item-wrapper ${rank <= 3 ? 'lb-item-top3' : ''}">
                         <div class="lb-item">
-                            <div style="display:flex; align-items:center; gap:4px; flex-shrink: 1; min-width: 0;">
-                                ${adminBtnsT}
-                                <span class="lb-rank">#${rank}</span>
-                                <span class="lb-name">${lbDisplayNameT}</span>
-                                <span class="role-badge badge-teacher">معلم</span>
+                            <div class="lb-item-top-row" style="display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%; min-width:0;">
+                                <div class="lb-name-pin-wrap" style="display:flex; align-items:center; gap:6px; flex:1; min-width:0; overflow:hidden;">
+                                    <span class="lb-rank">#${rank}</span>
+                                    <span class="lb-name">${lbDisplayNameT}</span>
+                                    <span class="role-badge badge-teacher">معلم</span>
+                                </div>
+                                <div class="lb-stats">
+                                    <span class="lb-likes lb-likes-click" onclick="toggleLbLikes('${u.uid}')" title="عرض الإعجابات">👍 ${likesCount}</span>
+                                    <span class="lb-score lb-likes-click" onclick="toggleLbRecordings('${u.uid}')" title="عرض الردود">🎤 ${repliesCount}</span>
+                                </div>
                             </div>
-                            <div class="lb-stats">
-                                <span class="lb-likes lb-likes-click" onclick="toggleLbLikes('${u.uid}')" title="عرض الإعجابات">👍 ${likesCount}</span>
-                                <span class="lb-score lb-likes-click" onclick="toggleLbRecordings('${u.uid}')" title="عرض الردود">🎤 ${repliesCount}</span>
-                            </div>
+                            ${isAdmin ? `<div class="lb-admin-btns-row" style="display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; flex-shrink:0;">${adminBtnsT}</div>` : ''}
                         </div>
                         <div class="lb-likes-list" id="lb-likes-${u.uid}" style="display:none;"></div>
                         <div class="lb-likes-list" id="lb-recordings-${u.uid}" style="display:none;"></div>
@@ -2715,13 +2740,19 @@
                 await refreshOpenSubLists();
                 const isTeacherLikesOpen = lbLikesOpenUid && leaderboardAllTeachers.some(t => t.uid === lbLikesOpenUid);
                 const isTeacherRecOpen = lbRecordingsOpenUid && leaderboardAllTeachers.some(t => t.uid === lbRecordingsOpenUid);
-                if (isTeacherLikesOpen) {
-                    const container = document.getElementById('lb-likes-' + lbLikesOpenUid);
-                    if (container) container.style.display = 'block';
-                }
-                if (isTeacherRecOpen) {
-                    const container = document.getElementById('lb-recordings-' + lbRecordingsOpenUid);
-                    if (container) container.style.display = 'block';
+                if (isAdmin) {
+                    if (isTeacherRecOpen) {
+                        lbLikesOpenUid = null;
+                        const container = document.getElementById('lb-recordings-' + lbRecordingsOpenUid);
+                        if (container) container.style.display = 'block';
+                    } else if (isTeacherLikesOpen) {
+                        lbRecordingsOpenUid = null;
+                        const container = document.getElementById('lb-likes-' + lbLikesOpenUid);
+                        if (container) container.style.display = 'block';
+                    }
+                } else {
+                    if (isTeacherLikesOpen) { const container = document.getElementById('lb-likes-' + lbLikesOpenUid); if (container) container.style.display = 'block'; }
+                    if (isTeacherRecOpen) { const container = document.getElementById('lb-recordings-' + lbRecordingsOpenUid); if (container) container.style.display = 'block'; }
                 }
                 if (!suppressToast) {
                     const toast = document.createElement('div');
@@ -2828,16 +2859,18 @@
                     list.innerHTML += `
                     <li class="lb-item-wrapper ${rank <= 3 ? 'lb-item-top3' : ''}">
                         <div class="lb-item">
-                            <div style="display:flex; align-items:center; gap:4px; flex-shrink: 1; min-width: 0;">
-                                ${adminBtnsT}
-                                <span class="lb-rank">#${rank}</span>
-                                <span class="lb-name">${lbDisplayNameT}</span>
-                                <span class="role-badge badge-teacher">معلم</span>
+                            <div class="lb-item-top-row" style="display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%; min-width:0;">
+                                <div class="lb-name-pin-wrap" style="display:flex; align-items:center; gap:6px; flex:1; min-width:0; overflow:hidden;">
+                                    <span class="lb-rank">#${rank}</span>
+                                    <span class="lb-name">${lbDisplayNameT}</span>
+                                    <span class="role-badge badge-teacher">معلم</span>
+                                </div>
+                                <div class="lb-stats">
+                                    <span class="lb-likes lb-likes-click" onclick="toggleLbLikes('${u.uid}')" title="عرض الإعجابات">👍 ${likesCount}</span>
+                                    <span class="lb-score lb-likes-click" onclick="toggleLbRecordings('${u.uid}')" title="عرض الردود">🎤 ${repliesCount}</span>
+                                </div>
                             </div>
-                            <div class="lb-stats">
-                                <span class="lb-likes lb-likes-click" onclick="toggleLbLikes('${u.uid}')" title="عرض الإعجابات">👍 ${likesCount}</span>
-                                <span class="lb-score lb-likes-click" onclick="toggleLbRecordings('${u.uid}')" title="عرض الردود">🎤 ${repliesCount}</span>
-                            </div>
+                            ${isAdmin ? `<div class="lb-admin-btns-row" style="display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; flex-shrink:0;">${adminBtnsT}</div>` : ''}
                         </div>
                         <div class="lb-likes-list" id="lb-likes-${u.uid}" style="display:none;"></div>
                         <div class="lb-likes-list" id="lb-recordings-${u.uid}" style="display:none;"></div>
@@ -2845,14 +2878,20 @@
                 });
                 const isTeacherLikesOpen = lbLikesOpenUid && leaderboardAllTeachers.some(t => t.uid === lbLikesOpenUid);
                 const isTeacherRecOpen = lbRecordingsOpenUid && leaderboardAllTeachers.some(t => t.uid === lbRecordingsOpenUid);
-                if (isTeacherLikesOpen) {
-                    const container = document.getElementById('lb-likes-' + lbLikesOpenUid);
-                    if (container) { container.style.display = 'block'; renderLbLikesList(container, lbLikesOpenUid, lbLikesOpenOffset); }
-                }
-                if (isTeacherRecOpen) {
-                    const container = document.getElementById('lb-recordings-' + lbRecordingsOpenUid);
-                    const recScrollToId = (lbPendingRestore && lbPendingRestore.source === 'recordings' && lbPendingRestore.uid === lbRecordingsOpenUid) ? lbPendingRestore.scrollToId : undefined;
-                    if (container) { container.style.display = 'block'; renderLbRecordingsList(container, lbRecordingsOpenUid, lbRecordingsOpenOffset, recScrollToId); }
+                if (isAdmin) {
+                    if (isTeacherRecOpen) {
+                        lbLikesOpenUid = null;
+                        const container = document.getElementById('lb-recordings-' + lbRecordingsOpenUid);
+                        const recScrollToId = (lbPendingRestore && lbPendingRestore.source === 'recordings' && lbPendingRestore.uid === lbRecordingsOpenUid) ? lbPendingRestore.scrollToId : undefined;
+                        if (container) { container.style.display = 'block'; renderLbRecordingsList(container, lbRecordingsOpenUid, lbRecordingsOpenOffset, recScrollToId); }
+                    } else if (isTeacherLikesOpen) {
+                        lbRecordingsOpenUid = null;
+                        const container = document.getElementById('lb-likes-' + lbLikesOpenUid);
+                        if (container) { container.style.display = 'block'; renderLbLikesList(container, lbLikesOpenUid, lbLikesOpenOffset); }
+                    }
+                } else {
+                    if (isTeacherLikesOpen) { const container = document.getElementById('lb-likes-' + lbLikesOpenUid); if (container) { container.style.display = 'block'; renderLbLikesList(container, lbLikesOpenUid, lbLikesOpenOffset); } }
+                    if (isTeacherRecOpen) { const container = document.getElementById('lb-recordings-' + lbRecordingsOpenUid); const recScrollToId = (lbPendingRestore && lbPendingRestore.source === 'recordings' && lbPendingRestore.uid === lbRecordingsOpenUid) ? lbPendingRestore.scrollToId : undefined; if (container) { container.style.display = 'block'; renderLbRecordingsList(container, lbRecordingsOpenUid, lbRecordingsOpenOffset, recScrollToId); } }
                 }
                 if (onFirstRender) onFirstRender();
                 }
@@ -2892,16 +2931,18 @@
                     list.innerHTML += `
                     <li class="lb-item-wrapper ${rank <= 3 ? 'lb-item-top3' : ''}">
                         <div class="lb-item">
-                            <div style="display:flex; align-items:center; gap:4px; flex-shrink: 1; min-width: 0;">
-                                ${adminBtnsT}
-                                <span class="lb-rank">#${rank}</span>
-                                <span class="lb-name">${lbDisplayNameT}</span>
-                                <span class="role-badge badge-teacher">معلم</span>
+                            <div class="lb-item-top-row" style="display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%; min-width:0;">
+                                <div class="lb-name-pin-wrap" style="display:flex; align-items:center; gap:6px; flex:1; min-width:0; overflow:hidden;">
+                                    <span class="lb-rank">#${rank}</span>
+                                    <span class="lb-name">${lbDisplayNameT}</span>
+                                    <span class="role-badge badge-teacher">معلم</span>
+                                </div>
+                                <div class="lb-stats">
+                                    <span class="lb-likes lb-likes-click" onclick="toggleLbLikes('${u.uid}')" title="عرض الإعجابات">👍 ${likesCount}</span>
+                                    <span class="lb-score lb-likes-click" onclick="toggleLbRecordings('${u.uid}')" title="عرض الردود">🎤 ${repliesCount}</span>
+                                </div>
                             </div>
-                            <div class="lb-stats">
-                                <span class="lb-likes lb-likes-click" onclick="toggleLbLikes('${u.uid}')" title="عرض الإعجابات">👍 ${likesCount}</span>
-                                <span class="lb-score lb-likes-click" onclick="toggleLbRecordings('${u.uid}')" title="عرض الردود">🎤 ${repliesCount}</span>
-                            </div>
+                            ${isAdmin ? `<div class="lb-admin-btns-row" style="display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; flex-shrink:0;">${adminBtnsT}</div>` : ''}
                         </div>
                         <div class="lb-likes-list" id="lb-likes-${u.uid}" style="display:none;"></div>
                         <div class="lb-likes-list" id="lb-recordings-${u.uid}" style="display:none;"></div>
@@ -2909,14 +2950,20 @@
                 });
                 const isTeacherLikesOpen = lbLikesOpenUid && leaderboardAllTeachers.some(t => t.uid === lbLikesOpenUid);
                 const isTeacherRecOpen = lbRecordingsOpenUid && leaderboardAllTeachers.some(t => t.uid === lbRecordingsOpenUid);
-                if (isTeacherLikesOpen) {
-                    const container = document.getElementById('lb-likes-' + lbLikesOpenUid);
-                    if (container) { container.style.display = 'block'; renderLbLikesList(container, lbLikesOpenUid, lbLikesOpenOffset); }
-                }
-                if (isTeacherRecOpen) {
-                    const container = document.getElementById('lb-recordings-' + lbRecordingsOpenUid);
-                    const recScrollToId = (lbPendingRestore && lbPendingRestore.source === 'recordings' && lbPendingRestore.uid === lbRecordingsOpenUid) ? lbPendingRestore.scrollToId : undefined;
-                    if (container) { container.style.display = 'block'; renderLbRecordingsList(container, lbRecordingsOpenUid, lbRecordingsOpenOffset, recScrollToId); }
+                if (isAdmin) {
+                    if (isTeacherRecOpen) {
+                        lbLikesOpenUid = null;
+                        const container = document.getElementById('lb-recordings-' + lbRecordingsOpenUid);
+                        const recScrollToId = (lbPendingRestore && lbPendingRestore.source === 'recordings' && lbPendingRestore.uid === lbRecordingsOpenUid) ? lbPendingRestore.scrollToId : undefined;
+                        if (container) { container.style.display = 'block'; renderLbRecordingsList(container, lbRecordingsOpenUid, lbRecordingsOpenOffset, recScrollToId); }
+                    } else if (isTeacherLikesOpen) {
+                        lbRecordingsOpenUid = null;
+                        const container = document.getElementById('lb-likes-' + lbLikesOpenUid);
+                        if (container) { container.style.display = 'block'; renderLbLikesList(container, lbLikesOpenUid, lbLikesOpenOffset); }
+                    }
+                } else {
+                    if (isTeacherLikesOpen) { const container = document.getElementById('lb-likes-' + lbLikesOpenUid); if (container) { container.style.display = 'block'; renderLbLikesList(container, lbLikesOpenUid, lbLikesOpenOffset); } }
+                    if (isTeacherRecOpen) { const container = document.getElementById('lb-recordings-' + lbRecordingsOpenUid); const recScrollToId = (lbPendingRestore && lbPendingRestore.source === 'recordings' && lbPendingRestore.uid === lbRecordingsOpenUid) ? lbPendingRestore.scrollToId : undefined; if (container) { container.style.display = 'block'; renderLbRecordingsList(container, lbRecordingsOpenUid, lbRecordingsOpenOffset, recScrollToId); } }
                 }
                 if (onFirstRender && firstSnap) { onFirstRender(); firstSnap = false; }
             });
