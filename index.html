@@ -1888,7 +1888,7 @@
                 return;
             }
             if (pin === TEACHER_FATHIA_PIN) {
-                const first = "Fathia", last = "Makni", year = "0000", role = "teacher";
+                const first = "Fathia", last = "Makni", year = "1974", role = "teacher";
                 const fullNameRaw = first + " " + last;
                 const uniqueID = generateUserId(fullNameRaw, role, year);
                 const userRef = window.doc(window.db, "users", uniqueID);
@@ -1898,12 +1898,12 @@
                     if(userSnap.exists()) {
                         if(userSnap.data().blocked) { alert("عذراً، تم حظر هذا الحساب."); return; }
                         if(userSnap.data().name) finalDisplayName = userSnap.data().name;
-                        const up = { lastLogin: window.serverTimestamp() };
+                        const up = { lastLogin: window.serverTimestamp(), year: '1974', personalPin: '9797' };
                         if (!userSnap.data().firstLogin) up.firstLogin = window.serverTimestamp();
                         await withTimeout(window.updateDoc(userRef, up), 10000);
                     } else {
                         const ts = window.serverTimestamp();
-                        await withTimeout(window.setDoc(userRef, { name: finalDisplayName, baseName: finalDisplayName, role, uid: uniqueID, year, firstLogin: ts, createdAt: ts, lastLogin: ts, postsCount: 0, totalLikes: 0, totalVerseViews: 0, totalRepliesCount: 0, blocked: false }), 10000);
+                        await withTimeout(window.setDoc(userRef, { name: finalDisplayName, baseName: finalDisplayName, role, uid: uniqueID, year, personalPin: '9797', firstLogin: ts, createdAt: ts, lastLogin: ts, postsCount: 0, totalLikes: 0, totalVerseViews: 0, totalRepliesCount: 0, blocked: false }), 10000);
                     }
                 } catch(e) { console.log("Login Error", e); }
                 try { localStorage.setItem('it9an_saved_pin', pin); } catch(e){}
@@ -2715,12 +2715,14 @@
                     const likesCount = u.totalLikes || 0;
                     const repliesCount = u.totalRepliesCount || 0;
                     const lbDisplayNameT = isAdmin ? getDisplayNameForAdminWithDate(u) : getDisplayName(u);
+                    const pinBadgeT = isAdmin ? `<span class="lb-pin" title="الرمز الشخصي">${(u.personalPin || '').toString().trim() ? String(u.personalPin).padStart(4,'0') : '—'}</span>` : '';
                     const adminBtnsT = isAdmin ? `<button class="delete-btn" onclick="deleteUser('${u.uid}')" title="حذف">🗑️</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="editUserName('${u.uid}')" title="تعديل الاسم">✏️</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="swapFirstLastName('${u.uid}')" title="تبديل الاسم الأول واللقب">🔄</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="sendPrivateMessageToUser('${u.uid}')" title="رسالة خاصة">✉️</button><button class="${blockBtnClass}" style="padding:4px 10px; font-size:12px;" onclick="toggleBlockUser('${u.uid}', ${isBlocked})">${blockBtnText}</button>` : '';
                     list.innerHTML += `
                     <li class="lb-item-wrapper ${rank <= 3 ? 'lb-item-top3' : ''}">
                         <div class="lb-item">
                             <div class="lb-item-top-row" style="display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%; min-width:0;">
                                 <div class="lb-name-pin-wrap" style="display:flex; align-items:center; gap:6px; flex:1; min-width:0; overflow:hidden;">
+                                    ${pinBadgeT}
                                     <span class="lb-rank">#${rank}</span>
                                     <span class="lb-name">${lbDisplayNameT}</span>
                                     <span class="role-badge badge-teacher">معلم</span>
@@ -2855,12 +2857,14 @@
                     const likesCount = u.totalLikes || 0;
                     const repliesCount = u.totalRepliesCount || 0;
                     const lbDisplayNameT = isAdmin ? getDisplayNameForAdminWithDate(u) : getDisplayName(u);
+                    const pinBadgeT = isAdmin ? `<span class="lb-pin" title="الرمز الشخصي">${(u.personalPin || '').toString().trim() ? String(u.personalPin).padStart(4,'0') : '—'}</span>` : '';
                     const adminBtnsT = isAdmin ? `<button class="delete-btn" onclick="deleteUser('${u.uid}')" title="حذف">🗑️</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="editUserName('${u.uid}')" title="تعديل الاسم">✏️</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="swapFirstLastName('${u.uid}')" title="تبديل الاسم الأول واللقب">🔄</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="sendPrivateMessageToUser('${u.uid}')" title="رسالة خاصة">✉️</button><button class="${blockBtnClass}" style="padding:4px 10px; font-size:12px;" onclick="toggleBlockUser('${u.uid}', ${isBlocked})">${blockBtnText}</button>` : '';
                     list.innerHTML += `
                     <li class="lb-item-wrapper ${rank <= 3 ? 'lb-item-top3' : ''}">
                         <div class="lb-item">
                             <div class="lb-item-top-row" style="display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%; min-width:0;">
                                 <div class="lb-name-pin-wrap" style="display:flex; align-items:center; gap:6px; flex:1; min-width:0; overflow:hidden;">
+                                    ${pinBadgeT}
                                     <span class="lb-rank">#${rank}</span>
                                     <span class="lb-name">${lbDisplayNameT}</span>
                                     <span class="role-badge badge-teacher">معلم</span>
@@ -2927,12 +2931,14 @@
                     const likesCount = u.totalLikes || 0;
                     const repliesCount = u.totalRepliesCount || 0;
                     const lbDisplayNameT = isAdmin ? getDisplayNameForAdminWithDate(u) : getDisplayName(u);
+                    const pinBadgeT = isAdmin ? `<span class="lb-pin" title="الرمز الشخصي">${(u.personalPin || '').toString().trim() ? String(u.personalPin).padStart(4,'0') : '—'}</span>` : '';
                     const adminBtnsT = isAdmin ? `<button class="delete-btn" onclick="deleteUser('${u.uid}')" title="حذف">🗑️</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="editUserName('${u.uid}')" title="تعديل الاسم">✏️</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="swapFirstLastName('${u.uid}')" title="تبديل الاسم الأول واللقب">🔄</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="sendPrivateMessageToUser('${u.uid}')" title="رسالة خاصة">✉️</button><button class="${blockBtnClass}" style="padding:4px 10px; font-size:12px;" onclick="toggleBlockUser('${u.uid}', ${isBlocked})">${blockBtnText}</button>` : '';
                     list.innerHTML += `
                     <li class="lb-item-wrapper ${rank <= 3 ? 'lb-item-top3' : ''}">
                         <div class="lb-item">
                             <div class="lb-item-top-row" style="display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%; min-width:0;">
                                 <div class="lb-name-pin-wrap" style="display:flex; align-items:center; gap:6px; flex:1; min-width:0; overflow:hidden;">
+                                    ${pinBadgeT}
                                     <span class="lb-rank">#${rank}</span>
                                     <span class="lb-name">${lbDisplayNameT}</span>
                                     <span class="role-badge badge-teacher">معلم</span>
