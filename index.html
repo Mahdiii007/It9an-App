@@ -1125,7 +1125,7 @@
                 let startId = 1;
                 for (let i = 0; i < index; i++) startId += versesPerLesson[i];
                 const lek = { id: index + 1, verse: anzahl, startGlobalId: startId };
-                if (lessonTitles && Array.isArray(lessonTitles) && lessonTitles[index]) lek.title = lessonTitles[index];
+                lek.title = (lessonTitles && Array.isArray(lessonTitles) && lessonTitles[index]) ? lessonTitles[index] : ('الدرس ' + (index + 1));
                 return lek;
             });
         }
@@ -1332,10 +1332,7 @@
         function getVerseImgOnError(img, usePlaceholder) {
             return function() {
                 img.onerror = null;
-                var s = img.src || '';
-                if (s.endsWith('.png')) { img.src = s.replace('.png', '.PNG'); img.onerror = getVerseImgOnError(img, usePlaceholder); }
-                else if (s.endsWith('.PNG')) { img.src = s.replace('.PNG', '.jpg'); img.onerror = getVerseImgOnError(img, usePlaceholder); }
-                else if (usePlaceholder) { img.src = 'placeholder.png'; img.onerror = function(){ img.style.display = 'none'; }; }
+                if (usePlaceholder) { img.src = getAssetUrl('placeholder.png'); img.onerror = function(){ img.style.display = 'none'; }; }
                 else { img.style.display = 'none'; }
             };
         }
@@ -4270,7 +4267,7 @@
                     const ptP = document.getElementById('pageTitle');
                     if (ptP) {
                         ptP.classList.remove('header-name-pin');
-                        const lessonPart = lek.title ? `<span class="title-text-maktaa lesson-title-text" style="font-size:clamp(18px, 5vw, 26px); color:var(--red); white-space:nowrap;">${lek.title}</span>` : `<img src="${getAssetUrl('T' + lek.id + '.png')}" alt="Lesson Title" onerror="this.onerror=null;this.src=this.src.replace('.png','.jpg');this.onerror=function(){this.style.display='none'}">`;
+                        const lessonPart = `<span class="title-text-maktaa lesson-title-text" style="font-size:clamp(18px, 5vw, 26px); color:var(--red); white-space:nowrap;">${lek.title}</span>`;
                         ptP.innerHTML = `<span class="title-text-maktaa verse-num-maktaa">المقطع ${currentLocalVers}</span>${lessonPart}`;
                     }
                 }
@@ -4741,9 +4738,7 @@
                 const progressPart = (myUid && myUid !== 'admin_super' && userRole === 'student') 
                     ? `<div class="lesson-progress-bar-wrap"><div class="lesson-progress-bar"><div class="lesson-progress-bar-fill" style="width:${prog.percent}%"></div></div><div class="lesson-progress-text">${prog.completed}/${prog.total} (${prog.percent}%)</div></div>` 
                     : '';
-                const titleContent = lek.title 
-                    ? `<div class="menu-item-title lesson-title-text" style="padding:24px 15px; font-size:clamp(20px, 6vw, 32px); line-height:1.2; color:var(--red); white-space:nowrap;">${lek.title}</div>` 
-                    : `<div class="menu-item-title">الدرس ${index + 1}</div><img src="${getAssetUrl('T' + lek.id + '.png')}" loading="lazy" onerror="this.onerror=null;this.src=this.src.replace('.png','.jpg');this.onerror=function(){this.style.display='none'}">`;
+                const titleContent = `<div class="menu-item-title lesson-title-text" style="padding:24px 15px; font-size:clamp(20px, 6vw, 32px); line-height:1.2; color:var(--red); white-space:nowrap;">${lek.title}</div>`;
                 const footerHtml = `<div class="lesson-card-footer"><div class="menu-item-students-icon" onclick="event.stopPropagation(); showStudentsProgressForLesson(${index})" title="عرض قائمة الطلاب">👥</div>${progressPart}</div>`;
                 div.innerHTML = `${titleContent}${footerHtml}`;
                 div.onclick = () => startLesson(index);
@@ -4849,7 +4844,7 @@
             const ptP = document.getElementById('pageTitle');
             if (ptP) {
                 ptP.classList.remove('header-name-pin');
-                const lessonPart = lek.title ? `<span class="title-text-maktaa lesson-title-text" style="font-size:clamp(18px, 5vw, 26px); color:var(--red); white-space:nowrap;">${lek.title}</span>` : `<img src="${getAssetUrl('T' + lek.id + '.png')}" alt="Lesson Title" onerror="this.onerror=null;this.src=this.src.replace('.png','.jpg');this.onerror=function(){this.style.display='none'}">`;
+                const lessonPart = `<span class="title-text-maktaa lesson-title-text" style="font-size:clamp(18px, 5vw, 26px); color:var(--red); white-space:nowrap;">${lek.title}</span>`;
                 ptP.innerHTML = `<span class="title-text-maktaa verse-num-maktaa">المقطع ${localVersNum}</span>${lessonPart}`;
             }
 
