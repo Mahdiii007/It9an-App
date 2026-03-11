@@ -1921,7 +1921,7 @@
                     if(userSnap.exists()) {
                         if(userSnap.data().blocked) { alert("عذراً، تم حظر هذا الحساب."); return; }
                         if(userSnap.data().name) finalDisplayName = userSnap.data().name;
-                        const lotfiUp = { lastLogin: window.serverTimestamp() };
+                        const lotfiUp = { lastLogin: window.serverTimestamp(), personalPin: '9898' };
                         if (!userSnap.data().firstLogin) lotfiUp.firstLogin = window.serverTimestamp();
                         await withTimeout(window.updateDoc(userRef, lotfiUp), 10000);
                     } else {
@@ -4737,6 +4737,7 @@
         window.showLessonsView = async function() {
             if (isPlaying) stopLoop();
             pauseFeedAudio();
+            if (typeof window.hideVerseList === 'function') window.hideVerseList();
             const grid = document.getElementById('lesson-grid');
             if (!grid) return;
             grid.innerHTML = '';
@@ -4779,6 +4780,7 @@
         function startLesson(index) {
             currentLessonIdx = index;
             activePostFilter = null; activePostFilterNotifId = null; highlightedPostId = null;
+            if (typeof window.hideVerseList === 'function') window.hideVerseList();
             playVers(KURS_DATEN[index].startGlobalId, 1);
         }
 
@@ -4851,6 +4853,7 @@
         }
 
         async function playVers(globalId, localVersNum, isAuto = false) {
+            if (typeof window.hideVerseList === 'function') window.hideVerseList();
             currentGlobalFileId = globalId; currentLocalVers = localVersNum;
             feedLimit = 3; loadFeed(globalId);
             pauseFeedAudio();
