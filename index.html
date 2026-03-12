@@ -732,17 +732,6 @@
         </div>
     </div>
 
-    <div id="teachers-list-modal" onclick="if(event.target===this) hideTeachersListModal()" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:5000; overflow-y:auto; padding:15px; box-sizing:border-box;">
-        <div class="leaderboard-card" onclick="event.stopPropagation()" style="max-width:500px; margin:20px auto;">
-            <div class="verse-list-header" style="margin-bottom:15px;">
-                <div class="lb-title" style="margin:0;">👨‍🏫 قائمة المعلمين</div>
-                <button class="modal-close-x" onclick="hideTeachersListModal()" title="إغلاق">✕</button>
-            </div>
-            <ul id="teachers-list-content" class="lb-list"></ul>
-            <button class="verse-list-btn" style="margin-top:15px;" onclick="hideTeachersListModal()">إغلاق</button>
-        </div>
-    </div>
-
     <div id="foreground-push-banner" role="button" tabindex="0" style="touch-action: manipulation; -webkit-tap-highlight-color: transparent;">
         <div class="fg-push-title" id="fg-push-title">إشعار جديد</div>
         <div class="fg-push-body" id="fg-push-body"></div>
@@ -827,7 +816,7 @@
                 <span class="stat-clickable" id="statRepetitionsWrap" title="اضغط لعرض الرسم البياني"><span title="إجمالي التكرارات — اضغط لعرض">👁️ <span id="statRepetitions">—</span> <span class="stat-click-hint">↗</span></span></span>
                 <span class="stat-clickable" id="statRecordingsWrap" title="اضغط لعرض الرسم البياني"><span title="تسجيلات الطلاب — اضغط لعرض">🎤 <span id="statStudentRecordings">—</span> <span class="stat-click-hint">↗</span></span></span>
                 <span title="عدد الطلاب">🎓 <span id="statStudents">—</span></span>
-                <span id="statTeachersWrap" title="عدد المعلمين"><span>👨‍🏫 <span id="statTeachers">—</span> <span class="stat-click-hint" id="statTeachersHint" style="display:none;">↗</span></span></span>
+                <span title="عدد المعلمين">👨‍🏫 <span id="statTeachers">—</span></span>
             </div>
             <div id="statChartRepetitions" class="stat-chart-wrap" style="display:none; margin-top:15px; padding:15px; background:#f9f9f9; border-radius:12px;">
                 <div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;">
@@ -910,7 +899,7 @@
 
         <div class="settings-box">
             <div class="setting-group"><span class="setting-label">وقفة</span><input type="checkbox" id="globalGap" checked></div>
-            <div class="setting-group"><span class="setting-label">تكرار</span><input type="number" id="globalRepeats" value="30" min="1"><span class="setting-label">مرات</span></div>
+            <div class="setting-group"><span class="setting-label">تكرار</span><input type="number" id="globalRepeats" value="3" min="1"><span class="setting-label">مرات</span></div>
         </div>
 
         <div class="verse-section">
@@ -1519,47 +1508,6 @@
             }
         };
         window.hideStudentsProgressModal = function() { document.getElementById('students-progress-modal').style.display = 'none'; }
-        window.showTeachersListModal = async function() {
-            if (localStorage.getItem('it9an_uid') !== 'admin_super') return;
-            const list = document.getElementById('teachers-list-content');
-            const modal = document.getElementById('teachers-list-modal');
-            if (!list || !modal) return;
-            list.innerHTML = '<li style="text-align:center; color:#999; padding:15px;">جاري التحميل...</li>';
-            modal.style.display = 'block';
-            try {
-                const snap = await window.getDocsFromServer(window.query(window.collection(window.db, "users"), window.where("role", "==", "teacher")));
-                const teachers = [];
-                snap.forEach(doc => teachers.push({ uid: doc.id, ...doc.data() }));
-                teachers.sort((a, b) => (getDisplayName(a) || '').localeCompare(getDisplayName(b) || '', 'ar'));
-                if (teachers.length === 0) {
-                    list.innerHTML = '<li style="text-align:center; color:#999; padding:15px;">لا يوجد معلمون</li>';
-                    return;
-                }
-                list.innerHTML = teachers.map(t => {
-                    const name = (t.name || getDisplayName(t) || '—').replace(/</g, '&lt;');
-                    const pin = (t.personalPin || '').toString().trim() ? String(t.personalPin).padStart(4, '0') : '—';
-                    return `<li class="lb-item-wrapper" style="display:flex; align-items:center; justify-content:space-between; gap:10px; padding:12px 14px;">
-                        <div style="flex:1; min-width:0;"><span class="lb-name" style="font-weight:bold;">${name}</span> <span class="lb-pin" title="الرمز الشخصي">${pin}</span></div>
-                        <button class="delete-btn" onclick="deleteTeacherFromList('${t.uid}')" title="حذف المعلم">🗑️</button>
-                    </li>`;
-                }).join('');
-            } catch (e) {
-                console.warn('showTeachersListModal:', e);
-                list.innerHTML = '<li style="text-align:center; color:#c00; padding:15px;">خطأ في التحميل</li>';
-            }
-        };
-        window.hideTeachersListModal = function() { document.getElementById('teachers-list-modal').style.display = 'none'; }
-        window.deleteTeacherFromList = async function(uid) {
-            if (localStorage.getItem('it9an_uid') !== 'admin_super') return;
-            if (!confirm('هل أنت متأكد من حذف هذا المعلم؟ سيتم حذف حسابه وردوده.')) return;
-            try {
-                await deleteUserInternal(uid);
-                loadTeachersLeaderboard();
-                loadAppStats();
-                await showTeachersListModal();
-                alert('تم الحذف');
-            } catch (e) { alert('خطأ: ' + (e.message || e)); }
-        };
         window.showStageNoLessonsModal = function() { document.getElementById('stage-no-lessons-modal').style.display = 'block'; }
         window.hideStageNoLessonsModal = function() { document.getElementById('stage-no-lessons-modal').style.display = 'none'; }
         function getLessonCompletion(lessonIndex, completedVerses) {
@@ -3017,19 +2965,6 @@
                 document.getElementById('statStudentRecordings').innerText = String(totalStudentRecordings);
                 document.getElementById('statStudents').innerText = String(studentsSnap.size);
                 document.getElementById('statTeachers').innerText = String(teachersSnap.size);
-                const tw = document.getElementById('statTeachersWrap');
-                const th = document.getElementById('statTeachersHint');
-                if (tw && localStorage.getItem('it9an_uid') === 'admin_super') {
-                    tw.classList.add('stat-clickable');
-                    tw.title = 'اضغط لعرض قائمة المعلمين والرموز';
-                    tw.onclick = showTeachersListModal;
-                    if (th) th.style.display = 'inline';
-                } else if (tw) {
-                    tw.classList.remove('stat-clickable');
-                    tw.title = 'عدد المعلمين';
-                    tw.onclick = null;
-                    if (th) th.style.display = 'none';
-                }
             } catch(e) { console.warn("loadAppStats:", e); }
         }
 
