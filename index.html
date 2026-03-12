@@ -625,7 +625,6 @@
         const app = initializeApp(firebaseConfig);
         window.firebaseApp = app;
         window.db = getFirestore(app); window.storage = getStorage(app);
-        window.firebaseReady = true;
         
         try { enableIndexedDbPersistence(window.db).catch((err) => { console.log("Persistence error:", err.code); }); } catch(e){}
 
@@ -1126,7 +1125,7 @@
                 let startId = 1;
                 for (let i = 0; i < index; i++) startId += versesPerLesson[i];
                 const lek = { id: index + 1, verse: anzahl, startGlobalId: startId };
-                if (lessonTitles && Array.isArray(lessonTitles) && lessonTitles[index]) lek.title = lessonTitles[index];
+                lek.title = (lessonTitles && Array.isArray(lessonTitles) && lessonTitles[index]) ? lessonTitles[index] : ('الدرس ' + (index + 1));
                 return lek;
             });
         }
@@ -1333,10 +1332,7 @@
         function getVerseImgOnError(img, usePlaceholder) {
             return function() {
                 img.onerror = null;
-                var s = img.src || '';
-                if (s.endsWith('.png')) { img.src = s.replace('.png', '.PNG'); img.onerror = getVerseImgOnError(img, usePlaceholder); }
-                else if (s.endsWith('.PNG')) { img.src = s.replace('.PNG', '.jpg'); img.onerror = getVerseImgOnError(img, usePlaceholder); }
-                else if (usePlaceholder) { img.src = 'placeholder.png'; img.onerror = function(){ img.style.display = 'none'; }; }
+                if (usePlaceholder) { img.src = getAssetUrl('placeholder.png'); img.onerror = function(){ img.style.display = 'none'; }; }
                 else { img.style.display = 'none'; }
             };
         }
@@ -1667,18 +1663,11 @@
                 if(btn) btn.innerText = "▶";
                 const myUid = localStorage.getItem('it9an_uid');
                 const myRole = localStorage.getItem('it9an_role');
-                /* Benachrichtigung nur entfernen, wenn der Schüler die Lehrer-Antwort bis zum Ende gehört hat (ended-Event) */
                 if (myRole === 'student' && myUid && id.indexOf('-reply-') >= 0) {
                     const parts = id.split('-reply-');
-                    let postId = (parts[0] || '').replace(/-saved$/, '');
+                    const postId = parts[0];
                     const idx = parseInt(parts[1], 10);
-                    let post = allLoadedPosts.find(p => p.id === postId);
-                    if (!post && window.db) {
-                        try {
-                            const postSnap = await window.getDoc(window.doc(window.db, "posts", postId));
-                            if (postSnap.exists()) post = { id: postSnap.id, ...postSnap.data() };
-                        } catch(e) {}
-                    }
+                    const post = allLoadedPosts.find(p => p.id === postId);
                     if (post && post.uid === myUid && post.replies && post.replies[idx] && post.replies[idx].role === 'teacher') {
                         const replyTs = post.replies[idx].timestamp;
                         try {
@@ -1692,10 +1681,7 @@
                             }
                             const updatedReplies = post.replies.map(r => (r.timestamp === replyTs && r.role === 'teacher') ? { ...r, listenedByStudent: true } : r);
                             await window.updateDoc(window.doc(window.db, "posts", postId), { replies: updatedReplies });
-                            if (allLoadedPosts.find(p => p.id === postId)) {
-                                const p = allLoadedPosts.find(p => p.id === postId);
-                                if (p) p.replies = updatedReplies;
-                            }
+                            post.replies = updatedReplies;
                             const feedDiv = document.getElementById('community-feed');
                             if (feedDiv && typeof renderPosts === 'function') { renderPosts(feedDiv, localStorage.getItem('it9an_role'), localStorage.getItem('it9an_uid'), savedIdsForFeed || new Set()); updateParticipationsCount(); }
                         } catch(e) {}
@@ -3131,11 +3117,6 @@
             return map;
         }
         async function loadLeaderboard(onComplete) {
-            if (!window.db) { 
-                const listEl = document.getElementById('leaderboard-list');
-                if (listEl) listEl.innerHTML = '<li style="text-align:center; color:#999; padding:10px;">جاري تحميل التطبيق...</li>';
-                return; 
-            }
             if (unsubscribeLeaderboard) unsubscribeLeaderboard();
             if (!lbPendingRestore) {
                 lbLikesCache = {};
@@ -3147,9 +3128,7 @@
             const myUid = localStorage.getItem('it9an_uid');
             const q = window.query(window.collection(window.db, "users"), window.where("role", "==", "student"));
             try {
-                let snap;
-                try { snap = await window.getDocsFromServer(q); }
-                catch (e) { snap = await window.getDocs(q); }
+                const snap = await window.getDocsFromServer(q);
                 let users = [];
                 snap.forEach(doc => users.push({ ...doc.data(), uid: doc.data().uid || doc.id }));
                 const stageStats = await fetchStageLeaderboardStats();
@@ -3170,11 +3149,7 @@
                 renderLeaderboardItems(leaderboardAllUsers, leaderboardVisibleCount, myUid, !!lbPendingRestore);
                 if (typeof window.updateHeaderNamePin === 'function') window.updateHeaderNamePin();
                 lbDone.students = true;
-            } catch (e) { 
-                console.warn('loadLeaderboard initial fetch:', e); 
-                const listEl = document.getElementById('leaderboard-list');
-                if (listEl) listEl.innerHTML = '<li style="text-align:center; color:#999; padding:10px;">لا يمكن تحميل القائمة. تحقق من الاتصال.</li>';
-            }
+            } catch (e) { console.warn('loadLeaderboard initial fetch:', e); }
             loadTeachersLeaderboard(() => { lbDone.teachers = true; checkLbComplete(); });
             let firstSnapshot = true;
             const cb = async (snap) => {
@@ -3217,11 +3192,7 @@
                 if (firstSnapshot) { lbDone.students = true; checkLbComplete(); }
                 firstSnapshot = false;
             };
-            unsubscribeLeaderboard = window.onSnapshot(q, cb, (err) => {
-                console.warn('loadLeaderboard onSnapshot error:', err);
-                const listEl = document.getElementById('leaderboard-list');
-                if (listEl && listEl.innerHTML.includes('جاري التحميل')) listEl.innerHTML = '<li style="text-align:center; color:#999; padding:10px;">لا يمكن تحميل القائمة. تحقق من الاتصال.</li>';
-            });
+            unsubscribeLeaderboard = window.onSnapshot(q, cb);
         }
 
         let adminUserRoles = {};
@@ -4128,6 +4099,13 @@
             });
         }
 
+        function getMyRepetitionCountForCurrentVerse() {
+            const uid = localStorage.getItem('it9an_uid');
+            if (!uid || uid === 'guest') return 0;
+            const data = window.currentViewersData || { viewers: {} };
+            const v = data.viewers && data.viewers[uid];
+            return (v && v.count) || 0;
+        }
         function updateRecButtonForStudentNotifications() {
             const recBtn = document.getElementById('recBtn');
             const playerView = document.getElementById('player-view');
@@ -4135,11 +4113,17 @@
             const role = localStorage.getItem('it9an_role');
             const uid = localStorage.getItem('it9an_uid');
             if (role !== 'student' || !uid || uid === 'guest') return;
-            const blocked = hasUnlistenedNotificationsForStage(currentStageId);
-            if (blocked) {
+            const notifBlocked = hasUnlistenedNotificationsForStage(currentStageId);
+            const repCount = getMyRepetitionCountForCurrentVerse();
+            const repBlocked = repCount < MIN_REPETITIONS_FOR_REC;
+            if (notifBlocked) {
                 recBtn.style.opacity = '0.5';
                 recBtn.style.cursor = 'pointer';
                 recBtn.title = 'استخدم إشعارات الجرس لسماع جميع ردود المعلم لهذه المرحلة حتى النهاية';
+            } else if (repBlocked) {
+                recBtn.style.opacity = '0.5';
+                recBtn.style.cursor = 'pointer';
+                recBtn.title = 'مطلوب 30 تكرار على الأقل - انقر للتفاصيل';
             } else {
                 recBtn.style.opacity = '';
                 recBtn.style.cursor = '';
@@ -4296,7 +4280,7 @@
                     const ptP = document.getElementById('pageTitle');
                     if (ptP) {
                         ptP.classList.remove('header-name-pin');
-                        const lessonPart = lek.title ? `<span class="title-text-maktaa lesson-title-text" style="font-size:clamp(18px, 5vw, 26px); color:var(--red); white-space:nowrap;">${lek.title}</span>` : `<img src="${getAssetUrl('T' + lek.id + '.png')}" alt="Lesson Title" onerror="this.onerror=null;this.src=this.src.replace('.png','.jpg');this.onerror=function(){this.style.display='none'}">`;
+                        const lessonPart = `<span class="title-text-maktaa lesson-title-text" style="font-size:clamp(18px, 5vw, 26px); color:var(--red); white-space:nowrap;">${lek.title}</span>`;
                         ptP.innerHTML = `<span class="title-text-maktaa verse-num-maktaa">المقطع ${currentLocalVers}</span>${lessonPart}`;
                     }
                 }
@@ -4767,9 +4751,7 @@
                 const progressPart = (myUid && myUid !== 'admin_super' && userRole === 'student') 
                     ? `<div class="lesson-progress-bar-wrap"><div class="lesson-progress-bar"><div class="lesson-progress-bar-fill" style="width:${prog.percent}%"></div></div><div class="lesson-progress-text">${prog.completed}/${prog.total} (${prog.percent}%)</div></div>` 
                     : '';
-                const titleContent = lek.title 
-                    ? `<div class="menu-item-title lesson-title-text" style="padding:24px 15px; font-size:clamp(20px, 6vw, 32px); line-height:1.2; color:var(--red); white-space:nowrap;">${lek.title}</div>` 
-                    : `<div class="menu-item-title">الدرس ${index + 1}</div><img src="${getAssetUrl('T' + lek.id + '.png')}" loading="lazy" onerror="this.onerror=null;this.src=this.src.replace('.png','.jpg');this.onerror=function(){this.style.display='none'}">`;
+                const titleContent = `<div class="menu-item-title lesson-title-text" style="padding:24px 15px; font-size:clamp(20px, 6vw, 32px); line-height:1.2; color:var(--red); white-space:nowrap;">${lek.title}</div>`;
                 const footerHtml = `<div class="lesson-card-footer"><div class="menu-item-students-icon" onclick="event.stopPropagation(); showStudentsProgressForLesson(${index})" title="عرض قائمة الطلاب">👥</div>${progressPart}</div>`;
                 div.innerHTML = `${titleContent}${footerHtml}`;
                 div.onclick = () => startLesson(index);
@@ -4858,6 +4840,7 @@
         async function playVers(globalId, localVersNum, isAuto = false) {
             if (typeof window.hideVerseList === 'function') window.hideVerseList();
             currentGlobalFileId = globalId; currentLocalVers = localVersNum;
+            window.currentViewersData = { viewers: {}, totalRepetitions: 0 };
             feedLimit = 3; loadFeed(globalId);
             pauseFeedAudio();
             showView('player-view');
@@ -4875,7 +4858,7 @@
             const ptP = document.getElementById('pageTitle');
             if (ptP) {
                 ptP.classList.remove('header-name-pin');
-                const lessonPart = lek.title ? `<span class="title-text-maktaa lesson-title-text" style="font-size:clamp(18px, 5vw, 26px); color:var(--red); white-space:nowrap;">${lek.title}</span>` : `<img src="${getAssetUrl('T' + lek.id + '.png')}" alt="Lesson Title" onerror="this.onerror=null;this.src=this.src.replace('.png','.jpg');this.onerror=function(){this.style.display='none'}">`;
+                const lessonPart = `<span class="title-text-maktaa lesson-title-text" style="font-size:clamp(18px, 5vw, 26px); color:var(--red); white-space:nowrap;">${lek.title}</span>`;
                 ptP.innerHTML = `<span class="title-text-maktaa verse-num-maktaa">المقطع ${localVersNum}</span>${lessonPart}`;
             }
 
@@ -4915,7 +4898,6 @@
                 }
             }
             
-            window.currentViewersData = { viewers: {}, totalRepetitions: 0 };
             document.getElementById('viewCount').innerText = "0";
 
             const statRef = window.doc(window.db, "stats", getStatsDocId(currentStageId, globalId));
@@ -4932,6 +4914,7 @@
                     window.currentViewersData = { viewers: {}, totalRepetitions: 0 }; 
                     document.getElementById('viewCount').innerText = 0;
                 }
+                if (typeof updateRecButtonForStudentNotifications === 'function') updateRecButtonForStudentNotifications();
             });
         }
 
@@ -4966,7 +4949,6 @@
 
         async function loadFeed(fileId) {
             const div = document.getElementById('community-feed');
-            if (!window.db) { div.innerHTML = "<div style='text-align:center; color:#999; padding:15px;'>جاري تحميل التطبيق...</div>"; return; }
             div.innerHTML = "<div style='text-align:center; color:#ccc; padding:10px;'>...</div>";
             if(unsubscribeFeed) unsubscribeFeed();
             
@@ -5027,13 +5009,10 @@
                     div.innerHTML = "<div style='text-align:center; color:#999; font-size:16px; padding:20px;'>لا توجد مشاركات حتى الآن</div>";
                     updateParticipationsCount();
                 }
-            } catch (e) { 
-                console.warn('loadFeed initial:', e); 
-                div.innerHTML = "<div style='text-align:center; color:#999; padding:15px;'>لا يمكن تحميل المشاركات. تحقق من الاتصال.</div>";
-            }
+            } catch (e) { console.warn('loadFeed initial:', e); }
             unsubscribeFeed = window.onSnapshot(q, async (snap) => {
                 if (document.hidden) return;
-                /* Nicht fromCache ignorieren – sonst bleibt die UI bei "..." hängen, wenn nur Cache-Daten ankommen (z.B. offline) */
+                if (snap.metadata && snap.metadata.fromCache) return;
                 allLoadedPosts = [];
                 snap.forEach(doc => {
                     const d = doc.data();
@@ -5093,9 +5072,6 @@
                 } else {
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                 }
-            }, (err) => {
-                console.warn('loadFeed onSnapshot error:', err);
-                if (div && div.innerHTML.includes('...')) div.innerHTML = "<div style='text-align:center; color:#999; padding:15px;'>لا يمكن تحميل المشاركات. تحقق من الاتصال.</div>";
             });
         }
 
@@ -5478,15 +5454,23 @@
         window.startReply = function(postId) { replyTargetId = postId; toggleRecord(); }
 
         const REC_BLOCKED_MSG = 'يرجى استخدام إشعارات الجرس لسماع جميع ردود المعلم لهذه المرحلة حتى النهاية. يمكنك التسجيل في هذه المرحلة مرة أخرى فقط عندما تكون جميع ردود المعلم قد سُمعت حتى النهاية. هكذا تتعلم بشكل أفضل.';
+        const MIN_REPETITIONS_FOR_REC = 30;
+        const REC_REPETITIONS_MSG = 'معلمو هذه المنصة متفقون على أن الطلاب يُفضّل أن يكرّروا المقاطع 30 مرة على الأقل قبل البدء بالتسجيل. يُنصح بـ 100 تكرار على الأقل. بعد 30 تكرار يُفتح الميكروفون لهذا المقطع.';
 
         window.toggleRecord = async function() {
             if (localStorage.getItem('it9an_uid') === 'guest') {
                 showGuestRegisterModal();
                 return;
             }
-            if (localStorage.getItem('it9an_role') === 'student' && hasUnlistenedNotificationsForStage(currentStageId)) {
-                alert(REC_BLOCKED_MSG);
-                return;
+            if (localStorage.getItem('it9an_role') === 'student') {
+                if (hasUnlistenedNotificationsForStage(currentStageId)) {
+                    alert(REC_BLOCKED_MSG);
+                    return;
+                }
+                if (getMyRepetitionCountForCurrentVerse() < MIN_REPETITIONS_FOR_REC) {
+                    alert(REC_REPETITIONS_MSG);
+                    return;
+                }
             }
             if(isPlaying) stopLoop();
             const ui = document.getElementById('recording-ui');
@@ -5593,13 +5577,6 @@
         }
 
         window.stopRecordingAndReview = function() { if(mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop(); }
-        function releaseMacMicrophone() {
-            const isMacDesktop = /Mac|Macintosh/.test(navigator.platform) && !navigator.maxTouchPoints;
-            if (isMacDesktop && lastRecStream) {
-                lastRecStream.getTracks().forEach(t => t.stop());
-                lastRecStream = null;
-            }
-        }
         function showReviewModal() {
             const modal = document.getElementById('review-modal');
             const audio = document.getElementById('reviewAudio');
@@ -5708,8 +5685,35 @@
                     }
                     const targetPost = allLoadedPosts.find(p => p.id === replyTargetId);
                     if(targetPost) {
-                        /* Benachrichtigung für Schüler + Löschen der Lehrer-Notif bei Bewertung+Antwort wird serverseitig von onUpdatePostNotifyStudentOnReply erledigt */
-                        lbRecordingsCache = {}; lbLikesCache = {};
+                        const lv = getLessonVerseFromFileId(currentGlobalFileId);
+                        const stageCfg = getStageConfig(currentStageId);
+                        await window.addDoc(window.collection(window.db, "notifications"), {
+                           to: targetPost.uid,
+                           senderName: stripYearFromName(name || ''),
+                           type: 'reply',
+                           fileId: String(currentGlobalFileId),
+                           postId: replyTargetId,
+                           replyTimestamp: replyTs,
+                           stageId: currentStageId,
+                           stageName: stageCfg.name,
+                           lessonNum: lv.lesson,
+                           lessonTitle: lv.lessonTitle || '',
+                           verseNum: lv.verse,
+                           timestamp: window.serverTimestamp()
+                       });
+                       if (role === 'teacher' && targetPost.role === 'student') {
+                           try {
+                               const postAfter = (await window.getDocFromServer(window.doc(window.db, "posts", replyTargetId))).data();
+                               const hasTeacherReply = postAfter && postAfter.replies && postAfter.replies.some(r => r.role === 'teacher');
+                               const hasTeacherRating = postAfter && postAfter.teacherRating;
+                               if (hasTeacherReply && hasTeacherRating) {
+                                   const nq = window.query(window.collection(window.db, "notifications"), window.where("to", "==", "teachers"), window.where("postId", "==", replyTargetId));
+                                   const ns = await window.getDocs(nq);
+                                   for (const nd of ns.docs) await window.deleteDoc(window.doc(window.db, "notifications", nd.id));
+                               }
+                           } catch(e) {}
+                       }
+                       lbRecordingsCache = {}; lbLikesCache = {};
                        if (lbRecordingsOpenUid) {
                            const cont = document.getElementById('lb-recordings-' + lbRecordingsOpenUid);
                            if (cont) fetchUserRecordings(lbRecordingsOpenUid, lbRecordingsOpenRole, true).then(items => { lbRecordingsCache[lbRecordingsOpenUid] = items; renderLbRecordingsList(cont, lbRecordingsOpenUid, lbRecordingsOpenOffset); });
@@ -5725,13 +5729,27 @@
                     if(role === 'student') {
                         const today = (function(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); })();
                         window.setDoc(window.doc(window.db, "dailyStats", today), { recordings: window.increment(1) }, { merge: true }).catch(()=>{});
-                        /* Benachrichtigung für Lehrer wird serverseitig von onCreatePostNotifyTeachers erstellt */
+                        const lv = getLessonVerseFromFileId(currentGlobalFileId);
+                        const stageCfg = getStageConfig(currentStageId);
+                        await window.addDoc(window.collection(window.db, "notifications"), {
+                           to: "teachers",
+                           senderName: stripYearFromName(name),
+                           type: 'new_recording',
+                           fileId: String(currentGlobalFileId),
+                           postId: postRef.id,
+                           stageId: Number(currentStageId),
+                           stageName: stageCfg.name,
+                           lessonNum: lv.lesson,
+                           lessonTitle: lv.lessonTitle || '',
+                           verseNum: lv.verse,
+                           clearedBy: [],
+                           timestamp: window.serverTimestamp()
+                       });
                     }
                 }
                 document.getElementById('statusDisplay').innerText = "تم الإرسال!";
                 setTimeout(() => document.getElementById('statusDisplay').innerText = "جاهز للتلاوة", 2000);
             } catch(e) { alert("خطأ في الإرسال"); }
-            releaseMacMicrophone();
         }
 
         window.retryRecord = function() {
@@ -5746,7 +5764,6 @@
             document.getElementById('review-modal').style.display = 'none';
             currentBlob = null;
             replyTargetId = null;
-            releaseMacMicrophone();
         }
 
         window.toggleSmartLoop = function() {
