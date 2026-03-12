@@ -5593,6 +5593,13 @@
         }
 
         window.stopRecordingAndReview = function() { if(mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop(); }
+        function releaseMacMicrophone() {
+            const isMacDesktop = /Mac|Macintosh/.test(navigator.platform) && !navigator.maxTouchPoints;
+            if (isMacDesktop && lastRecStream) {
+                lastRecStream.getTracks().forEach(t => t.stop());
+                lastRecStream = null;
+            }
+        }
         function showReviewModal() {
             const modal = document.getElementById('review-modal');
             const audio = document.getElementById('reviewAudio');
@@ -5724,6 +5731,7 @@
                 document.getElementById('statusDisplay').innerText = "تم الإرسال!";
                 setTimeout(() => document.getElementById('statusDisplay').innerText = "جاهز للتلاوة", 2000);
             } catch(e) { alert("خطأ في الإرسال"); }
+            releaseMacMicrophone();
         }
 
         window.retryRecord = function() {
@@ -5738,6 +5746,7 @@
             document.getElementById('review-modal').style.display = 'none';
             currentBlob = null;
             replyTargetId = null;
+            releaseMacMicrophone();
         }
 
         window.toggleSmartLoop = function() {
