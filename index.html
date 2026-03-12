@@ -625,6 +625,7 @@
         const app = initializeApp(firebaseConfig);
         window.firebaseApp = app;
         window.db = getFirestore(app); window.storage = getStorage(app);
+        window.firebaseReady = true;
         
         try { enableIndexedDbPersistence(window.db).catch((err) => { console.log("Persistence error:", err.code); }); } catch(e){}
 
@@ -3120,6 +3121,11 @@
             return map;
         }
         async function loadLeaderboard(onComplete) {
+            if (!window.db) { 
+                const listEl = document.getElementById('leaderboard-list');
+                if (listEl) listEl.innerHTML = '<li style="text-align:center; color:#999; padding:10px;">جاري تحميل التطبيق...</li>';
+                return; 
+            }
             if (unsubscribeLeaderboard) unsubscribeLeaderboard();
             if (!lbPendingRestore) {
                 lbLikesCache = {};
@@ -3131,7 +3137,9 @@
             const myUid = localStorage.getItem('it9an_uid');
             const q = window.query(window.collection(window.db, "users"), window.where("role", "==", "student"));
             try {
-                const snap = await window.getDocsFromServer(q);
+                let snap;
+                try { snap = await window.getDocsFromServer(q); }
+                catch (e) { snap = await window.getDocs(q); }
                 let users = [];
                 snap.forEach(doc => users.push({ ...doc.data(), uid: doc.data().uid || doc.id }));
                 const stageStats = await fetchStageLeaderboardStats();
@@ -3152,7 +3160,11 @@
                 renderLeaderboardItems(leaderboardAllUsers, leaderboardVisibleCount, myUid, !!lbPendingRestore);
                 if (typeof window.updateHeaderNamePin === 'function') window.updateHeaderNamePin();
                 lbDone.students = true;
-            } catch (e) { console.warn('loadLeaderboard initial fetch:', e); }
+            } catch (e) { 
+                console.warn('loadLeaderboard initial fetch:', e); 
+                const listEl = document.getElementById('leaderboard-list');
+                if (listEl) listEl.innerHTML = '<li style="text-align:center; color:#999; padding:10px;">لا يمكن تحميل القائمة. تحقق من الاتصال.</li>';
+            }
             loadTeachersLeaderboard(() => { lbDone.teachers = true; checkLbComplete(); });
             let firstSnapshot = true;
             const cb = async (snap) => {
@@ -3195,7 +3207,11 @@
                 if (firstSnapshot) { lbDone.students = true; checkLbComplete(); }
                 firstSnapshot = false;
             };
-            unsubscribeLeaderboard = window.onSnapshot(q, cb);
+            unsubscribeLeaderboard = window.onSnapshot(q, cb, (err) => {
+                console.warn('loadLeaderboard onSnapshot error:', err);
+                const listEl = document.getElementById('leaderboard-list');
+                if (listEl && listEl.innerHTML.includes('جاري التحميل')) listEl.innerHTML = '<li style="text-align:center; color:#999; padding:10px;">لا يمكن تحميل القائمة. تحقق من الاتصال.</li>';
+            });
         }
 
         let adminUserRoles = {};
@@ -4940,6 +4956,7 @@
 
         async function loadFeed(fileId) {
             const div = document.getElementById('community-feed');
+            if (!window.db) { div.innerHTML = "<div style='text-align:center; color:#999; padding:15px;'>جاري تحميل التطبيق...</div>"; return; }
             div.innerHTML = "<div style='text-align:center; color:#ccc; padding:10px;'>...</div>";
             if(unsubscribeFeed) unsubscribeFeed();
             
@@ -5000,10 +5017,13 @@
                     div.innerHTML = "<div style='text-align:center; color:#999; font-size:16px; padding:20px;'>لا توجد مشاركات حتى الآن</div>";
                     updateParticipationsCount();
                 }
-            } catch (e) { console.warn('loadFeed initial:', e); }
+            } catch (e) { 
+                console.warn('loadFeed initial:', e); 
+                div.innerHTML = "<div style='text-align:center; color:#999; padding:15px;'>لا يمكن تحميل المشاركات. تحقق من الاتصال.</div>";
+            }
             unsubscribeFeed = window.onSnapshot(q, async (snap) => {
                 if (document.hidden) return;
-                if (snap.metadata && snap.metadata.fromCache) return;
+                /* Nicht fromCache ignorieren – sonst bleibt die UI bei "..." hängen, wenn nur Cache-Daten ankommen (z.B. offline) */
                 allLoadedPosts = [];
                 snap.forEach(doc => {
                     const d = doc.data();
@@ -5063,6 +5083,9 @@
                 } else {
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                 }
+            }, (err) => {
+                console.warn('loadFeed onSnapshot error:', err);
+                if (div && div.innerHTML.includes('...')) div.innerHTML = "<div style='text-align:center; color:#999; padding:15px;'>لا يمكن تحميل المشاركات. تحقق من الاتصال.</div>";
             });
         }
 
