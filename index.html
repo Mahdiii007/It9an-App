@@ -1667,11 +1667,18 @@
                 if(btn) btn.innerText = "▶";
                 const myUid = localStorage.getItem('it9an_uid');
                 const myRole = localStorage.getItem('it9an_role');
+                /* Benachrichtigung nur entfernen, wenn der Schüler die Lehrer-Antwort bis zum Ende gehört hat (ended-Event) */
                 if (myRole === 'student' && myUid && id.indexOf('-reply-') >= 0) {
                     const parts = id.split('-reply-');
-                    const postId = parts[0];
+                    let postId = (parts[0] || '').replace(/-saved$/, '');
                     const idx = parseInt(parts[1], 10);
-                    const post = allLoadedPosts.find(p => p.id === postId);
+                    let post = allLoadedPosts.find(p => p.id === postId);
+                    if (!post && window.db) {
+                        try {
+                            const postSnap = await window.getDoc(window.doc(window.db, "posts", postId));
+                            if (postSnap.exists()) post = { id: postSnap.id, ...postSnap.data() };
+                        } catch(e) {}
+                    }
                     if (post && post.uid === myUid && post.replies && post.replies[idx] && post.replies[idx].role === 'teacher') {
                         const replyTs = post.replies[idx].timestamp;
                         try {
@@ -1685,7 +1692,10 @@
                             }
                             const updatedReplies = post.replies.map(r => (r.timestamp === replyTs && r.role === 'teacher') ? { ...r, listenedByStudent: true } : r);
                             await window.updateDoc(window.doc(window.db, "posts", postId), { replies: updatedReplies });
-                            post.replies = updatedReplies;
+                            if (allLoadedPosts.find(p => p.id === postId)) {
+                                const p = allLoadedPosts.find(p => p.id === postId);
+                                if (p) p.replies = updatedReplies;
+                            }
                             const feedDiv = document.getElementById('community-feed');
                             if (feedDiv && typeof renderPosts === 'function') { renderPosts(feedDiv, localStorage.getItem('it9an_role'), localStorage.getItem('it9an_uid'), savedIdsForFeed || new Set()); updateParticipationsCount(); }
                         } catch(e) {}
@@ -5691,35 +5701,8 @@
                     }
                     const targetPost = allLoadedPosts.find(p => p.id === replyTargetId);
                     if(targetPost) {
-                        const lv = getLessonVerseFromFileId(currentGlobalFileId);
-                        const stageCfg = getStageConfig(currentStageId);
-                        await window.addDoc(window.collection(window.db, "notifications"), {
-                           to: targetPost.uid,
-                           senderName: stripYearFromName(name || ''),
-                           type: 'reply',
-                           fileId: String(currentGlobalFileId),
-                           postId: replyTargetId,
-                           replyTimestamp: replyTs,
-                           stageId: currentStageId,
-                           stageName: stageCfg.name,
-                           lessonNum: lv.lesson,
-                           lessonTitle: lv.lessonTitle || '',
-                           verseNum: lv.verse,
-                           timestamp: window.serverTimestamp()
-                       });
-                       if (role === 'teacher' && targetPost.role === 'student') {
-                           try {
-                               const postAfter = (await window.getDocFromServer(window.doc(window.db, "posts", replyTargetId))).data();
-                               const hasTeacherReply = postAfter && postAfter.replies && postAfter.replies.some(r => r.role === 'teacher');
-                               const hasTeacherRating = postAfter && postAfter.teacherRating;
-                               if (hasTeacherReply && hasTeacherRating) {
-                                   const nq = window.query(window.collection(window.db, "notifications"), window.where("to", "==", "teachers"), window.where("postId", "==", replyTargetId));
-                                   const ns = await window.getDocs(nq);
-                                   for (const nd of ns.docs) await window.deleteDoc(window.doc(window.db, "notifications", nd.id));
-                               }
-                           } catch(e) {}
-                       }
-                       lbRecordingsCache = {}; lbLikesCache = {};
+                        /* Benachrichtigung für Schüler + Löschen der Lehrer-Notif bei Bewertung+Antwort wird serverseitig von onUpdatePostNotifyStudentOnReply erledigt */
+                        lbRecordingsCache = {}; lbLikesCache = {};
                        if (lbRecordingsOpenUid) {
                            const cont = document.getElementById('lb-recordings-' + lbRecordingsOpenUid);
                            if (cont) fetchUserRecordings(lbRecordingsOpenUid, lbRecordingsOpenRole, true).then(items => { lbRecordingsCache[lbRecordingsOpenUid] = items; renderLbRecordingsList(cont, lbRecordingsOpenUid, lbRecordingsOpenOffset); });
@@ -5735,22 +5718,7 @@
                     if(role === 'student') {
                         const today = (function(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); })();
                         window.setDoc(window.doc(window.db, "dailyStats", today), { recordings: window.increment(1) }, { merge: true }).catch(()=>{});
-                        const lv = getLessonVerseFromFileId(currentGlobalFileId);
-                        const stageCfg = getStageConfig(currentStageId);
-                        await window.addDoc(window.collection(window.db, "notifications"), {
-                           to: "teachers",
-                           senderName: stripYearFromName(name),
-                           type: 'new_recording',
-                           fileId: String(currentGlobalFileId),
-                           postId: postRef.id,
-                           stageId: Number(currentStageId),
-                           stageName: stageCfg.name,
-                           lessonNum: lv.lesson,
-                           lessonTitle: lv.lessonTitle || '',
-                           verseNum: lv.verse,
-                           clearedBy: [],
-                           timestamp: window.serverTimestamp()
-                       });
+                        /* Benachrichtigung für Lehrer wird serverseitig von onCreatePostNotifyTeachers erstellt */
                     }
                 }
                 document.getElementById('statusDisplay').innerText = "تم الإرسال!";
