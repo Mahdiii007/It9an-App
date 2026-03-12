@@ -1125,7 +1125,7 @@
                 let startId = 1;
                 for (let i = 0; i < index; i++) startId += versesPerLesson[i];
                 const lek = { id: index + 1, verse: anzahl, startGlobalId: startId };
-                lek.title = (lessonTitles && Array.isArray(lessonTitles) && lessonTitles[index]) ? lessonTitles[index] : ('الدرس ' + (index + 1));
+                if (lessonTitles && Array.isArray(lessonTitles) && lessonTitles[index]) lek.title = lessonTitles[index];
                 return lek;
             });
         }
@@ -1332,7 +1332,10 @@
         function getVerseImgOnError(img, usePlaceholder) {
             return function() {
                 img.onerror = null;
-                if (usePlaceholder) { img.src = getAssetUrl('placeholder.png'); img.onerror = function(){ img.style.display = 'none'; }; }
+                var s = img.src || '';
+                if (s.endsWith('.png')) { img.src = s.replace('.png', '.PNG'); img.onerror = getVerseImgOnError(img, usePlaceholder); }
+                else if (s.endsWith('.PNG')) { img.src = s.replace('.PNG', '.jpg'); img.onerror = getVerseImgOnError(img, usePlaceholder); }
+                else if (usePlaceholder) { img.src = 'placeholder.png'; img.onerror = function(){ img.style.display = 'none'; }; }
                 else { img.style.display = 'none'; }
             };
         }
@@ -4099,13 +4102,6 @@
             });
         }
 
-        function getMyRepetitionCountForCurrentVerse() {
-            const uid = localStorage.getItem('it9an_uid');
-            if (!uid || uid === 'guest') return 0;
-            const data = window.currentViewersData || { viewers: {} };
-            const v = data.viewers && data.viewers[uid];
-            return (v && v.count) || 0;
-        }
         function updateRecButtonForStudentNotifications() {
             const recBtn = document.getElementById('recBtn');
             const playerView = document.getElementById('player-view');
@@ -4113,17 +4109,11 @@
             const role = localStorage.getItem('it9an_role');
             const uid = localStorage.getItem('it9an_uid');
             if (role !== 'student' || !uid || uid === 'guest') return;
-            const notifBlocked = hasUnlistenedNotificationsForStage(currentStageId);
-            const repCount = getMyRepetitionCountForCurrentVerse();
-            const repBlocked = repCount < MIN_REPETITIONS_FOR_REC;
-            if (notifBlocked) {
+            const blocked = hasUnlistenedNotificationsForStage(currentStageId);
+            if (blocked) {
                 recBtn.style.opacity = '0.5';
                 recBtn.style.cursor = 'pointer';
                 recBtn.title = 'استخدم إشعارات الجرس لسماع جميع ردود المعلم لهذه المرحلة حتى النهاية';
-            } else if (repBlocked) {
-                recBtn.style.opacity = '0.5';
-                recBtn.style.cursor = 'pointer';
-                recBtn.title = 'مطلوب 30 تكرار على الأقل - انقر للتفاصيل';
             } else {
                 recBtn.style.opacity = '';
                 recBtn.style.cursor = '';
@@ -4280,7 +4270,7 @@
                     const ptP = document.getElementById('pageTitle');
                     if (ptP) {
                         ptP.classList.remove('header-name-pin');
-                        const lessonPart = `<span class="title-text-maktaa lesson-title-text" style="font-size:clamp(18px, 5vw, 26px); color:var(--red); white-space:nowrap;">${lek.title}</span>`;
+                        const lessonPart = lek.title ? `<span class="title-text-maktaa lesson-title-text" style="font-size:clamp(18px, 5vw, 26px); color:var(--red); white-space:nowrap;">${lek.title}</span>` : `<img src="${getAssetUrl('T' + lek.id + '.png')}" alt="Lesson Title" onerror="this.onerror=null;this.src=this.src.replace('.png','.jpg');this.onerror=function(){this.style.display='none'}">`;
                         ptP.innerHTML = `<span class="title-text-maktaa verse-num-maktaa">المقطع ${currentLocalVers}</span>${lessonPart}`;
                     }
                 }
@@ -4751,7 +4741,9 @@
                 const progressPart = (myUid && myUid !== 'admin_super' && userRole === 'student') 
                     ? `<div class="lesson-progress-bar-wrap"><div class="lesson-progress-bar"><div class="lesson-progress-bar-fill" style="width:${prog.percent}%"></div></div><div class="lesson-progress-text">${prog.completed}/${prog.total} (${prog.percent}%)</div></div>` 
                     : '';
-                const titleContent = `<div class="menu-item-title lesson-title-text" style="padding:24px 15px; font-size:clamp(20px, 6vw, 32px); line-height:1.2; color:var(--red); white-space:nowrap;">${lek.title}</div>`;
+                const titleContent = lek.title 
+                    ? `<div class="menu-item-title lesson-title-text" style="padding:24px 15px; font-size:clamp(20px, 6vw, 32px); line-height:1.2; color:var(--red); white-space:nowrap;">${lek.title}</div>` 
+                    : `<div class="menu-item-title">الدرس ${index + 1}</div><img src="${getAssetUrl('T' + lek.id + '.png')}" loading="lazy" onerror="this.onerror=null;this.src=this.src.replace('.png','.jpg');this.onerror=function(){this.style.display='none'}">`;
                 const footerHtml = `<div class="lesson-card-footer"><div class="menu-item-students-icon" onclick="event.stopPropagation(); showStudentsProgressForLesson(${index})" title="عرض قائمة الطلاب">👥</div>${progressPart}</div>`;
                 div.innerHTML = `${titleContent}${footerHtml}`;
                 div.onclick = () => startLesson(index);
@@ -4840,7 +4832,6 @@
         async function playVers(globalId, localVersNum, isAuto = false) {
             if (typeof window.hideVerseList === 'function') window.hideVerseList();
             currentGlobalFileId = globalId; currentLocalVers = localVersNum;
-            window.currentViewersData = { viewers: {}, totalRepetitions: 0 };
             feedLimit = 3; loadFeed(globalId);
             pauseFeedAudio();
             showView('player-view');
@@ -4858,7 +4849,7 @@
             const ptP = document.getElementById('pageTitle');
             if (ptP) {
                 ptP.classList.remove('header-name-pin');
-                const lessonPart = `<span class="title-text-maktaa lesson-title-text" style="font-size:clamp(18px, 5vw, 26px); color:var(--red); white-space:nowrap;">${lek.title}</span>`;
+                const lessonPart = lek.title ? `<span class="title-text-maktaa lesson-title-text" style="font-size:clamp(18px, 5vw, 26px); color:var(--red); white-space:nowrap;">${lek.title}</span>` : `<img src="${getAssetUrl('T' + lek.id + '.png')}" alt="Lesson Title" onerror="this.onerror=null;this.src=this.src.replace('.png','.jpg');this.onerror=function(){this.style.display='none'}">`;
                 ptP.innerHTML = `<span class="title-text-maktaa verse-num-maktaa">المقطع ${localVersNum}</span>${lessonPart}`;
             }
 
@@ -4898,6 +4889,7 @@
                 }
             }
             
+            window.currentViewersData = { viewers: {}, totalRepetitions: 0 };
             document.getElementById('viewCount').innerText = "0";
 
             const statRef = window.doc(window.db, "stats", getStatsDocId(currentStageId, globalId));
@@ -4914,7 +4906,6 @@
                     window.currentViewersData = { viewers: {}, totalRepetitions: 0 }; 
                     document.getElementById('viewCount').innerText = 0;
                 }
-                if (typeof updateRecButtonForStudentNotifications === 'function') updateRecButtonForStudentNotifications();
             });
         }
 
@@ -5454,23 +5445,15 @@
         window.startReply = function(postId) { replyTargetId = postId; toggleRecord(); }
 
         const REC_BLOCKED_MSG = 'يرجى استخدام إشعارات الجرس لسماع جميع ردود المعلم لهذه المرحلة حتى النهاية. يمكنك التسجيل في هذه المرحلة مرة أخرى فقط عندما تكون جميع ردود المعلم قد سُمعت حتى النهاية. هكذا تتعلم بشكل أفضل.';
-        const MIN_REPETITIONS_FOR_REC = 30;
-        const REC_REPETITIONS_MSG = 'معلمو هذه المنصة متفقون على أن الطلاب يُفضّل أن يكرّروا المقاطع 30 مرة على الأقل قبل البدء بالتسجيل. يُنصح بـ 100 تكرار على الأقل. بعد 30 تكرار يُفتح الميكروفون لهذا المقطع.';
 
         window.toggleRecord = async function() {
             if (localStorage.getItem('it9an_uid') === 'guest') {
                 showGuestRegisterModal();
                 return;
             }
-            if (localStorage.getItem('it9an_role') === 'student') {
-                if (hasUnlistenedNotificationsForStage(currentStageId)) {
-                    alert(REC_BLOCKED_MSG);
-                    return;
-                }
-                if (getMyRepetitionCountForCurrentVerse() < MIN_REPETITIONS_FOR_REC) {
-                    alert(REC_REPETITIONS_MSG);
-                    return;
-                }
+            if (localStorage.getItem('it9an_role') === 'student' && hasUnlistenedNotificationsForStage(currentStageId)) {
+                alert(REC_BLOCKED_MSG);
+                return;
             }
             if(isPlaying) stopLoop();
             const ui = document.getElementById('recording-ui');
