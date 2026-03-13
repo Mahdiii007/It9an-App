@@ -1802,7 +1802,7 @@
             const role = localStorage.getItem('it9an_role');
             if (!uid || !name || !role) return;
             if (!window.db) {
-                if (retries < 40) setTimeout(() => tryRestoreSession(retries + 1), 120);
+                if (retries < 60) setTimeout(() => tryRestoreSession(retries + 1), 100);
                 return;
             }
             getMaintenanceMode().then(function(maintenanceOn) {
@@ -1813,6 +1813,28 @@
                 const pin = localStorage.getItem('it9an_pin') || null;
                 doLoginSuccess(uid, name, role, true, pin);
             });
+        })();
+        (function initLoginScreenWithPushParams() {
+            const hasSession = localStorage.getItem('it9an_uid') && localStorage.getItem('it9an_name') && localStorage.getItem('it9an_role');
+            const hasPushParams = (function(){ const p = new URLSearchParams(window.location.search); if (p.get('postId') && p.get('fileId')) return true; return !!getStoredPushParams(); })();
+            if (hasSession && hasPushParams) {
+                const loginCard = document.querySelector('#login-screen .login-card');
+                if (loginCard) { loginCard.style.visibility = 'hidden'; loginCard.style.opacity = '0'; }
+                const loader = document.createElement('div');
+                loader.id = 'push-restore-loader';
+                loader.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:linear-gradient(135deg,var(--primary) 0%,#052b20 100%);z-index:5001;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--gold-light);font-size:20px;font-family:Amiri,serif;';
+                loader.innerHTML = '<div style="margin-bottom:20px;">جاري التحميل...</div>';
+                document.getElementById('login-screen').appendChild(loader);
+                var cleanup = function() {
+                    const l = document.getElementById('push-restore-loader');
+                    if (!l) return;
+                    if (l.parentNode) l.remove();
+                    if (loginCard) { loginCard.style.visibility = ''; loginCard.style.opacity = ''; }
+                    document.removeEventListener('it9an_session_restored', cleanup);
+                };
+                setTimeout(cleanup, 6000);
+                document.addEventListener('it9an_session_restored', cleanup);
+            }
         })();
 
         function getDisplayName(u) { if (u && String(u.personalPin || '').trim() === '9797') return 'Fathia Makni'; const n = (u && (u.baseName || (u.name ? String(u.name).replace(/\s*\(\d{4}\)\s*$/, '').trim() : '') || u.name || '')).trim() || ''; if (n === 'فتحية مقني') return 'Fathia Makni'; return n; }
@@ -2015,6 +2037,7 @@
             if (personalPin) localStorage.setItem('it9an_pin', personalPin);
             else localStorage.removeItem('it9an_pin');
             document.getElementById('login-screen').style.display = 'none';
+            document.dispatchEvent(new CustomEvent('it9an_session_restored'));
             updateUIForRole();
             if (uid !== 'guest') listenForNotifications();
             setupForegroundPushHandler();
