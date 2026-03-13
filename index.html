@@ -1008,7 +1008,7 @@
                 const m = e.data;
                 if (m && m.type === 'IT9AN_OPEN_NOTIF' && m.postId && m.fileId) {
                     storePushParams(m.postId, m.fileId, m.notifId || '');
-                    if (typeof checkPushNotificationParams === 'function') setTimeout(checkPushNotificationParams, 150);
+                    if (typeof checkPushNotificationParams === 'function') setTimeout(() => checkPushNotificationParams().then(ok => { if (!ok && typeof showStagesView === 'function') showStagesView(); }), 600);
                     else if (m.url) window.location.href = m.url;
                 }
             });
@@ -2040,7 +2040,7 @@
             }
         }
 
-        function doLoginSuccess(uid, name, role, hideScreen, personalPin) {
+        async function doLoginSuccess(uid, name, role, hideScreen, personalPin) {
             localStorage.setItem('it9an_uid', uid);
             localStorage.setItem('it9an_auth', 'true');
             localStorage.setItem('it9an_name', name);
@@ -2052,6 +2052,25 @@
             updateUIForRole();
             if (uid !== 'guest') listenForNotifications();
             setupForegroundPushHandler();
+            const hasPushParams = !!(new URLSearchParams(window.location.search).get('postId') && new URLSearchParams(window.location.search).get('fileId')) || getStoredPushParams();
+            if (hasPushParams) {
+                const loader = document.getElementById('push-restore-loader');
+                if (!loader && document.getElementById('login-screen')) {
+                    const l = document.createElement('div');
+                    l.id = 'push-restore-loader';
+                    l.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:linear-gradient(135deg,var(--primary) 0%,#052b20 100%);z-index:5001;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--gold-light);font-size:20px;font-family:Amiri,serif;';
+                    l.innerHTML = '<div style="margin-bottom:20px;">جاري فتح التسجيل...</div>';
+                    document.body.appendChild(l);
+                }
+                const opened = await checkPushNotificationParams();
+                const el = document.getElementById('push-restore-loader');
+                if (el && el.parentNode) el.remove();
+                if (opened) {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    if (uid && uid !== 'admin_super' && uid !== 'guest') requestPushPermissionAndSaveToken(uid, role);
+                    return;
+                }
+            }
             showStagesView();
             checkPushNotificationParams();
             window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -4752,7 +4771,12 @@
         }
 
         async function checkPushNotificationParams() {
-            if (!localStorage.getItem('it9an_uid')) return;
+            if (!localStorage.getItem('it9an_uid')) return false;
+            for (let w = 0; w < 50; w++) {
+                if (window.db) break;
+                await new Promise(r => setTimeout(r, 100));
+            }
+            if (!window.db) { console.warn('checkPushNotificationParams: Firebase nicht bereit'); return false; }
             const params = new URLSearchParams(window.location.search);
             let postId = params.get('postId');
             let fileId = params.get('fileId');
@@ -4761,14 +4785,16 @@
                 const stored = getStoredPushParams();
                 if (stored) { postId = stored.postId; fileId = stored.fileId; notifId = stored.notifId || ''; }
             }
-            if (!postId || !fileId) return;
+            if (!postId || !fileId) return false;
             history.replaceState({}, '', window.location.pathname + (window.location.hash || ''));
-            await new Promise(r => setTimeout(r, 500));
+            await new Promise(r => setTimeout(r, 600));
             try {
                 await openFromNotif(notifId, fileId, postId);
                 clearStoredPushParams();
+                return true;
             } catch (e) {
                 console.warn('openFromNotif failed:', e);
+                return false;
             }
         }
 
