@@ -2055,14 +2055,22 @@
             const hasPushParams = !!(new URLSearchParams(window.location.search).get('postId') && new URLSearchParams(window.location.search).get('fileId')) || getStoredPushParams();
             if (hasPushParams) {
                 const loader = document.getElementById('push-restore-loader');
-                if (!loader && document.getElementById('login-screen')) {
+                let loaderEl = loader;
+                if (!loaderEl) {
                     const l = document.createElement('div');
                     l.id = 'push-restore-loader';
                     l.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:linear-gradient(135deg,var(--primary) 0%,#052b20 100%);z-index:5001;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--gold-light);font-size:20px;font-family:Amiri,serif;';
-                    l.innerHTML = '<div style="margin-bottom:20px;">جاري فتح التسجيل...</div>';
+                    l.innerHTML = '<div style="margin-bottom:20px;">جاري فتح التسجيل...</div><div id="push-retry-msg" style="font-size:14px;opacity:0.9;"></div>';
                     document.body.appendChild(l);
+                    loaderEl = l;
                 }
-                const opened = await checkPushNotificationParams();
+                let opened = await checkPushNotificationParams();
+                for (let retry = 0; !opened && retry < 12; retry++) {
+                    const msg = document.getElementById('push-retry-msg');
+                    if (msg) msg.textContent = 'إعادة المحاولة ' + (retry + 1) + '...';
+                    await new Promise(r => setTimeout(r, 2000));
+                    opened = await checkPushNotificationParams();
+                }
                 const el = document.getElementById('push-restore-loader');
                 if (el && el.parentNode) el.remove();
                 if (opened) {
@@ -2072,6 +2080,23 @@
                 }
             }
             showStagesView();
+            (function schedulePushRetry() {
+                if (!getStoredPushParams()) return;
+                const retryWhenVisible = function() {
+                    if (document.visibilityState !== 'visible') return;
+                    document.removeEventListener('visibilitychange', retryWhenVisible);
+                    checkPushNotificationParams().then(function(ok) {
+                        if (!ok) setTimeout(schedulePushRetry, 4000);
+                    });
+                };
+                document.addEventListener('visibilitychange', retryWhenVisible);
+                setTimeout(function() {
+                    document.removeEventListener('visibilitychange', retryWhenVisible);
+                    checkPushNotificationParams().then(function(ok) {
+                        if (!ok) setTimeout(schedulePushRetry, 4000);
+                    });
+                }, 6000);
+            })();
             checkPushNotificationParams();
             window.scrollTo({ top: 0, behavior: 'smooth' });
             if (uid && uid !== 'admin_super' && uid !== 'guest') requestPushPermissionAndSaveToken(uid, role);
@@ -4378,20 +4403,28 @@
                 throw new Error('Invalid params');
             }
             let postData = null;
-            for (let attempt = 0; attempt < 3; attempt++) {
+            const postRef = window.doc(window.db, "posts", postId);
+            for (let attempt = 0; attempt < 6; attempt++) {
                 try {
-                    const postSnap = await window.getDocFromServer(window.doc(window.db, "posts", postId));
-                    if (!postSnap.exists()) {
-                        if (notifId) await window.deleteDoc(window.doc(window.db, "notifications", notifId));
-                        alert("تم حذف التسجيل من قبل الطالب. تم إزالة الإشعار.");
-                        return;
+                    const postSnap = await window.getDocFromServer(postRef);
+                    if (postSnap.exists()) {
+                        postData = postSnap.data();
+                        break;
                     }
-                    postData = postSnap.data();
-                    break;
+                    if (notifId) await window.deleteDoc(window.doc(window.db, "notifications", notifId));
+                    alert("تم حذف التسجيل من قبل الطالب. تم إزالة الإشعار.");
+                    return;
                 } catch (e) {
                     console.warn('openFromNotif fetch attempt', attempt + 1, e);
-                    if (attempt < 2) await new Promise(r => setTimeout(r, 500 * (attempt + 1)));
-                    else throw e;
+                    if (attempt < 5) {
+                        await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+                        if (attempt >= 2) {
+                            try {
+                                const cacheSnap = await window.getDoc(postRef);
+                                if (cacheSnap && cacheSnap.exists()) { postData = cacheSnap.data(); break; }
+                            } catch (e2) {}
+                        }
+                    } else throw e;
                 }
             }
             if (!postData) return;
@@ -4772,9 +4805,9 @@
 
         async function checkPushNotificationParams() {
             if (!localStorage.getItem('it9an_uid')) return false;
-            for (let w = 0; w < 50; w++) {
+            for (let w = 0; w < 80; w++) {
                 if (window.db) break;
-                await new Promise(r => setTimeout(r, 100));
+                await new Promise(r => setTimeout(r, 150));
             }
             if (!window.db) { console.warn('checkPushNotificationParams: Firebase nicht bereit'); return false; }
             const params = new URLSearchParams(window.location.search);
@@ -4787,7 +4820,11 @@
             }
             if (!postId || !fileId) return false;
             history.replaceState({}, '', window.location.pathname + (window.location.hash || ''));
-            await new Promise(r => setTimeout(r, 600));
+            for (let v = 0; v < 30; v++) {
+                if (document.visibilityState === 'visible') break;
+                await new Promise(r => setTimeout(r, 200));
+            }
+            await new Promise(r => setTimeout(r, 800));
             try {
                 await openFromNotif(notifId, fileId, postId);
                 clearStoredPushParams();
