@@ -4768,7 +4768,7 @@
             grid.innerHTML = '';
             const stageCfg = getStageConfig(currentStageId);
             const titleEl = document.getElementById('lessons-view-title');
-            if (titleEl) titleEl.innerHTML = stageCfg.name ? `📚 ${stageCfg.name} — جميع الدروس` : '📚 جميع الدروس';
+            if (titleEl) titleEl.innerHTML = '📚 جميع الدروس';
             if (KURS_DATEN.length === 0) {
                 grid.innerHTML = `<div style="text-align:center; padding:30px; color:#666; font-size:18px;">لا توجد دروس في مرحلة "${stageCfg.name}" بعد.<br><br>سيتم إضافتها قريباً إن شاء الله.</div>`;
                 showView('lessons-view');
