@@ -87,11 +87,11 @@ self.addEventListener('notificationclick', (e) => {
       const client = clients[0];
       client.focus();
       if (client.navigate) {
-        return client.navigate(url).catch(() => self.clients.openWindow(url));
+        return client.navigate(url).catch(() => self.clients.openWindow ? self.clients.openWindow(url) : Promise.resolve());
       }
-      client.postMessage({ type: 'IT9AN_OPEN_NOTIF', postId: d.postId, fileId: d.fileId, notifId: d.notifId, url });
-    } else if (self.clients.openWindow) {
-      return self.clients.openWindow(url);
+      try { client.postMessage({ type: 'IT9AN_OPEN_NOTIF', postId: d.postId, fileId: d.fileId, notifId: d.notifId, url }); } catch (e2) {}
+      return Promise.resolve();
     }
+    return self.clients.openWindow ? self.clients.openWindow(url) : Promise.resolve();
   }));
 });
