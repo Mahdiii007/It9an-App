@@ -805,6 +805,7 @@
             <button class="btn-admin-reset" onclick="resetAllViews()">👁️ تصفير كل المشاهدات</button>
             <button class="btn-admin-reset" onclick="resetAllLikes()">👍 تصفير كل الإعجابات</button>
             <button class="btn-admin-reset" onclick="deleteAllTeacherReplies()">↩️ حذف كل ردود المعلمين</button>
+            <button class="btn-admin-reset" onclick="mergeFathiaMakniDuplicates()" title="دمج الملفات المكررة لفتحية مقني (PIN 9797)">👤 دمج تكرار فتحية مقني</button>
             <button class="btn-admin-reset btn-admin-delete-all" onclick="deleteAllPostsGlobal()">🗑️ حذف كل التسجيلات</button>
         </div>
     </div>
@@ -2327,6 +2328,43 @@
                 try { await deleteUserInternal(uid); loadLeaderboard(); if(localStorage.getItem('it9an_uid')==='admin_super') loadTeachersLeaderboard(); alert("تم الحذف"); } catch(e) { alert("خطأ"); }
             }
         }
+
+        window.mergeFathiaMakniDuplicates = async function() {
+            if (localStorage.getItem('it9an_uid') !== 'admin_super') { alert("غير مصرح"); return; }
+            const CANONICAL_UID = 'teacher_fathia_makni_0000';
+            try {
+                const teachersSnap = await window.getDocs(window.query(window.collection(window.db, "users"), window.where("role", "==", "teacher")));
+                const fathiaProfiles = [];
+                teachersSnap.forEach(doc => {
+                    const d = doc.data();
+                    const uid = d.uid || doc.id;
+                    const baseName = (d.baseName || (d.name || '').replace(/\s*\(\d{4}\)\s*$/, '').trim() || '').trim();
+                    const isFathia = baseName === 'Fathia Makni' || baseName === 'فتحية مقني' || String(d.personalPin || '').trim() === '9797';
+                    if (isFathia) fathiaProfiles.push({ uid, ...d });
+                });
+                if (fathiaProfiles.length <= 1) { alert("لا يوجد تكرار لفتحية مقني"); return; }
+                const canonical = fathiaProfiles.find(p => p.uid === CANONICAL_UID) || fathiaProfiles.find(p => String(p.personalPin || '').trim() === '9797') || fathiaProfiles[0];
+                const duplicates = fathiaProfiles.filter(p => p.uid !== canonical.uid);
+                if (duplicates.length === 0) { alert("لا يوجد تكرار"); return; }
+                if (!confirm("دمج " + duplicates.length + " ملف مكرر في الملف الرئيسي (" + canonical.uid + ")؟ سيتم نقل الردود ثم حذف الملفات المكررة.")) return;
+                for (const dup of duplicates) {
+                    const qAll = window.query(window.collection(window.db, "posts"));
+                    const allSnap = await window.getDocs(qAll);
+                    let migratedReplies = 0;
+                    for (const doc of allSnap.docs) {
+                        const data = doc.data();
+                        if (!data.replies || !data.replies.some(r => r.uid === dup.uid)) continue;
+                        const newReplies = data.replies.map(r => r.uid === dup.uid ? { ...r, uid: canonical.uid } : r);
+                        await window.updateDoc(doc.ref, { replies: newReplies });
+                        migratedReplies += data.replies.filter(r => r.uid === dup.uid).length;
+                    }
+                    await deleteUserInternal(dup.uid);
+                }
+                loadLeaderboard();
+                loadTeachersLeaderboard();
+                alert("تم دمج الملفات المكررة بنجاح");
+            } catch (e) { console.error(e); alert("خطأ: " + (e.message || e)); }
+        };
 
         function parseFirstLast(u) {
             if(u.firstName && u.lastName) return { first: u.firstName, last: u.lastName };
