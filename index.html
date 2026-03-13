@@ -1815,17 +1815,40 @@
                 doLoginSuccess(uid, name, role, true, pin);
             });
         }
+        function runWhenPageReady(fn) {
+            if (document.visibilityState === 'visible') {
+                fn();
+                return;
+            }
+            let done = false;
+            function run() {
+                if (done) return;
+                done = true;
+                document.removeEventListener('visibilitychange', onVisible);
+                fn();
+            }
+            function onVisible() {
+                if (document.visibilityState === 'visible') run();
+            }
+            document.addEventListener('visibilitychange', onVisible);
+            setTimeout(run, 3000);
+        }
         (function tryRestoreSession(retries) {
             retries = retries || 0;
             const uid = localStorage.getItem('it9an_uid');
             const name = localStorage.getItem('it9an_name');
             const role = localStorage.getItem('it9an_role');
             if (!uid || !name || !role) return;
-            if (window.db) { runTryRestoreSession(); return; }
-            if (retries < 80) setTimeout(() => tryRestoreSession(retries + 1), 80);
-            else window.addEventListener('firebase-ready', function onReady() { window.removeEventListener('firebase-ready', onReady); runTryRestoreSession(); }, { once: true });
+            function doRestore() {
+                if (window.db) { runTryRestoreSession(); return; }
+                if (retries < 80) setTimeout(() => tryRestoreSession(retries + 1), 80);
+                else window.addEventListener('firebase-ready', function onReady() { window.removeEventListener('firebase-ready', onReady); runTryRestoreSession(); }, { once: true });
+            }
+            runWhenPageReady(doRestore);
         })();
-        window.addEventListener('firebase-ready', function onFirebaseReady() { runTryRestoreSession(); }, { once: true });
+        window.addEventListener('firebase-ready', function onFirebaseReady() {
+            runWhenPageReady(function() { if (localStorage.getItem('it9an_uid')) runTryRestoreSession(); });
+        }, { once: true });
         (function initLoginScreenWithPushParams() {
             const hasSession = localStorage.getItem('it9an_uid') && localStorage.getItem('it9an_name') && localStorage.getItem('it9an_role');
             if (hasSession) {
@@ -6539,6 +6562,10 @@
             } else {
                 restoreListenersOnVisible();
                 if (typeof window.applyNotifStageFilter === 'function') setTimeout(window.applyNotifStageFilter, 100);
+                const stagesView = document.getElementById('stages-view');
+                if (stagesView && stagesView.style.display !== 'none' && getStoredPushParams()) {
+                    showStagesView();
+                }
             }
         });
 
