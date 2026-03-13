@@ -2698,7 +2698,7 @@
                 } else {
                     teachers.sort((a,b) => (b.totalRepliesCount || 0) - (a.totalRepliesCount || 0));
                 }
-                teachers = teachers.filter(t => (t.totalRepliesCount || 0) > 0);
+                if (!isAdmin) teachers = teachers.filter(t => (t.totalRepliesCount || 0) > 0);
                 leaderboardAllTeachers = teachers;
                 const list = document.getElementById('leaderboard-teachers-list');
                 if (!list) return;
@@ -2833,7 +2833,7 @@
                 } else {
                     teachers.sort((a,b) => (b.totalRepliesCount || 0) - (a.totalRepliesCount || 0));
                 }
-                teachers = teachers.filter(t => (t.totalRepliesCount || 0) > 0);
+                if (!isAdmin) teachers = teachers.filter(t => (t.totalRepliesCount || 0) > 0);
                 leaderboardAllTeachers = teachers;
                 lastTeachersRefreshTime = Date.now();
                 list.innerHTML = "";
@@ -2900,7 +2900,7 @@
                 } else {
                     teachers.sort((a,b) => (b.totalRepliesCount || 0) - (a.totalRepliesCount || 0));
                 }
-                teachers = teachers.filter(t => (t.totalRepliesCount || 0) > 0);
+                if (!isAdmin) teachers = teachers.filter(t => (t.totalRepliesCount || 0) > 0);
                 leaderboardAllTeachers = teachers;
                 list.innerHTML = "";
                 if (teachers.length === 0) { list.innerHTML = "<li style='text-align:center; color:#999; padding:10px;'>لا يوجد معلمون في هذه المرحلة بعد</li>"; if (onFirstRender && firstSnap) { onFirstRender(); firstSnap = false; } return; }
