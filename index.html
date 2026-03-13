@@ -609,7 +609,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, query, where, orderBy, onSnapshot, serverTimestamp, doc, setDoc, updateDoc, increment, arrayUnion, arrayRemove, deleteDoc, getDoc, getDocFromServer, getDocs, getDocsFromServer, enableIndexedDbPersistence, limit, deleteField } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, query, where, orderBy, onSnapshot, serverTimestamp, doc, setDoc, updateDoc, increment, arrayUnion, arrayRemove, deleteDoc, getDoc, getDocFromServer, getDocs, getDocsFromServer, enableIndexedDbPersistence, limit, deleteField, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
         import { getMessaging, getToken, onMessage, isSupported } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging.js";
 
@@ -632,7 +632,7 @@
         window.where = where; window.orderBy = orderBy; window.onSnapshot = onSnapshot; 
         window.serverTimestamp = serverTimestamp; window.ref = ref; 
         window.uploadBytes = uploadBytes; window.getDownloadURL = getDownloadURL;
-        window.doc = doc; window.setDoc = setDoc; window.updateDoc = updateDoc; window.increment = increment; window.arrayUnion = arrayUnion; window.arrayRemove = arrayRemove; window.deleteDoc = deleteDoc; window.getDoc = getDoc; window.getDocFromServer = getDocFromServer; window.getDocs = getDocs; window.getDocsFromServer = getDocsFromServer; window.deleteField = deleteField; 
+        window.doc = doc; window.setDoc = setDoc; window.updateDoc = updateDoc; window.increment = increment; window.arrayUnion = arrayUnion; window.arrayRemove = arrayRemove; window.deleteDoc = deleteDoc; window.getDoc = getDoc; window.getDocFromServer = getDocFromServer; window.getDocs = getDocs; window.getDocsFromServer = getDocsFromServer; window.deleteField = deleteField; window.writeBatch = writeBatch; 
         window.deleteObject = deleteObject; window.limit = limit;
         window.getMessaging = getMessaging; window.getToken = getToken; window.onMessage = onMessage; window.isSupportedFcm = isSupported;
     </script>
@@ -4149,9 +4149,9 @@
 
             if(notifUnsubscribe) notifUnsubscribe();
             let lastRawNotifs = [];
-            notifUnsubscribe = window.onSnapshot(q, (snap) => {
+            notifUnsubscribe = window.onSnapshot(q, { includeMetadataChanges: true }, (snap) => {
                 lastRawNotifs = [];
-                snap.forEach(doc => lastRawNotifs.push({id: doc.id, ...doc.data()}));
+                snap.forEach(doc => { if (doc.exists()) lastRawNotifs.push({id: doc.id, ...doc.data()}); });
                 lastRawNotifsGlobal = [...lastRawNotifs];
                 if (typeof window.updateStageNotifBadges === 'function') window.updateStageNotifBadges();
                 if (typeof window.applyNotifStageFilter === 'function') window.applyNotifStageFilter();
@@ -5677,30 +5677,35 @@
                 const url = await window.getDownloadURL(refS);
                 if (replyTargetId) {
                     const replyTs = Date.now();
-                    await window.updateDoc(window.doc(window.db, "posts", replyTargetId), { 
-                        replies: window.arrayUnion({ name: name, role: role, uid: uid, audioUrl: url, timestamp: replyTs, likes: [] }) 
-                    });
-                    if(role === 'teacher') {
-                        try { await window.updateDoc(window.doc(window.db, "users", uid), { totalRepliesCount: window.increment(1) }); } catch(e){}
-                    }
+                    const newReply = { name: name, role: role, uid: uid, audioUrl: url, timestamp: replyTs, likes: [] };
                     const targetPost = allLoadedPosts.find(p => p.id === replyTargetId);
-                    if(targetPost) {
-                        const lv = getLessonVerseFromFileId(currentGlobalFileId);
-                        const stageCfg = getStageConfig(currentStageId);
-                        await window.addDoc(window.collection(window.db, "notifications"), {
+                    if (targetPost) {
+                        const lv = getLessonVerseFromFileId(currentGlobalFileId) || { lesson: 0, verse: 0, lessonTitle: '' };
+                        const stageCfg = getStageConfig(currentStageId) || { name: '' };
+                        const batch = window.writeBatch(window.db);
+                        batch.update(window.doc(window.db, "posts", replyTargetId), { replies: window.arrayUnion(newReply) });
+                        batch.set(window.doc(window.collection(window.db, "notifications")), {
                            to: targetPost.uid,
                            senderName: stripYearFromName(name || ''),
                            type: 'reply',
-                           fileId: String(currentGlobalFileId),
+                           fileId: String(currentGlobalFileId || '1'),
                            postId: replyTargetId,
                            replyTimestamp: replyTs,
-                           stageId: currentStageId,
-                           stageName: stageCfg.name,
-                           lessonNum: lv.lesson,
+                           stageId: currentStageId != null ? currentStageId : 4,
+                           stageName: stageCfg.name || '',
+                           lessonNum: lv.lesson ?? 0,
                            lessonTitle: lv.lessonTitle || '',
-                           verseNum: lv.verse,
+                           verseNum: lv.verse ?? 0,
                            timestamp: window.serverTimestamp()
                        });
+                        await batch.commit();
+                    } else {
+                        await window.updateDoc(window.doc(window.db, "posts", replyTargetId), { replies: window.arrayUnion(newReply) });
+                    }
+                    if(role === 'teacher') {
+                        try { await window.updateDoc(window.doc(window.db, "users", uid), { totalRepliesCount: window.increment(1) }); } catch(e){}
+                    }
+                    if(targetPost) {
                        if (role === 'teacher' && targetPost.role === 'student') {
                            try {
                                const postAfter = (await window.getDocFromServer(window.doc(window.db, "posts", replyTargetId))).data();
@@ -5721,30 +5726,41 @@
                     }
                     replyTargetId = null; 
                 } else {
-                    const postRef = await window.addDoc(window.collection(window.db, "posts"), { name: name, role: role, uid: uid, audioUrl: url, fileId: String(currentGlobalFileId), stageId: currentStageId, likes: [], timestamp: window.serverTimestamp() });
-                    
+                    const fileIdStr = String(currentGlobalFileId != null ? currentGlobalFileId : '1');
+                    const stageIdNum = Number(currentStageId != null ? currentStageId : 4);
+                    const lv = getLessonVerseFromFileId(currentGlobalFileId);
+                    const stageCfg = getStageConfig(currentStageId) || { name: '' };
+
+                    if (role === 'student') {
+                        const postRef = window.doc(window.collection(window.db, "posts"));
+                        const notifRef = window.doc(window.collection(window.db, "notifications"));
+                        const batch = window.writeBatch(window.db);
+                        batch.set(postRef, { name: name, role: role, uid: uid, audioUrl: url, fileId: fileIdStr, stageId: currentStageId, likes: [], timestamp: window.serverTimestamp() });
+                        batch.set(notifRef, {
+                           to: "teachers",
+                           senderName: stripYearFromName(name),
+                           type: 'new_recording',
+                           fileId: fileIdStr,
+                           postId: postRef.id,
+                           stageId: stageIdNum,
+                           stageName: stageCfg.name || '',
+                           lessonNum: lv.lesson ?? 0,
+                           lessonTitle: lv.lessonTitle || '',
+                           verseNum: lv.verse ?? 0,
+                           clearedBy: [],
+                           timestamp: window.serverTimestamp()
+                       });
+                        await batch.commit();
+                    } else {
+                        const postRef = await window.addDoc(window.collection(window.db, "posts"), { name: name, role: role, uid: uid, audioUrl: url, fileId: fileIdStr, stageId: currentStageId, likes: [], timestamp: window.serverTimestamp() });
+                    }
+
                     const userRef = window.doc(window.db, "users", uid);
                     try { await window.updateDoc(userRef, { postsCount: window.increment(1) }); } catch(e){}
 
                     if(role === 'student') {
                         const today = (function(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); })();
                         window.setDoc(window.doc(window.db, "dailyStats", today), { recordings: window.increment(1) }, { merge: true }).catch(()=>{});
-                        const lv = getLessonVerseFromFileId(currentGlobalFileId);
-                        const stageCfg = getStageConfig(currentStageId);
-                        await window.addDoc(window.collection(window.db, "notifications"), {
-                           to: "teachers",
-                           senderName: stripYearFromName(name),
-                           type: 'new_recording',
-                           fileId: String(currentGlobalFileId),
-                           postId: postRef.id,
-                           stageId: Number(currentStageId),
-                           stageName: stageCfg.name,
-                           lessonNum: lv.lesson,
-                           lessonTitle: lv.lessonTitle || '',
-                           verseNum: lv.verse,
-                           clearedBy: [],
-                           timestamp: window.serverTimestamp()
-                       });
                     }
                 }
                 document.getElementById('statusDisplay').innerText = "تم الإرسال!";
@@ -6394,11 +6410,10 @@
             const uid = localStorage.getItem('it9an_uid');
             if (!uid) return;
             loadLeaderboard(undefined);
+            listenForNotifications();
             if (uid === 'admin_super') {
                 loadTeachersLeaderboard();
                 loadAdminMessagesList();
-            } else {
-                listenForNotifications();
             }
             const playerView = document.getElementById('player-view');
             if (playerView && playerView.style.display !== 'none' && currentGlobalFileId != null) {
@@ -6446,6 +6461,7 @@
                 unsubscribeAllListeners();
             } else {
                 restoreListenersOnVisible();
+                if (typeof window.applyNotifStageFilter === 'function') setTimeout(window.applyNotifStageFilter, 100);
             }
         });
 
