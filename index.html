@@ -2040,7 +2040,7 @@
             }
         }
 
-        async function doLoginSuccess(uid, name, role, hideScreen, personalPin) {
+        function doLoginSuccess(uid, name, role, hideScreen, personalPin) {
             localStorage.setItem('it9an_uid', uid);
             localStorage.setItem('it9an_auth', 'true');
             localStorage.setItem('it9an_name', name);
@@ -2052,52 +2052,20 @@
             updateUIForRole();
             if (uid !== 'guest') listenForNotifications();
             setupForegroundPushHandler();
-            const hasPushParams = !!(new URLSearchParams(window.location.search).get('postId') && new URLSearchParams(window.location.search).get('fileId')) || getStoredPushParams();
-            if (hasPushParams) {
-                const loader = document.getElementById('push-restore-loader');
-                let loaderEl = loader;
-                if (!loaderEl) {
-                    const l = document.createElement('div');
-                    l.id = 'push-restore-loader';
-                    l.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:linear-gradient(135deg,var(--primary) 0%,#052b20 100%);z-index:5001;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--gold-light);font-size:20px;font-family:Amiri,serif;';
-                    l.innerHTML = '<div style="margin-bottom:20px;">جاري فتح التسجيل...</div><div id="push-retry-msg" style="font-size:14px;opacity:0.9;"></div>';
-                    document.body.appendChild(l);
-                    loaderEl = l;
-                }
-                let opened = await checkPushNotificationParams();
-                for (let retry = 0; !opened && retry < 12; retry++) {
-                    const msg = document.getElementById('push-retry-msg');
-                    if (msg) msg.textContent = 'إعادة المحاولة ' + (retry + 1) + '...';
-                    await new Promise(r => setTimeout(r, 2000));
-                    opened = await checkPushNotificationParams();
-                }
-                const el = document.getElementById('push-restore-loader');
-                if (el && el.parentNode) el.remove();
-                if (opened) {
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                    if (uid && uid !== 'admin_super' && uid !== 'guest') requestPushPermissionAndSaveToken(uid, role);
-                    return;
-                }
-            }
             showStagesView();
-            (function schedulePushRetry() {
-                if (!getStoredPushParams()) return;
-                const retryWhenVisible = function() {
-                    if (document.visibilityState !== 'visible') return;
-                    document.removeEventListener('visibilitychange', retryWhenVisible);
+            (function runPushOpenInBackground() {
+                if (!getStoredPushParams() && !(new URLSearchParams(window.location.search).get('postId') && new URLSearchParams(window.location.search).get('fileId'))) return;
+                function tryOpen() {
+                    if (!getStoredPushParams()) return;
                     checkPushNotificationParams().then(function(ok) {
-                        if (!ok) setTimeout(schedulePushRetry, 4000);
+                        if (!ok && getStoredPushParams()) setTimeout(tryOpen, 2500);
                     });
-                };
-                document.addEventListener('visibilitychange', retryWhenVisible);
-                setTimeout(function() {
-                    document.removeEventListener('visibilitychange', retryWhenVisible);
-                    checkPushNotificationParams().then(function(ok) {
-                        if (!ok) setTimeout(schedulePushRetry, 4000);
-                    });
-                }, 6000);
+                }
+                document.addEventListener('visibilitychange', function vb() {
+                    if (document.visibilityState === 'visible' && getStoredPushParams()) tryOpen();
+                });
+                setTimeout(tryOpen, 400);
             })();
-            checkPushNotificationParams();
             window.scrollTo({ top: 0, behavior: 'smooth' });
             if (uid && uid !== 'admin_super' && uid !== 'guest') requestPushPermissionAndSaveToken(uid, role);
         }
@@ -4404,10 +4372,16 @@
             }
             let postData = null;
             const postRef = window.doc(window.db, "posts", postId);
-            for (let attempt = 0; attempt < 6; attempt++) {
+            for (let attempt = 0; attempt < 8; attempt++) {
                 try {
-                    const postSnap = await window.getDocFromServer(postRef);
-                    if (postSnap.exists()) {
+                    let postSnap = null;
+                    if (attempt === 0) {
+                        try { postSnap = await window.getDoc(postRef); } catch (e0) {}
+                    }
+                    if (!postSnap || !postSnap.exists()) {
+                        postSnap = await window.getDocFromServer(postRef);
+                    }
+                    if (postSnap && postSnap.exists()) {
                         postData = postSnap.data();
                         break;
                     }
@@ -4415,15 +4389,8 @@
                     alert("تم حذف التسجيل من قبل الطالب. تم إزالة الإشعار.");
                     return;
                 } catch (e) {
-                    console.warn('openFromNotif fetch attempt', attempt + 1, e);
-                    if (attempt < 5) {
-                        await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
-                        if (attempt >= 2) {
-                            try {
-                                const cacheSnap = await window.getDoc(postRef);
-                                if (cacheSnap && cacheSnap.exists()) { postData = cacheSnap.data(); break; }
-                            } catch (e2) {}
-                        }
+                    if (attempt < 7) {
+                        await new Promise(r => setTimeout(r, 800 * (attempt + 1)));
                     } else throw e;
                 }
             }
@@ -4805,11 +4772,11 @@
 
         async function checkPushNotificationParams() {
             if (!localStorage.getItem('it9an_uid')) return false;
-            for (let w = 0; w < 80; w++) {
+            for (let w = 0; w < 100; w++) {
                 if (window.db) break;
-                await new Promise(r => setTimeout(r, 150));
+                await new Promise(r => setTimeout(r, 100));
             }
-            if (!window.db) { console.warn('checkPushNotificationParams: Firebase nicht bereit'); return false; }
+            if (!window.db) return false;
             const params = new URLSearchParams(window.location.search);
             let postId = params.get('postId');
             let fileId = params.get('fileId');
@@ -4820,17 +4787,12 @@
             }
             if (!postId || !fileId) return false;
             history.replaceState({}, '', window.location.pathname + (window.location.hash || ''));
-            for (let v = 0; v < 30; v++) {
-                if (document.visibilityState === 'visible') break;
-                await new Promise(r => setTimeout(r, 200));
-            }
-            await new Promise(r => setTimeout(r, 800));
+            await new Promise(r => setTimeout(r, 300));
             try {
                 await openFromNotif(notifId, fileId, postId);
                 clearStoredPushParams();
                 return true;
             } catch (e) {
-                console.warn('openFromNotif failed:', e);
                 return false;
             }
         }
