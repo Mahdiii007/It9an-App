@@ -979,19 +979,38 @@
         const TEACHER_MAHDI_PIN = "9696";
         const MAINTENANCE_EXEMPT_STUDENT_PIN = "0860";
         const RESERVED_PINS = ["9898", "1879", "9797", "9696"];
+        function storePushParams(postId, fileId, notifId) {
+            const o = { postId, fileId, notifId: notifId || '' };
+            try { sessionStorage.setItem('it9an_pushParams', JSON.stringify(o)); } catch(e){}
+            try { localStorage.setItem('it9an_pushParams', JSON.stringify(o)); } catch(e){}
+        }
+        function getStoredPushParams() {
+            try {
+                const s = sessionStorage.getItem('it9an_pushParams');
+                if (s) { const o = JSON.parse(s); if (o.postId && o.fileId) return o; }
+                const l = localStorage.getItem('it9an_pushParams');
+                if (l) { const o = JSON.parse(l); if (o.postId && o.fileId) return o; }
+            } catch(e){}
+            return null;
+        }
+        function clearStoredPushParams() {
+            try { sessionStorage.removeItem('it9an_pushParams'); localStorage.removeItem('it9an_pushParams'); } catch(e){}
+        }
         (function storePushParamsIfNeeded() {
             const params = new URLSearchParams(window.location.search);
             const postId = params.get('postId'), fileId = params.get('fileId'), notifId = params.get('notifId') || '';
-            if (postId && fileId) { try { sessionStorage.setItem('it9an_pushParams', JSON.stringify({ postId, fileId, notifId })); } catch(e){} }
+            if (postId && fileId) storePushParams(postId, fileId, notifId);
         })();
-        navigator.serviceWorker.addEventListener('message', (e) => {
-            const m = e.data;
-            if (m && m.type === 'IT9AN_OPEN_NOTIF' && m.postId && m.fileId) {
-                try { sessionStorage.setItem('it9an_pushParams', JSON.stringify({ postId: m.postId, fileId: m.fileId, notifId: m.notifId || '' })); } catch(x){}
-                if (typeof checkPushNotificationParams === 'function') setTimeout(checkPushNotificationParams, 100);
-                else if (m.url) window.location.href = m.url;
-            }
-        });
+        if (typeof navigator.serviceWorker !== 'undefined') {
+            navigator.serviceWorker.addEventListener('message', (e) => {
+                const m = e.data;
+                if (m && m.type === 'IT9AN_OPEN_NOTIF' && m.postId && m.fileId) {
+                    storePushParams(m.postId, m.fileId, m.notifId || '');
+                    if (typeof checkPushNotificationParams === 'function') setTimeout(checkPushNotificationParams, 150);
+                    else if (m.url) window.location.href = m.url;
+                }
+            });
+        }
 
         function generatePersonalPin(existingPins) {
             const used = new Set([...RESERVED_PINS, ...(existingPins || [])]);
@@ -1783,14 +1802,17 @@
             const role = localStorage.getItem('it9an_role');
             if (!uid || !name || !role) return;
             if (!window.db) {
-                if (retries < 20) setTimeout(() => tryRestoreSession(retries + 1), 150);
+                if (retries < 40) setTimeout(() => tryRestoreSession(retries + 1), 120);
                 return;
             }
             getMaintenanceMode().then(function(maintenanceOn) {
                 if (maintenanceOn) { showMaintenanceScreen(); return; }
                 const pin = localStorage.getItem('it9an_pin') || null;
                 doLoginSuccess(uid, name, role, true, pin);
-            }).catch(function() {});
+            }).catch(function() {
+                const pin = localStorage.getItem('it9an_pin') || null;
+                doLoginSuccess(uid, name, role, true, pin);
+            });
         })();
 
         function getDisplayName(u) { if (u && String(u.personalPin || '').trim() === '9797') return 'Fathia Makni'; const n = (u && (u.baseName || (u.name ? String(u.name).replace(/\s*\(\d{4}\)\s*$/, '').trim() : '') || u.name || '')).trim() || ''; if (n === 'فتحية مقني') return 'Fathia Makni'; return n; }
@@ -4688,18 +4710,17 @@
         }
 
         function checkPushNotificationParams() {
+            if (!localStorage.getItem('it9an_uid')) return;
             const params = new URLSearchParams(window.location.search);
             let postId = params.get('postId');
             let fileId = params.get('fileId');
             let notifId = params.get('notifId') || '';
             if (!postId || !fileId) {
-                try {
-                    const stored = sessionStorage.getItem('it9an_pushParams');
-                    if (stored) { const o = JSON.parse(stored); postId = o.postId; fileId = o.fileId; notifId = o.notifId || ''; }
-                } catch(e){}
+                const stored = getStoredPushParams();
+                if (stored) { postId = stored.postId; fileId = stored.fileId; notifId = stored.notifId || ''; }
             }
             if (postId && fileId) {
-                try { sessionStorage.removeItem('it9an_pushParams'); } catch(e){}
+                clearStoredPushParams();
                 history.replaceState({}, '', window.location.pathname + (window.location.hash || ''));
                 setTimeout(() => openFromNotif(notifId, fileId, postId), 150);
             }
