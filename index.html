@@ -621,6 +621,7 @@
         window.db = getFirestore(app); window.storage = getStorage(app);
         
         try { enableIndexedDbPersistence(window.db).catch((err) => { console.log("Persistence error:", err.code); }); } catch(e){}
+        try { window.dispatchEvent(new Event('firebase-ready')); } catch(e){}
 
         window.collection = collection; window.addDoc = addDoc; window.query = query; 
         window.where = where; window.orderBy = orderBy; window.onSnapshot = onSnapshot; 
@@ -1795,16 +1796,15 @@
             } catch(e) {}
         })();
 
-        (function tryRestoreSession(retries) {
-            retries = retries || 0;
+        var sessionRestoreAttempted = false;
+        function runTryRestoreSession() {
+            if (sessionRestoreAttempted) return;
             const uid = localStorage.getItem('it9an_uid');
             const name = localStorage.getItem('it9an_name');
             const role = localStorage.getItem('it9an_role');
             if (!uid || !name || !role) return;
-            if (!window.db) {
-                if (retries < 60) setTimeout(() => tryRestoreSession(retries + 1), 100);
-                return;
-            }
+            if (!window.db) return;
+            sessionRestoreAttempted = true;
             getMaintenanceMode().then(function(maintenanceOn) {
                 if (maintenanceOn) { showMaintenanceScreen(); return; }
                 const pin = localStorage.getItem('it9an_pin') || null;
@@ -1813,11 +1813,21 @@
                 const pin = localStorage.getItem('it9an_pin') || null;
                 doLoginSuccess(uid, name, role, true, pin);
             });
+        }
+        (function tryRestoreSession(retries) {
+            retries = retries || 0;
+            const uid = localStorage.getItem('it9an_uid');
+            const name = localStorage.getItem('it9an_name');
+            const role = localStorage.getItem('it9an_role');
+            if (!uid || !name || !role) return;
+            if (window.db) { runTryRestoreSession(); return; }
+            if (retries < 80) setTimeout(() => tryRestoreSession(retries + 1), 80);
+            else window.addEventListener('firebase-ready', function onReady() { window.removeEventListener('firebase-ready', onReady); runTryRestoreSession(); }, { once: true });
         })();
+        window.addEventListener('firebase-ready', function onFirebaseReady() { runTryRestoreSession(); }, { once: true });
         (function initLoginScreenWithPushParams() {
             const hasSession = localStorage.getItem('it9an_uid') && localStorage.getItem('it9an_name') && localStorage.getItem('it9an_role');
-            const hasPushParams = (function(){ const p = new URLSearchParams(window.location.search); if (p.get('postId') && p.get('fileId')) return true; return !!getStoredPushParams(); })();
-            if (hasSession && hasPushParams) {
+            if (hasSession) {
                 const loginCard = document.querySelector('#login-screen .login-card');
                 if (loginCard) { loginCard.style.visibility = 'hidden'; loginCard.style.opacity = '0'; }
                 const loader = document.createElement('div');
@@ -1832,7 +1842,7 @@
                     if (loginCard) { loginCard.style.visibility = ''; loginCard.style.opacity = ''; }
                     document.removeEventListener('it9an_session_restored', cleanup);
                 };
-                setTimeout(cleanup, 6000);
+                setTimeout(cleanup, 8000);
                 document.addEventListener('it9an_session_restored', cleanup);
             }
         })();
