@@ -923,6 +923,7 @@
         </div>
         
         <div id="statusDisplay" class="status-bar">جاهز للتلاوة</div>
+        <div class="repeats-hint" style="font-size:13px; color:#666; text-align:center; margin-top:6px; line-height:1.5;">يمكنك أعلاه اختيار ما إذا كانت وقفة بين التكرارات مطلوبة. كما يمكنك إدخال عدد التكرارات برغبتك.</div>
         
         <div class="view-counter" onclick="showViewers()">👁️ <span id="viewCount">0</span> مشاهدة</div>
 
@@ -4876,6 +4877,7 @@
 
         async function playVers(globalId, localVersNum, isAuto = false) {
             if (typeof window.hideVerseList === 'function') window.hideVerseList();
+            verseRepeatsPlayed = 0; // Zähler bei Verswechsel zurücksetzen
             currentGlobalFileId = globalId; currentLocalVers = localVersNum;
             window.currentViewersData = { viewers: {}, totalRepetitions: 0 };
             feedLimit = 3; loadFeed(globalId);
