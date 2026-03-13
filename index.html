@@ -742,7 +742,6 @@
 
     <div id="notifications-view">
         <div class="notif-view-header">
-            <h3 style="text-align:center; color:var(--primary); font-size:24px; margin:0;">الإشعارات</h3>
             <button class="modal-close-x" onclick="goBackFromNotifications()" title="إغلاق">✕</button>
         </div>
         <div id="notifStudentHint" class="notif-student-hint" style="display:none;">تأكد من سماع رد المعلم حتى النهاية لكي يختفي الإشعار من هذه القائمة.</div>
@@ -4293,7 +4292,7 @@
             document.getElementById('notifications-view').style.display = 'block';
             const hint = document.getElementById('notifStudentHint');
             if (hint) hint.style.display = (localStorage.getItem('it9an_role') === 'student') ? 'block' : 'none';
-            const ptN = document.getElementById('pageTitle'); if (ptN) { ptN.classList.remove('header-name-pin', 'page-title-lessons'); ptN.classList.add('page-title-notifications'); ptN.innerText = "الإشعارات — " + (getStageConfig && getStageConfig(stageId) ? getStageConfig(stageId).name : "مرحلة " + stageId); }
+            const ptN = document.getElementById('pageTitle'); if (ptN) { ptN.classList.remove('header-name-pin', 'page-title-lessons'); ptN.classList.add('page-title-notifications'); ptN.innerText = getStageConfig && getStageConfig(stageId) ? getStageConfig(stageId).name : "مرحلة " + stageId; }
             document.getElementById('appFooter').style.display = 'none';
             const menuBtn = document.getElementById('menuBtn'); if (menuBtn) menuBtn.style.display = 'flex';
             if (typeof window.applyNotifStageFilter === 'function') window.applyNotifStageFilter();
@@ -4340,7 +4339,7 @@
             document.getElementById('player-view').style.display = 'none';
             const logoutBtnS = document.getElementById('logoutBtn'); if (logoutBtnS) logoutBtnS.style.display = 'none';
             document.getElementById('notifications-view').style.display = 'block';
-            const ptN = document.getElementById('pageTitle'); if (ptN) { ptN.classList.remove('header-name-pin', 'page-title-lessons', 'page-title-notifications'); ptN.innerText = "الإشعارات"; }
+            const ptN = document.getElementById('pageTitle'); if (ptN) { ptN.classList.remove('header-name-pin', 'page-title-lessons'); ptN.classList.add('page-title-notifications'); ptN.innerText = getStageConfig && getStageConfig(currentStageId) ? getStageConfig(currentStageId).name : "مرحلة " + currentStageId; }
             document.getElementById('appFooter').style.display = 'none';
             const menuBtn = document.getElementById('menuBtn'); if(menuBtn) menuBtn.style.display = 'flex';
             window.scrollTo({ top: 0, behavior: 'smooth' });
