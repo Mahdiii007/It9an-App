@@ -4356,25 +4356,34 @@
             if (!postId || !fileId || isNaN(fid)) {
                 if (notifId) try { await window.deleteDoc(window.doc(window.db, "notifications", notifId)); } catch(e){}
                 alert("إشعار غير صالح. تم إزالة الإشعار.");
+                throw new Error('Invalid params');
+            }
+            let postData = null;
+            for (let attempt = 0; attempt < 3; attempt++) {
+                try {
+                    const postSnap = await window.getDocFromServer(window.doc(window.db, "posts", postId));
+                    if (!postSnap.exists()) {
+                        if (notifId) await window.deleteDoc(window.doc(window.db, "notifications", notifId));
+                        alert("تم حذف التسجيل من قبل الطالب. تم إزالة الإشعار.");
+                        return;
+                    }
+                    postData = postSnap.data();
+                    break;
+                } catch (e) {
+                    console.warn('openFromNotif fetch attempt', attempt + 1, e);
+                    if (attempt < 2) await new Promise(r => setTimeout(r, 500 * (attempt + 1)));
+                    else throw e;
+                }
+            }
+            if (!postData) return;
+            const postFileId = postData.fileId ? String(postData.fileId).trim() : '';
+            if (postFileId && postFileId !== String(fid)) {
+                if (notifId) await window.deleteDoc(window.doc(window.db, "notifications", notifId));
+                alert("التسجيل لم يعد في هذا المقطع. تم إزالة الإشعار.");
                 return;
             }
-            try {
-                const postSnap = await window.getDocFromServer(window.doc(window.db, "posts", postId));
-                if (!postSnap.exists()) {
-                    if (notifId) await window.deleteDoc(window.doc(window.db, "notifications", notifId));
-                    alert("تم حذف التسجيل من قبل الطالب. تم إزالة الإشعار.");
-                    return;
-                }
-                const postData = postSnap.data();
-                const postFileId = postData.fileId ? String(postData.fileId).trim() : '';
-                if (postFileId && postFileId !== String(fid)) {
-                    if (notifId) await window.deleteDoc(window.doc(window.db, "notifications", notifId));
-                    alert("التسجيل لم يعد في هذا المقطع. تم إزالة الإشعار.");
-                    return;
-                }
-                const postStage = postData.stageId != null ? postData.stageId : 4;
-                if (postStage !== currentStageId) await enterStage(postStage);
-            } catch(e) { console.warn(e); }
+            const postStage = postData.stageId != null ? postData.stageId : 4;
+            await enterStage(postStage);
             let foundIndex = -1;
             let foundVerse = 1;
             for(let i=0; i<KURS_DATEN.length; i++) {
@@ -4742,7 +4751,7 @@
             checkPushNotificationParams();
         }
 
-        function checkPushNotificationParams() {
+        async function checkPushNotificationParams() {
             if (!localStorage.getItem('it9an_uid')) return;
             const params = new URLSearchParams(window.location.search);
             let postId = params.get('postId');
@@ -4752,10 +4761,14 @@
                 const stored = getStoredPushParams();
                 if (stored) { postId = stored.postId; fileId = stored.fileId; notifId = stored.notifId || ''; }
             }
-            if (postId && fileId) {
+            if (!postId || !fileId) return;
+            history.replaceState({}, '', window.location.pathname + (window.location.hash || ''));
+            await new Promise(r => setTimeout(r, 500));
+            try {
+                await openFromNotif(notifId, fileId, postId);
                 clearStoredPushParams();
-                history.replaceState({}, '', window.location.pathname + (window.location.hash || ''));
-                setTimeout(() => openFromNotif(notifId, fileId, postId), 150);
+            } catch (e) {
+                console.warn('openFromNotif failed:', e);
             }
         }
 
