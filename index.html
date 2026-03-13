@@ -194,20 +194,6 @@
         .notif-text { font-size: 16px; color: var(--text); font-weight: bold; }
         .notif-time { font-size: 13px; color: #888; margin-top: 6px; }
 
-        /* In-App Foreground Push Banner (klickbar, funktioniert auf iOS/Android) */
-        #foreground-push-banner {
-            display: none; position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
-            color: white; padding: 14px 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.25);
-            cursor: pointer; font-family: 'Amiri'; text-align: right; direction: rtl;
-            border-bottom: 3px solid var(--gold); -webkit-tap-highlight-color: transparent;
-        }
-        #foreground-push-banner.show { display: block; animation: slideDown 0.3s ease; }
-        @keyframes slideDown { from { transform: translateY(-100%); } to { transform: translateY(0); } }
-        #foreground-push-banner .fg-push-title { font-weight: bold; font-size: 16px; margin-bottom: 4px; }
-        #foreground-push-banner .fg-push-body { font-size: 14px; opacity: 0.95; }
-        #foreground-push-banner .fg-push-hint { font-size: 12px; margin-top: 6px; opacity: 0.85; }
-
         /* --- ADMIN USER MANAGEMENT VIEW --- */
         .user-group-title { color: var(--primary); font-weight: bold; font-size: 20px; margin: 25px 0 15px 0; border-bottom: 2px solid var(--gold); padding-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
         .user-card { 
@@ -732,12 +718,6 @@
         </div>
     </div>
 
-    <div id="foreground-push-banner" role="button" tabindex="0" style="touch-action: manipulation; -webkit-tap-highlight-color: transparent;">
-        <div class="fg-push-title" id="fg-push-title">إشعار جديد</div>
-        <div class="fg-push-body" id="fg-push-body"></div>
-        <div class="fg-push-hint" id="fg-push-hint">اضغط للانتقال إلى التسجيل</div>
-    </div>
-
     <div class="header">
         <div class="notif-container" onclick="showNotifications()">
             <div class="notif-icon">🔔</div>
@@ -992,27 +972,6 @@
             const params = new URLSearchParams(window.location.search);
             const postId = params.get('postId'), fileId = params.get('fileId'), notifId = params.get('notifId') || '';
             if (postId && fileId) { try { sessionStorage.setItem('it9an_pushParams', JSON.stringify({ postId, fileId, notifId })); } catch(e){} }
-        })();
-        window.handleForegroundPushBannerClick = function() {
-            const p = window._fgPushPending;
-            if (!p || !p.postId || !p.fileId) return;
-            window._fgPushPending = null;
-            const banner = document.getElementById('foreground-push-banner');
-            if (banner) banner.classList.remove('show');
-            if (window._fgPushBannerTimer) { clearTimeout(window._fgPushBannerTimer); window._fgPushBannerTimer = null; }
-            if (typeof window.openFromNotif === 'function') {
-                window.openFromNotif(p.notifId || '', p.fileId, p.postId);
-            } else {
-                try { sessionStorage.setItem('it9an_pushParams', JSON.stringify({ postId: p.postId, fileId: p.fileId, notifId: p.notifId || '' })); } catch(e){}
-                if (typeof checkPushNotificationParams === 'function') setTimeout(checkPushNotificationParams, 50);
-            }
-        };
-        (function initForegroundPushBanner() {
-            const banner = document.getElementById('foreground-push-banner');
-            if (!banner) return;
-            const handler = function(e) { e.preventDefault(); e.stopPropagation(); handleForegroundPushBannerClick(); };
-            banner.addEventListener('click', handler);
-            banner.addEventListener('touchend', handler, { passive: false });
         })();
         navigator.serviceWorker.addEventListener('message', (e) => {
             const m = e.data;
@@ -3900,29 +3859,15 @@
                     const postId = String(data.postId || '').trim();
                     const fileId = String(data.fileId || '').trim();
                     const notifId = (data.notifId || '').trim();
-                    if (role === 'teacher') {
-                        const iconUrl = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect fill='%230f4c3a' width='192' height='192' rx='24'/%3E%3Ctext x='96' y='120' font-size='100' text-anchor='middle' fill='%23d4af37' font-family='serif'%3Eٱ%3C/text%3E%3C/svg%3E";
-                        const n = new Notification(title, { body, icon: iconUrl, tag: 'it9an-' + (postId || Date.now()), renotify: true });
-                        n.onclick = () => {
-                            n.close();
-                            window.focus();
-                            if (postId && fileId && typeof window.openFromNotif === 'function') {
-                                setTimeout(() => window.openFromNotif(notifId, fileId, postId), 100);
-                            }
-                        };
-                    } else if (postId && fileId) {
-                        window._fgPushPending = { postId, fileId, notifId };
-                        const banner = document.getElementById('foreground-push-banner');
-                        const titleEl = document.getElementById('fg-push-title');
-                        const bodyEl = document.getElementById('fg-push-body');
-                        if (banner && titleEl && bodyEl) {
-                            titleEl.textContent = title;
-                            bodyEl.textContent = body;
-                            banner.classList.add('show');
-                            if (window._fgPushBannerTimer) clearTimeout(window._fgPushBannerTimer);
-                            window._fgPushBannerTimer = setTimeout(() => { banner.classList.remove('show'); }, 8000);
+                    const iconUrl = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect fill='%230f4c3a' width='192' height='192' rx='24'/%3E%3Ctext x='96' y='120' font-size='100' text-anchor='middle' fill='%23d4af37' font-family='serif'%3Eٱ%3C/text%3E%3C/svg%3E";
+                    const n = new Notification(title, { body, icon: iconUrl, tag: 'it9an-' + (postId || Date.now()), renotify: true });
+                    n.onclick = () => {
+                        n.close();
+                        window.focus();
+                        if (postId && fileId && typeof window.openFromNotif === 'function') {
+                            setTimeout(() => window.openFromNotif(notifId, fileId, postId), 100);
                         }
-                    }
+                    };
                 });
                 _foregroundPushSetup = true;
             } catch (e) { console.warn('Foreground push setup:', e); }
