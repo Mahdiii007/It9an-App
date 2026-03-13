@@ -123,6 +123,7 @@
         }
         #pageTitle.header-name-pin { flex-direction: column; padding: 4px 12px 5px; gap: 1px; min-height: auto; overflow: visible; white-space: normal; }
         #pageTitle.page-title-lessons { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        #pageTitle.page-title-notifications { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; justify-content: center; }
         #pageTitle .header-pin-row { display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: nowrap; white-space: nowrap; font-size: 12px; color: #555; }
         #pageTitle img { height: 35px; width: auto; display: block; object-fit: contain; flex-shrink: 0; } 
         .header-user-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; font-size: clamp(11px, 2.5vw, 14px); color: var(--primary); margin-right: 8px; }
@@ -1203,14 +1204,14 @@
                     const u = (typeof leaderboardAllUsers !== 'undefined' && leaderboardAllUsers.find(x => x.uid === myUid)) || (typeof leaderboardAllTeachers !== 'undefined' && leaderboardAllTeachers.find(x => x.uid === myUid));
                     const pin = (u && u.personalPin) ? u.personalPin : (localStorage.getItem('it9an_pin') || '');
                     const pinStr = pin ? (pin+'').padStart(4,'0') : '';
-                    pt.classList.add('header-name-pin'); pt.classList.remove('page-title-lessons');
+                    pt.classList.add('header-name-pin'); pt.classList.remove('page-title-lessons', 'page-title-notifications');
                     if (pin) {
                         pt.innerHTML = `<span class="header-user-name-main" style="font-size:20px">${nameClean || ''}</span><div class="header-pin-row"><span class="header-pin">${pinStr}</span> <span>— استخدم هذا الرمز للدخول في المستقبل</span></div>`;
                     } else {
                         pt.innerHTML = `<span class="header-user-name-main" style="font-size:20px">${nameClean || ''}</span>`;
                     }
                 } else {
-                    pt.classList.remove('header-name-pin', 'page-title-lessons');
+                    pt.classList.remove('header-name-pin', 'page-title-lessons', 'page-title-notifications');
                     pt.innerHTML = `<span class="header-user-name-main" style="font-size:26px">${nameClean || 'إتقان'}</span>`;
                 }
             }
@@ -4292,7 +4293,7 @@
             document.getElementById('notifications-view').style.display = 'block';
             const hint = document.getElementById('notifStudentHint');
             if (hint) hint.style.display = (localStorage.getItem('it9an_role') === 'student') ? 'block' : 'none';
-            const ptN = document.getElementById('pageTitle'); if (ptN) { ptN.classList.remove('header-name-pin', 'page-title-lessons'); ptN.innerText = "الإشعارات — " + (getStageConfig && getStageConfig(stageId) ? getStageConfig(stageId).name : "مرحلة " + stageId); }
+            const ptN = document.getElementById('pageTitle'); if (ptN) { ptN.classList.remove('header-name-pin', 'page-title-lessons'); ptN.classList.add('page-title-notifications'); ptN.innerText = "الإشعارات — " + (getStageConfig && getStageConfig(stageId) ? getStageConfig(stageId).name : "مرحلة " + stageId); }
             document.getElementById('appFooter').style.display = 'none';
             const menuBtn = document.getElementById('menuBtn'); if (menuBtn) menuBtn.style.display = 'flex';
             if (typeof window.applyNotifStageFilter === 'function') window.applyNotifStageFilter();
@@ -4317,7 +4318,7 @@
                     const lek = KURS_DATEN[currentLessonIdx];
                     const ptP = document.getElementById('pageTitle');
                     if (ptP) {
-                        ptP.classList.remove('header-name-pin', 'page-title-lessons');
+                        ptP.classList.remove('header-name-pin', 'page-title-lessons', 'page-title-notifications');
                         const lessonPart = `<span class="title-text-maktaa lesson-title-text" style="font-size:clamp(18px, 5vw, 26px); color:var(--red); white-space:nowrap;">${lek.title}</span>`;
                         ptP.innerHTML = `<span class="title-text-maktaa verse-num-maktaa">المقطع ${currentLocalVers}</span>${lessonPart}`;
                     }
@@ -4339,7 +4340,7 @@
             document.getElementById('player-view').style.display = 'none';
             const logoutBtnS = document.getElementById('logoutBtn'); if (logoutBtnS) logoutBtnS.style.display = 'none';
             document.getElementById('notifications-view').style.display = 'block';
-            const ptN = document.getElementById('pageTitle'); if (ptN) { ptN.classList.remove('header-name-pin', 'page-title-lessons'); ptN.innerText = "الإشعارات"; }
+            const ptN = document.getElementById('pageTitle'); if (ptN) { ptN.classList.remove('header-name-pin', 'page-title-lessons', 'page-title-notifications'); ptN.innerText = "الإشعارات"; }
             document.getElementById('appFooter').style.display = 'none';
             const menuBtn = document.getElementById('menuBtn'); if(menuBtn) menuBtn.style.display = 'flex';
             window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -4492,7 +4493,7 @@
             document.getElementById('admin-message-view').style.display = 'block';
             document.getElementById('appFooter').style.display = 'none';
             const menuBtn = document.getElementById('menuBtn'); if(menuBtn) menuBtn.style.display = 'flex';
-            const ptA = document.getElementById('pageTitle'); if (ptA) { ptA.classList.remove('header-name-pin', 'page-title-lessons'); ptA.innerText = "رسالة من المسؤول"; }
+            const ptA = document.getElementById('pageTitle'); if (ptA) { ptA.classList.remove('header-name-pin', 'page-title-lessons', 'page-title-notifications'); ptA.innerText = "رسالة من المسؤول"; }
             window.scrollTo({ top: 0, behavior: 'smooth' });
             const isAdmin = localStorage.getItem('it9an_uid') === 'admin_super';
             const myUid = localStorage.getItem('it9an_uid');
@@ -4525,7 +4526,7 @@
             document.getElementById('admin-message-view').style.display = 'none';
             document.getElementById('appFooter').style.display = 'none';
             const menuBtn = document.getElementById('menuBtn'); if (menuBtn) menuBtn.style.display = 'flex';
-            const pt = document.getElementById('pageTitle'); if (pt) { pt.classList.remove('header-name-pin', 'page-title-lessons'); pt.innerText = 'تواصل مع المسؤول'; }
+            const pt = document.getElementById('pageTitle'); if (pt) { pt.classList.remove('header-name-pin', 'page-title-lessons', 'page-title-notifications'); pt.innerText = 'تواصل مع المسؤول'; }
             window.scrollTo({ top: 0, behavior: 'smooth' });
             try {
                 const q = window.query(window.collection(window.db, "adminMessages"), window.where("to", "==", "admin_super"), window.where("senderUid", "==", myUid), window.orderBy("timestamp", "desc"), window.limit(1));
@@ -4661,7 +4662,7 @@
             if (!pt) return;
             if (document.getElementById('menu-view').style.display === 'grid') {
                 const stageCfg = getStageConfig(currentStageId);
-                pt.classList.remove('header-name-pin', 'page-title-lessons');
+                pt.classList.remove('header-name-pin', 'page-title-lessons', 'page-title-notifications');
                 pt.innerHTML = `<span class="header-user-name-main" style="font-size:22px">${stageCfg.name}</span>`;
             } else if (document.getElementById('stages-view').style.display === 'block') {
                 const nameClean = getDisplayNameForCurrentUser();
@@ -4670,14 +4671,14 @@
                     const u = (typeof leaderboardAllUsers !== 'undefined' && leaderboardAllUsers.find(x => x.uid === uid)) || (typeof leaderboardAllTeachers !== 'undefined' && leaderboardAllTeachers.find(x => x.uid === uid));
                     const pin = (u && u.personalPin) ? u.personalPin : (localStorage.getItem('it9an_pin') || '');
                     const pinStr = pin ? (pin+'').padStart(4,'0') : '';
-                    pt.classList.add('header-name-pin'); pt.classList.remove('page-title-lessons');
+                    pt.classList.add('header-name-pin'); pt.classList.remove('page-title-lessons', 'page-title-notifications');
                     if (pin) {
                         pt.innerHTML = `<span class="header-user-name-main" style="font-size:20px">${nameClean || ''}</span><div class="header-pin-row"><span class="header-pin">${pinStr}</span> <span>— استخدم هذا الرمز للدخول في المستقبل</span></div>`;
                     } else {
                         pt.innerHTML = `<span class="header-user-name-main" style="font-size:20px">${nameClean || ''}</span>`;
                     }
                 } else {
-                    pt.classList.remove('header-name-pin', 'page-title-lessons');
+                    pt.classList.remove('header-name-pin', 'page-title-lessons', 'page-title-notifications');
                     pt.innerHTML = `<span class="header-user-name-main" style="font-size:26px">${nameClean || 'إتقان'}</span>`;
                 }
             }
@@ -4719,7 +4720,7 @@
             if (lbTeachersTitle) lbTeachersTitle.innerHTML = `🏆 أفضل المعلمين — ${stageCfg.name}`;
             const pt = document.getElementById('pageTitle');
             if (pt) {
-                pt.classList.remove('header-name-pin', 'page-title-lessons');
+                pt.classList.remove('header-name-pin', 'page-title-lessons', 'page-title-notifications');
                 pt.innerHTML = `<span class="header-user-name-main" style="font-size:22px">${stageCfg.name}</span>`;
             }
             document.getElementById('appFooter').style.display = 'none';
@@ -4772,7 +4773,7 @@
             if (KURS_DATEN.length === 0) {
                 grid.innerHTML = `<div style="text-align:center; padding:30px; color:#666; font-size:18px;">لا توجد دروس في مرحلة "${stageCfg.name}" بعد.<br><br>سيتم إضافتها قريباً إن شاء الله.</div>`;
                 showView('lessons-view');
-                const ptL = document.getElementById('pageTitle'); if (ptL) { ptL.classList.remove('header-name-pin'); ptL.classList.add('page-title-lessons'); ptL.innerText = stageCfg.name || 'جميع الدروس'; }
+                const ptL = document.getElementById('pageTitle'); if (ptL) { ptL.classList.remove('header-name-pin', 'page-title-notifications'); ptL.classList.add('page-title-lessons'); ptL.innerText = stageCfg.name || 'جميع الدروس'; }
                 document.getElementById('appFooter').style.display = 'none';
                 return;
             }
@@ -4796,7 +4797,7 @@
                 grid.appendChild(div);
             });
             showView('lessons-view');
-            const ptL = document.getElementById('pageTitle'); if (ptL) { ptL.classList.remove('header-name-pin'); ptL.classList.add('page-title-lessons'); ptL.innerText = stageCfg.name || 'جميع الدروس'; }
+            const ptL = document.getElementById('pageTitle'); if (ptL) { ptL.classList.remove('header-name-pin', 'page-title-notifications'); ptL.classList.add('page-title-lessons'); ptL.innerText = stageCfg.name || 'جميع الدروس'; }
             document.getElementById('appFooter').style.display = 'none';
         };
 
@@ -4895,7 +4896,7 @@
             const lek = KURS_DATEN[currentLessonIdx];
             const ptP = document.getElementById('pageTitle');
             if (ptP) {
-                ptP.classList.remove('header-name-pin', 'page-title-lessons');
+                ptP.classList.remove('header-name-pin', 'page-title-lessons', 'page-title-notifications');
                 const lessonPart = `<span class="title-text-maktaa lesson-title-text" style="font-size:clamp(18px, 5vw, 26px); color:var(--red); white-space:nowrap;">${lek.title}</span>`;
                 ptP.innerHTML = `<span class="title-text-maktaa verse-num-maktaa">المقطع ${localVersNum}</span>${lessonPart}`;
             }
@@ -5377,7 +5378,7 @@
             const myUid = localStorage.getItem('it9an_uid');
             if (!myUid) { alert("يجب تسجيل الدخول"); return; }
             showView('saved-list-view');
-            const ptS = document.getElementById('pageTitle'); if (ptS) { ptS.classList.remove('header-name-pin', 'page-title-lessons'); ptS.innerText = "📌 للمشاهدة لاحقاً"; }
+            const ptS = document.getElementById('pageTitle'); if (ptS) { ptS.classList.remove('header-name-pin', 'page-title-lessons', 'page-title-notifications'); ptS.innerText = "📌 للمشاهدة لاحقاً"; }
             document.getElementById('appFooter').style.display = 'none';
             const container = document.getElementById('savedList');
             container.innerHTML = "<div style='text-align:center; color:#999; padding:20px;'>جاري التحميل...</div>";
