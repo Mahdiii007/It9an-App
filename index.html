@@ -1756,6 +1756,23 @@
             } catch(e) {}
         })();
 
+        (function tryRestoreSession(retries) {
+            retries = retries || 0;
+            const uid = localStorage.getItem('it9an_uid');
+            const name = localStorage.getItem('it9an_name');
+            const role = localStorage.getItem('it9an_role');
+            if (!uid || !name || !role) return;
+            if (!window.db) {
+                if (retries < 20) setTimeout(() => tryRestoreSession(retries + 1), 150);
+                return;
+            }
+            getMaintenanceMode().then(function(maintenanceOn) {
+                if (maintenanceOn) { showMaintenanceScreen(); return; }
+                const pin = localStorage.getItem('it9an_pin') || null;
+                doLoginSuccess(uid, name, role, true, pin);
+            }).catch(function() {});
+        })();
+
         function getDisplayName(u) { if (u && String(u.personalPin || '').trim() === '9797') return 'Fathia Makni'; const n = (u && (u.baseName || (u.name ? String(u.name).replace(/\s*\(\d{4}\)\s*$/, '').trim() : '') || u.name || '')).trim() || ''; if (n === 'فتحية مقني') return 'Fathia Makni'; return n; }
         function getDisplayNameForCurrentUser() { const pin = (localStorage.getItem('it9an_pin') || '').trim(); if (pin === '9797') return 'Fathia Makni'; const n = (localStorage.getItem('it9an_name') || '').replace(/\s*\(\d{4}\)\s*$/, '').trim(); if (n === 'فتحية مقني') return 'Fathia Makni'; return n || ''; }
         function formatDateLatin(ts) {
