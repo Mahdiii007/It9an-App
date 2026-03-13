@@ -97,6 +97,11 @@
             padding: 8px 15px; border-radius: 10px; cursor: pointer; font-size: 15px; font-family: 'Amiri';
             font-weight: bold; display: flex; align-items: center; gap: 5px; white-space: nowrap;
         }
+        .logout-icon-btn {
+            background: rgba(255,255,255,0.15); border: 1px solid var(--gold); color: var(--gold-light);
+            width: 44px; height: 44px; border-radius: 12px; cursor: pointer; font-size: 22px;
+            display: flex; align-items: center; justify-content: center; padding: 0;
+        }
         
         .notif-container { position: relative; cursor: pointer; display: flex; align-items: center; flex-shrink: 0; }
         .notif-icon { font-size: 28px; color: var(--gold-light); }
@@ -790,6 +795,9 @@
     </div>
 
     <div id="stages-view">
+        <div style="display:flex; justify-content:flex-end; margin-bottom:12px;">
+            <button type="button" class="logout-icon-btn" onclick="doLogout()" title="تسجيل الخروج">🚪</button>
+        </div>
         <div id="app-stats-card" class="leaderboard-card" style="margin-bottom:20px;">
             <div class="lb-title">📊 إحصائيات التطبيق</div>
             <div id="appStatsContent" style="display:flex; flex-wrap:wrap; justify-content:space-around; align-items:center; gap:8px; padding:10px 0; font-size:15px;">
@@ -1020,6 +1028,14 @@
             showClassicLogin();
             const pinEl = document.getElementById('classicPinInput');
             if (pinEl) pinEl.value = '1234';
+        }
+        window.doLogout = function() {
+            localStorage.removeItem('it9an_uid');
+            localStorage.removeItem('it9an_role');
+            localStorage.removeItem('it9an_name');
+            localStorage.removeItem('it9an_pin');
+            document.getElementById('login-screen').style.display = 'flex';
+            showPinLogin();
         }
         window.showPinLogin = function() {
             document.getElementById('login-classic-mode').style.display = 'none';
