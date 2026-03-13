@@ -97,14 +97,14 @@
             padding: 8px 15px; border-radius: 10px; cursor: pointer; font-size: 15px; font-family: 'Amiri';
             font-weight: bold; display: flex; align-items: center; gap: 5px; white-space: nowrap;
         }
+        .header-right-slot { margin-inline-end: auto; display: flex; align-items: center; flex-shrink: 0; gap: 8px; }
         .logout-icon-btn {
             background: rgba(255,255,255,0.15); border: 1px solid var(--gold); color: var(--gold-light);
             width: 44px; height: 44px; border-radius: 12px; cursor: pointer; font-size: 22px;
             display: flex; align-items: center; justify-content: center; padding: 0;
-            margin-inline-end: auto;
         }
         
-        .notif-container { position: relative; cursor: pointer; display: flex; align-items: center; flex-shrink: 0; }
+        .notif-container { position: relative; cursor: pointer; display: flex; align-items: center; flex-shrink: 0; width: 44px; height: 44px; justify-content: center; }
         .notif-icon { font-size: 28px; color: var(--gold-light); }
         .notif-badge { 
             position: absolute; top: -6px; right: -6px; 
@@ -726,10 +726,12 @@
     </div>
 
     <div class="header">
-        <button id="logoutBtn" type="button" class="logout-icon-btn" onclick="doLogout()" title="تسجيل الخروج" style="display:none;">🚪</button>
-        <div class="notif-container" onclick="showNotifications()">
-            <div class="notif-icon">🔔</div>
-            <div id="notifBadge" class="notif-badge">0</div>
+        <div class="header-right-slot">
+            <button id="logoutBtn" type="button" class="logout-icon-btn" onclick="doLogout()" title="تسجيل الخروج" style="display:none;">🚪</button>
+            <div class="notif-container" onclick="showNotifications()">
+                <div class="notif-icon">🔔</div>
+                <div id="notifBadge" class="notif-badge">0</div>
+            </div>
         </div>
         <button id="menuBtn" class="header-btn" onclick="goToMenu()">☰ القائمة</button>
         <div id="pageTitle"></div>
