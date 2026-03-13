@@ -82,16 +82,8 @@ self.addEventListener('notificationclick', (e) => {
   if (d.notifId) urlParams.set('notifId', d.notifId);
   if (d.replyTimestamp) urlParams.set('replyTimestamp', d.replyTimestamp);
   const url = urlParams.toString() ? (base + '/index.html?' + urlParams.toString()) : (base + '/index.html');
-  e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
-    if (clients.length > 0) {
-      const client = clients[0];
-      client.focus();
-      if (client.navigate) {
-        return client.navigate(url).catch(() => self.clients.openWindow ? self.clients.openWindow(url) : Promise.resolve());
-      }
-      try { client.postMessage({ type: 'IT9AN_OPEN_NOTIF', postId: d.postId, fileId: d.fileId, notifId: d.notifId, url }); } catch (e2) {}
-      return Promise.resolve();
-    }
-    return self.clients.openWindow ? self.clients.openWindow(url) : Promise.resolve();
-  }));
+  e.waitUntil((function() {
+    var urlWithFresh = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_t=' + Date.now();
+    return self.clients.openWindow ? self.clients.openWindow(urlWithFresh) : Promise.resolve();
+  })());
 });
