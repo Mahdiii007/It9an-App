@@ -480,7 +480,7 @@
         .feed-msg .feed-row1-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
         .feed-msg .feed-row1-teacher .feed-row1-center { margin: 0 auto; flex-shrink: 0; }
         .feed-msg .feed-left-group { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
-        .feed-msg .feed-play-remarks { display: flex; align-items: center; gap: 0; flex-shrink: 0; }
+        .feed-msg .feed-play-remarks { display: flex; align-items: center; gap: 0; flex-shrink: 0; direction: ltr; flex-wrap: nowrap; }
         .feed-msg .feed-name-icon { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
         .feed-msg .feed-delete-wrap { flex-shrink: 0; }
         .feed-msg .feed-name-badge { font-weight: bold; color: var(--primary); font-size: 14px; flex-shrink: 0; direction: rtl; }
@@ -516,7 +516,7 @@
         .rating-status-badge.unexamined { background: #f5f5f5; color: #666; }
         .rating-status-badge.accepted { background: #e8f5e9; color: #2e7d32; }
         .rating-status-badge.needs-improvement { background: #ffebee; color: #c62828; }
-        .feed-msg .feed-remarks-wrap { display: flex; align-items: center; gap: 4px; flex-shrink: 0; direction: rtl; border: 1px solid #ddd; border-radius: 4px; padding: 2px 6px; }
+        .feed-msg .feed-remarks-wrap { display: flex; align-items: center; gap: 4px; flex-shrink: 0; direction: rtl; border: 1px solid #ddd; border-radius: 4px; padding: 2px 6px; unicode-bidi: isolate; }
         .feed-msg.student-msg.rating-unexamined { background: #ffffff; border: 1px solid #eee; }
         .feed-msg.student-msg.rating-accepted { background: #e8f5e9; border: 1px solid #a5d6a7; }
         .feed-msg.student-msg.rating-needs-improvement { background: #ffebee; border: 1px solid #ef9a9a; }
@@ -543,8 +543,8 @@
         .reply-row1-right { margin-left: auto; display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
         .reply-row2-right { margin-left: auto; display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
         .reply-delete-wrap { flex-shrink: 0; }
-        .reply-play-remarks { display: flex; align-items: center; gap: 0; flex-shrink: 0; }
-        .reply-remarks-wrap { display: flex; align-items: center; gap: 4px; flex-shrink: 0; direction: rtl; border: 1px solid #ddd; border-radius: 4px; padding: 2px 6px; }
+        .reply-play-remarks { display: flex; align-items: center; gap: 0; flex-shrink: 0; direction: ltr; flex-wrap: nowrap; }
+        .reply-remarks-wrap { display: flex; align-items: center; gap: 4px; flex-shrink: 0; direction: rtl; border: 1px solid #ddd; border-radius: 4px; padding: 2px 6px; unicode-bidi: isolate; }
         .reply-name-icon { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
         .reply-name-badge { font-size: 13px; font-weight: bold; color: var(--primary); flex-shrink: 0; direction: rtl; }
         .reply-role-icon { font-size: 14px; flex-shrink: 0; }
@@ -940,14 +940,14 @@
                 <div class="setting-group"><span class="setting-label">تكرار</span><input type="number" id="globalRepeats" value="100" min="1"><span class="edit-hint" title="قابل للتعديل">✏️</span><span class="setting-label">مرات</span></div>
                 <div class="setting-group view-count-in-settings" onclick="showViewers()" title="مشاهدة"><span style="font-size:18px;">👁️</span><span id="viewCount">0</span></div>
             </div>
-            <div class="verse-controls-frame">
-                <button id="recBtn" class="btn btn-rec" onclick="toggleRecord()">🎤</button>
-                <button id="playBtn" class="btn btn-play" onclick="toggleSmartLoop()">▶</button>
-            </div>
             <div class="nav-buttons-row">
                 <button id="btnRight" class="nav-btn" onclick="prevVers()"><span class="arrow-icon">❯ السابق</span></button>
                 <div id="verseStatusBadge" class="verse-status-badge" style="display:none;"></div>
                 <button id="btnLeft" class="nav-btn" onclick="nextVers()"><span class="arrow-icon">التالي ❮</span></button>
+            </div>
+            <div class="verse-controls-frame">
+                <button id="recBtn" class="btn btn-rec" onclick="toggleRecord()">🎤</button>
+                <button id="playBtn" class="btn btn-play" onclick="toggleSmartLoop()">▶</button>
             </div>
         </div>
         
