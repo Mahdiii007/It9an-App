@@ -427,8 +427,7 @@
         }
         .cp-btn:active { transform: scale(0.9); }
         .cp-slider, .cp-time { display: none !important; }
-        /* Feed & Reply: Play-Button größer (breit wie Like-Rahmen), mittig darunter */
-        .feed-msg .feed-player-wrap .custom-player, .reply-box .reply-player-wrap .custom-player { justify-content: center; width: 100%; }
+        /* Feed & Reply: Play-Button größer, links unter Like-Rahmen, gleiche Zeile wie Datum+Uhrzeit */
         .feed-msg .cp-btn, .reply-box .cp-btn { width: 80px; height: 44px; border-radius: 22px; font-size: 18px; }
 
         @media (max-width: 480px) {
@@ -474,14 +473,14 @@
         .badge-teacher { background: var(--gold); }
         .badge-admin { background: var(--primary); font-weight: bold; }
 
-        /* Kompaktes Design: Zeile 1 = Müll | Name | Like */
-        .feed-msg .feed-row1 { display: flex; align-items: center; gap: 8px; margin-bottom: 2px; flex-wrap: wrap; }
+        /* Kompaktes Design: Zeile 1 = Müll | Name | Like; Zeile 2 = Play links, Datum+Uhrzeit daneben */
+        .feed-msg .feed-row1 { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; flex-wrap: wrap; }
         .feed-msg .feed-delete-wrap { flex-shrink: 0; order: 1; margin-left: 20px; }
         .feed-msg .feed-name-badge { font-weight: bold; color: var(--primary); font-size: 14px; flex-shrink: 0; order: 2; }
         .feed-msg .feed-like-wrap { flex-shrink: 0; order: 3; margin-right: auto; }
         .feed-msg .feed-row2 { display: flex; align-items: center; gap: 8px; margin-bottom: 2px; flex-wrap: wrap; }
         .feed-msg .feed-datetime { font-size: 11px; color: #888; flex-shrink: 0; }
-        .feed-msg .feed-player-wrap { flex: 1 1 100%; min-width: 100%; justify-content: center; display: flex; align-items: center; }
+        .feed-msg .feed-player-wrap { flex-shrink: 0; display: flex; align-items: center; margin-right: auto; }
         .feed-msg .feed-row3 { margin-top: 2px; }
         .like-btn { display: flex; align-items: center; border-radius: 20px; font-size: 14px; background: #f9f9f9; border: 1px solid #eee; overflow: hidden; }
         .like-btn.liked { color: var(--primary); background: #e8f5e9; border-color: var(--primary); font-weight: bold; }
@@ -540,9 +539,10 @@
         .reply-listened-badge.listened { background: #e8f5e9; color: #2e7d32; }
         .reply-listened-badge.not-listened { background: #fff3e0; color: #e65100; }
         .reply-like-wrap { flex-shrink: 0; order: 3; margin-right: auto; }
+        .reply-row1 { margin-bottom: 4px; }
         .reply-row2 { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
         .reply-datetime { font-size: 10px; color: #888; flex-shrink: 0; }
-        .reply-player-wrap { flex: 1 1 100%; min-width: 100%; justify-content: center; display: flex; align-items: center; }
+        .reply-player-wrap { flex-shrink: 0; display: flex; align-items: center; margin-right: auto; }
 
         .feed-section-frame { background: #f9f9f9; border: 1px solid #e0e0e0; border-radius: 12px; padding: 12px; margin-bottom: 20px; }
         .feed-section-title { font-size: 16px; font-weight: bold; color: var(--primary); margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid var(--primary); }
