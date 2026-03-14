@@ -440,7 +440,8 @@
             .menu-grid { padding: 25px 8px; gap: 20px; }
             .feed-msg, .reply-box { padding: 10px 12px; }
             .feed-msg .feed-row1, .feed-msg .feed-row2, .reply-row1, .reply-row2 { gap: 8px; }
-            .feed-msg .feed-player-wrap, .reply-player-wrap { min-width: 0; width: 100%; }
+            .feed-msg .feed-player-wrap, .reply-player-wrap { min-width: 0; }
+            .feed-msg .feed-play-remarks .feed-player-wrap, .reply-play-remarks .reply-player-wrap { width: auto !important; }
             .custom-player { padding: 0; }
             #recording-ui { width: 95%; padding: 12px 14px; bottom: 180px; }
             .rec-timer { font-size: 22px; }
@@ -482,7 +483,7 @@
         .feed-msg .feed-row1-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
         .feed-msg .feed-row1-teacher .feed-row1-center { margin: 0 auto; flex-shrink: 0; }
         .feed-msg .feed-left-group { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
-        .feed-msg .feed-play-remarks { display: flex; align-items: center; gap: 0; flex-shrink: 0; direction: ltr; flex-wrap: nowrap; }
+        .feed-msg .feed-play-remarks { display: inline-flex; align-items: center; gap: 0; flex-shrink: 0; direction: ltr; flex-wrap: nowrap; width: fit-content; }
         .feed-msg .feed-name-icon { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
         .feed-msg .feed-delete-wrap { flex-shrink: 0; }
         .feed-msg .feed-name-badge { font-weight: bold; color: var(--primary); font-size: 14px; flex-shrink: 0; direction: rtl; }
@@ -492,7 +493,7 @@
         .feed-msg .feed-datetime { font-size: 15px; color: #666; flex-shrink: 0; font-weight: 500; }
         .feed-msg .feed-row2 .feed-datetime { margin-left: auto; }
         .feed-msg .feed-row2 .feed-delete-wrap { flex-shrink: 0; }
-        .feed-msg .feed-player-wrap { flex-shrink: 0; display: flex; align-items: center; }
+        .feed-msg .feed-player-wrap { flex-shrink: 0; display: flex; align-items: center; width: auto; }
         .feed-msg .feed-row3 { margin-top: 2px; }
         .like-btn { display: flex; align-items: center; border-radius: 20px; font-size: 14px; background: #f9f9f9; border: 1px solid #eee; overflow: hidden; }
         .like-btn.liked { color: var(--primary); background: #e8f5e9; border-color: var(--primary); font-weight: bold; }
@@ -545,7 +546,7 @@
         .reply-row1-right { margin-left: auto; display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
         .reply-row2-right { margin-left: auto; display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
         .reply-delete-wrap { flex-shrink: 0; }
-        .reply-play-remarks { display: flex; align-items: center; gap: 0; flex-shrink: 0; direction: ltr; flex-wrap: nowrap; }
+        .reply-play-remarks { display: inline-flex; align-items: center; gap: 0; flex-shrink: 0; direction: ltr; flex-wrap: nowrap; width: fit-content; }
         .reply-remarks-wrap { display: flex; align-items: center; gap: 4px; flex-shrink: 0; direction: rtl; border: 1px solid #ddd; border-radius: 4px; padding: 2px 6px; unicode-bidi: isolate; }
         .reply-name-icon { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
         .reply-name-badge { font-size: 13px; font-weight: bold; color: var(--primary); flex-shrink: 0; direction: rtl; }
@@ -556,7 +557,7 @@
         .reply-like-wrap { flex-shrink: 0; }
         .reply-row2 { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: space-between; }
         .reply-datetime { font-size: 14px; color: #666; flex-shrink: 0; font-weight: 500; }
-        .reply-player-wrap { flex-shrink: 0; display: flex; align-items: center; }
+        .reply-player-wrap { flex-shrink: 0; display: flex; align-items: center; width: auto; }
 
         .feed-section-frame { background: #f9f9f9; border: 1px solid #e0e0e0; border-radius: 12px; padding: 12px; margin-bottom: 20px; }
         .feed-section-title { font-size: 16px; font-weight: bold; color: var(--primary); margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid var(--primary); }
