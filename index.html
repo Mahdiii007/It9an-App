@@ -3210,7 +3210,8 @@
         }
         function initStatCharts() {
             const role = localStorage.getItem('it9an_role');
-            const isStudent = role === 'student';
+            const uid = localStorage.getItem('it9an_uid');
+            const isStudent = role === 'student' || uid === 'guest';
             const repWrap = document.getElementById('statRepetitionsWrap');
             const recWrap = document.getElementById('statRecordingsWrap');
             if (isStudent) {
@@ -5052,7 +5053,7 @@
             const verseBadge = document.getElementById('verseStatusBadge');
             const userRole = localStorage.getItem('it9an_role');
             const navRow = document.querySelector('.nav-buttons-row');
-            if (navRow) navRow.classList.toggle('nav-buttons-center', userRole === 'teacher' || uid === 'admin_super');
+            if (navRow) navRow.classList.toggle('nav-buttons-center', userRole === 'teacher' || uid === 'admin_super' || uid === 'guest');
             if (verseBadge && uid && uid !== 'admin_super' && uid !== 'guest' && userRole === 'student') {
                 const completed = await fetchCompletedVersesForStudent(uid);
                 const isCompleted = completed.has(String(globalId));
