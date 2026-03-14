@@ -315,7 +315,7 @@
         .lb-back-btn { background: var(--primary); color: var(--gold-light); border-color: var(--gold); }
         .verse-list-btn:active { opacity: 0.9; }
         
-        .verse-status-badge { text-align: center; padding: 8px 12px; font-size: 15px; font-weight: bold; border-radius: 10px; margin-bottom: 8px; font-family: 'Amiri'; }
+        .verse-status-badge { text-align: center; padding: 8px 12px; font-size: 15px; font-weight: bold; border-radius: 10px; font-family: 'Amiri'; }
         .verse-status-badge.completed { background: #e8f5e9; color: #2e7d32; border: 1px solid #4caf50; }
         .verse-status-badge.not-completed { background: #fff3e0; color: #e65100; border: 1px solid #ff9800; }
         .lesson-progress-bar-wrap { width: 100%; padding: 0; }
@@ -343,18 +343,27 @@
             display: block; 
         }
 
-        .nav-buttons-row { display: flex; gap: 8px; margin-bottom: 15px; width: 100%; max-width: 100%; }
+        .nav-buttons-row { display: flex; align-items: center; gap: 8px; margin-bottom: 15px; width: 100%; max-width: 100%; }
         .nav-btn { 
-            flex: 1;
+            flex: 0 0 auto;
             min-height: 44px;
             height: 44px;
-            min-width: 80px;
+            width: 90px;
+            max-width: 110px;
             background: var(--bg); color: var(--primary); border: 1px solid var(--gold);
-            border-radius: 8px; font-size: 18px; cursor: pointer; 
+            border-radius: 8px; font-size: 16px; cursor: pointer; 
             display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
+        .nav-buttons-row .verse-status-badge { flex: 1; margin: 0; min-width: 0; white-space: nowrap; }
         .nav-btn:active { background: var(--gold-light); }
         .arrow-icon { direction: ltr; display: inline-block; }
+
+        .verse-controls-frame {
+            display: flex; justify-content: center; align-items: center; gap: 50px;
+            background: white; padding: 12px 20px;
+            border-radius: 15px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border: 2px solid var(--gold);
+        }
 
         #verse-list-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; max-width: 100vw; height: 100%; background: rgba(0,0,0,0.92); z-index: 3000; overflow-x: hidden; overflow-y: auto; padding: 10px; box-sizing: border-box; }
         .verse-list-content { position: relative; background: var(--surface); border-radius: 15px; padding: 15px; width: 100%; max-width: calc(100vw - 20px); margin: 0 auto; box-sizing: border-box; }
@@ -366,7 +375,8 @@
         .verse-list-item:hover:not(.verse-current) { border-color: rgba(212, 175, 55, 0.4) !important; }
         .verse-list-item.verse-current { border: 4px solid var(--gold) !important; box-shadow: 0 0 0 3px var(--gold) !important; }
         #verse-list-grid .verse-list-item:first-child:not(.verse-current) { border: 2px solid transparent !important; box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important; outline: none !important; }
-        .verse-list-item img { width: 100%; max-width: 100%; height: auto; display: block; object-fit: contain; border: none; outline: none; }
+        .verse-list-item .verse-list-img-wrap { min-height: 80px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; }
+        .verse-list-item img { width: 100%; max-width: 100%; height: auto; display: block; object-fit: contain; border: none; outline: none; background: #f0f0f0; }
         .verse-list-item span { text-align: center; padding: 8px; font-size: 14px; font-weight: bold; color: var(--primary); }
 
         /* SETTINGS: one line - pause, checkbox, repeats input and label */
@@ -377,6 +387,8 @@
         }
         .setting-group { text-align: center; display: flex; align-items: center; gap: 8px; margin: 0; }
         .setting-label { font-size: 15px; font-weight: bold; color: var(--gold-light); margin: 0; display: inline; }
+        .edit-hint { font-size: 14px; opacity: 0.9; cursor: help; }
+        .view-count-in-settings { cursor: pointer; font-weight: bold; color: var(--gold-light); margin-right: auto !important; }
         .settings-box input[type="number"] { width: 55px; text-align: center; padding: 6px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; color: var(--primary); }
         input[type="checkbox"] { transform: scale(1.8); accent-color: var(--gold); margin: 5px; cursor: pointer; }
 
@@ -402,7 +414,7 @@
             align-items: center; justify-content: center; gap: 12px;
         }
 
-        /* CUSTOM PLAYER */
+        /* CUSTOM PLAYER - nur Play-Button, kein Balken/Timer */
         .custom-player {
             display: flex; align-items: center; gap: 8px;
             background: rgba(0,0,0,0.03); padding: 6px 10px; border-radius: 20px;
@@ -415,8 +427,7 @@
             flex-shrink: 0; transition: transform 0.1s;
         }
         .cp-btn:active { transform: scale(0.9); }
-        .cp-slider { flex-grow: 1; height: 5px; accent-color: var(--primary); cursor: pointer; min-width: 40px; }
-        .cp-time { font-size: 11px; color: #666; font-family: monospace; min-width: 36px; font-weight: bold; }
+        .cp-slider, .cp-time { display: none !important; }
 
         @media (max-width: 480px) {
             #menu-view { padding: 15px 8px 0 8px; }
@@ -500,8 +511,11 @@
         .reply-box.reply-teacher.reply-inherit-needs-improvement { background: #ffebee; border-right-color: #e57373; }
         .reply-btn { cursor: pointer; background: none; border: 1px solid var(--primary); color: var(--primary); padding: 4px 12px; border-radius: 6px; font-size: 13px; font-weight: bold; }
         .delete-btn { background: rgba(255,0,0,0.1); color: var(--red); border: none; border-radius: 50%; width: 28px; height: 28px; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-        .save-btn { background: rgba(0,0,0,0.05); border: 1px solid #ddd; border-radius: 50%; width: 32px; height: 32px; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-        .save-btn.saved { background: rgba(212, 175, 55, 0.2); border-color: var(--gold); }
+        .save-btn { background: rgba(0,0,0,0.05); border: 1px solid #ddd; border-radius: 50%; width: 32px; height: 32px; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: #333; }
+        .save-btn .save-icon { width: 18px; height: 18px; }
+        .save-btn .save-icon path { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+        .save-btn.saved { background: rgba(212, 175, 55, 0.2); border-color: var(--gold); color: var(--gold); }
+        .save-btn.saved .save-icon path { fill: var(--gold); stroke: var(--gold); }
         .reply-delete-btn { background: rgba(255,0,0,0.1); border: none; border-radius: 50%; width: 24px; height: 24px; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--red); margin-left: 4px; }
 
         .replies-wrapper { margin-top: 8px; padding-right: 16px; border-right: 3px solid #e0e0e0; position: relative; }
@@ -753,7 +767,7 @@
     </div>
 
     <div id="saved-list-view" style="display:none; padding: 15px 10px; width: 100%; max-width: 100%; margin: 0 auto; overflow-x: hidden;">
-        <h3 style="text-align:center; color:var(--primary); font-size:24px;">📌 للمشاهدة لاحقاً</h3>
+        <h3 style="text-align:center; color:var(--primary); font-size:24px; display:flex; align-items:center; justify-content:center; gap:8px;"><svg style="width:28px;height:28px;flex-shrink:0;" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>للمشاهدة لاحقاً</h3>
         <div id="savedList" class="feed-container"></div>
         <button class="login-btn" onclick="goToMenu()">عودة</button>
     </div>
@@ -872,7 +886,7 @@
                 <ul id="leaderboard-teachers-list" class="lb-list"></ul>
             </div>
         </div>
-        <button class="verse-list-btn" style="margin: 15px 0 0 0;" onclick="showSavedList()">📌 للمشاهدة لاحقاً</button>
+        <button class="verse-list-btn" style="margin: 15px 0 0 0; display: flex; align-items: center; justify-content: center; gap: 6px;" onclick="showSavedList()"><svg class="save-icon" style="width:20px;height:20px;flex-shrink:0;" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>للمشاهدة لاحقاً</span></button>
     </div>
 
     <div id="lessons-view" style="display:none; padding: 15px 10px; width: 100%; max-width: 100%; margin: 0 auto; overflow-x: hidden;">
@@ -891,24 +905,28 @@
             </div>
         </div>
 
-        <div class="settings-box">
-            <div class="setting-group"><span class="setting-label">وقفة</span><input type="checkbox" id="globalGap" checked></div>
-            <div class="setting-group"><span class="setting-label">تكرار</span><input type="number" id="globalRepeats" value="100" min="1"><span class="setting-label">مرات</span></div>
-        </div>
-
         <div class="verse-section">
             <button id="lbBackToLikesBtn" class="verse-list-btn lb-back-btn" onclick="goBackToLbList()" style="display:none;">↩️ العودة</button>
             <div class="verse-nav-buttons-row verse-nav-same-width">
                 <button class="verse-list-btn" onclick="showVerseList()">📋 قائمة مقاطع الدرس</button>
             </div>
-            <div id="verseStatusBadge" class="verse-status-badge" style="display:none;"></div>
             <div class="quran-frame">
                 <div class="player-container">
                     <img id="currentImg" class="quran-image" src="" alt="Vers Bild" onerror="this.src='placeholder.png'">
                 </div>
             </div>
+            <div class="verse-controls-frame">
+                <button id="recBtn" class="btn btn-rec" onclick="toggleRecord()">🎤</button>
+                <button id="playBtn" class="btn btn-play" onclick="toggleSmartLoop()">▶</button>
+            </div>
+            <div class="settings-box">
+                <div class="setting-group"><span class="setting-label">وقفة</span><input type="checkbox" id="globalGap" checked></div>
+                <div class="setting-group"><span class="setting-label">تكرار</span><input type="number" id="globalRepeats" value="100" min="1"><span class="edit-hint" title="قابل للتعديل">✏️</span><span class="setting-label">مرات</span></div>
+                <div class="setting-group view-count-in-settings" onclick="showViewers()" title="مشاهدة"><span style="font-size:18px;">👁️</span><span id="viewCount">0</span></div>
+            </div>
             <div class="nav-buttons-row">
                 <button id="btnRight" class="nav-btn" onclick="prevVers()"><span class="arrow-icon">❯ السابق</span></button>
+                <div id="verseStatusBadge" class="verse-status-badge" style="display:none;"></div>
                 <button id="btnLeft" class="nav-btn" onclick="nextVers()"><span class="arrow-icon">التالي ❮</span></button>
             </div>
         </div>
@@ -925,8 +943,6 @@
         
         <div id="statusDisplay" class="status-bar">جاهز للتلاوة</div>
         <div class="repeats-hint" style="font-size:13px; color:#666; text-align:center; margin-top:6px; line-height:1.5;">يمكنك أعلاه اختيار ما إذا كانت وقفة بين التكرارات مطلوبة. كما يمكنك إدخال عدد التكرارات برغبتك.</div>
-        
-        <div class="view-counter" onclick="showViewers()">👁️ <span id="viewCount">0</span> مشاهدة</div>
 
         <h4 id="participations-header" style="text-align:center; color:var(--primary); margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:10px; font-size:20px;"><span id="participationsCount">(0)</span> المشاركات</h4>
         <div id="community-feed" class="feed-container">جاري التحميل...</div>
@@ -959,15 +975,11 @@
 
     <audio id="feedAudio"></audio>
 
-    <div class="footer" id="appFooter">
-        <div class="progress-container">
+    <div class="footer" id="appFooter" style="display:none;">
+        <div class="progress-container" style="display:none;">
             <span id="currentTime" class="time-text">00:00</span>
             <input type="range" id="progressBar" min="0" max="100" value="0" step="1">
             <span id="durationTime" class="time-text">00:00</span>
-        </div>
-        <div class="controls">
-            <button id="recBtn" class="btn btn-rec" onclick="toggleRecord()">🎤</button>
-            <button id="playBtn" class="btn btn-play" onclick="toggleSmartLoop()">▶</button>
         </div>
     </div>
     
@@ -1340,6 +1352,20 @@
             };
         }
         window.verseImgFallback = function(img) { getVerseImgOnError(img, false)(); };
+        window.verseListImgFallback = function(img) {
+            const src = img.dataset.originalSrc || img.src;
+            if (!img.dataset.retried) {
+                img.dataset.retried = '1';
+                img.onerror = null;
+                img.src = '';
+                setTimeout(() => {
+                    img.src = src;
+                    img.onerror = function() { img.dataset.retried = null; getVerseImgOnError(img, true)(); };
+                }, 150);
+            } else {
+                getVerseImgOnError(img, true)();
+            }
+        };
 
         let completedVersesCache = null;
         let completedVersesCacheUid = null;
@@ -1455,7 +1481,7 @@
             const stageCfg = getStageConfig(stageId);
             const titleEl = document.getElementById('studentsProgressModalTitle');
             const listEl = document.getElementById('students-progress-list');
-            if (titleEl) titleEl.innerHTML = `👥 الطلاب — مرحلة ${stageId}: ${stageCfg.name}`;
+            if (titleEl) titleEl.innerHTML = stageCfg.name || '';
             if (listEl) listEl.innerHTML = '<li style="text-align:center; color:#999; padding:15px;">جاري التحميل...</li>';
             document.getElementById('students-progress-modal').style.display = 'block';
             document.getElementById('studentsProgressShowMoreBtn').style.display = 'none';
@@ -1484,7 +1510,8 @@
         window.showStudentsProgressForLesson = async function(lessonIndex) {
             const titleEl = document.getElementById('studentsProgressModalTitle');
             const listEl = document.getElementById('students-progress-list');
-            if (titleEl) titleEl.innerHTML = `👥 الطلاب — الدرس ${lessonIndex + 1}`;
+            const lek = KURS_DATEN && KURS_DATEN[lessonIndex] ? KURS_DATEN[lessonIndex] : null;
+            if (titleEl) titleEl.innerHTML = (lek && lek.title) ? lek.title : '';
             if (listEl) listEl.innerHTML = '<li style="text-align:center; color:#999; padding:15px;">جاري التحميل...</li>';
             document.getElementById('students-progress-modal').style.display = 'block';
             document.getElementById('studentsProgressShowMoreBtn').style.display = 'none';
@@ -1534,6 +1561,7 @@
         let mediaRecorder, chunks = [], recInterval = null, recSeconds = 0;
         let currentBlob = null, replyTargetId = null, maxRecDuration = 0;
         let lastRecStream = null, lastRecCtx = null;
+        let recordingFileId = null, recordingStageId = null; // Beim Aufnahmestart gespeichert, damit die Aufnahme dem richtigen Vers zugeordnet bleibt (auch wenn der Vers während der Aufnahme wechselt)
         
         window.currentViewersData = { viewers: {}, totalRepetitions: 0 }; 
         
@@ -3159,8 +3187,17 @@
             renderStatChart(canvasId, data);
         }
         function initStatCharts() {
-            document.getElementById('statRepetitionsWrap').onclick = () => { const d = document.querySelector('#statChartRepetitions .stat-chart-btn.active'); showStatChart('repetitions', d ? parseInt(d.dataset.days,10) : 7); };
-            document.getElementById('statRecordingsWrap').onclick = () => { const d = document.querySelector('#statChartRecordings .stat-chart-btn.active'); showStatChart('recordings', d ? parseInt(d.dataset.days,10) : 7); };
+            const role = localStorage.getItem('it9an_role');
+            const isStudent = role === 'student';
+            const repWrap = document.getElementById('statRepetitionsWrap');
+            const recWrap = document.getElementById('statRecordingsWrap');
+            if (isStudent) {
+                if (repWrap) { repWrap.classList.remove('stat-clickable'); repWrap.removeAttribute('title'); repWrap.onclick = null; repWrap.querySelector('.stat-click-hint')?.remove(); repWrap.querySelector('span[title]')?.removeAttribute('title'); }
+                if (recWrap) { recWrap.classList.remove('stat-clickable'); recWrap.removeAttribute('title'); recWrap.onclick = null; recWrap.querySelector('.stat-click-hint')?.remove(); recWrap.querySelector('span[title]')?.removeAttribute('title'); }
+            } else {
+                if (repWrap) repWrap.onclick = () => { const d = document.querySelector('#statChartRepetitions .stat-chart-btn.active'); showStatChart('repetitions', d ? parseInt(d.dataset.days,10) : 7); };
+                if (recWrap) recWrap.onclick = () => { const d = document.querySelector('#statChartRecordings .stat-chart-btn.active'); showStatChart('recordings', d ? parseInt(d.dataset.days,10) : 7); };
+            }
             document.querySelectorAll('#statChartRepetitions .stat-chart-btn, #statChartRecordings .stat-chart-btn').forEach(btn => {
                 btn.onclick = (e) => {
                     e.stopPropagation();
@@ -3543,11 +3580,11 @@
                     <div class="lb-player-pair">
                         <div class="lb-liked-play lb-player-stack">
                             <button class="cp-btn" id="btn-${playIdMain}" onclick="playFeedAudio(window._lbRecordingsMainUrls[${idx}]||'','${playIdMain}')">▶</button>
-                            <span class="lb-player-label">الطالب</span>
+                            <span class="lb-player-label">🎓</span>
                         </div>
                         <div class="lb-liked-play lb-player-stack">
                             <button class="cp-btn" id="btn-${playId}" onclick="playFeedAudio(window._lbRecordingsUrls[${idx}]||'','${playId}')">▶</button>
-                            <span class="lb-player-label">المعلم</span>
+                            <span class="lb-player-label">👨‍🏫</span>
                         </div>
                     </div>`;
                 } else {
@@ -4350,7 +4387,7 @@
                 document.getElementById('menu-view').style.display = 'none';
                 document.getElementById('notifications-view').style.display = 'none';
                 document.getElementById('player-view').style.display = 'block';
-                document.getElementById('appFooter').style.display = 'flex';
+                document.getElementById('appFooter').style.display = 'none';
                 if (typeof updateRecButtonForStudentNotifications === 'function') updateRecButtonForStudentNotifications();
                 const menuBtn = document.getElementById('menuBtn'); if (menuBtn) menuBtn.style.display = 'none';
                 const stagesBackBtn = document.getElementById('stagesBackBtn'); if (stagesBackBtn) stagesBackBtn.style.display = 'none';
@@ -4479,7 +4516,7 @@
             const replies = d.replies || [];
             const repliesDiv = document.getElementById('adminMsgReplies');
             if (replies.length > 0) {
-                repliesDiv.innerHTML = '<div style="font-weight:bold; color:var(--primary); margin-bottom:8px;">الردود:</div>' + replies.map(r => {
+                repliesDiv.innerHTML = replies.map(r => {
                     const name = stripYearFromName(r.name || 'مستخدم');
                     const dateStr = r.timestamp ? new Date(r.timestamp).toLocaleString('ar-EG', { numberingSystem: 'latn' }) : '';
                     const fromAdmin = r.uid === 'admin_super';
@@ -4899,6 +4936,14 @@
             }
         }
         
+        function preloadVerseImages(lesson) {
+            for (let v = 1; v <= lesson.verse; v++) {
+                const globalId = lesson.startGlobalId + v - 1;
+                const url = getAssetUrl(getVerseAssetPath(globalId) + '.png');
+                const img = new Image();
+                img.src = url;
+            }
+        }
         window.showVerseList = async function() {
             if (isPlaying) stopLoop();
             pauseFeedAudio();
@@ -4906,6 +4951,7 @@
             const lesson = KURS_DATEN[currentLessonIdx];
             const grid = document.getElementById('verse-list-grid');
             grid.innerHTML = '';
+            preloadVerseImages(lesson);
             const uid = localStorage.getItem('it9an_uid');
             const userRole = localStorage.getItem('it9an_role');
             let completedVerses = new Set();
@@ -4914,12 +4960,13 @@
             }
             for(let v = 1; v <= lesson.verse; v++) {
                 const globalId = lesson.startGlobalId + v - 1;
+                const imgUrl = getAssetUrl(getVerseAssetPath(globalId) + '.png');
                 const isCompleted = completedVerses.has(String(globalId));
                 const statusSpan = (uid && userRole === 'student') ? `<span style="font-size:11px; color:${isCompleted?'#2e7d32':'#e65100'};">${isCompleted ? 'منجز' : 'لم يُنجز بعد'}</span>` : '';
                 const div = document.createElement('div');
                 div.className = 'verse-list-item';
                 div.setAttribute('data-global-id', String(globalId));
-                div.innerHTML = `<span>المقطع ${v} ${statusSpan}</span><img src="${getAssetUrl(getVerseAssetPath(globalId) + '.png')}" alt="Vers ${v}" onerror="verseImgFallback(this)">`;
+                div.innerHTML = `<span>المقطع ${v} ${statusSpan}</span><div class="verse-list-img-wrap"><img src="${imgUrl}" data-original-src="${imgUrl}" alt="Vers ${v}" loading="eager" decoding="sync" onerror="verseListImgFallback(this)"></div>`;
                 div.onclick = () => { activePostFilter = null; activePostFilterNotifId = null; highlightedPostId = null; playVers(globalId, v); hideVerseList(); };
                 grid.appendChild(div);
             }
@@ -4959,7 +5006,7 @@
             showView('player-view');
             if (!activePostFilter) window.scrollTo({ top: 0, behavior: 'smooth' });
             updateLbBackButton();
-            document.getElementById('appFooter').style.display = 'flex';
+            document.getElementById('appFooter').style.display = 'none';
             if (typeof updateRecButtonForStudentNotifications === 'function') updateRecButtonForStudentNotifications();
             
             document.getElementById('adminMenuPanel').style.display = 'none'; 
@@ -5212,16 +5259,16 @@
                 
                 let msgClass = 'feed-msg student-msg';
                 let badgeClass = 'role-badge badge-student';
-                let badgeText = 'طالب';
+                let roleIcon = '🎓';
 
                 if (isAdminPost) {
                     msgClass = 'feed-msg admin-msg';
                     badgeClass = 'role-badge badge-admin';
-                    badgeText = 'المسؤول';
+                    roleIcon = 'المسؤول';
                 } else if (isTeacherPost) {
                     msgClass = 'feed-msg teacher-msg';
                     badgeClass = 'role-badge badge-teacher';
-                    badgeText = 'معلم';
+                    roleIcon = '👨‍🏫';
                 }
                 if (highlightedPostId && d.id === highlightedPostId) msgClass += ' highlighted';
 
@@ -5301,7 +5348,7 @@
 
                         let rUniqueId = d.id + "-reply-" + idx;
                         let rDateStr = r.timestamp ? (function(ts){ let dt=new Date(ts); return dt.getFullYear()+'-'+('0'+(dt.getMonth()+1)).slice(-2)+'-'+('0'+dt.getDate()).slice(-2)+' '+('0'+dt.getHours()).slice(-2)+':'+('0'+dt.getMinutes()).slice(-2); })(r.timestamp) : '';
-                        let rBadge = rIsAdmin ? '<span class="role-badge badge-admin">المسؤول</span>' : (rIsTeacher ? '<span class="role-badge badge-teacher">معلم</span>' : '<span class="role-badge badge-student">طالب</span>');
+                        let rRoleIcon = rIsAdmin ? 'المسؤول' : (rIsTeacher ? '👨‍🏫' : '🎓');
                         let rListenBadge = (isStudentPost && rIsTeacher) ? (r.listenedByStudent ? '<span class="reply-listened-badge listened">تم الاستماع</span>' : '<span class="reply-listened-badge not-listened">لم يُستمع بعد</span>') : '';
 
                         let rDelWrap = rDeleteBtn ? `<div class="reply-delete-wrap">${rDeleteBtn}</div>` : '';
@@ -5309,7 +5356,7 @@
                         <div class="${rBoxClass}">
                             <div class="reply-row1">
                                 ${rDelWrap}
-                                <div class="reply-name-badge">${stripYearFromName(r.name)} ${rBadge} ${rListenBadge}</div>
+                                <div class="reply-name-badge">${rRoleIcon} ${stripYearFromName(r.name)} ${rListenBadge}</div>
                                 <div class="reply-like-wrap">
                                     <div class="like-btn ${rLikeClass}">
                                         <div class="like-action ${rLockedClass}" onclick="${rLikeAction}">👍</div>
@@ -5332,15 +5379,15 @@
                     
                     repliesHtml = `
                     <div class="replies-wrapper">
-                        <div class="replies-title">الردود</div>
                         ${repliesInner}
                     </div>`;
                 }
                 
-                let replyBtnHtml = (userRole === 'teacher' || isAdmin) ? `<button class="reply-btn" onclick="startReply('${d.id}')">↩️ الرد</button>` : "<div></div>";
+                const hasTeacherReply = d.replies && d.replies.some(r => r.role === 'teacher');
+                let replyBtnHtml = ((userRole === 'teacher' || isAdmin) && isStudentPost && !hasTeacherReply) ? `<button class="reply-btn" onclick="startReply('${d.id}')">↩️ الرد</button>` : "<div></div>";
                 let postDateStr = formatDateTime(d.timestamp);
                 const isSaved = savedIds.has(d.id);
-                const saveBtnHtml = (myUid && myUid !== 'admin_super' && myUid !== 'guest') ? `<button class="save-btn ${isSaved ? 'saved' : ''}" onclick="toggleSaveForLater('${d.id}', ${isSaved})" title="${isSaved ? 'إزالة من القائمة' : 'حفظ للمشاهدة لاحقاً'}">📌</button>` : '';
+                const saveBtnHtml = (myUid && myUid !== 'admin_super' && myUid !== 'guest') ? `<button class="save-btn ${isSaved ? 'saved' : ''}" onclick="toggleSaveForLater('${d.id}', ${isSaved})" title="${isSaved ? 'إزالة من القائمة' : 'حفظ للمشاهدة لاحقاً'}"><svg class="save-icon" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></button>` : '';
 
                 let mainActionHtml = '';
                 if (showRatingButtons) {
@@ -5372,7 +5419,7 @@
                 <div class="${msgClass}" id="post-${d.id}">
                     <div class="feed-row1">
                         ${delBtn}
-                        <div class="feed-name-badge">${stripYearFromName(d.name)} <span class="${badgeClass}">${badgeText}</span></div>
+                        <div class="feed-name-badge">${roleIcon} ${stripYearFromName(d.name)}</div>
                         ${saveBtnHtml}
                         ${mainActionHtml}
                     </div>
@@ -5452,7 +5499,7 @@
             const myUid = localStorage.getItem('it9an_uid');
             if (!myUid) { alert("يجب تسجيل الدخول"); return; }
             showView('saved-list-view');
-            const ptS = document.getElementById('pageTitle'); if (ptS) { ptS.classList.remove('header-name-pin', 'page-title-lessons', 'page-title-notifications'); ptS.innerText = "📌 للمشاهدة لاحقاً"; }
+            const ptS = document.getElementById('pageTitle'); if (ptS) { ptS.classList.remove('header-name-pin', 'page-title-lessons', 'page-title-notifications'); ptS.innerHTML = '<span style="display:inline-flex;align-items:center;gap:6px;"><svg style="width:22px;height:22px;flex-shrink:0;" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>للمشاهدة لاحقاً</span>'; }
             document.getElementById('appFooter').style.display = 'none';
             const container = document.getElementById('savedList');
             container.innerHTML = "<div style='text-align:center; color:#999; padding:20px;'>جاري التحميل...</div>";
@@ -5483,9 +5530,9 @@
                     const ratingVerdict = teacherRating ? teacherRating.verdict : null;
                     let msgClass = 'feed-msg student-msg';
                     let badgeClass = 'role-badge badge-student';
-                    let badgeText = 'طالب';
-                    if (d.uid === 'admin_super') { msgClass = 'feed-msg admin-msg'; badgeClass = 'role-badge badge-admin'; badgeText = 'المسؤول'; }
-                    else if (d.role === 'teacher') { msgClass = 'feed-msg teacher-msg'; badgeClass = 'role-badge badge-teacher'; badgeText = 'معلم'; }
+                    let roleIcon = '🎓';
+                    if (d.uid === 'admin_super') { msgClass = 'feed-msg admin-msg'; badgeClass = 'role-badge badge-admin'; roleIcon = 'المسؤول'; }
+                    else if (d.role === 'teacher') { msgClass = 'feed-msg teacher-msg'; badgeClass = 'role-badge badge-teacher'; roleIcon = '👨‍🏫'; }
                     if (isStudentPost) {
                         if (ratingVerdict === 'accepted') msgClass += ' rating-accepted';
                         else if (ratingVerdict === 'needs_improvement') msgClass += ' rating-needs-improvement';
@@ -5505,12 +5552,12 @@
                                 else if (ratingVerdict === 'needs_improvement') rBoxClass += " reply-inherit-needs-improvement";
                             }
                             let rDateStr = r.timestamp ? (function(ts){ let dt=new Date(ts); return dt.getFullYear()+'-'+('0'+(dt.getMonth()+1)).slice(-2)+'-'+('0'+dt.getDate()).slice(-2)+' '+('0'+dt.getHours()).slice(-2)+':'+('0'+dt.getMinutes()).slice(-2); })(r.timestamp) : '';
-                            let rBadge = r.uid === 'admin_super' ? '<span class="role-badge badge-admin">المسؤول</span>' : (r.role === 'teacher' ? '<span class="role-badge badge-teacher">معلم</span>' : '<span class="role-badge badge-student">طالب</span>');
+                            let rRoleIcon = r.uid === 'admin_super' ? 'المسؤول' : (r.role === 'teacher' ? '👨‍🏫' : '🎓');
                             let rListenBadge = (isStudentPost && r.role === 'teacher') ? (r.listenedByStudent ? '<span class="reply-listened-badge listened">تم الاستماع</span>' : '<span class="reply-listened-badge not-listened">لم يُستمع بعد</span>') : '';
                             let rUniqueId = d.id + "-saved-reply-" + idx;
-                            repliesInner += `<div class="${rBoxClass}"><div class="reply-row1"><div class="reply-name-badge">${r.name} ${rBadge} ${rListenBadge}</div></div><div class="reply-row2">${rDateStr ? '<span class="reply-datetime">'+rDateStr+'</span>' : ''}<div class="reply-player-wrap"><div class="custom-player"><button class="cp-btn" id="btn-${rUniqueId}" onclick="playFeedAudio('${r.audioUrl}', '${rUniqueId}')">▶</button><input type="range" class="cp-slider" id="seek-${rUniqueId}" value="0" min="0" step="0.1" oninput="seekFeedAudio(this.value)"><span class="cp-time" id="time-${rUniqueId}">00:00</span></div></div></div></div>`;
+                            repliesInner += `<div class="${rBoxClass}"><div class="reply-row1"><div class="reply-name-badge">${rRoleIcon} ${stripYearFromName(r.name || 'مستخدم')} ${rListenBadge}</div></div><div class="reply-row2">${rDateStr ? '<span class="reply-datetime">'+rDateStr+'</span>' : ''}<div class="reply-player-wrap"><div class="custom-player"><button class="cp-btn" id="btn-${rUniqueId}" onclick="playFeedAudio('${r.audioUrl}', '${rUniqueId}')">▶</button><input type="range" class="cp-slider" id="seek-${rUniqueId}" value="0" min="0" step="0.1" oninput="seekFeedAudio(this.value)"><span class="cp-time" id="time-${rUniqueId}">00:00</span></div></div></div></div>`;
                         });
-                        repliesHtml = `<div class="replies-wrapper"><div class="replies-title">الردود</div>${repliesInner}</div>`;
+                        repliesHtml = `<div class="replies-wrapper">${repliesInner}</div>`;
                     }
                     const openToFeed = fileId ? `openSavedToFeed('${fileId}', '${d.id}')` : '';
                     const savedRatingText = isStudentPost ? (ratingVerdict === 'accepted' ? 'مقبول' : ratingVerdict === 'needs_improvement' ? 'يمكن أن يكون أفضل' : 'لم يُفحص بعد') : '';
@@ -5519,7 +5566,7 @@
                     html += `<div class="${msgClass}" id="saved-post-${d.id}">
                         <div class="feed-row1">
                             <div class="feed-delete-wrap"><button class="delete-btn" onclick="removeFromSaved('${it.savedDocId}', '${d.id}')" title="إزالة من القائمة">🗑️</button></div>
-                            <div class="feed-name-badge">${stripYearFromName(d.name)} <span class="${badgeClass}">${badgeText}</span></div>
+                            <div class="feed-name-badge">${roleIcon} ${stripYearFromName(d.name)}</div>
                         </div>
                         <div class="feed-row2">
                             <span class="feed-datetime">${postDateStr}</span>
@@ -5564,7 +5611,12 @@
             }
         }
 
-        window.startReply = function(postId) { replyTargetId = postId; toggleRecord(); }
+        window.startReply = function(postId) {
+            replyTargetId = postId;
+            const post = allLoadedPosts.find(p => p.id === postId);
+            if (post && post.fileId != null) { recordingFileId = parseInt(String(post.fileId), 10); recordingStageId = post.stageId ?? currentStageId; }
+            toggleRecord();
+        }
 
         const REC_BLOCKED_MSG = 'يرجى استخدام إشعارات الجرس لسماع جميع ردود المعلم لهذه المرحلة حتى النهاية. يمكنك التسجيل في هذه المرحلة مرة أخرى فقط عندما تكون جميع ردود المعلم قد سُمعت حتى النهاية. هكذا تتعلم بشكل أفضل.';
         const MIN_REPETITIONS_FOR_REC = 30;
@@ -5652,6 +5704,7 @@
                     mediaRecorder.ondataavailable = e => { if(e.data.size > 0) chunks.push(e.data); };
                     
                     if(replyTargetId) statusText.innerText = "تسجيل رد..."; else statusText.innerText = "تسجيل تلاوة...";
+                    if (!replyTargetId) { recordingFileId = currentGlobalFileId; recordingStageId = currentStageId; }
 
                     const streamToRelease = rawStream;
                     const ctxToRelease = recCtx;
@@ -5789,22 +5842,28 @@
                 await window.uploadBytes(refS, blobToUpload);
                 const url = await window.getDownloadURL(refS);
                 if (replyTargetId) {
+                    const targetPost = allLoadedPosts.find(p => p.id === replyTargetId);
+                    if (role === 'teacher' && targetPost && targetPost.role === 'student' && targetPost.replies && targetPost.replies.some(r => r.role === 'teacher')) {
+                        alert('يُسمح برد واحد فقط من المعلم لكل تسجيل طالب.');
+                        return;
+                    }
                     const replyTs = Date.now();
                     const newReply = { name: name, role: role, uid: uid, audioUrl: url, timestamp: replyTs, likes: [] };
-                    const targetPost = allLoadedPosts.find(p => p.id === replyTargetId);
                     if (targetPost) {
-                        const lv = getLessonVerseFromFileId(currentGlobalFileId) || { lesson: 0, verse: 0, lessonTitle: '' };
-                        const stageCfg = getStageConfig(currentStageId) || { name: '' };
+                        const replyFid = (recordingFileId != null ? recordingFileId : targetPost.fileId) || currentGlobalFileId;
+                        const replySid = (recordingStageId != null ? recordingStageId : currentStageId);
+                        const lv = getLessonVerseFromFileId(replyFid) || { lesson: 0, verse: 0, lessonTitle: '' };
+                        const stageCfg = getStageConfig(replySid) || { name: '' };
                         const batch = window.writeBatch(window.db);
                         batch.update(window.doc(window.db, "posts", replyTargetId), { replies: window.arrayUnion(newReply) });
                         batch.set(window.doc(window.collection(window.db, "notifications")), {
                            to: targetPost.uid,
                            senderName: stripYearFromName(name || ''),
                            type: 'reply',
-                           fileId: String(currentGlobalFileId || '1'),
+                           fileId: String(replyFid || '1'),
                            postId: replyTargetId,
                            replyTimestamp: replyTs,
-                           stageId: currentStageId != null ? currentStageId : 4,
+                           stageId: replySid != null ? replySid : 4,
                            stageName: stageCfg.name || '',
                            lessonNum: lv.lesson ?? 0,
                            lessonTitle: lv.lessonTitle || '',
@@ -5839,10 +5898,12 @@
                     }
                     replyTargetId = null; 
                 } else {
-                    const fileIdStr = String(currentGlobalFileId != null ? currentGlobalFileId : '1');
-                    const stageIdNum = Number(currentStageId != null ? currentStageId : 4);
-                    const lv = getLessonVerseFromFileId(currentGlobalFileId);
-                    const stageCfg = getStageConfig(currentStageId) || { name: '' };
+                    const fid = recordingFileId != null ? recordingFileId : currentGlobalFileId;
+                    const sid = recordingStageId != null ? recordingStageId : currentStageId;
+                    const fileIdStr = String(fid != null ? fid : '1');
+                    const stageIdNum = Number(sid != null ? sid : 4);
+                    const lv = getLessonVerseFromFileId(fid);
+                    const stageCfg = getStageConfig(sid) || { name: '' };
 
                     if (role === 'student') {
                         const postRef = window.doc(window.collection(window.db, "posts"));
@@ -5878,6 +5939,7 @@
                 }
                 document.getElementById('statusDisplay').innerText = "تم الإرسال!";
                 setTimeout(() => document.getElementById('statusDisplay').innerText = "جاهز للتلاوة", 2000);
+                recordingFileId = null; recordingStageId = null;
                 if (lastRecStream) { lastRecStream.getTracks().forEach(t => t.stop()); lastRecStream = null; }
                 if (navigator.audioSession) { try { navigator.audioSession.type = 'playback'; } catch(e) {} }
             } catch(e) { alert("خطأ في الإرسال"); }
@@ -5887,6 +5949,7 @@
             const ra = document.getElementById('reviewAudio');
             if (ra) { ra.pause(); ra.src = ''; }
             document.getElementById('review-modal').style.display = 'none';
+            recordingFileId = null; recordingStageId = null;
             toggleRecord();
         }
         window.cancelRecord = function() {
@@ -5895,6 +5958,7 @@
             document.getElementById('review-modal').style.display = 'none';
             currentBlob = null;
             replyTargetId = null;
+            recordingFileId = null; recordingStageId = null;
             if (lastRecStream) { lastRecStream.getTracks().forEach(t => t.stop()); lastRecStream = null; }
             if (navigator.audioSession) { try { navigator.audioSession.type = 'playback'; } catch(e) {} }
         }
