@@ -427,6 +427,9 @@
         }
         .cp-btn:active { transform: scale(0.9); }
         .cp-slider, .cp-time { display: none !important; }
+        /* Feed & Reply: Play-Button größer (breit wie Like-Rahmen), mittig darunter */
+        .feed-msg .feed-player-wrap .custom-player, .reply-box .reply-player-wrap .custom-player { justify-content: center; width: 100%; }
+        .feed-msg .cp-btn, .reply-box .cp-btn { width: 80px; height: 44px; border-radius: 22px; font-size: 18px; }
 
         @media (max-width: 480px) {
             #menu-view { padding: 15px 8px 0 8px; }
@@ -478,7 +481,7 @@
         .feed-msg .feed-like-wrap { flex-shrink: 0; order: 3; margin-right: auto; }
         .feed-msg .feed-row2 { display: flex; align-items: center; gap: 8px; margin-bottom: 2px; flex-wrap: wrap; }
         .feed-msg .feed-datetime { font-size: 11px; color: #888; flex-shrink: 0; }
-        .feed-msg .feed-player-wrap { flex: 1; min-width: 100px; }
+        .feed-msg .feed-player-wrap { flex: 1 1 100%; min-width: 100%; justify-content: center; display: flex; align-items: center; }
         .feed-msg .feed-row3 { margin-top: 2px; }
         .like-btn { display: flex; align-items: center; border-radius: 20px; font-size: 14px; background: #f9f9f9; border: 1px solid #eee; overflow: hidden; }
         .like-btn.liked { color: var(--primary); background: #e8f5e9; border-color: var(--primary); font-weight: bold; }
@@ -539,7 +542,7 @@
         .reply-like-wrap { flex-shrink: 0; order: 3; margin-right: auto; }
         .reply-row2 { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
         .reply-datetime { font-size: 10px; color: #888; flex-shrink: 0; }
-        .reply-player-wrap { flex: 1; min-width: 80px; }
+        .reply-player-wrap { flex: 1 1 100%; min-width: 100%; justify-content: center; display: flex; align-items: center; }
 
         .feed-section-frame { background: #f9f9f9; border: 1px solid #e0e0e0; border-radius: 12px; padding: 12px; margin-bottom: 20px; }
         .feed-section-title { font-size: 16px; font-weight: bold; color: var(--primary); margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid var(--primary); }
@@ -593,11 +596,11 @@
         input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 8px; cursor: pointer; background: #e0e0e0; border-radius: 5px; }
         input[type=range]::-webkit-slider-thumb { height: 20px; width: 20px; border-radius: 50%; background: var(--primary); cursor: pointer; -webkit-appearance: none; appearance: none; margin-top: -6px; box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
         .controls { display: flex; justify-content: center; align-items: center; gap: 50px; direction: ltr; }
-        .btn { width: 58px; height: 58px; border-radius: 50%; border: none; font-size: 26px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s; background: transparent; }
+        .btn { width: 58px; height: 58px; border-radius: 50%; border: none; font-size: 26px; color: white; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
         .btn:active { transform: scale(0.9); }
-        .btn-rec { color: var(--red); }
-        .btn-rec.recording { animation: pulse 1s infinite; color: var(--red); border: 2px solid var(--red); }
-        .btn-play { color: var(--primary); }
+        .btn-rec { background: var(--red); border: 4px solid #fff; box-shadow: 0 4px 15px rgba(192, 57, 43, 0.3); }
+        .btn-rec.recording { animation: pulse 1s infinite; background: white; color: var(--red); border: 2px solid var(--red); }
+        .btn-play { background: var(--primary); border: 4px solid #fff; box-shadow: 0 4px 15px rgba(15, 76, 58, 0.3); }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
         @keyframes fadeOut { 0% { opacity: 1; } 70% { opacity: 1; } 100% { opacity: 0; } }
         .stat-clickable { cursor: pointer; padding: 6px 12px; border-radius: 8px; border: 1px dashed rgba(15, 76, 58, 0.4); transition: background 0.2s; }
