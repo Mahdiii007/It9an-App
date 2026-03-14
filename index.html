@@ -429,6 +429,8 @@
         .cp-slider, .cp-time { display: none !important; }
         /* Feed & Reply: Play-Button größer, links unter Like-Rahmen, gleiche Zeile wie Datum+Uhrzeit */
         .feed-msg .cp-btn, .reply-box .cp-btn { width: 80px; height: 44px; border-radius: 22px; font-size: 18px; }
+        /* Custom-player nicht expandieren lassen, damit Anmerkungs-Rahmen direkt neben Play-Button bleibt */
+        .feed-msg .feed-play-remarks .custom-player, .reply-play-remarks .custom-player { flex: 0 0 auto; }
 
         @media (max-width: 480px) {
             #menu-view { padding: 15px 8px 0 8px; }
