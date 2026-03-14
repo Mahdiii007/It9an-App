@@ -344,6 +344,7 @@
         }
 
         .nav-buttons-row { display: flex; align-items: center; gap: 8px; margin-bottom: 15px; width: 100%; max-width: 100%; }
+        .nav-buttons-row.nav-buttons-center { justify-content: center; }
         .nav-btn { 
             flex: 0 0 auto;
             min-height: 44px;
@@ -360,9 +361,8 @@
 
         .verse-controls-frame {
             display: flex; justify-content: center; align-items: center; gap: 50px;
-            background: white; padding: 12px 20px;
-            border-radius: 15px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-            border: 2px solid var(--gold);
+            padding: 12px 20px; margin-bottom: 15px;
+            background: transparent; border: none;
         }
 
         #verse-list-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; max-width: 100vw; height: 100%; background: rgba(0,0,0,0.92); z-index: 3000; overflow-x: hidden; overflow-y: auto; padding: 10px; box-sizing: border-box; }
@@ -414,11 +414,10 @@
             align-items: center; justify-content: center; gap: 12px;
         }
 
-        /* CUSTOM PLAYER - nur Play-Button, kein Balken/Timer */
+        /* CUSTOM PLAYER - nur Play-Button, kein Balken/Timer, kein Hintergrund */
         .custom-player {
             display: flex; align-items: center; gap: 8px;
-            background: rgba(0,0,0,0.03); padding: 6px 10px; border-radius: 20px;
-            border: 1px solid #ddd; direction: ltr; flex: 1; min-width: 0;
+            background: transparent; padding: 0; border: none; direction: ltr; flex: 1; min-width: 0;
         }
         .cp-btn {
             width: 30px; height: 30px; border-radius: 50%; border: none;
@@ -438,7 +437,7 @@
             .feed-msg, .reply-box { padding: 10px 12px; }
             .feed-msg .feed-row1, .feed-msg .feed-row2, .reply-row1, .reply-row2 { gap: 8px; }
             .feed-msg .feed-player-wrap, .reply-player-wrap { min-width: 0; width: 100%; }
-            .custom-player { padding: 6px 10px; }
+            .custom-player { padding: 0; }
             #recording-ui { width: 95%; padding: 12px 14px; bottom: 180px; }
             .rec-timer { font-size: 22px; }
             .recording-row { gap: 20px; }
@@ -489,6 +488,12 @@
         .like-count { padding: 5px 10px; border-right: 1px solid #ddd; cursor: pointer; background: rgba(0,0,0,0.03); font-size: 13px; }
         .like-count:active { background: rgba(0,0,0,0.1); }
 
+        /* Lehrer/Admin: Schüleraufnahme alles auf einer Zeile – Name rechts, Bewertung daneben, Lösch+Speichern links */
+        .feed-msg .feed-row1.feed-row1-teacher { flex-wrap: nowrap; justify-content: space-between; gap: 10px; }
+        .feed-msg .feed-row1-teacher .feed-row1-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+        .feed-msg .feed-row1-teacher .feed-row1-left { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+        .feed-msg .feed-row1-teacher .feed-name-badge { margin: 0; }
+        .feed-msg .feed-row1-teacher .rating-btns-wrap { margin: 0; }
         /* Lehrer-Bewertung für Schüleraufnahmen (statt Like) */
         .rating-btns-wrap { display: flex; align-items: center; gap: 6px; flex-shrink: 0; margin-right: auto; }
         .rating-btn { padding: 5px 12px; border-radius: 8px; font-size: 13px; font-weight: bold; cursor: pointer; border: 2px solid; font-family: 'Amiri'; }
@@ -588,11 +593,11 @@
         input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 8px; cursor: pointer; background: #e0e0e0; border-radius: 5px; }
         input[type=range]::-webkit-slider-thumb { height: 20px; width: 20px; border-radius: 50%; background: var(--primary); cursor: pointer; -webkit-appearance: none; appearance: none; margin-top: -6px; box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
         .controls { display: flex; justify-content: center; align-items: center; gap: 50px; direction: ltr; }
-        .btn { width: 58px; height: 58px; border-radius: 50%; border: none; font-size: 26px; color: white; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+        .btn { width: 58px; height: 58px; border-radius: 50%; border: none; font-size: 26px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s; background: transparent; }
         .btn:active { transform: scale(0.9); }
-        .btn-rec { background: var(--red); border: 4px solid #fff; box-shadow: 0 4px 15px rgba(192, 57, 43, 0.3); }
-        .btn-rec.recording { animation: pulse 1s infinite; background: white; color: var(--red); border: 2px solid var(--red); }
-        .btn-play { background: var(--primary); border: 4px solid #fff; box-shadow: 0 4px 15px rgba(15, 76, 58, 0.3); }
+        .btn-rec { color: var(--red); }
+        .btn-rec.recording { animation: pulse 1s infinite; color: var(--red); border: 2px solid var(--red); }
+        .btn-play { color: var(--primary); }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
         @keyframes fadeOut { 0% { opacity: 1; } 70% { opacity: 1; } 100% { opacity: 0; } }
         .stat-clickable { cursor: pointer; padding: 6px 12px; border-radius: 8px; border: 1px dashed rgba(15, 76, 58, 0.4); transition: background 0.2s; }
@@ -5029,6 +5034,8 @@
 
             const verseBadge = document.getElementById('verseStatusBadge');
             const userRole = localStorage.getItem('it9an_role');
+            const navRow = document.querySelector('.nav-buttons-row');
+            if (navRow) navRow.classList.toggle('nav-buttons-center', userRole === 'teacher' || uid === 'admin_super');
             if (verseBadge && uid && uid !== 'admin_super' && uid !== 'guest' && userRole === 'student') {
                 const completed = await fetchCompletedVersesForStudent(uid);
                 const isCompleted = completed.has(String(globalId));
@@ -5415,13 +5422,15 @@
                 const ratingStatusClass = isStudentPost ? (ratingVerdict === 'accepted' ? 'accepted' : ratingVerdict === 'needs_improvement' ? 'needs-improvement' : 'unexamined') : '';
                 const ratingStatusBadge = ratingStatusText ? `<div class="rating-status-badge ${ratingStatusClass}">${ratingStatusText}</div>` : '';
                 let delBtn = deleteBtnHtml ? `<div class="feed-delete-wrap">${deleteBtnHtml}</div>` : '';
+                const isTeacherViewStudent = (isTeacher || isAdmin) && isStudentPost;
+                const feedRow1Class = isTeacherViewStudent ? 'feed-row1 feed-row1-teacher' : 'feed-row1';
+                const feedRow1Content = isTeacherViewStudent
+                    ? `<div class="feed-row1-right"><div class="feed-name-badge">${roleIcon} ${stripYearFromName(d.name)}</div>${mainActionHtml}</div><div class="feed-row1-left">${saveBtnHtml}${delBtn}</div>`
+                    : `${delBtn}<div class="feed-name-badge">${roleIcon} ${stripYearFromName(d.name)}</div>${saveBtnHtml}${mainActionHtml}`;
                 return `
                 <div class="${msgClass}" id="post-${d.id}">
-                    <div class="feed-row1">
-                        ${delBtn}
-                        <div class="feed-name-badge">${roleIcon} ${stripYearFromName(d.name)}</div>
-                        ${saveBtnHtml}
-                        ${mainActionHtml}
+                    <div class="${feedRow1Class}">
+                        ${feedRow1Content}
                     </div>
                     <div class="feed-row2">
                         <span class="feed-datetime">${postDateStr}</span>
