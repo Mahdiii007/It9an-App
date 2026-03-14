@@ -299,6 +299,7 @@
         .lb-refresh-icon-btn:hover { opacity: 0.8; background: rgba(0,0,0,0.05); }
         .verse-nav-buttons-row { display: flex; gap: 12px; margin-bottom: 8px; flex-wrap: wrap; }
         .verse-nav-buttons-row .verse-list-btn { flex: 1; min-width: 0; margin-bottom: 0; }
+        .verse-nav-same-width { width: 100%; margin-bottom: 10px; }
 
         /* --- PLAYER --- */
         #player-view { display: none; padding: 15px 10px; width: 100%; max-width: 100%; margin: 0 auto; overflow-x: hidden; }
@@ -738,6 +739,7 @@
         </div>
         <button id="menuBtn" class="header-btn" onclick="goToMenu()">☰ المرحلة</button>
         <button id="stagesBackBtn" class="header-btn" onclick="showStagesView()" style="display:none;">☰ المراحل</button>
+        <button id="lessonsBackBtn" class="header-btn" onclick="showLessonsView()" style="display:none;">☰ الدروس</button>
         <div id="pageTitle"></div>
     </div>
 
@@ -896,12 +898,11 @@
 
         <div class="verse-section">
             <button id="lbBackToLikesBtn" class="verse-list-btn lb-back-btn" onclick="goBackToLbList()" style="display:none;">↩️ العودة</button>
-            <div class="verse-nav-buttons-row">
-                <button class="verse-list-btn" onclick="showVerseList()">📋 قائمة مقاطع الدرس</button>
-                <button class="verse-list-btn" onclick="showLessonsView()">📚 العودة لقائمة الدروس</button>
-            </div>
             <div id="verseStatusBadge" class="verse-status-badge" style="display:none;"></div>
             <div class="quran-frame">
+                <div class="verse-nav-buttons-row verse-nav-same-width">
+                    <button class="verse-list-btn" onclick="showVerseList()">📋 قائمة مقاطع الدرس</button>
+                </div>
                 <div class="player-container">
                     <img id="currentImg" class="quran-image" src="" alt="Vers Bild" onerror="this.src='placeholder.png'">
                 </div>
@@ -1194,6 +1195,7 @@
             const logoutBtn = document.getElementById('logoutBtn'); if (logoutBtn) logoutBtn.style.display = 'flex';
             const menuBtn = document.getElementById('menuBtn'); if (menuBtn) menuBtn.style.display = 'none';
             const stagesBackBtn = document.getElementById('stagesBackBtn'); if (stagesBackBtn) stagesBackBtn.style.display = 'none';
+            const lessonsBackBtn = document.getElementById('lessonsBackBtn'); if (lessonsBackBtn) lessonsBackBtn.style.display = 'none';
             const notifContainer = document.querySelector('.notif-container');
             if (notifContainer) notifContainer.style.display = 'none';
             const myUid = localStorage.getItem('it9an_uid');
@@ -4332,6 +4334,7 @@
             document.getElementById('appFooter').style.display = 'none';
             const menuBtn = document.getElementById('menuBtn'); if (menuBtn) menuBtn.style.display = 'flex';
             const stagesBackBtn = document.getElementById('stagesBackBtn'); if (stagesBackBtn) stagesBackBtn.style.display = 'none';
+            const lessonsBackBtn = document.getElementById('lessonsBackBtn'); if (lessonsBackBtn) lessonsBackBtn.style.display = 'none';
             if (typeof window.applyNotifStageFilter === 'function') window.applyNotifStageFilter();
             window.scrollTo({ top: 0, behavior: 'smooth' });
         };
@@ -4349,8 +4352,9 @@
                 document.getElementById('player-view').style.display = 'block';
                 document.getElementById('appFooter').style.display = 'flex';
                 if (typeof updateRecButtonForStudentNotifications === 'function') updateRecButtonForStudentNotifications();
-                const menuBtn = document.getElementById('menuBtn'); if (menuBtn) menuBtn.style.display = 'flex';
+                const menuBtn = document.getElementById('menuBtn'); if (menuBtn) menuBtn.style.display = 'none';
                 const stagesBackBtn = document.getElementById('stagesBackBtn'); if (stagesBackBtn) stagesBackBtn.style.display = 'none';
+                const lessonsBackBtn = document.getElementById('lessonsBackBtn'); if (lessonsBackBtn) lessonsBackBtn.style.display = 'flex';
                 if (currentLessonIdx !== null && KURS_DATEN[currentLessonIdx]) {
                     const lek = KURS_DATEN[currentLessonIdx];
                     const ptP = document.getElementById('pageTitle');
@@ -4381,6 +4385,7 @@
             document.getElementById('appFooter').style.display = 'none';
             const menuBtn = document.getElementById('menuBtn'); if(menuBtn) menuBtn.style.display = 'flex';
             const stagesBackBtn = document.getElementById('stagesBackBtn'); if(stagesBackBtn) stagesBackBtn.style.display = 'none';
+            const lessonsBackBtn = document.getElementById('lessonsBackBtn'); if(lessonsBackBtn) lessonsBackBtn.style.display = 'none';
             window.scrollTo({ top: 0, behavior: 'smooth' });
             if (typeof window.applyNotifStageFilter === 'function') window.applyNotifStageFilter();
         }
@@ -4548,6 +4553,7 @@
             document.getElementById('appFooter').style.display = 'none';
             const menuBtn = document.getElementById('menuBtn'); if(menuBtn) menuBtn.style.display = 'flex';
             const stagesBackBtn = document.getElementById('stagesBackBtn'); if(stagesBackBtn) stagesBackBtn.style.display = 'none';
+            const lessonsBackBtn = document.getElementById('lessonsBackBtn'); if(lessonsBackBtn) lessonsBackBtn.style.display = 'none';
             const ptA = document.getElementById('pageTitle'); if (ptA) { ptA.classList.remove('header-name-pin', 'page-title-lessons', 'page-title-notifications'); ptA.innerText = "رسالة من المسؤول"; }
             window.scrollTo({ top: 0, behavior: 'smooth' });
             const isAdmin = localStorage.getItem('it9an_uid') === 'admin_super';
@@ -4582,6 +4588,7 @@
             document.getElementById('appFooter').style.display = 'none';
             const menuBtn = document.getElementById('menuBtn'); if (menuBtn) menuBtn.style.display = 'flex';
             const stagesBackBtn = document.getElementById('stagesBackBtn'); if (stagesBackBtn) stagesBackBtn.style.display = 'none';
+            const lessonsBackBtn = document.getElementById('lessonsBackBtn'); if (lessonsBackBtn) lessonsBackBtn.style.display = 'none';
             const pt = document.getElementById('pageTitle'); if (pt) { pt.classList.remove('header-name-pin', 'page-title-lessons', 'page-title-notifications'); pt.innerText = 'تواصل مع المسؤول'; }
             window.scrollTo({ top: 0, behavior: 'smooth' });
             try {
@@ -5995,7 +6002,7 @@
             }
             lbReturnSource = null; lbReturnToUid = null; lbReturnOffset = 0; lbReturnScrollToId = null; showView('menu-view'); renderMenu(); updateLbBackButton();
         } 
-        function showView(id) { document.getElementById('stages-view').style.display = 'none'; document.getElementById('menu-view').style.display = 'none'; document.getElementById('player-view').style.display = 'none'; document.getElementById('notifications-view').style.display = 'none'; document.getElementById('saved-list-view').style.display = 'none'; document.getElementById('lessons-view').style.display = 'none'; document.getElementById('admin-message-view').style.display = 'none'; const cn = document.getElementById('contact-admin-new-view'); if(cn) cn.style.display = 'none'; document.getElementById(id).style.display = (id === 'menu-view') ? 'grid' : 'block'; const logoutBtn = document.getElementById('logoutBtn'); if(logoutBtn) logoutBtn.style.display = 'none'; const menuBtn = document.getElementById('menuBtn'); if(menuBtn) menuBtn.style.display = (id === 'menu-view') ? 'none' : 'flex'; const stagesBackBtn = document.getElementById('stagesBackBtn'); if(stagesBackBtn) stagesBackBtn.style.display = (id === 'menu-view') ? 'flex' : 'none'; const uid = localStorage.getItem('it9an_uid'); const role = localStorage.getItem('it9an_role'); const notifContainer = document.querySelector('.notif-container'); if (notifContainer && uid !== 'admin_super' && uid !== 'guest' && role !== 'guest') notifContainer.style.display = 'flex'; const skipScroll = (id === 'menu-view' && lbPendingRestore) || (id === 'player-view' && activePostFilter); if (!skipScroll) window.scrollTo({ top: 0, behavior: 'smooth' }); }
+        function showView(id) { document.getElementById('stages-view').style.display = 'none'; document.getElementById('menu-view').style.display = 'none'; document.getElementById('player-view').style.display = 'none'; document.getElementById('notifications-view').style.display = 'none'; document.getElementById('saved-list-view').style.display = 'none'; document.getElementById('lessons-view').style.display = 'none'; document.getElementById('admin-message-view').style.display = 'none'; const cn = document.getElementById('contact-admin-new-view'); if(cn) cn.style.display = 'none'; document.getElementById(id).style.display = (id === 'menu-view') ? 'grid' : 'block'; const logoutBtn = document.getElementById('logoutBtn'); if(logoutBtn) logoutBtn.style.display = 'none'; const menuBtn = document.getElementById('menuBtn'); if(menuBtn) menuBtn.style.display = (id === 'menu-view' || id === 'player-view') ? 'none' : 'flex'; const stagesBackBtn = document.getElementById('stagesBackBtn'); if(stagesBackBtn) stagesBackBtn.style.display = (id === 'menu-view') ? 'flex' : 'none'; const lessonsBackBtn = document.getElementById('lessonsBackBtn'); if(lessonsBackBtn) lessonsBackBtn.style.display = (id === 'player-view') ? 'flex' : 'none'; const uid = localStorage.getItem('it9an_uid'); const role = localStorage.getItem('it9an_role'); const notifContainer = document.querySelector('.notif-container'); if (notifContainer && uid !== 'admin_super' && uid !== 'guest' && role !== 'guest') notifContainer.style.display = 'flex'; const skipScroll = (id === 'menu-view' && lbPendingRestore) || (id === 'player-view' && activePostFilter); if (!skipScroll) window.scrollTo({ top: 0, behavior: 'smooth' }); }
         
         window.rateStudentPost = async function(postId, verdict) {
             const uid = localStorage.getItem('it9an_uid');
