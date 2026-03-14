@@ -42,8 +42,36 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
+function handleDismiss(data) {
+  if (!data || typeof data !== 'object') return false;
+  const action = String(data.action || data['action'] || '').toLowerCase();
+  if (action !== 'dismiss') return false;
+  const tag = String(data.tag || data['tag'] || '');
+  if (tag) {
+    self.registration.getNotifications().then((notifications) => {
+      notifications.forEach((n) => {
+        if (n.tag === tag) n.close();
+      });
+    });
+  }
+  return true;
+}
+
+self.addEventListener('push', (e) => {
+  let payload = {};
+  try {
+    if (e.data) payload = e.data.json() || {};
+  } catch (err) {}
+  const d = payload.data || payload;
+  if (handleDismiss(d)) {
+    e.waitUntil(Promise.resolve());
+    return;
+  }
+}, { capture: true });
+
 messaging.onBackgroundMessage((payload) => {
-  const data = payload.data || {};
+  const data = payload.data || payload || {};
+  if (handleDismiss(data)) return;
   const title = data.title || 'تطبيق إتقان';
   const body = data.body || 'إشعار جديد';
   const badgeCount = parseInt(data.badge || '1', 10) || 1;
