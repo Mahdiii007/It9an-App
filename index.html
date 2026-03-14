@@ -737,6 +737,7 @@
             </div>
         </div>
         <button id="menuBtn" class="header-btn" onclick="goToMenu()">☰ المرحلة</button>
+        <button id="stagesBackBtn" class="header-btn" onclick="showStagesView()" style="display:none;">☰ المراحل</button>
         <div id="pageTitle"></div>
     </div>
 
@@ -844,7 +845,6 @@
     </div>
 
     <div id="menu-view">
-        <button class="verse-list-btn" onclick="showStagesView()" style="margin-bottom:15px; background:var(--primary); color:white; border-color:var(--gold);">↩️ تغيير المرحلة</button>
         <button class="verse-list-btn lessons-main-btn" onclick="showLessonsView()" style="margin-bottom:15px;">📚 جميع الدروس</button>
         <div id="leaderboard-section">
             <div class="leaderboard-card">
@@ -1193,6 +1193,7 @@
             if (stagesEl) stagesEl.style.display = 'block';
             const logoutBtn = document.getElementById('logoutBtn'); if (logoutBtn) logoutBtn.style.display = 'flex';
             const menuBtn = document.getElementById('menuBtn'); if (menuBtn) menuBtn.style.display = 'none';
+            const stagesBackBtn = document.getElementById('stagesBackBtn'); if (stagesBackBtn) stagesBackBtn.style.display = 'none';
             const notifContainer = document.querySelector('.notif-container');
             if (notifContainer) notifContainer.style.display = 'none';
             const myUid = localStorage.getItem('it9an_uid');
@@ -4330,6 +4331,7 @@
             const ptN = document.getElementById('pageTitle'); if (ptN) { ptN.classList.remove('header-name-pin', 'page-title-lessons'); ptN.classList.add('page-title-notifications'); ptN.innerText = getStageConfig && getStageConfig(stageId) ? getStageConfig(stageId).name : "مرحلة " + stageId; }
             document.getElementById('appFooter').style.display = 'none';
             const menuBtn = document.getElementById('menuBtn'); if (menuBtn) menuBtn.style.display = 'flex';
+            const stagesBackBtn = document.getElementById('stagesBackBtn'); if (stagesBackBtn) stagesBackBtn.style.display = 'none';
             if (typeof window.applyNotifStageFilter === 'function') window.applyNotifStageFilter();
             window.scrollTo({ top: 0, behavior: 'smooth' });
         };
@@ -4348,6 +4350,7 @@
                 document.getElementById('appFooter').style.display = 'flex';
                 if (typeof updateRecButtonForStudentNotifications === 'function') updateRecButtonForStudentNotifications();
                 const menuBtn = document.getElementById('menuBtn'); if (menuBtn) menuBtn.style.display = 'flex';
+                const stagesBackBtn = document.getElementById('stagesBackBtn'); if (stagesBackBtn) stagesBackBtn.style.display = 'none';
                 if (currentLessonIdx !== null && KURS_DATEN[currentLessonIdx]) {
                     const lek = KURS_DATEN[currentLessonIdx];
                     const ptP = document.getElementById('pageTitle');
@@ -4377,6 +4380,7 @@
             const ptN = document.getElementById('pageTitle'); if (ptN) { ptN.classList.remove('header-name-pin', 'page-title-lessons'); ptN.classList.add('page-title-notifications'); ptN.innerText = getStageConfig && getStageConfig(currentStageId) ? getStageConfig(currentStageId).name : "مرحلة " + currentStageId; }
             document.getElementById('appFooter').style.display = 'none';
             const menuBtn = document.getElementById('menuBtn'); if(menuBtn) menuBtn.style.display = 'flex';
+            const stagesBackBtn = document.getElementById('stagesBackBtn'); if(stagesBackBtn) stagesBackBtn.style.display = 'none';
             window.scrollTo({ top: 0, behavior: 'smooth' });
             if (typeof window.applyNotifStageFilter === 'function') window.applyNotifStageFilter();
         }
@@ -4543,6 +4547,7 @@
             document.getElementById('admin-message-view').style.display = 'block';
             document.getElementById('appFooter').style.display = 'none';
             const menuBtn = document.getElementById('menuBtn'); if(menuBtn) menuBtn.style.display = 'flex';
+            const stagesBackBtn = document.getElementById('stagesBackBtn'); if(stagesBackBtn) stagesBackBtn.style.display = 'none';
             const ptA = document.getElementById('pageTitle'); if (ptA) { ptA.classList.remove('header-name-pin', 'page-title-lessons', 'page-title-notifications'); ptA.innerText = "رسالة من المسؤول"; }
             window.scrollTo({ top: 0, behavior: 'smooth' });
             const isAdmin = localStorage.getItem('it9an_uid') === 'admin_super';
@@ -4576,6 +4581,7 @@
             document.getElementById('admin-message-view').style.display = 'none';
             document.getElementById('appFooter').style.display = 'none';
             const menuBtn = document.getElementById('menuBtn'); if (menuBtn) menuBtn.style.display = 'flex';
+            const stagesBackBtn = document.getElementById('stagesBackBtn'); if (stagesBackBtn) stagesBackBtn.style.display = 'none';
             const pt = document.getElementById('pageTitle'); if (pt) { pt.classList.remove('header-name-pin', 'page-title-lessons', 'page-title-notifications'); pt.innerText = 'تواصل مع المسؤول'; }
             window.scrollTo({ top: 0, behavior: 'smooth' });
             try {
@@ -5989,7 +5995,7 @@
             }
             lbReturnSource = null; lbReturnToUid = null; lbReturnOffset = 0; lbReturnScrollToId = null; showView('menu-view'); renderMenu(); updateLbBackButton();
         } 
-        function showView(id) { document.getElementById('stages-view').style.display = 'none'; document.getElementById('menu-view').style.display = 'none'; document.getElementById('player-view').style.display = 'none'; document.getElementById('notifications-view').style.display = 'none'; document.getElementById('saved-list-view').style.display = 'none'; document.getElementById('lessons-view').style.display = 'none'; document.getElementById('admin-message-view').style.display = 'none'; const cn = document.getElementById('contact-admin-new-view'); if(cn) cn.style.display = 'none'; document.getElementById(id).style.display = (id === 'menu-view') ? 'grid' : 'block'; const logoutBtn = document.getElementById('logoutBtn'); if(logoutBtn) logoutBtn.style.display = 'none'; const menuBtn = document.getElementById('menuBtn'); if(menuBtn) menuBtn.style.display = (id === 'menu-view') ? 'none' : 'flex'; const uid = localStorage.getItem('it9an_uid'); const role = localStorage.getItem('it9an_role'); const notifContainer = document.querySelector('.notif-container'); if (notifContainer && uid !== 'admin_super' && uid !== 'guest' && role !== 'guest') notifContainer.style.display = 'flex'; const skipScroll = (id === 'menu-view' && lbPendingRestore) || (id === 'player-view' && activePostFilter); if (!skipScroll) window.scrollTo({ top: 0, behavior: 'smooth' }); }
+        function showView(id) { document.getElementById('stages-view').style.display = 'none'; document.getElementById('menu-view').style.display = 'none'; document.getElementById('player-view').style.display = 'none'; document.getElementById('notifications-view').style.display = 'none'; document.getElementById('saved-list-view').style.display = 'none'; document.getElementById('lessons-view').style.display = 'none'; document.getElementById('admin-message-view').style.display = 'none'; const cn = document.getElementById('contact-admin-new-view'); if(cn) cn.style.display = 'none'; document.getElementById(id).style.display = (id === 'menu-view') ? 'grid' : 'block'; const logoutBtn = document.getElementById('logoutBtn'); if(logoutBtn) logoutBtn.style.display = 'none'; const menuBtn = document.getElementById('menuBtn'); if(menuBtn) menuBtn.style.display = (id === 'menu-view') ? 'none' : 'flex'; const stagesBackBtn = document.getElementById('stagesBackBtn'); if(stagesBackBtn) stagesBackBtn.style.display = (id === 'menu-view') ? 'flex' : 'none'; const uid = localStorage.getItem('it9an_uid'); const role = localStorage.getItem('it9an_role'); const notifContainer = document.querySelector('.notif-container'); if (notifContainer && uid !== 'admin_super' && uid !== 'guest' && role !== 'guest') notifContainer.style.display = 'flex'; const skipScroll = (id === 'menu-view' && lbPendingRestore) || (id === 'player-view' && activePostFilter); if (!skipScroll) window.scrollTo({ top: 0, behavior: 'smooth' }); }
         
         window.rateStudentPost = async function(postId, verdict) {
             const uid = localStorage.getItem('it9an_uid');
