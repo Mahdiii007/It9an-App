@@ -701,7 +701,7 @@
                     <input type="text" id="firstName" class="login-input latin-input" placeholder="الاسم الأول" oninput="this.value=this.value.replace(/[^a-zA-Z\s]/g,'')">
                     <input type="text" id="lastName" class="login-input latin-input" placeholder="اللقب" oninput="this.value=this.value.replace(/[^a-zA-Z\s]/g,'')">
                     <input type="number" id="birthYear" class="login-input latin-input" placeholder="سنة الميلاد" oninput="if(this.value.length>4) this.value=this.value.slice(0,4);">
-                    <input type="text" id="classicPinInput" class="login-input" placeholder="كلمة المرور" autocomplete="off">
+                    <input type="text" id="classicPinInput" class="login-input" placeholder="كلمة المرور" autocomplete="off" style="display:none;">
                     <button type="submit" class="login-btn">دخول</button>
                 </form>
                 <div style="margin-top:10px;">
@@ -734,8 +734,7 @@
             <div class="verse-list-title" style="margin-bottom:15px;">🎤 التسجيل الصوتي</div>
             <div style="text-align:right; line-height:1.7; font-size:15px; color:#333; margin-bottom:20px;">
                 <p style="margin:0 0 12px 0;">يجب عليك التسجيل كطالب للتسجيل الصوتي.</p>
-                <p style="margin:0 0 12px 0;">إذا رغبت، <a href="#" onclick="hideGuestRegisterModal(); showGuestRegistrationFlow(); return false;" style="color:var(--primary); font-weight:bold; text-decoration:underline;">انقر هنا</a> – وستحصل على رمز شخصي يجب أن تحفظه وتستخدمه في المستقبل بدلاً من رمز الضيف 0000.</p>
-                <p style="margin:0;">للتسجيل استخدم الرمز <strong>1234</strong>.</p>
+                <p style="margin:0;">إذا رغبت، <a href="#" onclick="hideGuestRegisterModal(); showGuestRegistrationFlow(); return false;" style="color:var(--primary); font-weight:bold; text-decoration:underline;">انقر هنا</a> – وستحصل على رمز شخصي يجب أن تحفظه وتستخدمه في المستقبل بدلاً من رمز الضيف 0000.</p>
             </div>
             <button class="verse-list-btn" onclick="hideGuestRegisterModal()">إغلاق</button>
         </div>
@@ -1089,8 +1088,6 @@
             localStorage.removeItem('it9an_pin');
             document.getElementById('login-screen').style.display = 'flex';
             showClassicLogin();
-            const pinEl = document.getElementById('classicPinInput');
-            if (pinEl) pinEl.value = '1234';
         }
         window.doLogout = function() {
             localStorage.removeItem('it9an_uid');
@@ -2160,20 +2157,19 @@
             // VALIDATION
             const latinRegex = /^[a-zA-Z\s]+$/;
             if (!latinRegex.test(first) || !latinRegex.test(last)) {
-                alert("الرجاء كتابة الاسم بالأحرف اللاتينية فقط (A–Z)");
+                alert("من فضلك أدخل بياناتك الصحيحة");
                 return;
             }
             if (year.length !== 4 || isNaN(year)) {
-                alert("الرجاء إدخال سنة الميلاد بشكل صحيح (4 أرقام)");
+                alert("من فضلك أدخل بياناتك الصحيحة");
                 return;
             }
-            if (parseInt(year, 10) <= 1950) {
-                alert("سنة الميلاد غير صحيحة");
-                return;
-            }
-
-            if (pin !== STUDENT_PIN) {
-                alert("بيانات الدخول غير صحيحة");
+            const yearNum = parseInt(year, 10);
+            const currentYear = new Date().getFullYear();
+            const minYear = currentYear - 100;
+            const maxYear = currentYear - 1;
+            if (yearNum < minYear || yearNum > maxYear) {
+                alert("من فضلك أدخل بياناتك الصحيحة");
                 return;
             }
 
