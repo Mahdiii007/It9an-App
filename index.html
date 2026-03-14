@@ -587,8 +587,10 @@
         .review-close-x:hover { color: var(--primary); background: rgba(0,0,0,0.05); }
         .review-box .review-title { font-size: 24px; font-weight: bold; margin-bottom: 15px; color: var(--primary); }
         .review-box .review-verse-img { width: 100%; max-width: 100%; height: auto; border-radius: 8px; margin-bottom: 12px; display: block; }
-        .review-box .review-player-wrap { margin: 12px 0; width: 100%; }
-        .review-box .review-player-wrap .custom-player { width: 100%; }
+        .review-box .review-player-wrap { margin: 16px 0; width: 100%; display: flex; justify-content: center; align-items: center; }
+        .review-box .review-player-wrap .custom-player { display: flex; justify-content: center; align-items: center; width: 100%; }
+        .review-box .review-player-wrap .cp-btn { width: 100px; height: 100px; border-radius: 50%; font-size: 40px; }
+        .review-box .review-player-wrap .cp-slider, .review-box .review-player-wrap .cp-time { display: none !important; }
         .review-box .review-note { font-size: 14px; color: #666; margin: 12px 0; text-align: center; line-height: 1.5; }
         .review-box .review-btns { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; }
         #ffmpeg-load-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 7000; justify-content: center; align-items: center; }
@@ -6375,9 +6377,6 @@
                 const querySnapshot = await window.getDocs(q);
                 for(const docSnap of querySnapshot.docs) {
                     const data = docSnap.data();
-                    const notifQ = window.query(window.collection(window.db, "notifications"), window.where("postId", "==", docSnap.id));
-                    const notifSnap = await window.getDocs(notifQ);
-                    for(const nd of notifSnap.docs) await window.deleteDoc(window.doc(window.db, "notifications", nd.id));
                     await deleteSavedRecordingsForPost(docSnap.id);
                     if(data.audioUrl) await cleanupAudioFile(data.audioUrl);
                     if(data.replies) {
@@ -6446,9 +6445,6 @@
                 const querySnapshot = await window.getDocs(q);
                 for(const docSnap of querySnapshot.docs) {
                     const data = docSnap.data();
-                    const notifQ = window.query(window.collection(window.db, "notifications"), window.where("postId", "==", docSnap.id));
-                    const notifSnap = await window.getDocs(notifQ);
-                    for(const nd of notifSnap.docs) await window.deleteDoc(window.doc(window.db, "notifications", nd.id));
                     await deleteSavedRecordingsForPost(docSnap.id);
                     if(data.replies) {
                         for(const r of data.replies) {
@@ -6484,9 +6480,6 @@
                             if(r.audioUrl) await cleanupAudioFile(r.audioUrl);
                         }
                     }
-                    const notifQ = window.query(window.collection(window.db, "notifications"), window.where("postId", "==", postId));
-                    const notifSnap = await window.getDocs(notifQ);
-                    for(const nd of notifSnap.docs) await window.deleteDoc(window.doc(window.db, "notifications", nd.id));
                     await deleteSavedRecordingsForPost(postId);
                     if(data.audioUrl) await cleanupAudioFile(data.audioUrl);
                     await window.deleteDoc(docRef);
@@ -6524,9 +6517,6 @@
                                 if(r.audioUrl) await cleanupAudioFile(r.audioUrl);
                             }
                         }
-                        const notifQ = window.query(window.collection(window.db, "notifications"), window.where("postId", "==", postId));
-                        const notifSnap = await window.getDocs(notifQ);
-                        for(const nd of notifSnap.docs) await window.deleteDoc(window.doc(window.db, "notifications", nd.id));
                         await deleteSavedRecordingsForPost(postId);
                         if(data.audioUrl) await cleanupAudioFile(data.audioUrl);
                         await window.deleteDoc(docRef);
@@ -6556,9 +6546,6 @@
                             await cleanupAudioFile(replyToDelete.audioUrl);
                         }
                         var replyLikes = (replyToDelete && replyToDelete.likes && replyToDelete.likes.length) ? replyToDelete.likes.length : 0;
-                        const notifQ = window.query(window.collection(window.db, "notifications"), window.where("postId", "==", postId), window.where("type", "==", "reply"));
-                        const notifSnap = await window.getDocs(notifQ);
-                        for(const nd of notifSnap.docs) { if(nd.data().replyTimestamp === replyTimestamp) { await window.deleteDoc(window.doc(window.db, "notifications", nd.id)); break; } }
                         let newReplies = post.replies.filter(r => r.timestamp !== replyTimestamp);
                         await window.updateDoc(postRef, { replies: newReplies });
                         if(authorUid && replyLikes > 0) { try { await window.updateDoc(window.doc(window.db, "users", authorUid), { totalLikes: window.increment(-replyLikes) }); } catch(e){} }
