@@ -427,8 +427,8 @@
         }
         .cp-btn:active { transform: scale(0.9); }
         .cp-slider, .cp-time { display: none !important; }
-        /* Feed & Reply: Play-Button größer, links unter Like-Rahmen, gleiche Zeile wie Datum+Uhrzeit */
-        .feed-msg .cp-btn, .reply-box .cp-btn { width: 80px; height: 44px; border-radius: 22px; font-size: 18px; }
+        /* Feed & Reply: Play-Button kompakt für eine Zeile */
+        .feed-msg .cp-btn, .reply-box .cp-btn { width: 64px; height: 36px; border-radius: 18px; font-size: 16px; }
         /* Custom-player nicht expandieren lassen, damit Anmerkungs-Rahmen direkt neben Play-Button bleibt */
         .feed-msg .feed-play-remarks .custom-player, .reply-play-remarks .custom-player { flex: 0 0 auto; }
 
@@ -478,16 +478,16 @@
 
         /* Layout: links=physisch linker Bildschirmrand, rechts=physisch rechter Rand. direction:ltr damit Flex-Reihenfolge = Bildschirmposition. */
         .feed-msg .feed-row1, .feed-msg .feed-row2, .feed-msg .feed-row3 { direction: ltr; }
-        .feed-msg .feed-row1 { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; flex-wrap: wrap; justify-content: space-between; }
-        .feed-msg .feed-row1-left { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
-        .feed-msg .feed-row1-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+        .feed-msg .feed-row1 { display: flex; align-items: center; gap: 4px; margin-bottom: 4px; flex-wrap: nowrap; justify-content: space-between; }
+        .feed-msg .feed-row1-left { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+        .feed-msg .feed-row1-right { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
         .feed-msg .feed-row1-teacher .feed-row1-center { margin: 0 auto; flex-shrink: 0; }
         .feed-msg .feed-left-group { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
         .feed-msg .feed-play-remarks { display: inline-flex; align-items: center; gap: 0; flex-shrink: 0; direction: ltr; flex-wrap: nowrap; width: fit-content; }
         .feed-msg .feed-name-icon { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
         .feed-msg .feed-delete-wrap { flex-shrink: 0; }
-        .feed-msg .feed-name-badge { font-weight: bold; color: var(--primary); font-size: 14px; flex-shrink: 0; direction: rtl; }
-        .feed-msg .feed-role-icon { font-size: 16px; flex-shrink: 0; }
+        .feed-msg .feed-name-badge { font-weight: bold; color: var(--primary); font-size: 13px; flex-shrink: 0; direction: rtl; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .feed-msg .feed-role-icon { font-size: 14px; flex-shrink: 0; }
         .feed-msg .feed-like-wrap { flex-shrink: 0; }
         .feed-msg .feed-row2 { display: flex; align-items: center; gap: 8px; margin-bottom: 2px; flex-wrap: wrap; }
         .feed-msg .feed-datetime { font-size: 15px; color: #666; flex-shrink: 0; font-weight: 500; }
@@ -495,18 +495,18 @@
         .feed-msg .feed-row2 .feed-delete-wrap { flex-shrink: 0; }
         .feed-msg .feed-player-wrap { flex-shrink: 0; display: flex; align-items: center; width: auto; }
         .feed-msg .feed-row3 { margin-top: 2px; }
-        .like-btn { display: flex; align-items: center; border-radius: 20px; font-size: 14px; background: #f9f9f9; border: 1px solid #eee; overflow: hidden; }
+        .like-btn { display: flex; align-items: center; border-radius: 16px; font-size: 13px; background: #f9f9f9; border: 1px solid #eee; overflow: hidden; }
         .like-btn.liked { color: var(--primary); background: #e8f5e9; border-color: var(--primary); font-weight: bold; }
         .like-btn.disabled { opacity: 0.5; filter: grayscale(1); }
-        .like-action { padding: 5px 10px; cursor: pointer; }
+        .like-action { padding: 4px 8px; cursor: pointer; }
         .like-action.locked { cursor: not-allowed; opacity: 0.3; filter: grayscale(1); }
-        .like-count { padding: 5px 10px; border-right: 1px solid #ddd; cursor: pointer; background: rgba(0,0,0,0.03); font-size: 13px; }
+        .like-count { padding: 4px 8px; border-right: 1px solid #ddd; cursor: pointer; background: rgba(0,0,0,0.03); font-size: 12px; }
         .like-count:active { background: rgba(0,0,0,0.1); }
 
         /* Lehrer/Admin: gleiches Layout, Bewertungsbuttons statt Like in Zeile 1 */
         /* Lehrer-Bewertung für Schüleraufnahmen (statt Like) */
-        .rating-btns-wrap { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
-        .rating-btn { padding: 5px 12px; border-radius: 8px; font-size: 13px; font-weight: bold; cursor: pointer; border: 2px solid; font-family: 'Amiri'; }
+        .rating-btns-wrap { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+        .rating-btn { padding: 4px 8px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; border: 2px solid; font-family: 'Amiri'; }
         .rating-btn-accept { background: #c8e6c9; color: #2e7d32; border-color: #4caf50; }
         .rating-btn-accept:hover:not(.disabled) { background: #a5d6a7; }
         .rating-btn-improve { background: #ffcdd2; color: #c62828; border-color: #e57373; }
@@ -515,11 +515,11 @@
         .rating-btn.rating-active { box-shadow: 0 0 0 2px currentColor; }
         .rating-btn.rating-inactive { opacity: 0.5; filter: grayscale(1); }
         .rating-unexamined-badge { font-size: 11px; color: #888; font-style: italic; margin-top: 2px; }
-        .rating-status-badge { font-size: 13px; font-weight: bold; margin-top: 4px; padding: 4px 8px; border-radius: 6px; display: inline-block; }
+        .rating-status-badge { font-size: 12px; font-weight: bold; margin-top: 0; padding: 2px 5px; border-radius: 4px; display: inline-block; }
         .rating-status-badge.unexamined { background: #f5f5f5; color: #666; }
         .rating-status-badge.accepted { background: #e8f5e9; color: #2e7d32; }
         .rating-status-badge.needs-improvement { background: #ffebee; color: #c62828; }
-        .feed-msg .feed-remarks-wrap { display: flex; align-items: center; gap: 4px; flex-shrink: 0; direction: rtl; unicode-bidi: isolate; }
+        .feed-msg .feed-remarks-wrap { display: flex; align-items: center; gap: 2px; flex-shrink: 0; direction: rtl; unicode-bidi: isolate; }
         .feed-msg.student-msg.rating-unexamined { background: #ffffff; border: 1px solid #eee; }
         .feed-msg.student-msg.rating-accepted { background: #e8f5e9; border: 1px solid #a5d6a7; }
         .feed-msg.student-msg.rating-needs-improvement { background: #ffebee; border: 1px solid #ef9a9a; }
@@ -527,8 +527,8 @@
         .reply-box.reply-teacher.reply-inherit-needs-improvement { background: #ffebee; border-right-color: #e57373; }
         .reply-btn { cursor: pointer; background: none; border: 1px solid var(--primary); color: var(--primary); padding: 4px 12px; border-radius: 6px; font-size: 13px; font-weight: bold; }
         .delete-btn { background: rgba(255,0,0,0.1); color: var(--red); border: none; border-radius: 50%; width: 28px; height: 28px; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-        .save-btn { background: rgba(0,0,0,0.05); border: 1px solid #ddd; border-radius: 50%; width: 32px; height: 32px; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: #333; }
-        .save-btn .save-icon { width: 18px; height: 18px; }
+        .save-btn { background: rgba(0,0,0,0.05); border: 1px solid #ddd; border-radius: 50%; width: 28px; height: 28px; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: #333; }
+        .save-btn .save-icon { width: 16px; height: 16px; }
         .save-btn .save-icon path { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
         .save-btn.saved { background: rgba(212, 175, 55, 0.2); border-color: var(--gold); color: var(--gold); }
         .save-btn.saved .save-icon path { fill: var(--gold); stroke: var(--gold); }
@@ -542,16 +542,16 @@
         .reply-box.reply-teacher { background: #fff8e1; border-right: 3px solid var(--gold); }
         .reply-box.reply-admin { background: #e3f2fd; border-right: 3px solid var(--primary); }
         .reply-box .reply-row1, .reply-box .reply-row2 { direction: ltr; }
-        .reply-row1 { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; flex-wrap: wrap; justify-content: space-between; }
+        .reply-row1 { display: flex; align-items: center; gap: 4px; margin-bottom: 4px; flex-wrap: wrap; justify-content: space-between; }
         .reply-row1-right { margin-left: auto; display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
         .reply-row2-right { margin-left: auto; display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
         .reply-delete-wrap { flex-shrink: 0; }
         .reply-play-remarks { display: inline-flex; align-items: center; gap: 0; flex-shrink: 0; direction: ltr; flex-wrap: nowrap; width: fit-content; }
-        .reply-remarks-wrap { display: flex; align-items: center; gap: 4px; flex-shrink: 0; direction: rtl; unicode-bidi: isolate; }
+        .reply-remarks-wrap { display: flex; align-items: center; gap: 2px; flex-shrink: 0; direction: rtl; unicode-bidi: isolate; }
         .reply-name-icon { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
-        .reply-name-badge { font-size: 13px; font-weight: bold; color: var(--primary); flex-shrink: 0; direction: rtl; }
-        .reply-role-icon { font-size: 14px; flex-shrink: 0; }
-        .reply-listened-badge { font-size: 11px; padding: 2px 6px; border-radius: 6px; font-weight: normal; margin-right: 6px; }
+        .reply-name-badge { font-size: 12px; font-weight: bold; color: var(--primary); flex-shrink: 0; direction: rtl; }
+        .reply-role-icon { font-size: 13px; flex-shrink: 0; }
+        .reply-listened-badge { font-size: 10px; padding: 1px 4px; border-radius: 4px; font-weight: normal; margin-right: 4px; }
         .reply-listened-badge.listened { background: #e8f5e9; color: #2e7d32; }
         .reply-listened-badge.not-listened { background: #fff3e0; color: #e65100; }
         .reply-like-wrap { flex-shrink: 0; }
@@ -5427,9 +5427,9 @@
                 }
                 const ratingStatusText = isStudentPost ? (ratingVerdict === 'accepted' ? 'مقبول' : ratingVerdict === 'needs_improvement' ? 'يمكن أن يكون أفضل' : 'لم يُفحص بعد') : '';
                 const ratingStatusClass = isStudentPost ? (ratingVerdict === 'accepted' ? 'accepted' : ratingVerdict === 'needs_improvement' ? 'needs-improvement' : 'unexamined') : '';
-                const ratingStatusBadge = ratingStatusText ? `<span class="rating-status-badge ${ratingStatusClass}">${ratingStatusText}</span>` : '';
-                let delBtn = deleteBtnHtml ? `<div class="feed-delete-wrap">${deleteBtnHtml}</div>` : '';
                 const isTeacherViewStudent = (isTeacher || isAdmin) && isStudentPost;
+                const ratingStatusBadge = (!isTeacherViewStudent && ratingStatusText) ? `<span class="rating-status-badge ${ratingStatusClass}">${ratingStatusText}</span>` : '';
+                let delBtn = deleteBtnHtml ? `<div class="feed-delete-wrap">${deleteBtnHtml}</div>` : '';
                 const feedRow1Class = isTeacherViewStudent ? 'feed-row1 feed-row1-teacher' : 'feed-row1';
                 const playAndRemarks = `<div class="feed-play-remarks"><div class="feed-player-wrap"><div class="custom-player"><button class="cp-btn" id="btn-${d.id}" onclick="playFeedAudio('${d.audioUrl}', '${d.id}')">▶</button><input type="range" class="cp-slider" id="seek-${d.id}" value="0" min="0" step="0.1" oninput="seekFeedAudio(this.value)"><span class="cp-time" id="time-${d.id}">00:00</span></div></div><div class="feed-remarks-wrap">${ratingStatusBadge}</div></div>`;
                 const iconNameSave = `<div class="feed-row1-right"><span class="feed-role-icon">${roleIcon}</span><div class="feed-name-badge">${stripYearFromName(d.name)}</div>${saveBtnHtml}</div>`;
