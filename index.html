@@ -494,8 +494,9 @@
         .feed-msg .feed-row2 .feed-datetime { margin-left: auto; }
         .feed-msg .feed-row2 .feed-delete-wrap { flex-shrink: 0; }
         .feed-msg .feed-player-wrap { flex-shrink: 0; display: flex; align-items: center; width: auto; }
-        .feed-msg .feed-row3 { margin-top: 2px; }
-        .like-btn { display: flex; align-items: center; border-radius: 16px; font-size: 13px; background: #f9f9f9; border: 1px solid #eee; overflow: hidden; }
+        .feed-reply-wrap { display: inline-flex; align-items: center; flex-shrink: 0; }
+        .feed-reply-wrap .reply-btn { display: inline-flex; align-items: center; min-height: 32px; padding: 4px 10px; border-radius: 16px; font-size: 13px; }
+        .like-btn { display: flex; align-items: center; border-radius: 16px; font-size: 13px; background: #f9f9f9; border: 1px solid #eee; overflow: hidden; min-height: 32px; }
         .like-btn.liked { color: var(--primary); background: #e8f5e9; border-color: var(--primary); font-weight: bold; }
         .like-btn.disabled { opacity: 0.5; filter: grayscale(1); }
         .like-action { padding: 4px 8px; cursor: pointer; }
@@ -525,7 +526,7 @@
         .feed-msg.student-msg.rating-needs-improvement { background: #ffebee; border: 1px solid #ef9a9a; }
         .reply-box.reply-teacher.reply-inherit-accepted { background: #e8f5e9; border-right-color: #4caf50; }
         .reply-box.reply-teacher.reply-inherit-needs-improvement { background: #ffebee; border-right-color: #e57373; }
-        .reply-btn { cursor: pointer; background: none; border: 1px solid var(--primary); color: var(--primary); padding: 4px 12px; border-radius: 6px; font-size: 13px; font-weight: bold; }
+        .reply-btn { cursor: pointer; background: none; border: 1px solid var(--primary); color: var(--primary); font-weight: bold; }
         .delete-btn { background: rgba(255,0,0,0.1); color: var(--red); border: none; border-radius: 50%; width: 28px; height: 28px; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
         .save-btn { background: rgba(0,0,0,0.05); border: 1px solid #ddd; border-radius: 50%; width: 28px; height: 28px; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: #333; }
         .save-btn .save-icon { width: 16px; height: 16px; }
@@ -5398,7 +5399,7 @@
                 }
                 
                 const hasTeacherReply = d.replies && d.replies.some(r => r.role === 'teacher');
-                let replyBtnHtml = ((userRole === 'teacher' || isAdmin) && isStudentPost && !hasTeacherReply) ? `<button class="reply-btn" onclick="startReply('${d.id}')">↩️ الرد</button>` : "<div></div>";
+                const replyBtnWrap = ((userRole === 'teacher' || isAdmin) && isStudentPost && !hasTeacherReply) ? `<div class="feed-reply-wrap"><button class="reply-btn" onclick="startReply('${d.id}')">↩️ الرد</button></div>` : '';
                 let postDateStr = formatDateTime(d.timestamp);
                 const isSaved = savedIds.has(d.id);
                 const saveBtnHtml = (myUid && myUid !== 'admin_super' && myUid !== 'guest') ? `<button class="save-btn ${isSaved ? 'saved' : ''}" onclick="toggleSaveForLater('${d.id}', ${isSaved})" title="${isSaved ? 'إزالة من القائمة' : 'حفظ للمشاهدة لاحقاً'}"><svg class="save-icon" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></button>` : '';
@@ -5438,8 +5439,8 @@
                 const feedRow1ContentTeacher = `<div class="feed-row1-left">${playAndRemarks}</div><div class="feed-row1-center">${mainActionHtml}</div>${iconNameSave}`;
                 const feedRow1Content = isTeacherViewStudent ? feedRow1ContentTeacher : feedRow1ContentStudent;
                 const feedRow2Content = isTeacherViewStudent
-                    ? `${feedLikeHtml}<span class="feed-datetime">${postDateStr}</span>${delBtn}`
-                    : `${feedLikeHtml}<span class="feed-datetime">${postDateStr}</span>${delBtn}`;
+                    ? `${replyBtnWrap}${feedLikeHtml}<span class="feed-datetime">${postDateStr}</span>${delBtn}`
+                    : `${replyBtnWrap}${feedLikeHtml}<span class="feed-datetime">${postDateStr}</span>${delBtn}`;
                 return `
                 <div class="${msgClass}" id="post-${d.id}">
                     <div class="${feedRow1Class}">
@@ -5448,7 +5449,6 @@
                     <div class="feed-row2">
                         ${feedRow2Content}
                     </div>
-                    <div class="feed-row3">${replyBtnHtml}</div>
                     ${repliesHtml}
                 </div>`;
             };
@@ -5493,6 +5493,7 @@
         window.toggleSaveForLater = async function(postId, isSaved) {
             const myUid = localStorage.getItem('it9an_uid');
             if (!myUid || myUid === 'admin_super' || myUid === 'guest') return;
+            if (isSaved && !confirm("هل أنت متأكد؟ إزالة هذه التسجيل من قائمة «للمشاهدة لاحقاً»؟")) return;
             try {
                 const col = window.collection(window.db, "savedRecordings");
                 if (isSaved) {
@@ -5602,6 +5603,7 @@
         }
 
         window.removeFromSaved = async function(savedDocId, postId) {
+            if(!confirm("هل أنت متأكد؟ إزالة هذه التسجيل من قائمة «للمشاهدة لاحقاً»؟")) return;
             try {
                 await window.deleteDoc(window.doc(window.db, "savedRecordings", savedDocId));
                 savedIdsForFeed.delete(postId);
@@ -6467,7 +6469,7 @@
         }
 
         window.deletePostFromLeaderboard = async function(postId, authorUid) {
-            if(!confirm("حذف هذه التسجيل؟ سيتم حذف الردود أيضاً.")) return;
+            if(!confirm("هل أنت متأكد؟ حذف هذه التسجيل؟ سيتم حذف الردود أيضاً.")) return;
             try {
                 const docRef = window.doc(window.db, "posts", postId);
                 const docSnap = await window.getDoc(docRef);
@@ -6507,7 +6509,7 @@
         }
 
         window.deletePost = async function(postId, authorUid) {
-            if(confirm("حذف هذه المشاركة؟")) {
+            if(confirm("هل أنت متأكد؟ حذف هذه المشاركة؟")) {
                 try {
                     const docRef = window.doc(window.db, "posts", postId);
                     const docSnap = await window.getDoc(docRef);
@@ -6543,7 +6545,7 @@
         }
 
         window.deleteReply = async function(postId, replyTimestamp, authorUid) {
-            if(confirm("حذف هذا الرد؟")) {
+            if(confirm("هل أنت متأكد؟ حذف هذا الرد؟")) {
                 try {
                     const postRef = window.doc(window.db, "posts", postId);
                     const docSnap = await window.getDoc(postRef);
