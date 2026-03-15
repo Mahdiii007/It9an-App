@@ -840,6 +840,7 @@
             <button class="btn-admin-reset" onclick="resetAllLikes()">👍 تصفير كل الإعجابات</button>
             <button class="btn-admin-reset" onclick="deleteAllTeacherReplies()">↩️ حذف كل ردود المعلمين</button>
             <button class="btn-admin-reset btn-admin-delete-all" onclick="deleteAllPostsGlobal()">🗑️ حذف كل التسجيلات</button>
+            <button class="btn-admin-reset btn-admin-delete-all" onclick="deleteAllGuestData()" title="حذف تسجيلات الضيف وإعجاباته ومشاهداته وقائمة الحفظ">🗑️ حذف كل بيانات الضيف</button>
         </div>
     </div>
 
@@ -2103,17 +2104,6 @@
                 localStorage.setItem('it9an_hidden', 'true');
                 try { localStorage.setItem('it9an_saved_pin', pin); } catch(e){}
                 doLoginSuccess('admin_super', 'المسؤول', 'teacher', true, null);
-                return;
-            }
-            if (pin === "0000") {
-                const maintenanceOn = await getMaintenanceMode();
-                if (maintenanceOn) {
-                    if (btn) { btn.disabled = false; btn.innerText = "دخول"; }
-                    showMaintenanceScreen();
-                    return;
-                }
-                try { localStorage.setItem('it9an_saved_pin', pin); } catch(e){}
-                doLoginSuccess('guest', 'ضيف', 'guest', true, null);
                 return;
             }
             const q = window.query(window.collection(window.db, "users"), window.where("personalPin", "==", pin));
@@ -6447,6 +6437,81 @@
                 alert("تم حذف " + removed + " رد معلم. تم تصفير أعداد المعلمين.");
             } catch(e) { alert("خطأ: " + (e.message || e)); }
         }
+
+        window.deleteAllGuestData = async function() {
+            if (localStorage.getItem('it9an_uid') !== 'admin_super') return;
+            if (!confirm("هل أنت متأكد من حذف جميع بيانات الضيف؟ (تسجيلات، إعجابات، مشاهدات، قائمة الحفظ)")) return;
+            try {
+                const uid = 'guest';
+                const postsQ = window.query(window.collection(window.db, "posts"));
+                const postsSnap = await window.getDocs(postsQ);
+
+                for (const docSnap of postsSnap.docs) {
+                    const data = docSnap.data();
+                    if (data.uid === uid) {
+                        if (data.replies) {
+                            for (const r of data.replies) {
+                                if (r.uid && r.uid !== uid) {
+                                    try { await window.updateDoc(window.doc(window.db, "users", r.uid), { totalRepliesCount: window.increment(-1), totalLikes: window.increment(-((r.likes && r.likes.length) || 0)) }); } catch(e){}
+                                }
+                            }
+                        }
+                        const notifQ = window.query(window.collection(window.db, "notifications"), window.where("postId", "==", docSnap.id));
+                        const notifSnap = await window.getDocs(notifQ);
+                        for (const nd of notifSnap.docs) await window.deleteDoc(window.doc(window.db, "notifications", nd.id));
+                        await deleteSavedRecordingsForPost(docSnap.id);
+                        if (data.audioUrl) await cleanupAudioFile(data.audioUrl);
+                        if (data.replies) for (let r of data.replies) if (r.audioUrl) await cleanupAudioFile(r.audioUrl);
+                        await window.deleteDoc(docSnap.ref);
+                    } else {
+                        const likedMain = data.likes && data.likes.some(l => (typeof l === 'object' ? l.uid : l) === uid);
+                        let likedReplies = 0;
+                        if (data.replies) data.replies.forEach(r => { if (r.likes && r.likes.some(l => (typeof l === 'object' ? l.uid : l) === uid)) likedReplies++; });
+                        if (likedMain && data.uid) { try { await window.updateDoc(window.doc(window.db, "users", data.uid), { totalLikes: window.increment(-1) }); } catch(e){} }
+                        if (likedReplies > 0 && data.replies) {
+                            const authorsToDec = {};
+                            data.replies.forEach(r => { if (r.likes && r.likes.some(l => (typeof l === 'object' ? l.uid : l) === uid) && r.uid) authorsToDec[r.uid] = (authorsToDec[r.uid] || 0) + 1; });
+                            for (const [au, c] of Object.entries(authorsToDec)) { try { await window.updateDoc(window.doc(window.db, "users", au), { totalLikes: window.increment(-c) }); } catch(e){} }
+                        }
+                        const newLikes = (data.likes || []).filter(l => (typeof l === 'object' ? l.uid : l) !== uid);
+                        const newReplies = (data.replies || []).map(r => {
+                            if (!r.likes) return r;
+                            const rNewLikes = r.likes.filter(l => (typeof l === 'object' ? l.uid : l) !== uid);
+                            return rNewLikes.length !== r.likes.length ? { ...r, likes: rNewLikes } : r;
+                        });
+                        const updates = {};
+                        if (newLikes.length !== (data.likes || []).length) updates.likes = newLikes;
+                        const hasRepliesLikeChange = newReplies.some((r, i) => (r.likes || []).length !== ((data.replies || [])[i]?.likes || []).length);
+                        if (hasRepliesLikeChange) updates.replies = newReplies;
+                        if (Object.keys(updates).length > 0) await window.updateDoc(docSnap.ref, updates);
+                    }
+                }
+
+                const statsQ = window.query(window.collection(window.db, "stats"));
+                const statsSnap = await window.getDocs(statsQ);
+                for (const sDoc of statsSnap.docs) {
+                    const sData = sDoc.data();
+                    const viewers = sData.viewers && typeof sData.viewers === 'object' && !Array.isArray(sData.viewers) ? sData.viewers : {};
+                    if (viewers[uid]) {
+                        const userCount = (viewers[uid].count || 0);
+                        const updates = { [`viewers.${uid}`]: window.deleteField(), totalRepetitions: window.increment(-userCount), verseViewCount: window.increment(-1) };
+                        try { await window.updateDoc(sDoc.ref, updates); } catch(e){}
+                    }
+                }
+
+                const savedQ = window.query(window.collection(window.db, "savedRecordings"), window.where("uid", "==", uid));
+                const savedSnap = await window.getDocs(savedQ);
+                for (const d of savedSnap.docs) await window.deleteDoc(d.ref);
+
+                const notifToGuestQ = window.query(window.collection(window.db, "notifications"), window.where("to", "==", uid));
+                const notifToGuestSnap = await window.getDocs(notifToGuestQ);
+                for (const nd of notifToGuestSnap.docs) await window.deleteDoc(window.doc(window.db, "notifications", nd.id));
+
+                loadLeaderboard();
+                if (localStorage.getItem('it9an_uid') === 'admin_super') loadTeachersLeaderboard();
+                alert("تم حذف جميع بيانات الضيف");
+            } catch(e) { console.error(e); alert("خطأ: " + (e.message || e)); }
+        };
 
         window.deleteAllPostsGlobal = async function() {
             if(confirm("⚠️ تحذير خطير: هل أنت متأكد من حذف جميع التسجيلات في التطبيق؟ لا يمكن التراجع!")) {
