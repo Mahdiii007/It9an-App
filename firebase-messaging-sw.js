@@ -81,11 +81,18 @@ messaging.onBackgroundMessage((payload) => {
   }
   const iconUrl = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect fill='%230f4c3a' width='192' height='192' rx='24'/%3E%3Ctext x='96' y='120' font-size='100' text-anchor='middle' fill='%23d4af37' font-family='serif'%3Eٱ%3C/text%3E%3C/svg%3E";
   const urlParams = new URLSearchParams();
-  if (data.postId) urlParams.set('postId', data.postId);
-  if (data.fileId) urlParams.set('fileId', data.fileId);
-  if (data.notifId) urlParams.set('notifId', data.notifId);
-  if (data.replyTimestamp) urlParams.set('replyTimestamp', data.replyTimestamp);
-  if (data.openStages === '1') urlParams.set('openStages', '1');
+  if (data.openLesson === '1') {
+    urlParams.set('openLesson', '1');
+    if (data.fileId) urlParams.set('fileId', data.fileId);
+    if (data.stageId) urlParams.set('stageId', data.stageId);
+    if (data.notifId) urlParams.set('notifId', data.notifId);
+  } else {
+    if (data.postId) urlParams.set('postId', data.postId);
+    if (data.fileId) urlParams.set('fileId', data.fileId);
+    if (data.notifId) urlParams.set('notifId', data.notifId);
+    if (data.replyTimestamp) urlParams.set('replyTimestamp', data.replyTimestamp);
+    if (data.openStages === '1') urlParams.set('openStages', '1');
+  }
   const base = new URL('index.html', self.registration.scope).href.replace(/\/index\.html$/, '');
   const url = urlParams.toString() ? (base + '/index.html?' + urlParams.toString()) : (base + '/index.html');
   const options = {
@@ -96,7 +103,7 @@ messaging.onBackgroundMessage((payload) => {
     renotify: true,
     requireInteraction: false,
     vibrate: [200, 100, 200, 100, 200],
-    data: { url, postId: data.postId || '', fileId: data.fileId || '', notifId: data.notifId || '', replyTimestamp: data.replyTimestamp || '', openStages: data.openStages || '', badge: String(badgeCount) }
+    data: { url, postId: data.postId || '', fileId: data.fileId || '', notifId: data.notifId || '', replyTimestamp: data.replyTimestamp || '', openStages: data.openStages || '', openLesson: data.openLesson || '', stageId: data.stageId || '', badge: String(badgeCount) }
   };
   return self.registration.showNotification(title, options);
 });
@@ -106,11 +113,18 @@ self.addEventListener('notificationclick', (e) => {
   const d = e.notification.data || {};
   const base = new URL('index.html', self.registration.scope).href.replace(/\/index\.html$/, '');
   const urlParams = new URLSearchParams();
-  if (d.postId) urlParams.set('postId', d.postId);
-  if (d.fileId) urlParams.set('fileId', d.fileId);
-  if (d.notifId) urlParams.set('notifId', d.notifId);
-  if (d.replyTimestamp) urlParams.set('replyTimestamp', d.replyTimestamp);
-  if (d.openStages === '1') urlParams.set('openStages', '1');
+  if (d.openLesson === '1') {
+    urlParams.set('openLesson', '1');
+    if (d.fileId) urlParams.set('fileId', d.fileId);
+    if (d.stageId) urlParams.set('stageId', d.stageId);
+    if (d.notifId) urlParams.set('notifId', d.notifId);
+  } else {
+    if (d.postId) urlParams.set('postId', d.postId);
+    if (d.fileId) urlParams.set('fileId', d.fileId);
+    if (d.notifId) urlParams.set('notifId', d.notifId);
+    if (d.replyTimestamp) urlParams.set('replyTimestamp', d.replyTimestamp);
+    if (d.openStages === '1') urlParams.set('openStages', '1');
+  }
   const url = urlParams.toString() ? (base + '/index.html?' + urlParams.toString()) : (base + '/index.html');
   e.waitUntil((function() {
     var urlWithFresh = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_t=' + Date.now();
