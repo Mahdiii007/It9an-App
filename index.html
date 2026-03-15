@@ -645,7 +645,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, query, where, orderBy, onSnapshot, serverTimestamp, doc, setDoc, updateDoc, increment, arrayUnion, arrayRemove, deleteDoc, getDoc, getDocFromServer, getDocs, getDocsFromServer, enableIndexedDbPersistence, limit, deleteField, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, query, where, orderBy, onSnapshot, serverTimestamp, doc, setDoc, updateDoc, increment, arrayUnion, arrayRemove, deleteDoc, getDoc, getDocFromServer, getDocs, getDocsFromServer, enableIndexedDbPersistence, limit, startAfter, deleteField, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
         import { getMessaging, getToken, onMessage, isSupported } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging.js";
 
@@ -670,7 +670,7 @@
         window.serverTimestamp = serverTimestamp; window.ref = ref; 
         window.uploadBytes = uploadBytes; window.getDownloadURL = getDownloadURL;
         window.doc = doc; window.setDoc = setDoc; window.updateDoc = updateDoc; window.increment = increment; window.arrayUnion = arrayUnion; window.arrayRemove = arrayRemove; window.deleteDoc = deleteDoc; window.getDoc = getDoc; window.getDocFromServer = getDocFromServer; window.getDocs = getDocs; window.getDocsFromServer = getDocsFromServer; window.deleteField = deleteField; window.writeBatch = writeBatch; 
-        window.deleteObject = deleteObject; window.limit = limit;
+        window.deleteObject = deleteObject; window.limit = limit; window.startAfter = startAfter;
         window.getMessaging = getMessaging; window.getToken = getToken; window.onMessage = onMessage; window.isSupportedFcm = isSupported;
     </script>
 </head>
@@ -1619,6 +1619,10 @@
         let feedLimit = 3;
         let allLoadedPosts = [];
         let savedIdsForFeed = new Set();
+        const FEED_PAGE_SIZE = 50;
+        let feedLastDoc = null;
+        let feedHasMore = true;
+        let feedCurrentFileId = null;
         let highlightedPostId = null;
         let activePostFilter = null;
         let activePostFilterNotifId = null;
@@ -2808,6 +2812,21 @@
                 });
                 leaderboardAllUsers = applyLeaderboardSort(users);
                 const myUid = localStorage.getItem('it9an_uid');
+                const needPin = leaderboardAllUsers.filter(u => !u.personalPin);
+                if (needPin.length > 0 && myUid === 'admin_super') {
+                    (async () => {
+                        const allPins = leaderboardAllUsers.map(u => u.personalPin).filter(Boolean);
+                        for (const u of needPin) {
+                            try {
+                                const fresh = await window.getDoc(window.doc(window.db, "users", u.uid));
+                                if (fresh.exists() && (fresh.data().personalPin || '').toString().length >= 4) continue;
+                                const pin = generatePersonalPin(allPins);
+                                allPins.push(pin);
+                                await window.updateDoc(window.doc(window.db, "users", u.uid), { personalPin: pin });
+                            } catch(e){}
+                        }
+                    })();
+                }
                 renderLeaderboardItems(leaderboardAllUsers, leaderboardVisibleCount, myUid, true);
                 if (typeof window.updateHeaderNamePin === 'function') window.updateHeaderNamePin();
                 await refreshOpenSubLists();
@@ -3052,71 +3071,7 @@
                 if (onFirstRender) onFirstRender();
                 }
             } catch (e) { console.warn('loadTeachersLeaderboard initial fetch:', e); if (onFirstRender) onFirstRender(); }
-            let firstSnap = true;
-            unsubscribeTeachersLeaderboard = window.onSnapshot(q, async (snap) => {
-                if (document.hidden) return;
-                if (Date.now() - lastTeachersRefreshTime < 15000) { if (onFirstRender && firstSnap) { onFirstRender(); firstSnap = false; } return; }
-                let teachers = [];
-                snap.forEach(doc => teachers.push({ ...doc.data(), uid: doc.data().uid || doc.id }));
-                const stageStats = await fetchStageTeachersStats();
-                teachers = teachers.map(t => {
-                    const s = stageStats[t.uid] || { totalRepliesCount: 0, totalLikes: 0 };
-                    return { ...t, totalRepliesCount: s.totalRepliesCount, totalLikes: s.totalLikes };
-                });
-                if (leaderboardSortBy === 'alpha' && myUid === 'admin_super') {
-                    teachers.sort((a,b) => (getDisplayName(a) || '').localeCompare(getDisplayName(b) || '', 'ar'));
-                } else if (leaderboardSortBy === 'date' && myUid === 'admin_super') {
-                    teachers.sort((a,b) => getTimestampMs(b) - getTimestampMs(a));
-                } else {
-                    teachers.sort((a,b) => (b.totalRepliesCount || 0) - (a.totalRepliesCount || 0));
-                }
-                if (!isAdmin) teachers = teachers.filter(t => (t.totalRepliesCount || 0) > 0);
-                leaderboardAllTeachers = teachers;
-                list.innerHTML = "";
-                if (teachers.length === 0) { list.innerHTML = "<li style='text-align:center; color:#999; padding:10px;'>لا يوجد معلمون في هذه المرحلة بعد</li>"; if (onFirstRender && firstSnap) { onFirstRender(); firstSnap = false; } return; }
-                teachers.forEach((u, i) => {
-                    adminUserRoles[u.uid] = 'teacher';
-                    const rank = i + 1;
-                    const isBlocked = u.blocked === true;
-                    const blockBtnText = isBlocked ? "فك الحظر" : "حظر";
-                    const blockBtnClass = isBlocked ? "btn-action btn-block blocked" : "btn-action btn-block";
-                    const likesCount = u.totalLikes || 0;
-                    const repliesCount = u.totalRepliesCount || 0;
-                    const lbDisplayNameT = isAdmin ? getDisplayNameForAdmin(u) : getDisplayName(u);
-                    const lbDateStrT = isAdmin ? formatDateLatin(getLastLoginForDisplay(u)) : '';
-                    const pinBadgeT = isAdmin ? `<span class="lb-pin" title="الرمز الشخصي">${(u.personalPin || '').toString().trim() ? String(u.personalPin).padStart(4,'0') : '—'}</span>` : '';
-                    const adminBtnsT = isAdmin ? `<button class="delete-btn" onclick="deleteUser('${u.uid}')" title="حذف">🗑️</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="editUserName('${u.uid}')" title="تعديل الاسم">✏️</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="swapFirstLastName('${u.uid}')" title="تبديل الاسم الأول واللقب">🔄</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="sendPrivateMessageToUser('${u.uid}')" title="رسالة خاصة">✉️</button><button class="${blockBtnClass}" style="padding:4px 10px; font-size:12px;" onclick="toggleBlockUser('${u.uid}', ${isBlocked})">${blockBtnText}</button>` : '';
-                    const nameRowT = isAdmin ? `<div class="lb-admin-name-row">${pinBadgeT}<span class="lb-rank">#${rank}</span><span class="lb-name">${(lbDisplayNameT || '—').replace(/</g,'&lt;')}</span><span class="role-badge badge-teacher">معلم</span><span class="lb-admin-date">${lbDateStrT}</span></div>` : `<div class="lb-item-top-row" style="display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%; min-width:0;"><div class="lb-name-pin-wrap" style="display:flex; align-items:center; gap:6px; flex:1; min-width:0; overflow:hidden;">${pinBadgeT}<span class="lb-rank">#${rank}</span><span class="lb-name">${(lbDisplayNameT || '—').replace(/</g,'&lt;')}</span><span class="role-badge badge-teacher">معلم</span></div><div class="lb-stats"><span class="lb-likes lb-likes-click" onclick="toggleLbLikes('${u.uid}')" title="عرض الإعجابات">👍 ${likesCount}</span><span class="lb-score lb-likes-click" onclick="toggleLbRecordings('${u.uid}')" title="عرض الردود">🎤 ${repliesCount}</span></div></div>`;
-                    const iconsRowT = isAdmin ? `<div class="lb-stats" style="display:flex; gap:8px; flex-shrink:0; margin-top:6px;"><span class="lb-likes lb-likes-click" onclick="toggleLbLikes('${u.uid}')" title="عرض الإعجابات">👍 ${likesCount}</span><span class="lb-score lb-likes-click" onclick="toggleLbRecordings('${u.uid}')" title="عرض الردود">🎤 ${repliesCount}</span></div>` : '';
-                    list.innerHTML += `
-                    <li class="lb-item-wrapper ${rank <= 3 ? 'lb-item-top3' : ''}">
-                        <div class="lb-item">
-                            ${isAdmin ? nameRowT + iconsRowT : nameRowT}
-                            ${isAdmin ? `<div class="lb-admin-btns-row" style="display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; flex-shrink:0;">${adminBtnsT}</div>` : ''}
-                        </div>
-                        <div class="lb-likes-list" id="lb-likes-${u.uid}" style="display:none;"></div>
-                        <div class="lb-likes-list" id="lb-recordings-${u.uid}" style="display:none;"></div>
-                    </li>`;
-                });
-                const isTeacherLikesOpen = lbLikesOpenUid && leaderboardAllTeachers.some(t => t.uid === lbLikesOpenUid);
-                const isTeacherRecOpen = lbRecordingsOpenUid && leaderboardAllTeachers.some(t => t.uid === lbRecordingsOpenUid);
-                if (isAdmin) {
-                    if (isTeacherRecOpen) {
-                        lbLikesOpenUid = null;
-                        const container = document.getElementById('lb-recordings-' + lbRecordingsOpenUid);
-                        const recScrollToId = (lbPendingRestore && lbPendingRestore.source === 'recordings' && lbPendingRestore.uid === lbRecordingsOpenUid) ? lbPendingRestore.scrollToId : undefined;
-                        if (container) { container.style.display = 'block'; renderLbRecordingsList(container, lbRecordingsOpenUid, lbRecordingsOpenOffset, recScrollToId); }
-                    } else if (isTeacherLikesOpen) {
-                        lbRecordingsOpenUid = null;
-                        const container = document.getElementById('lb-likes-' + lbLikesOpenUid);
-                        if (container) { container.style.display = 'block'; renderLbLikesList(container, lbLikesOpenUid, lbLikesOpenOffset); }
-                    }
-                } else {
-                    if (isTeacherLikesOpen) { const container = document.getElementById('lb-likes-' + lbLikesOpenUid); if (container) { container.style.display = 'block'; renderLbLikesList(container, lbLikesOpenUid, lbLikesOpenOffset); } }
-                    if (isTeacherRecOpen) { const container = document.getElementById('lb-recordings-' + lbRecordingsOpenUid); const recScrollToId = (lbPendingRestore && lbPendingRestore.source === 'recordings' && lbPendingRestore.uid === lbRecordingsOpenUid) ? lbPendingRestore.scrollToId : undefined; if (container) { container.style.display = 'block'; renderLbRecordingsList(container, lbRecordingsOpenUid, lbRecordingsOpenOffset, recScrollToId); } }
-                }
-                if (onFirstRender && firstSnap) { onFirstRender(); firstSnap = false; }
-            });
+            /* ARCHITEKTUR-FIX: Kein onSnapshot mehr - jeder Callback lud ALLE posts via fetchStageTeachersStats. */
         }
 
         async function loadAppStats() {
@@ -3332,47 +3287,10 @@
                 lbDone.students = true;
             } catch (e) { console.warn('loadLeaderboard initial fetch:', e); }
             loadTeachersLeaderboard(() => { lbDone.teachers = true; checkLbComplete(); });
-            let firstSnapshot = true;
-            const cb = async (snap) => {
-                if (document.hidden) return;
-                const skipRender = Date.now() - lastStudentsRefreshTime < 15000;
-                if (skipRender) { if (firstSnapshot) { lbDone.students = true; checkLbComplete(); firstSnapshot = false; } return; }
-                let users = [];
-                snap.forEach(doc => users.push({ ...doc.data(), uid: doc.data().uid || doc.id }));
-                const stageStats = await fetchStageLeaderboardStats();
-                const stageViews = await fetchStageVerseViewsFromStats(currentStageId);
-                users = users.map(u => {
-                    const s = stageStats[u.uid] || { postsCount: 0, totalLikes: 0 };
-                    const views = stageViews[u.uid] ?? 0;
-                    return { ...u, postsCount: s.postsCount, totalLikes: s.totalLikes, totalVerseViews: views };
-                });
-                leaderboardAllUsers = applyLeaderboardSort(users);
-                const needPin = leaderboardAllUsers.filter(u => !u.personalPin);
-                if (needPin.length > 0) {
-                    (async () => {
-                        const allPins = leaderboardAllUsers.map(u => u.personalPin).filter(Boolean);
-                        for (const u of needPin) {
-                            try {
-                                const fresh = await window.getDoc(window.doc(window.db, "users", u.uid));
-                                if (fresh.exists() && (fresh.data().personalPin || '').toString().length >= 4) continue;
-                                const pin = generatePersonalPin(allPins);
-                                allPins.push(pin);
-                                await window.updateDoc(window.doc(window.db, "users", u.uid), { personalPin: pin });
-                            } catch(e){}
-                        }
-                    })();
-                }
-                if (lbPendingRestore) {
-                    if (lbPendingRestore.source === 'likes') { lbLikesOpenUid = lbPendingRestore.uid; lbLikesOpenOffset = lbPendingRestore.offset || 0; }
-                    else if (lbPendingRestore.source === 'recordings') { lbRecordingsOpenUid = lbPendingRestore.uid; lbRecordingsOpenOffset = lbPendingRestore.offset || 0; lbRecordingsOpenRole = lbPendingRestore.role || 'student'; }
-                    else if (lbPendingRestore.source === 'views') { lbViewsOpenUid = lbPendingRestore.uid; lbViewsOpenOffset = lbPendingRestore.offset || 0; }
-                }
-                renderLeaderboardItems(leaderboardAllUsers, leaderboardVisibleCount, myUid, !!lbPendingRestore || !firstSnapshot);
-                if (typeof window.updateHeaderNamePin === 'function') window.updateHeaderNamePin();
-                if (firstSnapshot) { lbDone.students = true; checkLbComplete(); }
-                firstSnapshot = false;
-            };
-            unsubscribeLeaderboard = window.onSnapshot(q, cb);
+            /* ARCHITEKTUR-FIX: Kein onSnapshot mehr für Leaderboard - verursachte 29M+ Reads durch
+               Cascade: Jede Änderung in users/posts/notifications löste fetchStageLeaderboardStats
+               (getDocs ALL posts) + fetchStageVerseViewsFromStats (getDocs ALL stats) aus.
+               Leaderboard wird nur bei load/refresh geladen. */
         }
 
         let adminUserRoles = {};
@@ -4310,11 +4228,11 @@
 
             let q;
             if (uid === 'admin_super') {
-                q = window.query(window.collection(window.db, "notifications"), window.where("to", "==", "admin_super"));
+                q = window.query(window.collection(window.db, "notifications"), window.where("to", "==", "admin_super"), window.orderBy("timestamp", "desc"), window.limit(300));
             } else if (role === 'teacher') {
-                q = window.query(window.collection(window.db, "notifications"), window.where("to", "in", ["teachers", uid]));
+                q = window.query(window.collection(window.db, "notifications"), window.where("to", "in", ["teachers", uid]), window.orderBy("timestamp", "desc"), window.limit(300));
             } else {
-                q = window.query(window.collection(window.db, "notifications"), window.where("to", "==", uid));
+                q = window.query(window.collection(window.db, "notifications"), window.where("to", "==", uid), window.orderBy("timestamp", "desc"), window.limit(300));
             }
 
             if(notifUnsubscribe) notifUnsubscribe();
@@ -4814,7 +4732,7 @@
             const uid = localStorage.getItem('it9an_uid');
             if (uid !== 'admin_super') return;
             if (adminMessagesUnsub) adminMessagesUnsub();
-            const q = window.query(window.collection(window.db, "adminMessages"), window.orderBy("timestamp", "desc"));
+            const q = window.query(window.collection(window.db, "adminMessages"), window.orderBy("timestamp", "desc"), window.limit(100));
             adminMessagesUnsub = window.onSnapshot(q, (snap) => {
                 if (document.hidden) return;
                 container.innerHTML = '';
@@ -5258,9 +5176,12 @@
             if(unsubscribeFeed) unsubscribeFeed();
             
             const idString = String(fileId);
+            feedCurrentFileId = idString;
+            feedLastDoc = null;
+            feedHasMore = true;
             const userRole = localStorage.getItem('it9an_role');
             const myUid = localStorage.getItem('it9an_uid');
-            const q = window.query(window.collection(window.db, "posts"), window.where("fileId", "==", idString));
+            const q = window.query(window.collection(window.db, "posts"), window.where("fileId", "==", idString), window.orderBy("timestamp", "desc"), window.limit(FEED_PAGE_SIZE));
             try {
                 let snap;
                 try { snap = await window.getDocsFromServer(q); }
@@ -5272,6 +5193,8 @@
                     if (postStage !== currentStageId) return;
                     allLoadedPosts.push({ id: doc.id, ...d });
                 });
+                feedLastDoc = snap.docs.length > 0 ? snap.docs[snap.docs.length - 1] : null;
+                feedHasMore = snap.size === FEED_PAGE_SIZE;
                 if (allLoadedPosts.length > 0) {
                     if (activePostFilter) {
                         const hp = allLoadedPosts.find(p => p.id === activePostFilter);
@@ -5290,7 +5213,7 @@
                     savedIdsForFeed = new Set();
                     if (myUid && myUid !== 'admin_super') {
                         try {
-                            const savedQ = window.query(window.collection(window.db, "savedRecordings"), window.where("uid", "==", myUid));
+                            const savedQ = window.query(window.collection(window.db, "savedRecordings"), window.where("uid", "==", myUid), window.limit(500));
                             let savedSnap;
                             try { savedSnap = await window.getDocsFromServer(savedQ); }
                             catch(e) { savedSnap = await window.getDocs(savedQ); }
@@ -5318,13 +5241,18 @@
             unsubscribeFeed = window.onSnapshot(q, async (snap) => {
                 if (document.hidden) return;
                 if (snap.metadata && snap.metadata.fromCache) return;
-                allLoadedPosts = [];
+                const newFirstPage = [];
                 snap.forEach(doc => {
                     const d = doc.data();
                     const postStage = d.stageId != null ? d.stageId : 4;
                     if (postStage !== currentStageId) return;
-                    allLoadedPosts.push({ id: doc.id, ...d });
+                    newFirstPage.push({ id: doc.id, ...d });
                 });
+                feedLastDoc = snap.docs.length > 0 ? snap.docs[snap.docs.length - 1] : null;
+                feedHasMore = snap.size === FEED_PAGE_SIZE;
+                const newIds = new Set(newFirstPage.map(p => p.id));
+                const olderLoaded = allLoadedPosts.filter(p => !newIds.has(p.id));
+                allLoadedPosts = [...newFirstPage, ...olderLoaded];
                 if (allLoadedPosts.length === 0) { div.innerHTML = "<div style='text-align:center; color:#999; font-size:16px; padding:20px;'>لا توجد مشاركات حتى الآن</div>"; updateParticipationsCount(); return; }
                 
                 if (activePostFilter) {
@@ -5354,7 +5282,7 @@
                 savedIdsForFeed = new Set();
                 if (myUid && myUid !== 'admin_super') {
                     try {
-                        const savedQ = window.query(window.collection(window.db, "savedRecordings"), window.where("uid", "==", myUid));
+                        const savedQ = window.query(window.collection(window.db, "savedRecordings"), window.where("uid", "==", myUid), window.limit(500));
                         let savedSnap;
                         try { savedSnap = await window.getDocsFromServer(savedQ); }
                         catch(e) { savedSnap = await window.getDocs(savedQ); }
@@ -5588,15 +5516,47 @@
                 if (ownPosts.length > feedLimit || othersPosts.length > feedLimit) {
                     htmlContent += `<button class="load-more-btn" onclick="loadMorePosts()">▼ عرض المزيد</button>`;
                 }
+                if (feedHasMore && feedLastDoc) {
+                    htmlContent += `<button class="load-more-btn" id="feedLoadOlderBtn" onclick="loadOlderPosts()" style="margin-top:8px;">▼ تحميل مشاركات أقدم</button>`;
+                }
             } else {
                 const displayPosts = allLoadedPosts.slice(0, feedLimit);
                 displayPosts.forEach(d => { htmlContent += renderOnePost(d); });
                 if (!activePostFilter && allLoadedPosts.length > feedLimit) {
                     htmlContent += `<button class="load-more-btn" onclick="loadMorePosts()">▼ عرض المزيد</button>`;
                 }
+                if (!activePostFilter && feedHasMore && feedLastDoc) {
+                    htmlContent += `<button class="load-more-btn" id="feedLoadOlderBtn" onclick="loadOlderPosts()" style="margin-top:8px;">▼ تحميل مشاركات أقدم</button>`;
+                }
             }
             container.innerHTML = htmlContent;
         }
+
+        window.loadOlderPosts = async function() {
+            if (!feedLastDoc || !feedHasMore || !feedCurrentFileId) return;
+            const btn = document.getElementById('feedLoadOlderBtn');
+            if (btn) { btn.disabled = true; btn.textContent = 'جاري التحميل...'; }
+            try {
+                const q = window.query(window.collection(window.db, "posts"), window.where("fileId", "==", feedCurrentFileId), window.orderBy("timestamp", "desc"), window.limit(FEED_PAGE_SIZE), window.startAfter(feedLastDoc));
+                const snap = await window.getDocs(q);
+                const userRole = localStorage.getItem('it9an_role');
+                const myUid = localStorage.getItem('it9an_uid');
+                const div = document.getElementById('community-feed');
+                snap.forEach(doc => {
+                    const d = doc.data();
+                    const postStage = d.stageId != null ? d.stageId : 4;
+                    if (postStage !== currentStageId) return;
+                    allLoadedPosts.push({ id: doc.id, ...d });
+                });
+                feedLastDoc = snap.docs.length > 0 ? snap.docs[snap.docs.length - 1] : null;
+                feedHasMore = snap.size === FEED_PAGE_SIZE;
+                feedLimit = Math.max(feedLimit, allLoadedPosts.length);
+                renderPosts(div, userRole, myUid, savedIdsForFeed);
+                updateParticipationsCount();
+            } catch (e) { console.warn('loadOlderPosts:', e); }
+            const btnAfter = document.getElementById('feedLoadOlderBtn');
+            if (btnAfter) { btnAfter.disabled = false; btnAfter.textContent = feedHasMore ? '▼ تحميل مشاركات أقدم' : ''; }
+        };
 
         window.loadMorePosts = function() {
             feedLimit += 3;
