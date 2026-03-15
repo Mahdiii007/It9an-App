@@ -1102,10 +1102,21 @@
         }
         window.doLogout = async function() {
             const uid = localStorage.getItem('it9an_uid');
-            if (uid && uid !== 'admin_super' && uid !== 'guest' && window.db) {
-                try {
-                    await window.deleteDoc(window.doc(window.db, 'fcmTokens', uid));
-                } catch (e) { console.warn('Logout: FCM-Token entfernen fehlgeschlagen:', e); }
+            if (uid && uid !== 'admin_super' && uid !== 'guest') {
+                if (notifUnsubscribe) { try { notifUnsubscribe(); } catch(e){} notifUnsubscribe = null; }
+                if (window.db) {
+                    try {
+                        await window.deleteDoc(window.doc(window.db, 'fcmTokens', uid));
+                    } catch (e) { console.warn('Logout: FCM-Token entfernen fehlgeschlagen:', e); }
+                } else {
+                    for (let i = 0; i < 20; i++) {
+                        await new Promise(r => setTimeout(r, 100));
+                        if (window.db) {
+                            try { await window.deleteDoc(window.doc(window.db, 'fcmTokens', uid)); } catch (e) { console.warn('Logout: FCM-Token entfernen fehlgeschlagen:', e); }
+                            break;
+                        }
+                    }
+                }
             }
             localStorage.removeItem('it9an_uid');
             localStorage.removeItem('it9an_role');
