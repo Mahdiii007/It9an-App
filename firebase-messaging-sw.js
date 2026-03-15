@@ -85,6 +85,7 @@ messaging.onBackgroundMessage((payload) => {
   if (data.fileId) urlParams.set('fileId', data.fileId);
   if (data.notifId) urlParams.set('notifId', data.notifId);
   if (data.replyTimestamp) urlParams.set('replyTimestamp', data.replyTimestamp);
+  if (data.openStages === '1') urlParams.set('openStages', '1');
   const base = new URL('index.html', self.registration.scope).href.replace(/\/index\.html$/, '');
   const url = urlParams.toString() ? (base + '/index.html?' + urlParams.toString()) : (base + '/index.html');
   const options = {
@@ -95,7 +96,7 @@ messaging.onBackgroundMessage((payload) => {
     renotify: true,
     requireInteraction: false,
     vibrate: [200, 100, 200, 100, 200],
-    data: { url, postId: data.postId || '', fileId: data.fileId || '', notifId: data.notifId || '', replyTimestamp: data.replyTimestamp || '', badge: String(badgeCount) }
+    data: { url, postId: data.postId || '', fileId: data.fileId || '', notifId: data.notifId || '', replyTimestamp: data.replyTimestamp || '', openStages: data.openStages || '', badge: String(badgeCount) }
   };
   return self.registration.showNotification(title, options);
 });
@@ -109,6 +110,7 @@ self.addEventListener('notificationclick', (e) => {
   if (d.fileId) urlParams.set('fileId', d.fileId);
   if (d.notifId) urlParams.set('notifId', d.notifId);
   if (d.replyTimestamp) urlParams.set('replyTimestamp', d.replyTimestamp);
+  if (d.openStages === '1') urlParams.set('openStages', '1');
   const url = urlParams.toString() ? (base + '/index.html?' + urlParams.toString()) : (base + '/index.html');
   e.waitUntil((function() {
     var urlWithFresh = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_t=' + Date.now();
