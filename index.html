@@ -1036,9 +1036,20 @@
         function clearStoredPushParams() {
             try { sessionStorage.removeItem('it9an_pushParams'); localStorage.removeItem('it9an_pushParams'); } catch(e){}
         }
+        function storeLessonUploadedParams(fileId, stageId, notifId) {
+            try { sessionStorage.setItem('it9an_lessonParams', JSON.stringify({ fileId, stageId, notifId: notifId || '' })); localStorage.setItem('it9an_lessonParams', JSON.stringify({ fileId, stageId, notifId: notifId || '' })); } catch(e){}
+        }
+        function getStoredLessonParams() {
+            try { const s = sessionStorage.getItem('it9an_lessonParams'); if (s) { const o = JSON.parse(s); if (o.fileId && o.stageId) return o; } const l = localStorage.getItem('it9an_lessonParams'); if (l) { const o = JSON.parse(l); if (o.fileId && o.stageId) return o; } } catch(e){}
+            return null;
+        }
+        function clearStoredLessonParams() { try { sessionStorage.removeItem('it9an_lessonParams'); localStorage.removeItem('it9an_lessonParams'); } catch(e){} }
         (function storePushParamsIfNeeded() {
             const params = new URLSearchParams(window.location.search);
-            const postId = params.get('postId'), fileId = params.get('fileId'), notifId = params.get('notifId') || '';
+            const openLesson = params.get('openLesson');
+            const fileId = params.get('fileId'), stageId = params.get('stageId'), notifId = params.get('notifId') || '';
+            if (openLesson === '1' && fileId && stageId) { storeLessonUploadedParams(fileId, stageId, notifId); return; }
+            const postId = params.get('postId');
             if (postId && fileId) storePushParams(postId, fileId, notifId);
         })();
         if (typeof navigator.serviceWorker !== 'undefined') {
@@ -2131,15 +2142,18 @@
             setupForegroundPushHandler();
             showStagesView();
             (function runPushOpenInBackground() {
-                if (!getStoredPushParams() && !(new URLSearchParams(window.location.search).get('postId') && new URLSearchParams(window.location.search).get('fileId'))) return;
+                const params = new URLSearchParams(window.location.search);
+                const hasPush = getStoredPushParams() || (params.get('postId') && params.get('fileId'));
+                const hasLesson = getStoredLessonParams() || (params.get('openLesson') === '1' && params.get('fileId') && params.get('stageId'));
+                if (!hasPush && !hasLesson) return;
                 function tryOpen() {
-                    if (!getStoredPushParams()) return;
+                    if (!getStoredPushParams() && !getStoredLessonParams()) return;
                     checkPushNotificationParams().then(function(ok) {
-                        if (!ok && getStoredPushParams()) setTimeout(tryOpen, 2500);
+                        if (!ok && (getStoredPushParams() || getStoredLessonParams())) setTimeout(tryOpen, 2500);
                     });
                 }
                 document.addEventListener('visibilitychange', function vb() {
-                    if (document.visibilityState === 'visible' && getStoredPushParams()) tryOpen();
+                    if (document.visibilityState === 'visible' && (getStoredPushParams() || getStoredLessonParams())) tryOpen();
                 });
                 setTimeout(tryOpen, 400);
             })();
@@ -4049,12 +4063,16 @@
                     const postId = String(data.postId || '').trim();
                     const fileId = String(data.fileId || '').trim();
                     const notifId = (data.notifId || '').trim();
+                    const openLesson = data.openLesson === '1';
+                    const stageId = String(data.stageId || '').trim();
                     const iconUrl = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect fill='%230f4c3a' width='192' height='192' rx='24'/%3E%3Ctext x='96' y='120' font-size='100' text-anchor='middle' fill='%23d4af37' font-family='serif'%3Eٱ%3C/text%3E%3C/svg%3E";
-                    const n = new Notification(title, { body, icon: iconUrl, tag: 'it9an-' + (postId || Date.now()), renotify: true });
+                    const n = new Notification(title, { body, icon: iconUrl, tag: 'it9an-' + (postId || (openLesson ? 'lesson-' + fileId : Date.now())), renotify: true });
                     n.onclick = () => {
                         n.close();
                         window.focus();
-                        if (postId && fileId && typeof window.openFromNotif === 'function') {
+                        if (openLesson && fileId && stageId && typeof window.openFromLessonUploadedNotif === 'function') {
+                            setTimeout(() => window.openFromLessonUploadedNotif(notifId, fileId, stageId), 100);
+                        } else if (postId && fileId && typeof window.openFromNotif === 'function') {
                             setTimeout(() => window.openFromNotif(notifId, fileId, postId), 100);
                         }
                     };
@@ -4277,7 +4295,7 @@
             if (uid === 'admin_super') {
                 q = window.query(window.collection(window.db, "notifications"), window.where("to", "==", "admin_super"));
             } else if (role === 'teacher') {
-                q = window.query(window.collection(window.db, "notifications"), window.where("to", "==", "teachers"));
+                q = window.query(window.collection(window.db, "notifications"), window.where("to", "in", ["teachers", uid]));
             } else {
                 q = window.query(window.collection(window.db, "notifications"), window.where("to", "==", uid));
             }
@@ -4342,11 +4360,13 @@
                     if(n.type === 'new_recording') text = `🎤 تسجيل جديد من الطالب ${stripYearFromName(n.senderName || '')}` + detailSuffix;
                     if(n.type === 'reply') text = `✍️ رد جديد من المعلم ${stripYearFromName(n.senderName || '')}` + detailSuffix;
                     if(n.type === 'admin_message') text = n.subtype === 'private_reply' ? `💬 رد من ${stripYearFromName(n.senderName || '')}` : (n.subtype === 'user_contact' ? `📩 رسالة من ${stripYearFromName(n.senderName || '')}` : `📩 رسالة من المسؤول`);
+                    if(n.type === 'lesson_uploaded') text = (n.body || '').trim() || `📚 درس جديد: ${(n.lessonTitle || '').trim()} في ${(n.stageName || '').trim()}`;
                     let notifDateStr = formatDateTime(n.timestamp);
                     const fileId = n.fileId || '';
                     const postId = n.postId || '';
                     const messageId = n.messageId || '';
-                    const onClick = n.type === 'admin_message' ? `openFromAdminMessageNotif('${n.id}', '${messageId}')` : `openFromNotif('${n.id}', '${fileId}', '${postId}')`;
+                    const stageId = n.stageId != null ? n.stageId : '';
+                    const onClick = n.type === 'admin_message' ? `openFromAdminMessageNotif('${n.id}', '${messageId}')` : (n.type === 'lesson_uploaded' ? `openFromLessonUploadedNotif('${n.id}', '${fileId}', '${stageId}')` : `openFromNotif('${n.id}', '${fileId}', '${postId}')`);
 
                     list.innerHTML += `
                     <div class="notif-card" onclick="${onClick}">
@@ -4453,6 +4473,37 @@
         window.openFromAdminMessageNotif = async function(notifId, messageId) {
             try { await window.deleteDoc(window.doc(window.db, "notifications", notifId)); } catch(e){}
             showAdminMessageView(messageId);
+        }
+
+        window.openFromLessonUploadedNotif = async function(notifId, fileId, stageId) {
+            const fid = parseInt(String(fileId || ''), 10);
+            const sid = parseInt(String(stageId || ''), 10);
+            if (isNaN(fid) || isNaN(sid)) {
+                if (notifId) try { await window.deleteDoc(window.doc(window.db, "notifications", notifId)); } catch(e){}
+                return;
+            }
+            await enterStage(sid);
+            let foundIndex = -1;
+            let foundVerse = 1;
+            for (let i = 0; i < KURS_DATEN.length; i++) {
+                const start = KURS_DATEN[i].startGlobalId;
+                const end = start + KURS_DATEN[i].verse - 1;
+                if (fid >= start && fid <= end) {
+                    foundIndex = i;
+                    foundVerse = fid - start + 1;
+                    break;
+                }
+            }
+            if (foundIndex >= 0) {
+                currentLessonIdx = foundIndex;
+                activePostFilter = null;
+                activePostFilterNotifId = null;
+                highlightedPostId = null;
+                playVers(fid, foundVerse);
+                showView('player-view');
+                document.getElementById('appFooter').style.display = 'block';
+            }
+            if (notifId) try { await window.deleteDoc(window.doc(window.db, "notifications", notifId)); } catch(e){}
         }
 
         window.openFromNotif = async function(notifId, fileId, postId) {
@@ -4874,9 +4925,24 @@
             }
             if (!window.db) return false;
             const params = new URLSearchParams(window.location.search);
+            let openLesson = params.get('openLesson');
+            let fileId = params.get('fileId'), stageId = params.get('stageId'), notifId = params.get('notifId') || '';
+            if (openLesson !== '1' || !fileId || !stageId) {
+                const stored = getStoredLessonParams();
+                if (stored) { openLesson = '1'; fileId = stored.fileId; stageId = stored.stageId; notifId = stored.notifId || ''; }
+            }
+            if (openLesson === '1' && fileId && stageId) {
+                history.replaceState({}, '', window.location.pathname + (window.location.hash || ''));
+                await new Promise(r => setTimeout(r, 300));
+                try {
+                    await openFromLessonUploadedNotif(notifId, fileId, stageId);
+                    clearStoredLessonParams();
+                    return true;
+                } catch (e) { return false; }
+            }
             let postId = params.get('postId');
-            let fileId = params.get('fileId');
-            let notifId = params.get('notifId') || '';
+            fileId = params.get('fileId');
+            notifId = params.get('notifId') || '';
             if (!postId || !fileId) {
                 const stored = getStoredPushParams();
                 if (stored) { postId = stored.postId; fileId = stored.fileId; notifId = stored.notifId || ''; }
@@ -4924,7 +4990,8 @@
                     ? `<div class="lesson-progress-bar-wrap"><div class="lesson-progress-bar"><div class="lesson-progress-bar-fill" style="width:${prog.percent}%"></div></div><div class="lesson-progress-text">${prog.completed}/${prog.total} (${prog.percent}%)</div></div>` 
                     : '';
                 const titleContent = `<div class="menu-item-title lesson-title-text" style="padding:24px 15px; font-size:clamp(20px, 6vw, 32px); line-height:1.2; color:var(--red); white-space:nowrap;">${lek.title}</div>`;
-                const footerHtml = `<div class="lesson-card-footer"><div class="menu-item-students-icon" onclick="event.stopPropagation(); showStudentsProgressForLesson(${index})" title="عرض قائمة الطلاب">👥</div>${progressPart}</div>`;
+                const adminNotifyBtn = (myUid === 'admin_super') ? `<div class="menu-item-students-icon" onclick="event.stopPropagation(); sendLessonUploadedNotification(${index})" title="إرسال إشعار للجميع: رفعنا هذا الدرس">📢</div>` : '';
+                const footerHtml = `<div class="lesson-card-footer">${adminNotifyBtn}<div class="menu-item-students-icon" onclick="event.stopPropagation(); showStudentsProgressForLesson(${index})" title="عرض قائمة الطلاب">👥</div>${progressPart}</div>`;
                 div.innerHTML = `${titleContent}${footerHtml}`;
                 div.onclick = () => startLesson(index);
                 grid.appendChild(div);
@@ -4940,6 +5007,42 @@
             if (typeof window.hideVerseList === 'function') window.hideVerseList();
             playVers(KURS_DATEN[index].startGlobalId, 1);
         }
+
+        window.sendLessonUploadedNotification = async function(lessonIndex) {
+            if (localStorage.getItem('it9an_uid') !== 'admin_super') return;
+            const lek = KURS_DATEN[lessonIndex];
+            if (!lek) return;
+            const stageCfg = getStageConfig(currentStageId);
+            const fileId = String(lek.startGlobalId);
+            const lessonTitle = (lek.title || '').trim();
+            const stageName = (stageCfg && stageCfg.name) ? stageCfg.name.trim() : ('مرحلة ' + currentStageId);
+            const body = `رفعنا درس "${lessonTitle}" في مرحلة "${stageName}". نتمنى لكم التوفيق في التعلم.`;
+            try {
+                const studentsSnap = await window.getDocs(window.query(window.collection(window.db, "users"), window.where("role", "==", "student")));
+                const teachersSnap = await window.getDocs(window.query(window.collection(window.db, "users"), window.where("role", "==", "teacher")));
+                const uids = [];
+                studentsSnap.forEach(d => { const ud = d.data(); if (ud.uid && ud.uid !== 'admin_super' && !ud.blocked) uids.push(ud.uid); });
+                teachersSnap.forEach(d => { const ud = d.data(); if (ud.uid && ud.uid !== 'admin_super' && !ud.blocked) uids.push(ud.uid); });
+                let sent = 0;
+                for (const uid of uids) {
+                    await window.addDoc(window.collection(window.db, "notifications"), {
+                        to: uid,
+                        type: 'lesson_uploaded',
+                        fileId,
+                        stageId: currentStageId,
+                        stageName,
+                        lessonTitle,
+                        body,
+                        timestamp: window.serverTimestamp()
+                    });
+                    sent++;
+                }
+                alert("تم إرسال الإشعار إلى " + sent + " مستخدم (طلاب ومعلمين)");
+            } catch (e) {
+                console.error('sendLessonUploadedNotification:', e);
+                alert("خطأ: " + (e.message || "تعذر إرسال الإشعار"));
+            }
+        };
 
         // --- NAVIGATION LOGIC: ARABIC BOOK (RTL) & LOOPING ---
         // BUTTON LOGIC:
