@@ -712,9 +712,9 @@
                 <div style="font-weight:bold; color:var(--primary); margin-bottom:8px;">📱 أضف التطبيق إلى الشاشة الرئيسية</div>
                 <div style="text-align:right; line-height:1.7;">
                     <strong>Android (Chrome):</strong><br>
-                    <span style="color:#555;">Menu (⋮) → « Ajouter à l'écran d'accueil » ou « Installer l'application »</span><br><br>
+                    <span style="color:#555;">Menu (⋮) → « Ajouter à l'écran d'accueil » ou « Installer l'application »</span><br><br>
                     <strong>iPhone (Safari):</strong><br>
-                    <span style="color:#555;">Partager (□⬆) → « Sur l'écran d'accueil » → « Ajouter »</span>
+                    <span style="color:#555;">Partager (□⬆) → « Sur l'écran d'accueil » → « Ajouter »</span>
                 </div>
             </div>
         </div>
@@ -4042,7 +4042,15 @@
                 }
                 await window.setDoc(window.doc(window.db, 'fcmTokens', uid), { token, uid, role, notifStages, updatedAt: window.serverTimestamp() }, { merge: true });
                 setupForegroundPushHandler();
-                if (showResult) alert('تم تفعيل الإشعارات بنجاح.');
+                if (showResult) {
+                    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+                    const isMobile = /Android|iPhone|iPad|iPod/.test(navigator.userAgent);
+                    let msg = 'تم تفعيل الإشعارات بنجاح.';
+                    if (isMobile && !isStandalone) {
+                        msg += '\n\nللاستلام عند إغلاق التطبيق: أضف التطبيق للشاشة الرئيسية (مشاركة → إضافة إلى الشاشة الرئيسية). على Android: عطّل تحسين البطارية للمتصفح.';
+                    }
+                    alert(msg);
+                }
                 return true;
             } catch(e) {
                 console.warn('FCM:', e);
