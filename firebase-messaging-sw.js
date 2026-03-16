@@ -1,5 +1,5 @@
 /* PWA Service Worker: Push (Ton+Vibration) + sparsames Offline-Caching */
-const CACHE_NAME = 'it9an-v2';
+const CACHE_NAME = 'it9an-v3';
 const CACHE_MAX_AGE = 24 * 60 * 60 * 1000;
 
 self.addEventListener('install', (e) => {
@@ -42,6 +42,9 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
+const _shownNotifIds = new Map();
+const DEDUP_MS = 60000;
+
 function handleDismiss(data) {
   if (!data || typeof data !== 'object') return false;
   const action = String(data.action || data['action'] || '').toLowerCase();
@@ -73,10 +76,19 @@ self.addEventListener('push', (e) => {
 messaging.onBackgroundMessage((payload) => {
   const data = payload.data || payload || {};
   if (handleDismiss(data)) return;
+  const notifId = String(data.notifId || '').trim();
+  const tag = data.tag || 'it9an-' + (data.postId || Date.now());
+  const dedupKey = notifId || tag;
+  if (dedupKey) {
+    const now = Date.now();
+    const last = _shownNotifIds.get(dedupKey) || 0;
+    if (now - last < DEDUP_MS) return;
+    _shownNotifIds.set(dedupKey, now);
+    setTimeout(() => { _shownNotifIds.delete(dedupKey); }, DEDUP_MS);
+  }
   const title = data.title || 'تطبيق إتقان';
   const body = data.body || 'إشعار جديد';
   const badgeCount = parseInt(data.badge || '1', 10) || 1;
-  const tag = data.tag || 'it9an-' + (data.postId || Date.now());
   if ('setAppBadge' in navigator) {
     try { navigator.setAppBadge(badgeCount); } catch(e) {}
   }
