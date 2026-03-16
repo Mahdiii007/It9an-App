@@ -118,7 +118,11 @@ messaging.onBackgroundMessage((payload) => {
     vibrate: [200, 100, 200, 100, 200],
     data: { url, postId: data.postId || '', fileId: data.fileId || '', notifId: data.notifId || '', replyTimestamp: data.replyTimestamp || '', openStages: data.openStages || '', openLesson: data.openLesson || '', stageId: data.stageId || '', badge: String(badgeCount) }
   };
-  return self.registration.showNotification(title, options);
+  try {
+    return self.registration.showNotification(title, options);
+  } catch (err) {
+    console.error('showNotification error:', err);
+  }
 });
 
 self.addEventListener('notificationclick', (e) => {
