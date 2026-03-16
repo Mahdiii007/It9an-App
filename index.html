@@ -2170,6 +2170,17 @@
             })();
             window.scrollTo({ top: 0, behavior: 'smooth' });
             if (uid && uid !== 'admin_super' && uid !== 'guest') requestPushPermissionAndSaveToken(uid, role);
+            if (!_tokenRefreshListenerAdded) {
+                _tokenRefreshListenerAdded = true;
+                document.addEventListener('visibilitychange', function() {
+                    if (document.visibilityState !== 'visible') return;
+                    const u = localStorage.getItem('it9an_uid');
+                    const r = localStorage.getItem('it9an_role');
+                    if (!u || u === 'admin_super' || u === 'guest') return;
+                    if (Notification.permission !== 'granted') return;
+                    requestPushPermissionAndSaveToken(u, r, false);
+                });
+            }
         }
 
         async function checkLoginClassic() {
@@ -3967,6 +3978,7 @@
         // --- PUSH NOTIFICATIONS (FCM) ---
         const FCM_VAPID_KEY = 'BKl57KGTMjrbUmQq2lYI3gJDqQZMb1F0DePQJEBIjaHPHJBGqbYg2OqQxuPUyuoBc4590EZM5i66I7SLfn35hwc';
         let _foregroundPushSetup = false;
+        let _tokenRefreshListenerAdded = false;
         function setupForegroundPushHandler() {
             if (_foregroundPushSetup) return;
             if (!('Notification' in window) || Notification.permission !== 'granted') return;
