@@ -3979,6 +3979,8 @@
         const FCM_VAPID_KEY = 'BKl57KGTMjrbUmQq2lYI3gJDqQZMb1F0DePQJEBIjaHPHJBGqbYg2OqQxuPUyuoBc4590EZM5i66I7SLfn35hwc';
         let _foregroundPushSetup = false;
         let _tokenRefreshListenerAdded = false;
+        const _foregroundShownNotifs = new Map();
+        const _foregroundDedupMs = 60000;
         function setupForegroundPushHandler() {
             if (_foregroundPushSetup) return;
             if (!('Notification' in window) || Notification.permission !== 'granted') return;
@@ -3988,6 +3990,16 @@
                 const messaging = window.getMessaging(window.firebaseApp);
                 window.onMessage(messaging, (payload) => {
                     const data = payload.data || {};
+                    const notifId = String(data.notifId || '').trim();
+                    const tag = data.tag || '';
+                    const dedupKey = notifId || tag || (data.postId + '-' + (data.replyTimestamp || ''));
+                    if (dedupKey) {
+                        const now = Date.now();
+                        const last = _foregroundShownNotifs.get(dedupKey) || 0;
+                        if (now - last < _foregroundDedupMs) return;
+                        _foregroundShownNotifs.set(dedupKey, now);
+                        setTimeout(() => { _foregroundShownNotifs.delete(dedupKey); }, _foregroundDedupMs);
+                    }
                     const title = data.title || 'تطبيق إتقان';
                     const body = data.body || 'إشعار جديد';
                     const badgeCount = parseInt(data.badge || '1', 10) || 1;
@@ -3999,7 +4011,6 @@
                     if (navigator.vibrate) try { navigator.vibrate([200, 100, 200]); } catch(e){}
                     const postId = String(data.postId || '').trim();
                     const fileId = String(data.fileId || '').trim();
-                    const notifId = (data.notifId || '').trim();
                     const openLesson = data.openLesson === '1';
                     const stageId = String(data.stageId || '').trim();
                     const iconUrl = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect fill='%230f4c3a' width='192' height='192' rx='24'/%3E%3Ctext x='96' y='120' font-size='100' text-anchor='middle' fill='%23d4af37' font-family='serif'%3Eٱ%3C/text%3E%3C/svg%3E";
@@ -5250,7 +5261,6 @@
             } catch (e) { console.warn('loadFeed initial:', e); }
             unsubscribeFeed = window.onSnapshot(q, async (snap) => {
                 if (document.hidden) return;
-                if (snap.metadata && snap.metadata.fromCache) return;
                 const newFirstPage = [];
                 snap.forEach(doc => {
                     const d = doc.data();
@@ -6658,6 +6668,12 @@
                     }
                     loadLeaderboard();
                     if(localStorage.getItem('it9an_uid')==='admin_super') loadTeachersLeaderboard();
+                    const feedDiv = document.getElementById('community-feed');
+                    if (feedDiv && currentGlobalFileId != null) {
+                        allLoadedPosts = (allLoadedPosts || []).filter(p => p.id !== postId);
+                        renderPosts(feedDiv, localStorage.getItem('it9an_role'), localStorage.getItem('it9an_uid'), savedIdsForFeed || new Set());
+                        updateParticipationsCount();
+                    }
                     alert("تم الحذف بنجاح");
                 }
             } catch(e) { console.error(e); alert("خطأ في الحذف"); }
@@ -6688,8 +6704,14 @@
                         }
                         var likesCount = (data.likes && data.likes.length) ? data.likes.length : 0;
                         if(authorUid && likesCount > 0) { try { await window.updateDoc(window.doc(window.db, "users", authorUid), { totalLikes: window.increment(-likesCount) }); } catch(e){} }
-                    loadLeaderboard();
+                        loadLeaderboard();
                         if(localStorage.getItem('it9an_uid')==='admin_super') loadTeachersLeaderboard();
+                        const div = document.getElementById('community-feed');
+                        if (div && currentGlobalFileId != null) {
+                            allLoadedPosts = (allLoadedPosts || []).filter(p => p.id !== postId);
+                            renderPosts(div, localStorage.getItem('it9an_role'), localStorage.getItem('it9an_uid'), savedIdsForFeed || new Set());
+                            updateParticipationsCount();
+                        }
                         alert("تم الحذف بنجاح");
                     }
                 } catch(e) { alert("خطأ في الحذف"); }
@@ -6714,6 +6736,15 @@
                         if(authorUid) { try { await window.updateDoc(window.doc(window.db, "users", authorUid), { totalRepliesCount: window.increment(-1) }); } catch(e){} }
                         loadLeaderboard();
                         if(localStorage.getItem('it9an_uid')==='admin_super') loadTeachersLeaderboard();
+                        const div = document.getElementById('community-feed');
+                        if (div && currentGlobalFileId != null) {
+                            const post = (allLoadedPosts || []).find(p => p.id === postId);
+                            if (post && post.replies) {
+                                post.replies = post.replies.filter(r => r.timestamp !== replyTimestamp);
+                                renderPosts(div, localStorage.getItem('it9an_role'), localStorage.getItem('it9an_uid'), savedIdsForFeed || new Set());
+                                updateParticipationsCount();
+                            }
+                        }
                         alert("تم الحذف");
                     }
                 } catch(e) { alert("خطأ"); }
