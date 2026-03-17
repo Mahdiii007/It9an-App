@@ -360,10 +360,16 @@
         .arrow-icon { direction: ltr; display: inline-block; }
 
         .verse-controls-frame {
-            display: flex; justify-content: center; align-items: center; gap: 50px;
-            padding: 12px 20px; margin-bottom: 15px;
+            display: flex; flex-direction: row; justify-content: flex-start; align-items: center; gap: 20px;
+            padding: 12px 20px; margin-bottom: 15px; direction: ltr;
             background: transparent; border: none;
         }
+        .verse-controls-side {
+            display: flex; flex-direction: column; gap: 8px; align-items: flex-start;
+        }
+        .verse-controls-side .setting-group { display: flex; align-items: center; gap: 6px; font-size: 14px; color: var(--primary); }
+        .verse-controls-side input[type="number"] { width: 45px; text-align: center; padding: 4px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
+        .verse-controls-side .view-count-in-settings { cursor: pointer; font-weight: bold; }
 
         #verse-list-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; max-width: 100vw; height: 100%; background: rgba(0,0,0,0.92); z-index: 3000; overflow-x: hidden; overflow-y: auto; padding: 10px; box-sizing: border-box; }
         .verse-list-content { position: relative; background: var(--surface); border-radius: 15px; padding: 15px; width: 100%; max-width: calc(100vw - 20px); margin: 0 auto; box-sizing: border-box; }
@@ -941,16 +947,17 @@
                     <img id="currentImg" class="quran-image" src="" alt="Vers Bild" onerror="this.src='placeholder.png'">
                 </div>
             </div>
-            <div class="settings-box">
-                <div class="setting-group"><span class="setting-label">وقفة</span><input type="checkbox" id="globalGap" checked></div>
-                <div class="setting-group view-count-in-settings" onclick="showViewers()" title="مشاهدة"><span style="font-size:18px;">👁️</span><span id="viewCount">0</span></div>
-            </div>
             <div class="nav-buttons-row">
                 <button id="btnRight" class="nav-btn" onclick="prevVers()"><span class="arrow-icon">❯ السابق</span></button>
                 <div id="verseStatusBadge" class="verse-status-badge" style="display:none;"></div>
                 <button id="btnLeft" class="nav-btn" onclick="nextVers()"><span class="arrow-icon">التالي ❮</span></button>
             </div>
             <div class="verse-controls-frame">
+                <div class="verse-controls-side">
+                    <div class="setting-group"><span>وقفة</span><input type="checkbox" id="globalGap" checked></div>
+                    <div class="setting-group"><span>تكرار</span><input type="number" id="globalRepeats" value="100" min="1"><span>مرات</span></div>
+                    <div class="setting-group view-count-in-settings" onclick="showViewers()" title="مشاهدة"><span style="font-size:16px;">👁️</span><span id="viewCount">0</span></div>
+                </div>
                 <button id="recBtn" class="btn btn-rec" onclick="toggleRecord()">🎤</button>
                 <button id="playBtn" class="btn btn-play" onclick="toggleSmartLoop()">▶</button>
             </div>
@@ -6174,7 +6181,17 @@
         
         function checkNextStep() {
             verseRepeatsPlayed++;
-            playCycle();
+            const target = parseInt(document.getElementById('globalRepeats')?.value) || 1;
+            if (verseRepeatsPlayed < target) {
+                playCycle();
+            } else {
+                const currentLesson = KURS_DATEN[currentLessonIdx];
+                if (currentLocalVers < currentLesson.verse) {
+                    playVers(currentGlobalFileId + 1, currentLocalVers + 1, true);
+                } else {
+                    playVers(currentLesson.startGlobalId, 1, true);
+                }
+            }
         }
         
         function stopLoop() { 
