@@ -2047,7 +2047,7 @@
             try {
             const isExemptFromMaintenance = (pin === TEACHER_LOTFI_PIN || pin === TEACHER_FATHIA_PIN || pin === TEACHER_MAHDI_PIN || pin === MAINTENANCE_EXEMPT_STUDENT_PIN || pin === ADMIN_PIN);
             if (pin === TEACHER_MAHDI_PIN) {
-                const first = "Mahdi", last = "Fakhfakh", year = "1990", role = "teacher";
+                const first = "Mahdi", last = "Fakhfakh", year = "1996", role = "teacher";
                 const fullNameRaw = first + " " + last;
                 const uniqueID = generateUserId(fullNameRaw, role, year);
                 const userRef = window.doc(window.db, "users", uniqueID);
@@ -2057,7 +2057,7 @@
                     if(userSnap.exists()) {
                         if(userSnap.data().blocked) { alert("عذراً، تم حظر هذا الحساب."); return; }
                         if(userSnap.data().name) finalDisplayName = userSnap.data().name;
-                        const up = { lastLogin: window.serverTimestamp(), personalPin: "9696" };
+                        const up = { lastLogin: window.serverTimestamp(), personalPin: "9696", year: "1996" };
                         if (!userSnap.data().firstLogin) up.firstLogin = window.serverTimestamp();
                         await withTimeout(window.updateDoc(userRef, up), 10000);
                     } else {
