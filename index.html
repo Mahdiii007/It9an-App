@@ -366,7 +366,7 @@
         }
         .verse-controls-side {
             flex-shrink: 0;
-            display: flex; flex-direction: column; gap: 8px; align-items: flex-start; justify-content: center;
+            display: flex; flex-direction: column; gap: 8px; align-items: center; justify-content: center;
             padding: 12px 14px; border: 2px solid var(--primary);
             border-radius: 10px; background: var(--primary-light);
             width: 72px; min-height: 72px; box-sizing: border-box;
@@ -374,7 +374,10 @@
         .verse-controls-side .setting-group { display: flex; align-items: center; gap: 6px; font-size: 14px; color: var(--gold-light); }
         .verse-controls-side .view-count-in-settings { cursor: pointer; font-weight: bold; color: var(--gold-light); }
         .verse-controls-center {
-            flex: 1; display: flex; justify-content: center; align-items: center; gap: 20px;
+            flex: 1; display: flex; justify-content: center; align-items: center; gap: 20px; min-width: 0;
+        }
+        .verse-controls-spacer {
+            flex-shrink: 0; width: 72px; min-height: 1px;
         }
 
         #verse-list-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; max-width: 100vw; height: 100%; background: rgba(0,0,0,0.92); z-index: 3000; overflow-x: hidden; overflow-y: auto; padding: 10px; box-sizing: border-box; }
@@ -967,6 +970,7 @@
                     <button id="recBtn" class="btn btn-rec" onclick="toggleRecord()">🎤</button>
                     <button id="playBtn" class="btn btn-play" onclick="toggleSmartLoop()">▶</button>
                 </div>
+                <div class="verse-controls-spacer" aria-hidden="true"></div>
             </div>
 
         <h4 id="participations-header" style="text-align:center; color:var(--primary); margin-top:15px; border-bottom:1px solid #ddd; padding-bottom:10px; font-size:20px;"><span id="participationsCount">(0)</span> المشاركات</h4>
