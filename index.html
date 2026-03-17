@@ -371,8 +371,8 @@
             border-radius: 10px; background: var(--primary-light);
             width: 92px; min-height: 92px; box-sizing: border-box;
         }
-        .verse-controls-side .setting-group { display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 14px; color: var(--gold-light); width: 100%; }
-        .verse-controls-side .view-count-in-settings { display: flex; align-items: center; justify-content: center; gap: 4px; cursor: pointer; font-weight: bold; color: var(--gold-light); width: 100%; }
+        .verse-controls-side .setting-group { display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 17px; color: var(--gold-light); width: 100%; }
+        .verse-controls-side .view-count-in-settings { display: flex; align-items: center; justify-content: center; gap: 4px; cursor: pointer; font-weight: bold; font-size: 17px; color: var(--gold-light); width: 100%; }
         .verse-controls-center {
             flex: 1; display: flex; justify-content: center; align-items: center; gap: 20px; min-width: 0;
         }
@@ -964,7 +964,7 @@
             <div class="verse-controls-frame">
                 <div class="verse-controls-side">
                     <div class="setting-group"><span>وقفة</span><input type="checkbox" id="globalGap" checked></div>
-                    <div class="setting-group view-count-in-settings" onclick="showViewers()" title="مشاهدة"><span style="font-size:16px;">👁️</span><span id="viewCount">0</span></div>
+                    <div class="setting-group view-count-in-settings" onclick="showViewers()" title="مشاهدة"><span>تكرار</span><span id="viewCount">0</span></div>
                 </div>
                 <div class="verse-controls-center">
                     <button id="recBtn" class="btn btn-rec" onclick="toggleRecord()">🎤</button>
@@ -4253,12 +4253,12 @@
             let count;
             if (role === 'student' && uid && uid !== 'guest') {
                 count = getMyRepetitionCountForCurrentVerse();
-                el.style.background = '#fff';
+                el.style.color = '#fff';
                 el.style.padding = '2px 8px';
                 el.style.borderRadius = '6px';
-                if (count <= 15) el.style.color = '#c0392b';
-                else if (count <= 29) el.style.color = '#d35400';
-                else el.style.color = '#27ae60';
+                if (count <= 15) el.style.background = '#c0392b';
+                else if (count <= 29) el.style.background = '#d35400';
+                else el.style.background = '#90ee90';
             } else {
                 count = totalRepetitions;
                 el.style.color = '';
