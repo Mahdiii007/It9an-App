@@ -943,7 +943,6 @@
             </div>
             <div class="settings-box">
                 <div class="setting-group"><span class="setting-label">وقفة</span><input type="checkbox" id="globalGap" checked></div>
-                <div class="setting-group"><span class="setting-label">تكرار</span><input type="number" id="globalRepeats" value="100" min="1"><span class="edit-hint" title="قابل للتعديل">✏️</span><span class="setting-label">مرات</span></div>
                 <div class="setting-group view-count-in-settings" onclick="showViewers()" title="مشاهدة"><span style="font-size:18px;">👁️</span><span id="viewCount">0</span></div>
             </div>
             <div class="nav-buttons-row">
@@ -955,6 +954,9 @@
                 <button id="recBtn" class="btn btn-rec" onclick="toggleRecord()">🎤</button>
                 <button id="playBtn" class="btn btn-play" onclick="toggleSmartLoop()">▶</button>
             </div>
+
+        <h4 id="participations-header" style="text-align:center; color:var(--primary); margin-top:15px; border-bottom:1px solid #ddd; padding-bottom:10px; font-size:20px;"><span id="participationsCount">(0)</span> المشاركات</h4>
+        <div id="community-feed" class="feed-container">جاري التحميل...</div>
         </div>
         
         <div id="verse-list-modal" onclick="if(event.target===this) hideVerseList()">
@@ -967,11 +969,6 @@
             </div>
         </div>
         
-        <div id="statusDisplay" class="status-bar">جاهز للتلاوة</div>
-        <div class="repeats-hint" style="font-size:13px; color:#666; text-align:center; margin-top:6px; line-height:1.5;">يمكنك أعلاه اختيار ما إذا كانت وقفة بين التكرارات مطلوبة. كما يمكنك إدخال عدد التكرارات برغبتك.</div>
-
-        <h4 id="participations-header" style="text-align:center; color:var(--primary); margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:10px; font-size:20px;"><span id="participationsCount">(0)</span> المشاركات</h4>
-        <div id="community-feed" class="feed-container">جاري التحميل...</div>
     </div>
 
     <div id="recording-ui">
@@ -4238,12 +4235,18 @@
             let count;
             if (role === 'student' && uid && uid !== 'guest') {
                 count = getMyRepetitionCountForCurrentVerse();
+                el.style.background = '#fff';
+                el.style.padding = '2px 8px';
+                el.style.borderRadius = '6px';
                 if (count <= 15) el.style.color = '#c0392b';
                 else if (count <= 29) el.style.color = '#d35400';
                 else el.style.color = '#27ae60';
             } else {
                 count = totalRepetitions;
                 el.style.color = '';
+                el.style.background = '';
+                el.style.padding = '';
+                el.style.borderRadius = '';
             }
             el.innerText = count;
         }
@@ -5167,7 +5170,6 @@
             } else {
                 // AUTO TRANSITION
                 verseRepeatsPlayed = 0; // Reset counter for new verse
-                document.getElementById('statusDisplay').innerText = "bereite nächsten Vers vor...";
                 // Continue loop
                 if(isPlaying) {
                     playCycle();
@@ -5976,7 +5978,6 @@
                 let blobToUpload = currentBlob;
                 const needsTranscode = blobToUpload.type.includes('webm') || blobToUpload.type.includes('ogg');
                 if (needsTranscode) {
-                    document.getElementById('statusDisplay').innerText = "جاري تحويل الصيغة...";
                     try {
                         blobToUpload = await transcodeToMp4(currentBlob);
                     } catch (e) {
@@ -5984,7 +5985,6 @@
                         alert("فشل تحويل الصيغة. سيتم الإرسال بالصيغة الأصلية.");
                     }
                 }
-                document.getElementById('statusDisplay').innerText = "جاري الإرسال...";
                 let ext = 'webm'; if (blobToUpload.type.includes('mp4')) ext = 'mp4'; else if (blobToUpload.type.includes('ogg')) ext = 'ogg';
                 const refS = window.ref(window.storage, `uploads/${Date.now()}_${uid}.${ext}`);
                 await window.uploadBytes(refS, blobToUpload);
@@ -6085,8 +6085,6 @@
                         window.setDoc(window.doc(window.db, "dailyStats", today), { recordings: window.increment(1) }, { merge: true }).catch(()=>{});
                     }
                 }
-                document.getElementById('statusDisplay').innerText = "تم الإرسال!";
-                setTimeout(() => document.getElementById('statusDisplay').innerText = "جاهز للتلاوة", 2000);
                 recordingFileId = null; recordingStageId = null;
                 if (lastRecStream) { lastRecStream.getTracks().forEach(t => t.stop()); lastRecStream = null; }
                 if (navigator.audioSession) { try { navigator.audioSession.type = 'playback'; } catch(e) {} }
@@ -6115,14 +6113,13 @@
             if (isPlaying) {
                 isPlaying = false; isPaused = true; audioEl.pause(); clearInterval(pauseInterval);
                 releaseWakeLock();
-                document.getElementById('playBtn').innerText = "▶"; document.getElementById('statusDisplay').innerText = "متوقف مؤقتاً";
+                document.getElementById('playBtn').innerText = "▶";
             } else {
                 isPlaying = true; isPaused = false; document.getElementById('playBtn').innerText = "⏸";
                 requestWakeLock();
                 if (pauseSecondsLeft > 0) { startPauseCountdown(pauseSecondsLeft); } 
                 else if (audioEl.currentTime > 0 && audioEl.currentTime < audioEl.duration) {
                     pauseFeedAudio();
-                    document.getElementById('statusDisplay').innerText = `تلاوة ${verseRepeatsPlayed + 1} من ${parseInt(document.getElementById('globalRepeats').value)}`; 
                     audioEl.play().catch(e => { stopLoop(); });
                 } else {
                     playCycle();
@@ -6134,8 +6131,6 @@
             if(!isPlaying) return;
             requestWakeLock();
             pauseFeedAudio();
-            const target = parseInt(document.getElementById('globalRepeats').value);
-            document.getElementById('statusDisplay').innerText = `تلاوة ${verseRepeatsPlayed + 1} من ${target}`;
             audioEl.play().catch(e => { stopLoop(); });
             audioEl.onended = async function() {
                 if(!isPlaying) return;
@@ -6170,31 +6165,16 @@
         function startPauseCountdown(seconds) {
             requestWakeLock();
             pauseSecondsLeft = seconds;
-            document.getElementById('statusDisplay').innerText = `تكرار الطالب... (${pauseSecondsLeft})`;
             clearInterval(pauseInterval);
             pauseInterval = setInterval(() => {
                 pauseSecondsLeft--;
-                if(pauseSecondsLeft > 0) { document.getElementById('statusDisplay').innerText = `تكرار الطالب... (${pauseSecondsLeft})`; } 
-                else { clearInterval(pauseInterval); pauseSecondsLeft = 0; if(isPlaying) checkNextStep(); }
+                if(pauseSecondsLeft <= 0) { clearInterval(pauseInterval); pauseSecondsLeft = 0; if(isPlaying) checkNextStep(); }
             }, 1000);
         }
         
         function checkNextStep() {
             verseRepeatsPlayed++;
-            const target = parseInt(document.getElementById('globalRepeats').value) || 1;
-            if(verseRepeatsPlayed < target) { 
-                playCycle(); 
-            } else {
-                 // LOOPING LOGIC for AUTO PLAY
-                 const currentLesson = KURS_DATEN[currentLessonIdx];
-                 if(currentLocalVers < currentLesson.verse) {
-                     // Next Verse
-                     playVers(currentGlobalFileId + 1, currentLocalVers + 1, true);
-                 } else { 
-                     // Loop to Start of Lesson
-                     playVers(currentLesson.startGlobalId, 1, true);
-                 }
-            }
+            playCycle();
         }
         
         function stopLoop() { 
@@ -6202,7 +6182,7 @@
             audioEl.pause(); audioEl.currentTime = 0; 
             releaseWakeLock();
             pauseFeedAudio();
-            document.getElementById('playBtn').innerText = "▶"; document.getElementById('statusDisplay').innerText = "جاهز للتلاوة"; 
+            document.getElementById('playBtn').innerText = "▶"; 
         }
 
         window.goToMenu = function() { stopLoop(); stopRecordingAndReview();
