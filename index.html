@@ -4230,6 +4230,23 @@
             const v = data.viewers && data.viewers[uid];
             return (v && v.count) || 0;
         }
+        function updateViewCountDisplay(totalRepetitions) {
+            const el = document.getElementById('viewCount');
+            if (!el) return;
+            const role = localStorage.getItem('it9an_role');
+            const uid = localStorage.getItem('it9an_uid');
+            let count;
+            if (role === 'student' && uid && uid !== 'guest') {
+                count = getMyRepetitionCountForCurrentVerse();
+                if (count <= 15) el.style.color = '#c0392b';
+                else if (count <= 29) el.style.color = '#d35400';
+                else el.style.color = '#27ae60';
+            } else {
+                count = totalRepetitions;
+                el.style.color = '';
+            }
+            el.innerText = count;
+        }
         function updateRecButtonForStudentNotifications() {
             const recBtn = document.getElementById('recBtn');
             const playerView = document.getElementById('player-view');
@@ -5157,7 +5174,8 @@
                 }
             }
             
-            document.getElementById('viewCount').innerText = "0";
+            window.currentViewersData = { viewers: {}, totalRepetitions: 0 };
+            updateViewCountDisplay(0);
 
             const statRef = window.doc(window.db, "stats", getStatsDocId(currentStageId, globalId));
             
@@ -5168,10 +5186,10 @@
                     const d = snap.data();
                     const viewersObj = d.viewers && typeof d.viewers === 'object' && !Array.isArray(d.viewers) ? d.viewers : {};
                     window.currentViewersData = { viewers: viewersObj, totalRepetitions: d.totalRepetitions || 0 };
-                    document.getElementById('viewCount').innerText = d.totalRepetitions || 0;
+                    updateViewCountDisplay(d.totalRepetitions || 0);
                 } else {
                     window.currentViewersData = { viewers: {}, totalRepetitions: 0 }; 
-                    document.getElementById('viewCount').innerText = 0;
+                    updateViewCountDisplay(0);
                 }
                 if (typeof updateRecButtonForStudentNotifications === 'function') updateRecButtonForStudentNotifications();
             });
@@ -6813,10 +6831,10 @@
                         const d = snap.data();
                         const viewersObj = d.viewers && typeof d.viewers === 'object' && !Array.isArray(d.viewers) ? d.viewers : {};
                         window.currentViewersData = { viewers: viewersObj, totalRepetitions: d.totalRepetitions || 0 };
-                        document.getElementById('viewCount').innerText = d.totalRepetitions || 0;
+                        updateViewCountDisplay(d.totalRepetitions || 0);
                     } else {
                         window.currentViewersData = { viewers: {}, totalRepetitions: 0 };
-                        document.getElementById('viewCount').innerText = 0;
+                        updateViewCountDisplay(0);
                     }
                 });
                 loadFeed(currentGlobalFileId);
