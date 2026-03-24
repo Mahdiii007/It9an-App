@@ -1,9 +1,14 @@
-/* PWA Service Worker: Push (Ton+Vibration) + sparsames Offline-Caching */
-const CACHE_NAME = 'it9an-v3';
+/* PWA Service Worker: Push (Ton+Vibration) + Offline-Caching
+ * CACHE_NAME bei größeren Strategie-Änderungen erhöhen (alte Caches werden in activate entfernt). */
+const CACHE_NAME = 'it9an-v4';
 const CACHE_MAX_AGE = 24 * 60 * 60 * 1000;
 
 self.addEventListener('install', (e) => {
   self.skipWaiting();
+});
+
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
 self.addEventListener('activate', (e) => {
@@ -11,10 +16,34 @@ self.addEventListener('activate', (e) => {
   self.clients.claim();
 });
 
+function isHtmlNavigation(req, u) {
+  if (req.method !== 'GET') return false;
+  if (req.mode === 'navigate') return true;
+  const p = u.pathname;
+  return /\/index\.html$/i.test(p) || p === '/' || (p.endsWith('/') && !/\.\w+$/.test(p));
+}
+
 self.addEventListener('fetch', (e) => {
   const u = new URL(e.request.url);
   if (u.origin !== self.location.origin || e.request.method !== 'GET') return;
   if (u.pathname.includes('firestore') || u.pathname.includes('firebase') || u.pathname.includes('googleapis')) return;
+
+  /* Immer zuerst Netzwerk für HTML/Navigation → neues index.html nach Deploy ohne PWA neu installieren */
+  if (isHtmlNavigation(e.request, u)) {
+    e.respondWith(
+      fetch(e.request)
+        .then((r) => {
+          if (r.ok) {
+            const clone = r.clone();
+            caches.open(CACHE_NAME).then((c) => c.put(e.request, clone));
+          }
+          return r;
+        })
+        .catch(() => caches.match(e.request).then((c) => c || new Response('Offline', { status: 503, statusText: 'Offline' })))
+    );
+    return;
+  }
+
   e.respondWith(
     fetch(e.request)
       .then((r) => {
