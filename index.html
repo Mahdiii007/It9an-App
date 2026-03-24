@@ -373,8 +373,9 @@
             padding: 12px 16px; border: none; background: transparent;
             width: 92px; min-height: 92px; box-sizing: border-box;
         }
-        .verse-controls-side .setting-group { display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 17px; color: var(--primary); width: 100%; }
-        .verse-controls-side .view-count-in-settings { display: flex; align-items: center; justify-content: center; gap: 4px; cursor: pointer; font-weight: bold; font-size: 17px; color: var(--primary); width: 100%; }
+        .verse-controls-side .setting-group { display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 17px; font-weight: 600; line-height: 1.25; color: var(--primary); width: 100%; }
+        .verse-controls-side .view-count-in-settings { display: flex; align-items: center; justify-content: center; gap: 4px; cursor: pointer; font-size: 17px; font-weight: 600; line-height: 1.25; color: var(--primary); width: 100%; }
+        .verse-controls-side .view-count-in-settings #viewCount { font-weight: bold; }
 
         #verse-list-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; max-width: 100vw; height: 100%; background: rgba(0,0,0,0.92); z-index: 3000; overflow-x: hidden; overflow-y: auto; padding: 10px; box-sizing: border-box; }
         .verse-list-content { position: relative; background: var(--surface); border-radius: 15px; padding: 15px; width: 100%; max-width: calc(100vw - 20px); margin: 0 auto; box-sizing: border-box; }
@@ -629,6 +630,14 @@
         .btn:active { transform: scale(0.9); }
         .btn-rec { background: var(--red); border: 4px solid #fff; box-shadow: 0 4px 15px rgba(192, 57, 43, 0.3); }
         .btn-rec.recording { animation: pulse 1s infinite; background: white; color: var(--red); border: 2px solid var(--red); }
+        /* Klassisches Outline-Mikrofon (vergleichbar mit gängigen Social-App-Icons) */
+        .icon-mic { display: inline-block; vertical-align: middle; width: 1.15em; height: 1.15em; flex-shrink: 0; color: inherit; }
+        .btn-rec .icon-mic { width: 26px; height: 26px; }
+        .setup-step-btn .icon-mic { width: 1.2em; height: 1.2em; }
+        .verse-list-title .icon-mic { width: 24px; height: 24px; }
+        #statRecordingsWrap .icon-mic { width: 18px; height: 18px; }
+        .lb-stats .icon-mic { width: 1em; height: 1em; }
+        .notif-text .icon-mic { width: 1.15em; height: 1.15em; margin-left: 4px; margin-right: 4px; vertical-align: -0.2em; }
         .btn-play { background: var(--primary); border: 4px solid #fff; box-shadow: 0 4px 15px rgba(15, 76, 58, 0.3); }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
         @keyframes fadeOut { 0% { opacity: 1; } 70% { opacity: 1; } 100% { opacity: 0; } }
@@ -742,7 +751,7 @@
 
     <div id="guest-register-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:5001; overflow-y:auto; padding:15px; box-sizing:border-box;" onclick="if(event.target===this) hideGuestRegisterModal()">
         <div class="verse-list-content" onclick="event.stopPropagation()" style="max-width:420px; margin:40px auto;">
-            <div class="verse-list-title" style="margin-bottom:15px;">🎤 التسجيل الصوتي</div>
+            <div class="verse-list-title" style="margin-bottom:15px;display:flex;align-items:center;justify-content:center;gap:10px;"><svg class="icon-mic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg><span>التسجيل الصوتي</span></div>
             <div style="text-align:right; line-height:1.7; font-size:15px; color:#333; margin-bottom:20px;">
                 <p style="margin:0 0 12px 0;">يجب عليك التسجيل كطالب للتسجيل الصوتي.</p>
                 <p style="margin:0;">إذا رغبت، <a href="#" onclick="hideGuestRegisterModal(); showGuestRegistrationFlow(); return false;" style="color:var(--primary); font-weight:bold; text-decoration:underline;">انقر هنا</a> – وستحصل على رمز شخصي يجب أن تحفظه وتستخدمه في المستقبل بدلاً من رمز الضيف 0000.</p>
@@ -860,7 +869,7 @@
             <div class="lb-title">📊 إحصائيات التطبيق</div>
             <div id="appStatsContent" style="display:flex; flex-wrap:wrap; justify-content:space-around; align-items:center; gap:8px; padding:10px 0; font-size:15px;">
                 <span class="stat-clickable" id="statRepetitionsWrap" title="اضغط لعرض الرسم البياني"><span title="إجمالي التكرارات — اضغط لعرض">👁️ <span id="statRepetitions">—</span> <span class="stat-click-hint">↗</span></span></span>
-                <span class="stat-clickable" id="statRecordingsWrap" title="اضغط لعرض الرسم البياني"><span title="تسجيلات الطلاب — اضغط لعرض">🎤 <span id="statStudentRecordings">—</span> <span class="stat-click-hint">↗</span></span></span>
+                <span class="stat-clickable" id="statRecordingsWrap" title="اضغط لعرض الرسم البياني"><span title="تسجيلات الطلاب — اضغط لعرض" style="display:inline-flex;align-items:center;gap:4px;"><svg class="icon-mic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg><span id="statStudentRecordings">—</span> <span class="stat-click-hint">↗</span></span></span>
                 <span title="عدد الطلاب">🎓 <span id="statStudents">—</span></span>
                 <span title="عدد المعلمين">👨‍🏫 <span id="statTeachers">—</span></span>
             </div>
@@ -887,7 +896,7 @@
         <div class="stages-grid" id="stages-grid"></div>
         <button id="addToHomeBtnStages" class="setup-step-btn" style="margin: 20px 0 8px 0; display:none;" onclick="handleAddToHomeScreen()"><span class="step-main">📱 1. إضافة إلى الشاشة الرئيسية</span><span class="step-note">(تثبيت التطبيق على الشاشة الرئيسية)</span></button>
         <button id="pushEnableBtnStages" class="setup-step-btn" style="margin: 0 0 8px 0; display:none;" onclick="enablePushNotifications()"><span class="step-main">🔔 2. تفعيل الإشعارات على الشاشة</span><span class="step-note">(تفعيل الإشعارات في التطبيق وليس في المتصفح)</span></button>
-        <button id="microEnableBtnStages" class="setup-step-btn" style="margin: 0 0 8px 0; display:none;" onclick="enableMicrophonePermission()"><span class="step-main">🎤 3. تفعيل الميكروفون للتسجيل</span><span class="step-note">(تفعيل الميكروفون في التطبيق وليس في المتصفح)</span></button>
+        <button id="microEnableBtnStages" class="setup-step-btn" style="margin: 0 0 8px 0; display:none;" onclick="enableMicrophonePermission()"><span class="step-main" style="display:inline-flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;"><svg class="icon-mic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg><span>3. تفعيل الميكروفون للتسجيل</span></span><span class="step-note">(تفعيل الميكروفون في التطبيق وليس في المتصفح)</span></button>
         <button id="contactAdminBtnStages" class="verse-list-btn" style="margin: 15px 0 0 0; display:none; background:var(--primary); color:white; border-color:var(--gold);" onclick="showContactAdminView()">📩 تواصل مع المسؤول</button>
         <div id="teacher-notif-stages-section" class="leaderboard-card" style="margin-top:20px; display:none;">
             <div class="lb-title">🔔 إشعارات المراحل</div>
@@ -962,7 +971,7 @@
                     <div class="setting-group"><span>وقفة</span><input type="checkbox" id="globalGap" checked></div>
                     <div class="setting-group view-count-in-settings" onclick="showViewers()" title="مشاهدة"><span>تكرار</span><span id="viewCount">0</span></div>
                 </div>
-                <button id="recBtn" class="btn btn-rec" onclick="toggleRecord()">🎤</button>
+                <button id="recBtn" class="btn btn-rec" onclick="toggleRecord()" title="تسجيل" aria-label="تسجيل"><svg class="icon-mic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
                 <button id="playBtn" class="btn btn-play" onclick="toggleSmartLoop()">▶</button>
             </div>
 
@@ -973,7 +982,7 @@
         <div id="verse-list-modal" onclick="if(event.target===this) hideVerseList()">
             <div class="verse-list-content" onclick="event.stopPropagation()">
                 <div class="verse-list-header">
-                    <div class="verse-list-title">اختر الآية</div>
+                    <div class="verse-list-title">اختر المقتع</div>
                     <button class="modal-close-x" onclick="hideVerseList()" title="إغلاق">✕</button>
                 </div>
                 <div id="verse-list-grid" class="verse-list-grid"></div>
@@ -1629,7 +1638,8 @@
         let currentBlob = null, replyTargetId = null, maxRecDuration = 0;
         let lastRecStream = null, lastRecCtx = null;
         let recordingFileId = null, recordingStageId = null; // Beim Aufnahmestart gespeichert, damit die Aufnahme dem richtigen Vers zugeordnet bleibt (auch wenn der Vers während der Aufnahme wechselt)
-        
+        const ICON_MIC_HTML = '<svg class="icon-mic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>';
+
         window.currentViewersData = { viewers: {}, totalRepetitions: 0 }; 
         
         let feedLimit = 3;
@@ -2726,8 +2736,8 @@
                 const lbDateStr = isAdmin ? formatDateLatin(getLastLoginForDisplay(u)) : '';
                 const pinBadge = isAdmin ? `<span class="lb-pin" title="الرمز الشخصي">${u.personalPin ? String(u.personalPin).padStart(4,'0') : '—'}</span>` : '';
                 const adminBtns = isAdmin ? `<button class="delete-btn" onclick="deleteUser('${u.uid}')" title="حذف">🗑️</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="editUserName('${u.uid}')" title="تعديل الاسم">✏️</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="swapFirstLastName('${u.uid}')" title="تبديل الاسم الأول واللقب">🔄</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="sendPrivateMessageToUser('${u.uid}')" title="رسالة خاصة">✉️</button><button class="${blockBtnClass}" style="padding:4px 10px; font-size:12px;" onclick="toggleBlockUser('${u.uid}', ${isBlocked})">${blockBtnText}</button>` : '';
-                const nameRow = isAdmin ? `<div class="lb-admin-name-row">${pinBadge}<span class="lb-rank">#${rank}</span><span class="lb-name">${(lbDisplayName || '—').replace(/</g,'&lt;')}</span><span class="lb-admin-date">${lbDateStr}</span></div>` : `<div class="lb-item-top-row" style="display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%; min-width:0;"><div class="lb-name-pin-wrap" style="display:flex; align-items:center; gap:6px; flex:1; min-width:0; overflow:hidden;">${pinBadge}<span class="lb-rank">#${rank}</span><span class="lb-name">${(lbDisplayName || '—').replace(/</g,'&lt;')}</span></div><div class="lb-stats"><span class="lb-score lb-likes-click" onclick="toggleLbViews('${u.uid}')" title="عرض المشاهدات">👁️ ${u.totalVerseViews || 0}</span><span class="lb-score lb-likes-click" onclick="toggleLbRecordings('${u.uid}')" title="عرض التسجيلات">🎤 ${u.postsCount || 0}</span><span class="lb-likes lb-likes-click" onclick="toggleLbLikes('${u.uid}')" title="عرض الإعجابات">👍 ${likesCount}</span></div></div>`;
-                const iconsRow = isAdmin ? `<div class="lb-stats" style="display:flex; gap:8px; flex-shrink:0; margin-top:6px;"><span class="lb-score lb-likes-click" onclick="toggleLbViews('${u.uid}')" title="عرض المشاهدات">👁️ ${u.totalVerseViews || 0}</span><span class="lb-score lb-likes-click" onclick="toggleLbRecordings('${u.uid}')" title="عرض التسجيلات">🎤 ${u.postsCount || 0}</span><span class="lb-likes lb-likes-click" onclick="toggleLbLikes('${u.uid}')" title="عرض الإعجابات">👍 ${likesCount}</span></div>` : '';
+                const nameRow = isAdmin ? `<div class="lb-admin-name-row">${pinBadge}<span class="lb-rank">#${rank}</span><span class="lb-name">${(lbDisplayName || '—').replace(/</g,'&lt;')}</span><span class="lb-admin-date">${lbDateStr}</span></div>` : `<div class="lb-item-top-row" style="display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%; min-width:0;"><div class="lb-name-pin-wrap" style="display:flex; align-items:center; gap:6px; flex:1; min-width:0; overflow:hidden;">${pinBadge}<span class="lb-rank">#${rank}</span><span class="lb-name">${(lbDisplayName || '—').replace(/</g,'&lt;')}</span></div><div class="lb-stats"><span class="lb-score lb-likes-click" onclick="toggleLbViews('${u.uid}')" title="عرض المشاهدات">👁️ ${u.totalVerseViews || 0}</span><span class="lb-score lb-likes-click" onclick="toggleLbRecordings('${u.uid}')" title="عرض التسجيلات">${ICON_MIC_HTML} ${u.postsCount || 0}</span><span class="lb-likes lb-likes-click" onclick="toggleLbLikes('${u.uid}')" title="عرض الإعجابات">👍 ${likesCount}</span></div></div>`;
+                const iconsRow = isAdmin ? `<div class="lb-stats" style="display:flex; gap:8px; flex-shrink:0; margin-top:6px;"><span class="lb-score lb-likes-click" onclick="toggleLbViews('${u.uid}')" title="عرض المشاهدات">👁️ ${u.totalVerseViews || 0}</span><span class="lb-score lb-likes-click" onclick="toggleLbRecordings('${u.uid}')" title="عرض التسجيلات">${ICON_MIC_HTML} ${u.postsCount || 0}</span><span class="lb-likes lb-likes-click" onclick="toggleLbLikes('${u.uid}')" title="عرض الإعجابات">👍 ${likesCount}</span></div>` : '';
                 list.innerHTML += `
                 <li class="${cls}">
                     <div class="lb-item">
@@ -2921,8 +2931,8 @@
                     const lbDateStrT = isAdmin ? formatDateLatin(getLastLoginForDisplay(u)) : '';
                     const pinBadgeT = isAdmin ? `<span class="lb-pin" title="الرمز الشخصي">${(u.personalPin || '').toString().trim() ? String(u.personalPin).padStart(4,'0') : '—'}</span>` : '';
                     const adminBtnsT = isAdmin ? `<button class="delete-btn" onclick="deleteUser('${u.uid}')" title="حذف">🗑️</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="editUserName('${u.uid}')" title="تعديل الاسم">✏️</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="swapFirstLastName('${u.uid}')" title="تبديل الاسم الأول واللقب">🔄</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="sendPrivateMessageToUser('${u.uid}')" title="رسالة خاصة">✉️</button><button class="${blockBtnClass}" style="padding:4px 10px; font-size:12px;" onclick="toggleBlockUser('${u.uid}', ${isBlocked})">${blockBtnText}</button>` : '';
-                    const nameRowT = isAdmin ? `<div class="lb-admin-name-row">${pinBadgeT}<span class="lb-rank">#${rank}</span><span class="lb-name">${(lbDisplayNameT || '—').replace(/</g,'&lt;')}</span><span class="role-badge badge-teacher">معلم</span><span class="lb-admin-date">${lbDateStrT}</span></div>` : `<div class="lb-item-top-row" style="display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%; min-width:0;"><div class="lb-name-pin-wrap" style="display:flex; align-items:center; gap:6px; flex:1; min-width:0; overflow:hidden;">${pinBadgeT}<span class="lb-rank">#${rank}</span><span class="lb-name">${(lbDisplayNameT || '—').replace(/</g,'&lt;')}</span><span class="role-badge badge-teacher">معلم</span></div><div class="lb-stats"><span class="lb-likes lb-likes-click" onclick="toggleLbLikes('${u.uid}')" title="عرض الإعجابات">👍 ${likesCount}</span><span class="lb-score lb-likes-click" onclick="toggleLbRecordings('${u.uid}')" title="عرض الردود">🎤 ${repliesCount}</span></div></div>`;
-                    const iconsRowT = isAdmin ? `<div class="lb-stats" style="display:flex; gap:8px; flex-shrink:0; margin-top:6px;"><span class="lb-likes lb-likes-click" onclick="toggleLbLikes('${u.uid}')" title="عرض الإعجابات">👍 ${likesCount}</span><span class="lb-score lb-likes-click" onclick="toggleLbRecordings('${u.uid}')" title="عرض الردود">🎤 ${repliesCount}</span></div>` : '';
+                    const nameRowT = isAdmin ? `<div class="lb-admin-name-row">${pinBadgeT}<span class="lb-rank">#${rank}</span><span class="lb-name">${(lbDisplayNameT || '—').replace(/</g,'&lt;')}</span><span class="role-badge badge-teacher">معلم</span><span class="lb-admin-date">${lbDateStrT}</span></div>` : `<div class="lb-item-top-row" style="display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%; min-width:0;"><div class="lb-name-pin-wrap" style="display:flex; align-items:center; gap:6px; flex:1; min-width:0; overflow:hidden;">${pinBadgeT}<span class="lb-rank">#${rank}</span><span class="lb-name">${(lbDisplayNameT || '—').replace(/</g,'&lt;')}</span><span class="role-badge badge-teacher">معلم</span></div><div class="lb-stats"><span class="lb-likes lb-likes-click" onclick="toggleLbLikes('${u.uid}')" title="عرض الإعجابات">👍 ${likesCount}</span><span class="lb-score lb-likes-click" onclick="toggleLbRecordings('${u.uid}')" title="عرض الردود">${ICON_MIC_HTML} ${repliesCount}</span></div></div>`;
+                    const iconsRowT = isAdmin ? `<div class="lb-stats" style="display:flex; gap:8px; flex-shrink:0; margin-top:6px;"><span class="lb-likes lb-likes-click" onclick="toggleLbLikes('${u.uid}')" title="عرض الإعجابات">👍 ${likesCount}</span><span class="lb-score lb-likes-click" onclick="toggleLbRecordings('${u.uid}')" title="عرض الردود">${ICON_MIC_HTML} ${repliesCount}</span></div>` : '';
                     list.innerHTML += `
                     <li class="lb-item-wrapper ${rank <= 3 ? 'lb-item-top3' : ''}">
                         <div class="lb-item">
@@ -3055,8 +3065,8 @@
                     const lbDateStrT = isAdmin ? formatDateLatin(getLastLoginForDisplay(u)) : '';
                     const pinBadgeT = isAdmin ? `<span class="lb-pin" title="الرمز الشخصي">${(u.personalPin || '').toString().trim() ? String(u.personalPin).padStart(4,'0') : '—'}</span>` : '';
                     const adminBtnsT = isAdmin ? `<button class="delete-btn" onclick="deleteUser('${u.uid}')" title="حذف">🗑️</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="editUserName('${u.uid}')" title="تعديل الاسم">✏️</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="swapFirstLastName('${u.uid}')" title="تبديل الاسم الأول واللقب">🔄</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="sendPrivateMessageToUser('${u.uid}')" title="رسالة خاصة">✉️</button><button class="${blockBtnClass}" style="padding:4px 10px; font-size:12px;" onclick="toggleBlockUser('${u.uid}', ${isBlocked})">${blockBtnText}</button>` : '';
-                    const nameRowT = isAdmin ? `<div class="lb-admin-name-row">${pinBadgeT}<span class="lb-rank">#${rank}</span><span class="lb-name">${(lbDisplayNameT || '—').replace(/</g,'&lt;')}</span><span class="role-badge badge-teacher">معلم</span><span class="lb-admin-date">${lbDateStrT}</span></div>` : `<div class="lb-item-top-row" style="display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%; min-width:0;"><div class="lb-name-pin-wrap" style="display:flex; align-items:center; gap:6px; flex:1; min-width:0; overflow:hidden;">${pinBadgeT}<span class="lb-rank">#${rank}</span><span class="lb-name">${(lbDisplayNameT || '—').replace(/</g,'&lt;')}</span><span class="role-badge badge-teacher">معلم</span></div><div class="lb-stats"><span class="lb-likes lb-likes-click" onclick="toggleLbLikes('${u.uid}')" title="عرض الإعجابات">👍 ${likesCount}</span><span class="lb-score lb-likes-click" onclick="toggleLbRecordings('${u.uid}')" title="عرض الردود">🎤 ${repliesCount}</span></div></div>`;
-                    const iconsRowT = isAdmin ? `<div class="lb-stats" style="display:flex; gap:8px; flex-shrink:0; margin-top:6px;"><span class="lb-likes lb-likes-click" onclick="toggleLbLikes('${u.uid}')" title="عرض الإعجابات">👍 ${likesCount}</span><span class="lb-score lb-likes-click" onclick="toggleLbRecordings('${u.uid}')" title="عرض الردود">🎤 ${repliesCount}</span></div>` : '';
+                    const nameRowT = isAdmin ? `<div class="lb-admin-name-row">${pinBadgeT}<span class="lb-rank">#${rank}</span><span class="lb-name">${(lbDisplayNameT || '—').replace(/</g,'&lt;')}</span><span class="role-badge badge-teacher">معلم</span><span class="lb-admin-date">${lbDateStrT}</span></div>` : `<div class="lb-item-top-row" style="display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%; min-width:0;"><div class="lb-name-pin-wrap" style="display:flex; align-items:center; gap:6px; flex:1; min-width:0; overflow:hidden;">${pinBadgeT}<span class="lb-rank">#${rank}</span><span class="lb-name">${(lbDisplayNameT || '—').replace(/</g,'&lt;')}</span><span class="role-badge badge-teacher">معلم</span></div><div class="lb-stats"><span class="lb-likes lb-likes-click" onclick="toggleLbLikes('${u.uid}')" title="عرض الإعجابات">👍 ${likesCount}</span><span class="lb-score lb-likes-click" onclick="toggleLbRecordings('${u.uid}')" title="عرض الردود">${ICON_MIC_HTML} ${repliesCount}</span></div></div>`;
+                    const iconsRowT = isAdmin ? `<div class="lb-stats" style="display:flex; gap:8px; flex-shrink:0; margin-top:6px;"><span class="lb-likes lb-likes-click" onclick="toggleLbLikes('${u.uid}')" title="عرض الإعجابات">👍 ${likesCount}</span><span class="lb-score lb-likes-click" onclick="toggleLbRecordings('${u.uid}')" title="عرض الردود">${ICON_MIC_HTML} ${repliesCount}</span></div>` : '';
                     list.innerHTML += `
                     <li class="lb-item-wrapper ${rank <= 3 ? 'lb-item-top3' : ''}">
                         <div class="lb-item">
@@ -4359,7 +4369,7 @@
                     if (lessonNum) parts.push(lessonTitle ? 'درس ' + lessonNum + ': ' + lessonTitle : 'درس ' + lessonNum);
                     if (verseNum) parts.push('مقطع ' + verseNum);
                     const detailSuffix = parts.length ? ' — ' + parts.join(' • ') : '';
-                    if(n.type === 'new_recording') text = `🎤 تسجيل جديد من الطالب ${stripYearFromName(n.senderName || '')}` + detailSuffix;
+                    if(n.type === 'new_recording') text = ICON_MIC_HTML + ' تسجيل جديد من الطالب ' + stripYearFromName(n.senderName || '') + detailSuffix;
                     if(n.type === 'reply') text = `✍️ رد جديد من المعلم ${stripYearFromName(n.senderName || '')}` + detailSuffix;
                     if(n.type === 'admin_message') text = n.subtype === 'private_reply' ? `💬 رد من ${stripYearFromName(n.senderName || '')}` : (n.subtype === 'user_contact' ? `📩 رسالة من ${stripYearFromName(n.senderName || '')}` : `📩 رسالة من المسؤول`);
                     if(n.type === 'lesson_uploaded') text = (n.body || '').trim() || `📚 درس جديد: ${(n.lessonTitle || '').trim()} في ${(n.stageName || '').trim()}`;
@@ -5821,7 +5831,7 @@
                     }
                     let dur = audioEl.duration; if(!dur || isNaN(dur)) dur = 15;
                     const role = localStorage.getItem('it9an_role');
-                    maxRecDuration = (replyTargetId && role === 'teacher') ? 180 : Math.ceil(dur * 2);
+                    maxRecDuration = (replyTargetId && role === 'teacher') ? 600 : Math.ceil(dur * 3);
                     const canReuse = isMacDesktop && lastRecStream && lastRecStream.getTracks().every(t => t.readyState === 'live');
                     if (canReuse) {
                         rawStream = lastRecStream;
