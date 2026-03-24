@@ -644,6 +644,32 @@
         .stat-clickable { cursor: pointer; padding: 6px 12px; border-radius: 8px; border: 1px dashed rgba(15, 76, 58, 0.4); transition: background 0.2s; }
         .stat-clickable:hover { background: rgba(15, 76, 58, 0.12); border-color: var(--primary); }
         .stat-click-hint { font-size: 12px; opacity: 0.8; margin-right: 2px; }
+        /* App-Statistik: alle vier Werte (تكرارات، تسجيلات، طلاب، معلمين) in einer Zeile */
+        #appStatsContent {
+            display: flex;
+            flex-wrap: nowrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 2px;
+            padding: 10px 0;
+            font-size: 15px;
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        #appStatsContent > span {
+            flex: 1 1 0;
+            min-width: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+        #appStatsContent .stat-clickable {
+            padding: 6px 4px;
+        }
         .stat-chart-wrap { border: 1px solid #eee; }
         .stat-chart-btn { padding: 6px 12px; border-radius: 8px; border: 1px solid var(--primary); background: white; color: var(--primary); font-family: 'Amiri'; font-size: 14px; cursor: pointer; }
         .stat-chart-btn:hover { background: rgba(15, 76, 58, 0.08); }
@@ -867,7 +893,7 @@
     <div id="stages-view">
         <div id="app-stats-card" class="leaderboard-card" style="margin-bottom:20px;">
             <div class="lb-title">📊 إحصائيات التطبيق</div>
-            <div id="appStatsContent" style="display:flex; flex-wrap:wrap; justify-content:space-around; align-items:center; gap:8px; padding:10px 0; font-size:15px;">
+            <div id="appStatsContent">
                 <span class="stat-clickable" id="statRepetitionsWrap" title="اضغط لعرض الرسم البياني"><span title="إجمالي التكرارات — اضغط لعرض">👁️ <span id="statRepetitions">—</span> <span class="stat-click-hint">↗</span></span></span>
                 <span class="stat-clickable" id="statRecordingsWrap" title="اضغط لعرض الرسم البياني"><span title="تسجيلات الطلاب — اضغط لعرض" style="display:inline-flex;align-items:center;gap:4px;"><svg class="icon-mic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg><span id="statStudentRecordings">—</span> <span class="stat-click-hint">↗</span></span></span>
                 <span title="عدد الطلاب">🎓 <span id="statStudents">—</span></span>
