@@ -1107,6 +1107,52 @@
             });
         }
 
+        /** PWA-Updates: neuer Service Worker → einmal Reload; regelmäßig update() damit Deploys ohne Neuinstallation ankommen. */
+        (function setupPwaServiceWorkerLifecycle() {
+            if (!('serviceWorker' in navigator)) return;
+            const SW_CTRL_KEY = 'it9an_sw_controller_seen';
+            let reloadScheduled = false;
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                try {
+                    if (!localStorage.getItem(SW_CTRL_KEY)) {
+                        localStorage.setItem(SW_CTRL_KEY, '1');
+                        return;
+                    }
+                } catch (e) { /* ignore */ }
+                if (reloadScheduled) return;
+                reloadScheduled = true;
+                window.location.reload();
+            });
+            const swFile = 'firebase-messaging-sw.js';
+            async function registerAndUpdateSw() {
+                try {
+                    const swUrl = new URL(swFile, window.location.href).href;
+                    const reg = await navigator.serviceWorker.register(swUrl);
+                    await reg.update();
+                    if (reg.waiting && navigator.serviceWorker.controller) {
+                        reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+                    }
+                    return reg;
+                } catch (err) {
+                    console.warn('Service Worker register/update:', err);
+                    return null;
+                }
+            }
+            function scheduleSwChecks() {
+                registerAndUpdateSw();
+                setInterval(registerAndUpdateSw, 4 * 60 * 60 * 1000);
+                document.addEventListener('visibilitychange', () => {
+                    if (document.visibilityState === 'visible') registerAndUpdateSw();
+                });
+                window.addEventListener('focus', () => registerAndUpdateSw());
+            }
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', () => { setTimeout(scheduleSwChecks, 800); });
+            } else {
+                setTimeout(scheduleSwChecks, 800);
+            }
+        })();
+
         function generatePersonalPin(existingPins) {
             const used = new Set([...RESERVED_PINS, ...(existingPins || [])]);
             let pin;
