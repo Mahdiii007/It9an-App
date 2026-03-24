@@ -2219,16 +2219,20 @@
                 setTimeout(tryOpen, 400);
             })();
             window.scrollTo({ top: 0, behavior: 'smooth' });
-            if (uid && uid !== 'admin_super' && uid !== 'guest') requestPushPermissionAndSaveToken(uid, role);
+            if (uid && uid !== 'admin_super' && uid !== 'guest') requestPushPermissionAndSaveToken(uid, role, false, true);
             if (!_tokenRefreshListenerAdded) {
                 _tokenRefreshListenerAdded = true;
-                document.addEventListener('visibilitychange', function() {
+                const refreshIfVisible = function() {
                     if (document.visibilityState !== 'visible') return;
                     const u = localStorage.getItem('it9an_uid');
                     const r = localStorage.getItem('it9an_role');
                     if (!u || u === 'admin_super' || u === 'guest') return;
                     if (Notification.permission !== 'granted') return;
-                    requestPushPermissionAndSaveToken(u, r, false);
+                    requestPushPermissionAndSaveToken(u, r, false, false);
+                };
+                document.addEventListener('visibilitychange', refreshIfVisible);
+                window.addEventListener('pageshow', function(ev) {
+                    if (ev.persisted) refreshIfVisible();
                 });
             }
         }
@@ -4064,7 +4068,7 @@
                     const openLesson = data.openLesson === '1';
                     const stageId = String(data.stageId || '').trim();
                     const iconUrl = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect fill='%230f4c3a' width='192' height='192' rx='24'/%3E%3Ctext x='96' y='120' font-size='100' text-anchor='middle' fill='%23d4af37' font-family='serif'%3Eٱ%3C/text%3E%3C/svg%3E";
-                    const n = new Notification(title, { body, icon: iconUrl, tag: 'it9an-' + (postId || (openLesson ? 'lesson-' + fileId : Date.now())), renotify: true });
+                    const n = new Notification(title, { body, icon: iconUrl, tag: data.tag || ('it9an-' + (postId || (openLesson ? 'lesson-' + fileId : Date.now()))), renotify: true });
                     n.onclick = () => {
                         n.close();
                         window.focus();
@@ -4078,11 +4082,28 @@
                 _foregroundPushSetup = true;
             } catch (e) { console.warn('Foreground push setup:', e); }
         }
-        async function requestPushPermissionAndSaveToken(uid, role, showResult) {
+        async function removeOtherUsersWithSameFcmToken(currentUid, token) {
+            if (!token || !currentUid || !window.db) return;
+            try {
+                const q = window.query(window.collection(window.db, 'fcmTokens'), window.where('token', '==', token));
+                const snap = await window.getDocs(q);
+                for (const d of snap.docs) {
+                    if (d.id !== currentUid) {
+                        try { await window.deleteDoc(d.ref); } catch (e) { console.warn('FCM dedupe delete', d.id, e); }
+                    }
+                }
+            } catch (e) { console.warn('removeOtherUsersWithSameFcmToken', e); }
+        }
+
+        async function requestPushPermissionAndSaveToken(uid, role, showResult, forceRefresh) {
             try {
                 if (!('Notification' in window)) {
                     if (showResult) alert('المتصفح لا يدعم الإشعارات.');
                     return false;
+                }
+                if (!showResult && !forceRefresh) {
+                    const last = parseInt(sessionStorage.getItem('it9an_fcm_last_refresh') || '0', 10);
+                    if (last && (Date.now() - last) < 25 * 60 * 1000) return true;
                 }
                 if (typeof window.isSupportedFcm === 'function') {
                     const supported = await window.isSupportedFcm();
@@ -4122,6 +4143,8 @@
                     } catch (e) {}
                 }
                 await window.setDoc(window.doc(window.db, 'fcmTokens', uid), { token, uid, role, notifStages, updatedAt: window.serverTimestamp() }, { merge: true });
+                await removeOtherUsersWithSameFcmToken(uid, token);
+                try { sessionStorage.setItem('it9an_fcm_last_refresh', String(Date.now())); } catch (e) {}
                 setupForegroundPushHandler();
                 if (showResult) {
                     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
