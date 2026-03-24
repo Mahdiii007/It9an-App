@@ -1671,9 +1671,8 @@
         let feedLimit = 3;
         let allLoadedPosts = [];
         let savedIdsForFeed = new Set();
+        /** Batch-Größe nur für paginiertes Laden beim ersten Fetch (alle Batches werden nacheinander geholt). */
         const FEED_PAGE_SIZE = 50;
-        let feedLastDoc = null;
-        let feedHasMore = true;
         let feedCurrentFileId = null;
         let highlightedPostId = null;
         let activePostFilter = null;
@@ -5273,6 +5272,36 @@
             alert(lines.join("\n"));
         }
 
+        /** Alle Posts zu dieser fileId laden (Firestore in Batches à FEED_PAGE_SIZE). */
+        async function fetchAllPostsForFileStage(idString, fromServer) {
+            const coll = window.collection(window.db, "posts");
+            const out = [];
+            let lastDoc = null;
+            for (;;) {
+                const q = lastDoc
+                    ? window.query(coll, window.where("fileId", "==", idString), window.orderBy("timestamp", "desc"), window.limit(FEED_PAGE_SIZE), window.startAfter(lastDoc))
+                    : window.query(coll, window.where("fileId", "==", idString), window.orderBy("timestamp", "desc"), window.limit(FEED_PAGE_SIZE));
+                let snap;
+                try {
+                    snap = fromServer ? await window.getDocsFromServer(q) : await window.getDocs(q);
+                } catch (e) {
+                    if (fromServer) {
+                        try { snap = await window.getDocs(q); } catch (e2) { console.warn('fetchAllPostsForFileStage', e2); break; }
+                    } else { console.warn('fetchAllPostsForFileStage', e); break; }
+                }
+                if (!snap.size) break;
+                snap.forEach(doc => {
+                    const d = doc.data();
+                    const postStage = d.stageId != null ? d.stageId : 4;
+                    if (postStage !== currentStageId) return;
+                    out.push({ id: doc.id, ...d });
+                });
+                lastDoc = snap.docs[snap.docs.length - 1];
+                if (snap.size < FEED_PAGE_SIZE) break;
+            }
+            return out;
+        }
+
         async function loadFeed(fileId) {
             const div = document.getElementById('community-feed');
             div.innerHTML = "<div style='text-align:center; color:#ccc; padding:10px;'>...</div>";
@@ -5280,24 +5309,11 @@
             
             const idString = String(fileId);
             feedCurrentFileId = idString;
-            feedLastDoc = null;
-            feedHasMore = true;
             const userRole = localStorage.getItem('it9an_role');
             const myUid = localStorage.getItem('it9an_uid');
-            const q = window.query(window.collection(window.db, "posts"), window.where("fileId", "==", idString), window.orderBy("timestamp", "desc"), window.limit(FEED_PAGE_SIZE));
+            const qListen = window.query(window.collection(window.db, "posts"), window.where("fileId", "==", idString), window.orderBy("timestamp", "desc"));
             try {
-                let snap;
-                try { snap = await window.getDocsFromServer(q); }
-                catch (e) { snap = await window.getDocs(q); }
-                allLoadedPosts = [];
-                snap.forEach(doc => {
-                    const d = doc.data();
-                    const postStage = d.stageId != null ? d.stageId : 4;
-                    if (postStage !== currentStageId) return;
-                    allLoadedPosts.push({ id: doc.id, ...d });
-                });
-                feedLastDoc = snap.docs.length > 0 ? snap.docs[snap.docs.length - 1] : null;
-                feedHasMore = snap.size === FEED_PAGE_SIZE;
+                allLoadedPosts = await fetchAllPostsForFileStage(idString, true);
                 if (allLoadedPosts.length > 0) {
                     if (activePostFilter) {
                         const hp = allLoadedPosts.find(p => p.id === activePostFilter);
@@ -5341,24 +5357,20 @@
                     updateParticipationsCount();
                 }
             } catch (e) { console.warn('loadFeed initial:', e); }
-            unsubscribeFeed = window.onSnapshot(q, async (snap) => {
+            unsubscribeFeed = window.onSnapshot(qListen, async (snap) => {
                 if (document.hidden) return;
-                const newFirstPage = [];
+                const nextPosts = [];
                 snap.forEach(doc => {
                     const d = doc.data();
                     const postStage = d.stageId != null ? d.stageId : 4;
                     if (postStage !== currentStageId) return;
-                    newFirstPage.push({ id: doc.id, ...d });
+                    nextPosts.push({ id: doc.id, ...d });
                 });
-                feedLastDoc = snap.docs.length > 0 ? snap.docs[snap.docs.length - 1] : null;
-                feedHasMore = snap.size === FEED_PAGE_SIZE;
-                const newIds = new Set(newFirstPage.map(p => p.id));
-                const olderLoaded = allLoadedPosts.filter(p => !newIds.has(p.id));
-                allLoadedPosts = [...newFirstPage, ...olderLoaded];
+                allLoadedPosts = nextPosts;
                 if (allLoadedPosts.length === 0) { div.innerHTML = "<div style='text-align:center; color:#999; font-size:16px; padding:20px;'>لا توجد مشاركات حتى الآن</div>"; updateParticipationsCount(); return; }
-                
+
                 if (activePostFilter) {
-                    const hp = allLoadedPosts.find(p => p.id === activePostFilter);
+                    let hp = allLoadedPosts.find(p => p.id === activePostFilter);
                     if (hp) {
                         allLoadedPosts.sort((a, b) => {
                             if (a.id === activePostFilter) return -1;
@@ -5618,47 +5630,15 @@
                 if (ownPosts.length > feedLimit || othersPosts.length > feedLimit) {
                     htmlContent += `<button class="load-more-btn" onclick="loadMorePosts()">▼ عرض المزيد</button>`;
                 }
-                if (feedHasMore && feedLastDoc) {
-                    htmlContent += `<button class="load-more-btn" id="feedLoadOlderBtn" onclick="loadOlderPosts()" style="margin-top:8px;">▼ تحميل مشاركات أقدم</button>`;
-                }
             } else {
                 const displayPosts = allLoadedPosts.slice(0, feedLimit);
                 displayPosts.forEach(d => { htmlContent += renderOnePost(d); });
                 if (!activePostFilter && allLoadedPosts.length > feedLimit) {
                     htmlContent += `<button class="load-more-btn" onclick="loadMorePosts()">▼ عرض المزيد</button>`;
                 }
-                if (!activePostFilter && feedHasMore && feedLastDoc) {
-                    htmlContent += `<button class="load-more-btn" id="feedLoadOlderBtn" onclick="loadOlderPosts()" style="margin-top:8px;">▼ تحميل مشاركات أقدم</button>`;
-                }
             }
             container.innerHTML = htmlContent;
         }
-
-        window.loadOlderPosts = async function() {
-            if (!feedLastDoc || !feedHasMore || !feedCurrentFileId) return;
-            const btn = document.getElementById('feedLoadOlderBtn');
-            if (btn) { btn.disabled = true; btn.textContent = 'جاري التحميل...'; }
-            try {
-                const q = window.query(window.collection(window.db, "posts"), window.where("fileId", "==", feedCurrentFileId), window.orderBy("timestamp", "desc"), window.limit(FEED_PAGE_SIZE), window.startAfter(feedLastDoc));
-                const snap = await window.getDocs(q);
-                const userRole = localStorage.getItem('it9an_role');
-                const myUid = localStorage.getItem('it9an_uid');
-                const div = document.getElementById('community-feed');
-                snap.forEach(doc => {
-                    const d = doc.data();
-                    const postStage = d.stageId != null ? d.stageId : 4;
-                    if (postStage !== currentStageId) return;
-                    allLoadedPosts.push({ id: doc.id, ...d });
-                });
-                feedLastDoc = snap.docs.length > 0 ? snap.docs[snap.docs.length - 1] : null;
-                feedHasMore = snap.size === FEED_PAGE_SIZE;
-                feedLimit = Math.max(feedLimit, allLoadedPosts.length);
-                renderPosts(div, userRole, myUid, savedIdsForFeed);
-                updateParticipationsCount();
-            } catch (e) { console.warn('loadOlderPosts:', e); }
-            const btnAfter = document.getElementById('feedLoadOlderBtn');
-            if (btnAfter) { btnAfter.disabled = false; btnAfter.textContent = feedHasMore ? '▼ تحميل مشاركات أقدم' : ''; }
-        };
 
         window.loadMorePosts = function() {
             feedLimit += 3;
