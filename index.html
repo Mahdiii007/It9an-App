@@ -1126,11 +1126,58 @@
             });
         }
 
-        /** PWA-Updates: neuer Service Worker → einmal Reload; regelmäßig update() damit Deploys ohne Neuinstallation ankommen. */
-        (function setupPwaServiceWorkerLifecycle() {
-            if (!('serviceWorker' in navigator)) return;
+        /** PWA-Deploy: SW neu laden + app-version.json – häufige Prüfung, Tab-Fokus, Netz wieder da, bfcache. */
+        (function setupPwaAutoUpdate() {
+            if (!('serviceWorker' in navigator)) {
+                (function versionOnly() {
+                    const STORAGE_KEY = 'it9an_app_deploy_version';
+                    let checking = false;
+                    function versionUrl() { return new URL('app-version.json', window.location.href).href; }
+                    async function checkDeployVersion() {
+                        if (checking) return;
+                        checking = true;
+                        try {
+                            const r = await fetch(versionUrl() + '?t=' + Date.now(), { cache: 'no-store', headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' } });
+                            if (!r.ok) return;
+                            const j = await r.json();
+                            const v = j && j.version != null ? String(j.version) : '';
+                            if (!v) return;
+                            let prev = null;
+                            try { prev = localStorage.getItem(STORAGE_KEY); } catch (e) { /* ignore */ }
+                            if (prev !== null && prev !== v) {
+                                try { localStorage.setItem(STORAGE_KEY, v); } catch (e) { /* ignore */ }
+                                window.location.reload();
+                                return;
+                            }
+                            try { localStorage.setItem(STORAGE_KEY, v); } catch (e) { /* ignore */ }
+                        } catch (e) { /* offline */ }
+                        finally { checking = false; }
+                    }
+                    function tick() { checkDeployVersion(); }
+                    tick();
+                    setTimeout(tick, 4000);
+                    setTimeout(tick, 20000);
+                    setTimeout(tick, 90000);
+                    setInterval(tick, 2.5 * 60 * 1000);
+                    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') tick(); });
+                    window.addEventListener('focus', tick);
+                    window.addEventListener('online', tick);
+                    window.addEventListener('pageshow', (e) => { if (e.persisted) tick(); });
+                })();
+                return;
+            }
             const SW_CTRL_KEY = 'it9an_sw_controller_seen';
+            const VERSION_STORAGE_KEY = 'it9an_app_deploy_version';
+            const POLL_MS = 2.5 * 60 * 1000;
             let reloadScheduled = false;
+            let versionChecking = false;
+
+            function scheduleReloadOnce() {
+                if (reloadScheduled) return;
+                reloadScheduled = true;
+                window.location.reload();
+            }
+
             navigator.serviceWorker.addEventListener('controllerchange', () => {
                 try {
                     if (!localStorage.getItem(SW_CTRL_KEY)) {
@@ -1138,10 +1185,9 @@
                         return;
                     }
                 } catch (e) { /* ignore */ }
-                if (reloadScheduled) return;
-                reloadScheduled = true;
-                window.location.reload();
+                scheduleReloadOnce();
             });
+
             const swFile = 'firebase-messaging-sw.js';
             async function registerAndUpdateSw() {
                 try {
@@ -1157,31 +1203,13 @@
                     return null;
                 }
             }
-            function scheduleSwChecks() {
-                registerAndUpdateSw();
-                setInterval(registerAndUpdateSw, 4 * 60 * 60 * 1000);
-                document.addEventListener('visibilitychange', () => {
-                    if (document.visibilityState === 'visible') registerAndUpdateSw();
-                });
-                window.addEventListener('focus', () => registerAndUpdateSw());
-            }
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', () => { setTimeout(scheduleSwChecks, 800); });
-            } else {
-                setTimeout(scheduleSwChecks, 800);
-            }
-        })();
 
-        /** Vergleicht app-version.json mit dem letzten Lauf – bei neuem Deploy: einmal Reload (gleiches PWA-Fenster, Login bleibt). */
-        (function setupDeployVersionAutoReload() {
-            const STORAGE_KEY = 'it9an_app_deploy_version';
-            let checking = false;
             function versionUrl() {
                 return new URL('app-version.json', window.location.href).href;
             }
             async function checkDeployVersion() {
-                if (checking) return;
-                checking = true;
+                if (versionChecking) return;
+                versionChecking = true;
                 try {
                     const r = await fetch(versionUrl() + '?t=' + Date.now(), {
                         cache: 'no-store',
@@ -1192,24 +1220,43 @@
                     const v = j && j.version != null ? String(j.version) : '';
                     if (!v) return;
                     let prev = null;
-                    try { prev = localStorage.getItem(STORAGE_KEY); } catch (e) { /* ignore */ }
+                    try { prev = localStorage.getItem(VERSION_STORAGE_KEY); } catch (e) { /* ignore */ }
                     if (prev !== null && prev !== v) {
-                        try { localStorage.setItem(STORAGE_KEY, v); } catch (e) { /* ignore */ }
-                        window.location.reload();
+                        try { localStorage.setItem(VERSION_STORAGE_KEY, v); } catch (e) { /* ignore */ }
+                        scheduleReloadOnce();
                         return;
                     }
-                    try { localStorage.setItem(STORAGE_KEY, v); } catch (e) { /* ignore */ }
+                    try { localStorage.setItem(VERSION_STORAGE_KEY, v); } catch (e) { /* ignore */ }
                 } catch (e) { /* offline / CORS */ }
-                finally { checking = false; }
+                finally { versionChecking = false; }
             }
-            checkDeployVersion();
-            setTimeout(checkDeployVersion, 8000);
-            setTimeout(checkDeployVersion, 60000);
-            setInterval(checkDeployVersion, 4 * 60 * 1000);
-            document.addEventListener('visibilitychange', () => {
-                if (document.visibilityState === 'visible') checkDeployVersion();
-            });
-            window.addEventListener('focus', () => checkDeployVersion());
+
+            async function runAllUpdateChecks() {
+                await registerAndUpdateSw();
+                checkDeployVersion();
+            }
+
+            function startPolling() {
+                runAllUpdateChecks();
+                setTimeout(runAllUpdateChecks, 4000);
+                setTimeout(runAllUpdateChecks, 20000);
+                setTimeout(runAllUpdateChecks, 90000);
+                setInterval(runAllUpdateChecks, POLL_MS);
+                document.addEventListener('visibilitychange', () => {
+                    if (document.visibilityState === 'visible') runAllUpdateChecks();
+                });
+                window.addEventListener('focus', () => { runAllUpdateChecks(); });
+                window.addEventListener('online', () => { runAllUpdateChecks(); });
+                window.addEventListener('pageshow', (e) => {
+                    if (e.persisted) runAllUpdateChecks();
+                });
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', () => { setTimeout(startPolling, 500); });
+            } else {
+                setTimeout(startPolling, 500);
+            }
         })();
 
         function generatePersonalPin(existingPins) {
@@ -4152,10 +4199,34 @@
 
         // --- PUSH NOTIFICATIONS (FCM) ---
         const FCM_VAPID_KEY = 'BKl57KGTMjrbUmQq2lYI3gJDqQZMb1F0DePQJEBIjaHPHJBGqbYg2OqQxuPUyuoBc4590EZM5i66I7SLfn35hwc';
+        const PUSH_DEDUP_CACHE_NAME = 'it9an-push-dedup-v1';
+        const PUSH_DEDUP_MAX_ENTRIES = 450;
         let _foregroundPushSetup = false;
         let _tokenRefreshListenerAdded = false;
-        const _foregroundShownNotifs = new Map();
-        const _foregroundDedupMs = 60000;
+        const _fcmMsgDedupForeground = new Map();
+        const FCM_MSG_DEDUP_MS = 8000;
+        function pushDedupCacheUrl(notifId) {
+            return 'https://push-dedup.local/n/' + encodeURIComponent(notifId);
+        }
+        async function pushNotifIdWasAlreadyShown(notifId) {
+            if (!notifId || !('caches' in window)) return false;
+            try {
+                const c = await caches.open(PUSH_DEDUP_CACHE_NAME);
+                return !!(await c.match(pushDedupCacheUrl(notifId)));
+            } catch (e) { return false; }
+        }
+        async function pushNotifIdMarkShown(notifId) {
+            if (!notifId || !('caches' in window)) return;
+            try {
+                const c = await caches.open(PUSH_DEDUP_CACHE_NAME);
+                await c.put(pushDedupCacheUrl(notifId), new Response('1', { headers: { 'Cache-Control': 'max-age=864000' } }));
+                const keys = await c.keys();
+                if (keys.length > PUSH_DEDUP_MAX_ENTRIES) {
+                    const drop = keys.slice(0, keys.length - PUSH_DEDUP_MAX_ENTRIES);
+                    for (let i = 0; i < drop.length; i++) await c.delete(drop[i]);
+                }
+            } catch (e) { /* ignore */ }
+        }
         function setupForegroundPushHandler() {
             if (_foregroundPushSetup) return;
             if (!('Notification' in window) || Notification.permission !== 'granted') return;
@@ -4164,21 +4235,23 @@
             try {
                 const messaging = window.getMessaging(window.firebaseApp);
                 window.onMessage(messaging, (payload) => {
+                    (async () => {
                     const data = payload.data || {};
                     const notifId = String(data.notifId || '').trim();
-                    const tag = data.tag || '';
-                    const dedupKey = notifId || tag || (data.postId + '-' + (data.replyTimestamp || ''));
-                    if (dedupKey) {
+                    const msgId = String(payload.messageId || payload.fcmMessageId || '').trim();
+                    if (notifId) {
+                        if (await pushNotifIdWasAlreadyShown(notifId)) return;
+                    } else if (msgId) {
                         const now = Date.now();
-                        const last = _foregroundShownNotifs.get(dedupKey) || 0;
-                        if (now - last < _foregroundDedupMs) return;
-                        _foregroundShownNotifs.set(dedupKey, now);
-                        setTimeout(() => { _foregroundShownNotifs.delete(dedupKey); }, _foregroundDedupMs);
+                        const key = 'm:' + msgId;
+                        const last = _fcmMsgDedupForeground.get(key) || 0;
+                        if (now - last < FCM_MSG_DEDUP_MS) return;
+                        _fcmMsgDedupForeground.set(key, now);
+                        setTimeout(() => { _fcmMsgDedupForeground.delete(key); }, FCM_MSG_DEDUP_MS);
                     }
                     const title = data.title || 'تطبيق إتقان';
                     const body = data.body || 'إشعار جديد';
                     const badgeCount = parseInt(data.badge || '1', 10) || 1;
-                    const role = localStorage.getItem('it9an_role');
                     if ('setAppBadge' in navigator) {
                         try { navigator.setAppBadge(badgeCount); } catch(e) {}
                     }
@@ -4190,6 +4263,7 @@
                     const stageId = String(data.stageId || '').trim();
                     const iconUrl = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect fill='%230f4c3a' width='192' height='192' rx='24'/%3E%3Ctext x='96' y='120' font-size='100' text-anchor='middle' fill='%23d4af37' font-family='serif'%3Eٱ%3C/text%3E%3C/svg%3E";
                     const n = new Notification(title, { body, icon: iconUrl, tag: data.tag || ('it9an-' + (postId || (openLesson ? 'lesson-' + fileId : Date.now()))), renotify: true });
+                    if (notifId) await pushNotifIdMarkShown(notifId);
                     n.onclick = () => {
                         n.close();
                         window.focus();
@@ -4199,6 +4273,7 @@
                             setTimeout(() => window.openFromNotif(notifId, fileId, postId), 100);
                         }
                     };
+                    })().catch((e) => console.warn('Foreground push:', e));
                 });
                 _foregroundPushSetup = true;
             } catch (e) { console.warn('Foreground push setup:', e); }

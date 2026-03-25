@@ -1,7 +1,10 @@
 /* PWA Service Worker: Push (Ton+Vibration) + Offline-Caching
  * CACHE_NAME bei größeren Strategie-Änderungen erhöhen (alte Caches werden in activate entfernt). */
-const CACHE_NAME = 'it9an-v4';
+const CACHE_NAME = 'it9an-v6';
 const CACHE_MAX_AGE = 24 * 60 * 60 * 1000;
+/** Gemeinsam mit index.html: gleiche notifId = kein zweites Banner (auch nach Logout/anderem Konto) */
+const PUSH_DEDUP_CACHE = 'it9an-push-dedup-v1';
+const PUSH_DEDUP_MAX = 450;
 
 self.addEventListener('install', (e) => {
   self.skipWaiting();
@@ -12,7 +15,7 @@ self.addEventListener('message', (event) => {
 });
 
 self.addEventListener('activate', (e) => {
-  e.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))));
+  e.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== CACHE_NAME && k !== PUSH_DEDUP_CACHE).map((k) => caches.delete(k)))));
   self.clients.claim();
 });
 
@@ -77,8 +80,33 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-const _shownNotifIds = new Map();
-const DEDUP_MS = 60000;
+const _fcmMsgDedup = new Map();
+const FCM_MSG_DEDUP_MS = 8000;
+
+function pushDedupUrl(notifId) {
+  return 'https://push-dedup.local/n/' + encodeURIComponent(notifId);
+}
+async function wasPushNotifIdAlreadyShown(notifId) {
+  if (!notifId) return false;
+  try {
+    const c = await caches.open(PUSH_DEDUP_CACHE);
+    return !!(await c.match(pushDedupUrl(notifId)));
+  } catch (e) {
+    return false;
+  }
+}
+async function markPushNotifIdShown(notifId) {
+  if (!notifId) return;
+  try {
+    const c = await caches.open(PUSH_DEDUP_CACHE);
+    await c.put(pushDedupUrl(notifId), new Response('1', { headers: { 'Cache-Control': 'max-age=864000' } }));
+    const keys = await c.keys();
+    if (keys.length > PUSH_DEDUP_MAX) {
+      const drop = keys.slice(0, keys.length - PUSH_DEDUP_MAX);
+      await Promise.all(drop.map((req) => c.delete(req)));
+    }
+  } catch (e) { /* ignore */ }
+}
 
 function handleDismiss(data) {
   if (!data || typeof data !== 'object') return false;
@@ -113,51 +141,59 @@ messaging.onBackgroundMessage((payload) => {
   if (handleDismiss(data)) return;
   const notifId = String(data.notifId || '').trim();
   const tag = data.tag || 'it9an-' + (data.postId || Date.now());
-  const dedupKey = notifId || tag;
-  if (dedupKey) {
-    const now = Date.now();
-    const last = _shownNotifIds.get(dedupKey) || 0;
-    if (now - last < DEDUP_MS) return;
-    _shownNotifIds.set(dedupKey, now);
-    setTimeout(() => { _shownNotifIds.delete(dedupKey); }, DEDUP_MS);
-  }
-  const title = data.title || 'تطبيق إتقان';
-  const body = data.body || 'إشعار جديد';
-  const badgeCount = parseInt(data.badge || '1', 10) || 1;
-  if ('setAppBadge' in navigator) {
-    try { navigator.setAppBadge(badgeCount); } catch(e) {}
-  }
-  const iconUrl = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect fill='%230f4c3a' width='192' height='192' rx='24'/%3E%3Ctext x='96' y='120' font-size='100' text-anchor='middle' fill='%23d4af37' font-family='serif'%3Eٱ%3C/text%3E%3C/svg%3E";
-  const urlParams = new URLSearchParams();
-  if (data.openLesson === '1') {
-    urlParams.set('openLesson', '1');
-    if (data.fileId) urlParams.set('fileId', data.fileId);
-    if (data.stageId) urlParams.set('stageId', data.stageId);
-    if (data.notifId) urlParams.set('notifId', data.notifId);
-  } else {
-    if (data.postId) urlParams.set('postId', data.postId);
-    if (data.fileId) urlParams.set('fileId', data.fileId);
-    if (data.notifId) urlParams.set('notifId', data.notifId);
-    if (data.replyTimestamp) urlParams.set('replyTimestamp', data.replyTimestamp);
-    if (data.openStages === '1') urlParams.set('openStages', '1');
-  }
-  const base = new URL('index.html', self.registration.scope).href.replace(/\/index\.html$/, '');
-  const url = urlParams.toString() ? (base + '/index.html?' + urlParams.toString()) : (base + '/index.html');
-  const options = {
-    body,
-    icon: iconUrl,
-    badge: iconUrl,
-    tag,
-    renotify: true,
-    requireInteraction: false,
-    vibrate: [200, 100, 200, 100, 200],
-    data: { url, postId: data.postId || '', fileId: data.fileId || '', notifId: data.notifId || '', replyTimestamp: data.replyTimestamp || '', openStages: data.openStages || '', openLesson: data.openLesson || '', stageId: data.stageId || '', badge: String(badgeCount) }
-  };
-  try {
-    return self.registration.showNotification(title, options);
-  } catch (err) {
-    console.error('showNotification error:', err);
-  }
+  const msgId = String(payload.messageId || payload.fcmMessageId || '').trim();
+
+  return (async () => {
+    if (notifId) {
+      if (await wasPushNotifIdAlreadyShown(notifId)) return;
+    } else if (msgId) {
+      const now = Date.now();
+      const key = 'm:' + msgId;
+      const last = _fcmMsgDedup.get(key) || 0;
+      if (now - last < FCM_MSG_DEDUP_MS) return;
+      _fcmMsgDedup.set(key, now);
+      setTimeout(() => { _fcmMsgDedup.delete(key); }, FCM_MSG_DEDUP_MS);
+    }
+
+    const title = data.title || 'تطبيق إتقان';
+    const body = data.body || 'إشعار جديد';
+    const badgeCount = parseInt(data.badge || '1', 10) || 1;
+    if ('setAppBadge' in navigator) {
+      try { navigator.setAppBadge(badgeCount); } catch(e) {}
+    }
+    const iconUrl = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect fill='%230f4c3a' width='192' height='192' rx='24'/%3E%3Ctext x='96' y='120' font-size='100' text-anchor='middle' fill='%23d4af37' font-family='serif'%3Eٱ%3C/text%3E%3C/svg%3E";
+    const urlParams = new URLSearchParams();
+    if (data.openLesson === '1') {
+      urlParams.set('openLesson', '1');
+      if (data.fileId) urlParams.set('fileId', data.fileId);
+      if (data.stageId) urlParams.set('stageId', data.stageId);
+      if (data.notifId) urlParams.set('notifId', data.notifId);
+    } else {
+      if (data.postId) urlParams.set('postId', data.postId);
+      if (data.fileId) urlParams.set('fileId', data.fileId);
+      if (data.notifId) urlParams.set('notifId', data.notifId);
+      if (data.replyTimestamp) urlParams.set('replyTimestamp', data.replyTimestamp);
+      if (data.openStages === '1') urlParams.set('openStages', '1');
+    }
+    const base = new URL('index.html', self.registration.scope).href.replace(/\/index\.html$/, '');
+    const url = urlParams.toString() ? (base + '/index.html?' + urlParams.toString()) : (base + '/index.html');
+    const options = {
+      body,
+      icon: iconUrl,
+      badge: iconUrl,
+      tag,
+      renotify: true,
+      requireInteraction: false,
+      vibrate: [200, 100, 200, 100, 200],
+      data: { url, postId: data.postId || '', fileId: data.fileId || '', notifId: data.notifId || '', replyTimestamp: data.replyTimestamp || '', openStages: data.openStages || '', openLesson: data.openLesson || '', stageId: data.stageId || '', badge: String(badgeCount) }
+    };
+    try {
+      await self.registration.showNotification(title, options);
+      if (notifId) await markPushNotifIdShown(notifId);
+    } catch (err) {
+      console.error('showNotification error:', err);
+    }
+  })();
 });
 
 self.addEventListener('notificationclick', (e) => {
