@@ -1,0 +1,20 @@
+Aktueller Stand (Github/firestore.rules + storage.rules)
+========================================================
+Die deployed Rules sind wieder „offen“ (allow read, write: if true), damit die App
+ohne App-Check-Site-Key läuft. Daten sollten nach erneutem Deploy wieder laden.
+
+Falls die App noch leer bleibt:
+  firebase deploy --only firestore:rules,storage
+  (aus dem Ordner mit firebase.json)
+
+Optional: Später verschärfen mit App Check
+--------------------------------------------
+1) Firebase Console → App Check → Web-App → reCAPTCHA v3 registrieren
+2) Site-Key in index.html bei FIREBASE_APP_CHECK_SITE_KEY eintragen
+3) index.html / Hosting deployen, in der App testen
+4) Inhalt von non Github/firestore.rules.strict in firestore.rules einfügen (statt if true)
+5) storage.rules analog auf request.appCheck.valid umstellen (oder gleiche Datei aus non Github/storage.rules.strict falls vorhanden — wir nutzen eine Zeile: allow read, write: if request.appCheck.valid)
+6) firebase deploy --only firestore:rules,storage
+7) App Check → Erzwingung für Firestore + Storage
+
+Google Cloud: API-Key auf deine Domains beschränken (HTTP-Referrer).
