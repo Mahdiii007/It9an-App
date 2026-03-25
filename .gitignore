@@ -1,3 +1,4 @@
 .DS_Store
 .firebase/
 firepit-log.txt
+firebase-debug.log
