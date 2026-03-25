@@ -1,33 +1,36 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Nur Clients mit gültigem Firebase App Check (reCAPTCHA v3) — siehe APP-CHECK-EINRICHTUNG.txt
+    // PIN-Login ohne Firebase Auth. Offene Rules, damit die App ohne App-Check-Site-Key funktioniert.
+    // Strenger (nur mit gültigem App Check): Inhalt von non Github/firestore.rules.strict hier einfügen
+    // und deployen — erst nachdem FIREBASE_APP_CHECK_SITE_KEY in index.html gesetzt ist (APP-CHECK-EINRICHTUNG.txt).
+
     match /users/{userId} {
-      allow read, write: if request.appCheck.valid;
+      allow read, write: if true;
     }
     match /posts/{postId} {
-      allow read, write: if request.appCheck.valid;
+      allow read, write: if true;
     }
     match /stats/{statId} {
-      allow read, write: if request.appCheck.valid;
+      allow read, write: if true;
     }
     match /savedRecordings/{docId} {
-      allow read, write: if request.appCheck.valid;
+      allow read, write: if true;
     }
     match /notifications/{notifId} {
-      allow read, write: if request.appCheck.valid;
+      allow read, write: if true;
     }
     match /adminMessages/{msgId} {
-      allow read, write: if request.appCheck.valid;
+      allow read, write: if true;
     }
     match /fcmTokens/{tokenId} {
-      allow read, write: if request.appCheck.valid;
+      allow read, write: if true;
     }
     match /dailyStats/{docId} {
-      allow read, write: if request.appCheck.valid;
+      allow read, write: if true;
     }
     match /appSettings/{docId} {
-      allow read, write: if request.appCheck.valid;
+      allow read, write: if true;
     }
   }
 }

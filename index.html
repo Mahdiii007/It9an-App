@@ -714,8 +714,7 @@
         };
 
         const app = initializeApp(firebaseConfig);
-        /* App Check: Site-Key aus Firebase Console → App Check → Web → reCAPTCHA v3 (siehe APP-CHECK-EINRICHTUNG.txt).
-           Ohne Key funktionieren Firestore/Storage nicht, sobald die verschärften Rules deployed sind. */
+        /* Optional: App Check (reCAPTCHA v3) — erst Site-Key eintragen, dann strikte Rules aus non Github/firestore.rules.strict deployen (APP-CHECK-EINRICHTUNG.txt). */
         const FIREBASE_APP_CHECK_SITE_KEY = '';
         if (FIREBASE_APP_CHECK_SITE_KEY && FIREBASE_APP_CHECK_SITE_KEY.length > 15) {
             try {
@@ -724,8 +723,6 @@
                     isTokenAutoRefreshEnabled: true
                 });
             } catch (e) { console.warn('App Check:', e); }
-        } else {
-            console.warn('[إتقان] FIREBASE_APP_CHECK_SITE_KEY fehlt — راجع APP-CHECK-EINRICHTUNG.txt / أضف مفتاح reCAPTCHA v3');
         }
         window.firebaseApp = app;
         window.db = getFirestore(app); window.storage = getStorage(app);

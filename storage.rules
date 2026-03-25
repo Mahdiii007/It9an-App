@@ -2,8 +2,8 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
     match /{allPaths=**} {
-      // Gleiche Absicherung wie Firestore — App Check im Client nötig (index.html)
-      allow read, write: if request.appCheck.valid;
+      // Offen wie Firestore — App-Check-strikte Variante erst mit Key + gleichzeitigem Firestore-Deploy
+      allow read, write: if true;
     }
   }
 }
