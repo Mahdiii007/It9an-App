@@ -1,0 +1,23 @@
+Pflicht, damit die App nach den verschärften Rules wieder funktioniert
+=======================================================================
+
+Die Firestore- und Storage-Regeln verlangen jetzt ein gültiges App-Check-Token.
+Ohne reCAPTCHA-v3-Site-Key in index.html schlagen alle Datenbank- und Storage-Zugriffe fehl.
+
+Reihenfolge (einmalig):
+-----------------------
+1) Firebase Console → Projekt it9an-neu → „App Check“
+2) App auswählen (Web) → Anbieter „reCAPTCHA v3“ registrieren (Google führt durch)
+3) Den angezeigten Site-Key kopieren und in index.html bei FIREBASE_APP_CHECK_SITE_KEY
+   zwischen die Anführungszeichen einfügen (Zeile mit const FIREBASE_APP_CHECK_SITE_KEY)
+4) index.html deployen (GitHub Pages und/oder: firebase deploy --only hosting)
+5) Lokal testen: Login, Feed, Upload — alles muss gehen
+6) firebase deploy --only firestore:rules,storage
+7) App Check → für „Cloud Firestore“ und „Cloud Storage“ die Erzwingung aktivieren
+   (erst nach erfolgreichem Test in Schritt 5!)
+
+Zusätzlich (Google Cloud Console):
+- API-Key der Web-App auf deine Domains beschränken (HTTP-Referrer).
+
+Hinweis: Öffentliches Repo bleibt sichtbar; App Check erschwert automatisierte Missbräuche.
+Echte Nutzer-Autorisierung pro Dokument bräuchte langfristig Firebase Auth + angepasste Rules.

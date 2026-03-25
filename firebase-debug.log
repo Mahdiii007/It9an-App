@@ -1,0 +1,16 @@
+[debug] [2026-03-25T19:05:59.609Z] ----------------------------------------------------------------------
+[debug] [2026-03-25T19:05:59.618Z] Command:       /usr/local/bin/firebase /Users/mahdismacbookair/.cache/firebase/tools/lib/node_modules/firebase-tools/lib/bin/firebase deploy
+[debug] [2026-03-25T19:05:59.619Z] CLI Version:   15.11.0
+[debug] [2026-03-25T19:05:59.619Z] Platform:      darwin
+[debug] [2026-03-25T19:05:59.619Z] Node Version:  v20.18.2
+[debug] [2026-03-25T19:05:59.619Z] Time:          Wed Mar 25 2026 20:05:59 GMT+0100 (Central European Standard Time)
+[debug] [2026-03-25T19:05:59.620Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-03-25T19:06:00.832Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-03-25T19:06:00.833Z] > authorizing via signed-in user (mahdi.fakhfakh007@gmail.com)
+[debug] [2026-03-25T19:06:00.834Z] [iam] checking project it9an-neu for permissions ["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","datastore.indexes.create","datastore.indexes.delete","datastore.indexes.list","datastore.indexes.update","firebase.projects.get","firebasehosting.sites.update","firebaserules.releases.create","firebaserules.releases.update","firebaserules.rulesets.create"]
+[debug] [2026-03-25T19:06:00.836Z] Checked if tokens are valid: true, expires at: 1774468933325
+[debug] [2026-03-25T19:06:00.837Z] Checked if tokens are valid: true, expires at: 1774468933325
+[debug] [2026-03-25T19:06:00.838Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/it9an-neu:testIamPermissions [none]
+[debug] [2026-03-25T19:06:00.839Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/it9an-neu:testIamPermissions  x-goog-user-project=it9an-neu
+[debug] [2026-03-25T19:06:00.839Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/it9an-neu:testIamPermissions {"permissions":["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","datastore.indexes.create","datastore.indexes.delete","datastore.indexes.list","datastore.indexes.update","firebase.projects.get","firebasehosting.sites.update","firebaserules.releases.create","firebaserules.releases.update","firebaserules.rulesets.create"]}

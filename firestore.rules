@@ -1,0 +1,33 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Nur Clients mit gültigem Firebase App Check (reCAPTCHA v3) — siehe APP-CHECK-EINRICHTUNG.txt
+    match /users/{userId} {
+      allow read, write: if request.appCheck.valid;
+    }
+    match /posts/{postId} {
+      allow read, write: if request.appCheck.valid;
+    }
+    match /stats/{statId} {
+      allow read, write: if request.appCheck.valid;
+    }
+    match /savedRecordings/{docId} {
+      allow read, write: if request.appCheck.valid;
+    }
+    match /notifications/{notifId} {
+      allow read, write: if request.appCheck.valid;
+    }
+    match /adminMessages/{msgId} {
+      allow read, write: if request.appCheck.valid;
+    }
+    match /fcmTokens/{tokenId} {
+      allow read, write: if request.appCheck.valid;
+    }
+    match /dailyStats/{docId} {
+      allow read, write: if request.appCheck.valid;
+    }
+    match /appSettings/{docId} {
+      allow read, write: if request.appCheck.valid;
+    }
+  }
+}
