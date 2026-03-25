@@ -1,6 +1,9 @@
 {
   "functions": {
-    "source": "functions"
+    "source": "functions",
+    "predeploy": [
+      "node functions/scripts/ensure-ffmpeg-linux.js"
+    ]
   },
   "firestore": {
     "rules": "firestore.rules",

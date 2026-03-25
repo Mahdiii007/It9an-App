@@ -605,13 +605,6 @@
         .review-box .review-player-wrap .cp-slider, .review-box .review-player-wrap .cp-time { display: none !important; }
         .review-box .review-note { font-size: 14px; color: #666; margin: 12px 0; text-align: center; line-height: 1.5; }
         .review-box .review-btns { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; }
-        #ffmpeg-load-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 7000; justify-content: center; align-items: center; }
-        .ffmpeg-load-box { background: white; padding: 30px; border-radius: 25px; width: 90%; max-width: 360px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.3); border: 2px solid var(--primary); }
-        .ffmpeg-load-title { font-size: 20px; font-weight: bold; margin-bottom: 20px; color: var(--primary); }
-        .ffmpeg-progress-bar { width: 100%; height: 24px; background: #e0e0e0; border-radius: 12px; overflow: hidden; margin: 15px 0; }
-        .ffmpeg-progress-fill { height: 100%; background: linear-gradient(90deg, var(--primary), var(--primary-light)); transition: width 0.2s; }
-        .ffmpeg-progress-text { font-size: 18px; font-weight: bold; color: var(--primary); margin: 8px 0; }
-        .ffmpeg-eta-text { font-size: 14px; color: #666; }
         .r-btn { padding: 15px; border: none; border-radius: 12px; font-size: 18px; font-weight: bold; cursor: pointer; font-family: 'Amiri'; }
         .btn-send { background: var(--primary); color: white; }
         .btn-retry { background: var(--gold); color: white; }
@@ -1042,15 +1035,6 @@
             <button class="stop-ui-btn" onclick="stopRecordingAndReview()">⏹ إنهاء</button>
         </div>
         <div id="recText" class="rec-status-text">جاري التسجيل...</div>
-    </div>
-
-    <div id="ffmpeg-load-modal">
-        <div class="ffmpeg-load-box">
-            <div class="ffmpeg-load-title">جاري تحميل المحول...</div>
-            <div class="ffmpeg-progress-bar"><div class="ffmpeg-progress-fill" id="ffmpegProgressFill" style="width:0%"></div></div>
-            <div class="ffmpeg-progress-text" id="ffmpegProgressText">0%</div>
-            <div class="ffmpeg-eta-text" id="ffmpegEtaText">جاري التحميل...</div>
-        </div>
     </div>
 
     <div id="review-modal">
@@ -1830,108 +1814,42 @@
         let activePostFilter = null;
         let activePostFilterNotifId = null;
 
-        let ffmpegInstance = null;
-        function showFfmpegLoadModal() {
-            document.getElementById('ffmpeg-load-modal').style.display = 'flex';
-            document.getElementById('ffmpegProgressFill').style.width = '0%';
-            document.getElementById('ffmpegProgressText').innerText = '0%';
-            document.getElementById('ffmpegEtaText').innerText = 'جاري التحميل...';
-        }
-        function updateFfmpegProgress(pct, etaSec) {
-            const fill = document.getElementById('ffmpegProgressFill');
-            const text = document.getElementById('ffmpegProgressText');
-            const eta = document.getElementById('ffmpegEtaText');
-            if (fill) fill.style.width = (pct || 0) + '%';
-            if (text) text.innerText = (pct != null ? Math.round(pct) + '%' : '...');
-            if (eta) eta.innerText = etaSec != null ? (etaSec < 5 ? 'شبه منتهي...' : (etaSec < 60 ? `حوالي ${Math.ceil(etaSec)} ثانية` : `حوالي ${Math.ceil(etaSec/60)} دقيقة`)) : 'جاري التحميل...';
-        }
-        function hideFfmpegLoadModal() {
-            document.getElementById('ffmpeg-load-modal').style.display = 'none';
-        }
-        function fetchWithProgress(url, onProgress) {
-            return new Promise((resolve, reject) => {
-                const xhr = new XMLHttpRequest();
-                xhr.open('GET', url);
-                xhr.responseType = 'blob';
-                const startTime = Date.now();
-                xhr.onprogress = (e) => {
-                    if (e.lengthComputable) {
-                        const pct = (e.loaded / e.total) * 100;
-                        const elapsed = (Date.now() - startTime) / 1000;
-                        const speed = elapsed > 0 ? e.loaded / elapsed : 0;
-                        const remaining = speed > 0 ? (e.total - e.loaded) / speed : null;
-                        onProgress(pct, remaining);
-                    } else {
-                        onProgress(null, null);
-                    }
-                };
-                xhr.onload = () => resolve(xhr.response);
-                xhr.onerror = () => reject(new Error('Network error'));
-                xhr.send();
-            });
-        }
-        async function loadFfmpeg() {
-            if (ffmpegInstance) return ffmpegInstance;
-            showFfmpegLoadModal();
-            try {
-                const { FFmpeg } = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm/index.js');
-                const ffmpeg = new FFmpeg();
-                const baseURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd';
-                const urlJs = `${baseURL}/ffmpeg-core.js`;
-                const urlWasm = `${baseURL}/ffmpeg-core.wasm`;
-                updateFfmpegProgress(2, null);
-                const blobJs = await fetchWithProgress(urlJs, (pct, eta) => {
-                    const totalPct = pct != null ? (pct * 0.08) : 2;
-                    updateFfmpegProgress(totalPct, eta);
-                });
-                updateFfmpegProgress(10, null);
-                const blobWasm = await fetchWithProgress(urlWasm, (pct, eta) => {
-                    const totalPct = pct != null ? 10 + (pct * 0.88) : 10;
-                    updateFfmpegProgress(totalPct, eta);
-                });
-                updateFfmpegProgress(98, 0);
-                const coreURL = URL.createObjectURL(blobJs);
-                const wasmURL = URL.createObjectURL(blobWasm);
-                await ffmpeg.load({ coreURL, wasmURL });
-                URL.revokeObjectURL(coreURL);
-                URL.revokeObjectURL(wasmURL);
-                ffmpegInstance = ffmpeg;
-                updateFfmpegProgress(100, 0);
-                await new Promise(r => setTimeout(r, 400));
-            } finally {
-                hideFfmpegLoadModal();
-            }
-            return ffmpegInstance;
-        }
-        async function transcodeToMp4(blob) {
-            const ffmpeg = await loadFfmpeg();
-            const ext = blob.type.includes('ogg') ? 'ogg' : 'webm';
-            const buf = new Uint8Array(await blob.arrayBuffer());
-            await ffmpeg.writeFile('input.' + ext, buf);
-            const attempts = [
-                ['-y', '-fflags', '+genpts', '-i', 'input.' + ext, '-vn', '-c:a', 'aac', '-b:a', '128k', '-ar', '44100', '-ac', '1', '-movflags', '+faststart', 'output.mp4'],
-                ['-y', '-i', 'input.' + ext, '-vn', '-c:a', 'aac', '-b:a', '96k', '-ar', '48000', '-ac', '1', 'output.mp4'],
-                ['-y', '-f', ext === 'ogg' ? 'ogg' : 'webm', '-i', 'input.' + ext, '-vn', '-c:a', 'aac', '-b:a', '64k', '-ac', '1', 'output.mp4']
-            ];
-            let lastErr = null;
-            for (const args of attempts) {
-                try {
-                    await ffmpeg.exec(args);
-                    const data = await ffmpeg.readFile('output.mp4');
-                    try { await ffmpeg.deleteFile('input.' + ext); await ffmpeg.deleteFile('output.mp4'); } catch(e){}
-                    return new Blob([data], { type: 'audio/mp4' });
-                } catch (e) {
-                    lastErr = e;
-                    try { await ffmpeg.deleteFile('output.mp4'); } catch(e2){}
-                }
-            }
-            try { await ffmpeg.deleteFile('input.' + ext); } catch(e){}
-            throw lastErr || new Error('transcode failed');
-        }
+        /* Audio-Umwandlung: Cloud Function transcodeUploadAudio (FFmpeg auf dem Server) — zuverlässiger als WASM auf Android */
 
         // --- GLOBAL FEED PLAYER LOGIC ---
         let currentFeedAudioId = null;
         const feedAudioEl = document.getElementById('feedAudio');
+        const _feedAudioBlobCache = new Map();
+        const FEED_AUDIO_BLOB_CACHE_MAX = 16;
+        function evictFeedAudioBlobCacheIfNeeded() {
+            while (_feedAudioBlobCache.size >= FEED_AUDIO_BLOB_CACHE_MAX) {
+                const k = _feedAudioBlobCache.keys().next().value;
+                const obj = _feedAudioBlobCache.get(k);
+                if (obj) try { URL.revokeObjectURL(obj); } catch (e) {}
+                _feedAudioBlobCache.delete(k);
+            }
+        }
+        /** Safari/iOS: WebM/Remote-URL per Range-Streaming → kurze Aussetzer; voller Download + Blob-URL spielt flüssiger. */
+        function shouldBufferFeedAudioFully() {
+            const ua = navigator.userAgent || '';
+            if (/iPhone|iPad|iPod/i.test(ua)) return true;
+            if (navigator.maxTouchPoints > 1 && /Macintosh|MacIntel|Mac ARM/i.test(navigator.platform || '')) return true;
+            const isChromeFamily = /CriOS|Chrome|Chromium|Edg|OPR|FxiOS|Android.*Chrome/i.test(ua);
+            const looksSafari = /Safari/i.test(ua);
+            return looksSafari && !isChromeFamily;
+        }
+        async function resolveFeedAudioPlayUrl(remoteUrl) {
+            if (!remoteUrl || !/^https?:/i.test(remoteUrl)) return remoteUrl;
+            if (!shouldBufferFeedAudioFully()) return remoteUrl;
+            if (_feedAudioBlobCache.has(remoteUrl)) return _feedAudioBlobCache.get(remoteUrl);
+            const res = await fetch(remoteUrl, { mode: 'cors', credentials: 'omit', cache: 'default' });
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            const blob = await res.blob();
+            evictFeedAudioBlobCacheIfNeeded();
+            const objUrl = URL.createObjectURL(blob);
+            _feedAudioBlobCache.set(remoteUrl, objUrl);
+            return objUrl;
+        }
 
         function pauseFeedAudio() {
             if (!feedAudioEl.paused) {
@@ -1997,7 +1915,7 @@
             releaseWakeLock();
         });
 
-        window.playFeedAudio = function(url, id) {
+        window.playFeedAudio = async function(url, id) {
             if (!url) return;
 
             if (currentFeedAudioId === id) {
@@ -2026,7 +1944,15 @@
                 newBtn.innerText = "⏳";
                 requestWakeLock();
 
-                feedAudioEl.src = url;
+                let playUrl = url;
+                try {
+                    playUrl = await resolveFeedAudioPlayUrl(url);
+                } catch (e) {
+                    console.warn('Feed-Audio-Puffer:', e);
+                    playUrl = url;
+                }
+                feedAudioEl.preload = 'auto';
+                feedAudioEl.src = playUrl;
                 feedAudioEl.play().then(() => {
                     newBtn.innerText = "⏸";
                 }).catch(e => {
@@ -6205,18 +6131,10 @@
             const uid = localStorage.getItem('it9an_uid');
 
             try {
-                let blobToUpload = currentBlob;
-                const needsTranscode = blobToUpload.type.includes('webm') || blobToUpload.type.includes('ogg');
-                if (needsTranscode) {
-                    try {
-                        blobToUpload = await transcodeToMp4(currentBlob);
-                    } catch (e) {
-                        console.warn('transcodeToMp4:', e);
-                        /* Stiller Fallback: Original (webm/ogg); kein blockierendes Alert auf schwachen Android-Geräten */
-                        blobToUpload = currentBlob;
-                    }
-                }
-                let ext = 'webm'; if (blobToUpload.type.includes('mp4')) ext = 'mp4'; else if (blobToUpload.type.includes('ogg')) ext = 'ogg';
+                const blobToUpload = currentBlob;
+                let ext = 'webm';
+                if (blobToUpload.type.includes('mp4')) ext = 'mp4';
+                else if (blobToUpload.type.includes('ogg')) ext = 'ogg';
                 const refS = window.ref(window.storage, `uploads/${Date.now()}_${uid}.${ext}`);
                 await window.uploadBytes(refS, blobToUpload);
                 const url = await window.getDownloadURL(refS);

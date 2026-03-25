@@ -1,6 +1,82 @@
 const functions = require('firebase-functions/v1');
 const admin = require('firebase-admin');
+const fs = require('fs').promises;
+const fsSync = require('fs');
+const path = require('path');
+const os = require('os');
+const { randomUUID } = require('crypto');
+const { spawn } = require('child_process');
+const { onObjectFinalized } = require('firebase-functions/v2/storage');
+
 admin.initializeApp();
+
+/** Von ensure-ffmpeg-linux.js vor deploy nach functions/bin/ffmpeg-linux */
+const _ffmpegPath = (() => {
+  const p = path.join(__dirname, 'bin', 'ffmpeg-linux');
+  if (fsSync.existsSync(p)) return p;
+  return null;
+})();
+
+function runFfmpegArgs(args) {
+  return new Promise((resolve, reject) => {
+    if (!_ffmpegPath) {
+      reject(new Error('FFmpeg binary nicht verfügbar'));
+      return;
+    }
+    const ff = spawn(_ffmpegPath, args, { stdio: ['ignore', 'pipe', 'pipe'] });
+    let err = '';
+    ff.stderr.on('data', (d) => { err += String(d); });
+    ff.on('error', reject);
+    ff.on('close', (code) => {
+      if (code === 0) resolve();
+      else reject(new Error(`ffmpeg exit ${code}: ${err.slice(-3000)}`));
+    });
+  });
+}
+
+function sleep(ms) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+/** Ersetzt eine Storage-URL (encodeURIComponent des alten Objektpfads) in posts + replies. */
+async function replaceAudioUrlInPostsOnce(db, pathNeedle, newUrl) {
+  const snap = await db.collection('posts').get();
+  const commits = [];
+  let batch = db.batch();
+  let batchSize = 0;
+  let updatedDocs = 0;
+  for (const doc of snap.docs) {
+    const d = doc.data();
+    const updates = {};
+    if (d.audioUrl && typeof d.audioUrl === 'string' && d.audioUrl.includes(pathNeedle)) {
+      updates.audioUrl = newUrl;
+    }
+    if (Array.isArray(d.replies)) {
+      let repChanged = false;
+      const newReplies = d.replies.map((r) => {
+        if (r && r.audioUrl && typeof r.audioUrl === 'string' && r.audioUrl.includes(pathNeedle)) {
+          repChanged = true;
+          return { ...r, audioUrl: newUrl };
+        }
+        return r;
+      });
+      if (repChanged) updates.replies = newReplies;
+    }
+    if (Object.keys(updates).length > 0) {
+      batch.update(doc.ref, updates);
+      batchSize++;
+      updatedDocs++;
+      if (batchSize >= 400) {
+        commits.push(batch.commit());
+        batch = db.batch();
+        batchSize = 0;
+      }
+    }
+  }
+  if (batchSize > 0) commits.push(batch.commit());
+  await Promise.all(commits);
+  return updatedDocs;
+}
 
 const HOSTING_BASE = process.env.GCLOUD_PROJECT ? `https://${process.env.GCLOUD_PROJECT}.web.app` : 'https://it9an-neu.web.app';
 const manifestCache = {};
@@ -543,3 +619,83 @@ QURAN_REMINDER_SLOTS.forEach((slot, idx) => {
       return null;
     });
 });
+
+/**
+ * Storage: uploads/*.webm|ogg → AAC (.m4a), Firestore-URLs auf neue Datei umbiegen.
+ * Original-WebM bleibt vorerst (vermeidet Race mit getDownloadURL); optional später aufräumen.
+ * Deploy: npm install in functions muss das Linux-FFmpeg-Binary enthalten (CI: ubuntu, lokal: npm i --force).
+ */
+exports.transcodeUploadAudio = onObjectFinalized(
+  {
+    region: 'europe-west3',
+    memory: '2GiB',
+    timeoutSeconds: 300,
+    bucket: 'it9an-neu.firebasestorage.app',
+  },
+  async (event) => {
+    const filePath = event.data.name;
+    if (!filePath || !filePath.startsWith('uploads/')) return;
+    const lower = filePath.toLowerCase();
+    if (!lower.endsWith('.webm') && !lower.endsWith('.ogg')) return;
+
+    const bucketName = event.data.bucket;
+    const bucket = admin.storage().bucket(bucketName);
+    const tmpIn = path.join(os.tmpdir(), `in-${randomUUID()}${path.extname(filePath)}`);
+    const tmpOut = path.join(os.tmpdir(), `out-${randomUUID()}.m4a`);
+    const destPath = filePath.replace(/\.(webm|ogg)$/i, '.m4a');
+    const pathNeedle = encodeURIComponent(filePath);
+
+    try {
+      await bucket.file(filePath).download({ destination: tmpIn });
+      await runFfmpegArgs([
+        '-y',
+        '-fflags', '+genpts+discardcorrupt',
+        '-err_detect', 'ignore_err',
+        '-i', tmpIn,
+        '-vn',
+        '-c:a', 'aac',
+        '-b:a', '128k',
+        '-ar', '44100',
+        '-ac', '1',
+        '-af', 'aresample=async=1',
+        '-movflags', '+faststart',
+        tmpOut,
+      ]);
+
+      const outBuf = await fs.readFile(tmpOut);
+      const token = randomUUID();
+      await bucket.file(destPath).save(outBuf, {
+        metadata: {
+          contentType: 'audio/mp4',
+          cacheControl: 'public, max-age=31536000',
+          metadata: { firebaseStorageDownloadTokens: token },
+        },
+        resumable: false,
+      });
+
+      const encDest = encodeURIComponent(destPath);
+      const newUrl = `https://firebasestorage.googleapis.com/v0/b/${bucketName}/o/${encDest}?alt=media&token=${token}`;
+      const db = admin.firestore();
+
+      let patched = 0;
+      for (let attempt = 0; attempt < 45; attempt++) {
+        const n = await replaceAudioUrlInPostsOnce(db, pathNeedle, newUrl);
+        if (n > 0) {
+          patched = n;
+          break;
+        }
+        await sleep(2000);
+      }
+      if (patched === 0) {
+        console.warn('transcodeUploadAudio: keine Firestore-Treffer für', filePath, '(Client schreibt evtl. spät; m4a liegt unter', destPath, ')');
+      } else {
+        console.log('transcodeUploadAudio:', filePath, '→', destPath, 'Posts aktualisiert:', patched);
+      }
+    } catch (e) {
+      console.error('transcodeUploadAudio Fehler', filePath, e);
+    } finally {
+      await fs.unlink(tmpIn).catch(() => {});
+      await fs.unlink(tmpOut).catch(() => {});
+    }
+  }
+);
