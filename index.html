@@ -4199,33 +4199,19 @@
 
         // --- PUSH NOTIFICATIONS (FCM) ---
         const FCM_VAPID_KEY = 'BKl57KGTMjrbUmQq2lYI3gJDqQZMb1F0DePQJEBIjaHPHJBGqbYg2OqQxuPUyuoBc4590EZM5i66I7SLfn35hwc';
-        const PUSH_DEDUP_CACHE_NAME = 'it9an-push-dedup-v1';
-        const PUSH_DEDUP_MAX_ENTRIES = 450;
         let _foregroundPushSetup = false;
         let _tokenRefreshListenerAdded = false;
         const _fcmMsgDedupForeground = new Map();
         const FCM_MSG_DEDUP_MS = 8000;
-        function pushDedupCacheUrl(notifId) {
-            return 'https://push-dedup.local/n/' + encodeURIComponent(notifId);
-        }
-        async function pushNotifIdWasAlreadyShown(notifId) {
-            if (!notifId || !('caches' in window)) return false;
-            try {
-                const c = await caches.open(PUSH_DEDUP_CACHE_NAME);
-                return !!(await c.match(pushDedupCacheUrl(notifId)));
-            } catch (e) { return false; }
-        }
-        async function pushNotifIdMarkShown(notifId) {
-            if (!notifId || !('caches' in window)) return;
-            try {
-                const c = await caches.open(PUSH_DEDUP_CACHE_NAME);
-                await c.put(pushDedupCacheUrl(notifId), new Response('1', { headers: { 'Cache-Control': 'max-age=864000' } }));
-                const keys = await c.keys();
-                if (keys.length > PUSH_DEDUP_MAX_ENTRIES) {
-                    const drop = keys.slice(0, keys.length - PUSH_DEDUP_MAX_ENTRIES);
-                    for (let i = 0; i < drop.length; i++) await c.delete(drop[i]);
-                }
-            } catch (e) { /* ignore */ }
+        function shouldSkipDuplicateFcmForeground(msgId) {
+            if (!msgId) return false;
+            const now = Date.now();
+            const key = 'm:' + msgId;
+            const last = _fcmMsgDedupForeground.get(key) || 0;
+            if (now - last < FCM_MSG_DEDUP_MS) return true;
+            _fcmMsgDedupForeground.set(key, now);
+            setTimeout(() => { _fcmMsgDedupForeground.delete(key); }, FCM_MSG_DEDUP_MS);
+            return false;
         }
         function setupForegroundPushHandler() {
             if (_foregroundPushSetup) return;
@@ -4239,16 +4225,7 @@
                     const data = payload.data || {};
                     const notifId = String(data.notifId || '').trim();
                     const msgId = String(payload.messageId || payload.fcmMessageId || '').trim();
-                    if (notifId) {
-                        if (await pushNotifIdWasAlreadyShown(notifId)) return;
-                    } else if (msgId) {
-                        const now = Date.now();
-                        const key = 'm:' + msgId;
-                        const last = _fcmMsgDedupForeground.get(key) || 0;
-                        if (now - last < FCM_MSG_DEDUP_MS) return;
-                        _fcmMsgDedupForeground.set(key, now);
-                        setTimeout(() => { _fcmMsgDedupForeground.delete(key); }, FCM_MSG_DEDUP_MS);
-                    }
+                    if (shouldSkipDuplicateFcmForeground(msgId)) return;
                     const title = data.title || 'تطبيق إتقان';
                     const body = data.body || 'إشعار جديد';
                     const badgeCount = parseInt(data.badge || '1', 10) || 1;
@@ -4263,7 +4240,6 @@
                     const stageId = String(data.stageId || '').trim();
                     const iconUrl = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect fill='%230f4c3a' width='192' height='192' rx='24'/%3E%3Ctext x='96' y='120' font-size='100' text-anchor='middle' fill='%23d4af37' font-family='serif'%3Eٱ%3C/text%3E%3C/svg%3E";
                     const n = new Notification(title, { body, icon: iconUrl, tag: data.tag || ('it9an-' + (postId || (openLesson ? 'lesson-' + fileId : Date.now()))), renotify: true });
-                    if (notifId) await pushNotifIdMarkShown(notifId);
                     n.onclick = () => {
                         n.close();
                         window.focus();
