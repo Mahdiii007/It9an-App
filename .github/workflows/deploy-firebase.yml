@@ -46,4 +46,10 @@ jobs:
       - name: Deploy (functions, firestore, storage)
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
-        run: firebase deploy --only functions,firestore,storage --project it9an-neu --non-interactive
+        run: |
+          if [ -z "${FIREBASE_TOKEN}" ]; then
+            echo "::error::Secret FIREBASE_TOKEN ist leer. Anlegen: GitHub → Repo → Settings → Secrets and variables → Actions → New repository secret"
+            echo "Wert lokal erzeugen: firebase login:ci"
+            exit 1
+          fi
+          firebase deploy --only functions,firestore,storage --project it9an-neu --non-interactive --token "${FIREBASE_TOKEN}"
