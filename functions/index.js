@@ -7,6 +7,7 @@ const os = require('os');
 const { randomUUID } = require('crypto');
 const { spawn } = require('child_process');
 const { onObjectFinalized } = require('firebase-functions/v2/storage');
+const { onSchedule } = require('firebase-functions/v2/scheduler');
 
 admin.initializeApp();
 
@@ -406,11 +407,15 @@ exports.sendPushOnNotif = functions
   });
 
 /** Alle 24h: fehlende Benachrichtigungen für alle Nutzer wiederherstellen (Lehrer: new_recording, Schüler: reply) */
-exports.restoreStudentRecordingNotificationsScheduled = functions
-  .region('europe-west3')
-  .pubsub.schedule('0 6 * * *')
-  .timeZone('Europe/Berlin')
-  .onRun(async (context) => {
+exports.restoreStudentRecordingNotificationsScheduled = onSchedule(
+  {
+    schedule: '0 6 * * *',
+    timeZone: 'Europe/Berlin',
+    region: 'europe-west3',
+    memory: '1GiB',
+    timeoutSeconds: 540,
+  },
+  async () => {
     const db = admin.firestore();
     let created = 0;
     let updated = 0;
@@ -509,7 +514,8 @@ exports.restoreStudentRecordingNotificationsScheduled = functions
       throw e;
     }
     return null;
-  });
+  }
+);
 
 /** Tägliche Quran-Reminder für Schüler: 6–9h und 18–21h. Uhrzeit variiert von Tag zu Tag.
  *  Klick öffnet direkt das Stufenmenu (openStages=1). */
@@ -561,11 +567,15 @@ async function getStudentFcmTokens(db) {
 
 QURAN_REMINDER_SLOTS.forEach((slot, idx) => {
   const fnName = 'sendQuranReminderScheduled' + (idx + 1);
-  exports[fnName] = functions
-    .region('europe-west3')
-    .pubsub.schedule(slot.cron)
-    .timeZone('Europe/Berlin')
-    .onRun(async () => {
+  exports[fnName] = onSchedule(
+    {
+      schedule: slot.cron,
+      timeZone: 'Europe/Berlin',
+      region: 'europe-west3',
+      memory: '512MiB',
+      timeoutSeconds: 540,
+    },
+    async () => {
       const chosen = getChosenSlotForToday(slot.morning);
       if (chosen !== slot.idx) return null;
       const db = admin.firestore();
@@ -617,7 +627,8 @@ QURAN_REMINDER_SLOTS.forEach((slot, idx) => {
         console.error('sendQuranReminderScheduled error:', e);
       }
       return null;
-    });
+    }
+  );
 });
 
 /**

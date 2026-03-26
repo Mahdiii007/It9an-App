@@ -32,6 +32,14 @@
 #   Zusätzlich braucht das Deploy-Dienstkonto oft Leserechte auf Abrechnung, z. B. „Rechnungskonten-Viewer“
 #   / Billing Account Viewer auf das verknüpfte Rechnungskonto, oder breiter „Projekt“-Rolle mit Billing-Zugriff.
 #
+# „Failed to upsert schedule function …“ (pubsub.schedule / 1st Gen, z. B. sendQuranReminderScheduled*, europe-west3):
+#   Scheduled Functions legen Cloud-Scheduler-Jobs an. Ohne API oder IAM schlägt der Deploy fehl.
+#   • API aktivieren: https://console.cloud.google.com/apis/library/cloudscheduler.googleapis.com?project=it9an-neu
+#   • (Pub/Sub ist meist schon an; bei Bedarf: cloud.googleapis.com/apis/library/pubsub.googleapis.com)
+#   • Dem Deploy-Dienstkonto (FIREBASE_SERVICE_ACCOUNT_KEY / client_email) zusätzlich z. B.:
+#     „Cloud Scheduler Administrator“ — roles/cloudscheduler.admin
+#     oder breiter „Firebase Administrator“ / „Editor“ (roles/firebase.admin bzw. roles/editor).
+#
 name: Deploy Firebase
 
 env:
