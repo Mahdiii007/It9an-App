@@ -5996,13 +5996,27 @@
             if(ui.style.display === 'flex') { stopRecordingAndReview(); } 
             else {
                 let rawStream = null, recCtx = null;
+                let iosMicPlaybackRestore = null;
+                function restoreIosMicPlaybackIfAny() {
+                    if (!iosMicPlaybackRestore) return;
+                    const r = iosMicPlaybackRestore;
+                    iosMicPlaybackRestore = null;
+                    audioEl.muted = r.mainMuted;
+                    audioEl.volume = r.mainVol;
+                    feedAudioEl.muted = r.feedMuted;
+                    feedAudioEl.volume = r.feedVol;
+                    const rev = document.getElementById('reviewAudio');
+                    if (rev && r.revVol != null) {
+                        rev.muted = r.revMuted;
+                        rev.volume = r.revVol;
+                    }
+                }
                 try {
                     const isMacDesktop = /Mac|Macintosh/.test(navigator.platform) && !navigator.maxTouchPoints;
                     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
                     /* getUserMedia erwartet genau eine Ebene { audio: … }, keine doppelte Verschachtelung */
                     let getUserMediaConfig;
                     if (isIOS) {
-                        /* Kein Noise-Suppression (frisst Stimme); AGC an gegen zu leise Pegel — Safari ignoriert Teile, daher Fallback-Kette */
                         getUserMediaConfig = null;
                     } else if (isMacDesktop) {
                         getUserMediaConfig = { audio: true };
@@ -6016,8 +6030,40 @@
                         if (lastRecCtx && lastRecCtx.state !== 'closed') { try { await lastRecCtx.close(); } catch(e) {} lastRecCtx = null; }
                         await new Promise(r => setTimeout(r, 100));
                     }
+                    /* iPhone: play-and-record hält oft Echo-/Sprach-Pfad aktiv → gedämpftes Mikro (Memo spielt nichts ab). Alles stumm, Session „auto“, kurz warten. */
+                    if (isIOS) {
+                        pauseFeedAudio();
+                        iosMicPlaybackRestore = {
+                            mainMuted: audioEl.muted,
+                            mainVol: audioEl.volume,
+                            feedMuted: feedAudioEl.muted,
+                            feedVol: feedAudioEl.volume
+                        };
+                        const revA = document.getElementById('reviewAudio');
+                        if (revA) {
+                            iosMicPlaybackRestore.revMuted = revA.muted;
+                            iosMicPlaybackRestore.revVol = revA.volume;
+                            revA.muted = true;
+                            revA.volume = 0;
+                        }
+                        audioEl.muted = true;
+                        audioEl.volume = 0;
+                        feedAudioEl.muted = true;
+                        feedAudioEl.volume = 0;
+                        await new Promise(r => setTimeout(r, 240));
+                    }
                     if (navigator.audioSession) {
-                        try { navigator.audioSession.type = 'play-and-record'; } catch(e) {}
+                        try {
+                            if (isIOS) {
+                                navigator.audioSession.type = 'auto';
+                            } else {
+                                navigator.audioSession.type = 'play-and-record';
+                            }
+                        } catch (e) {
+                            if (!isIOS) {
+                                try { navigator.audioSession.type = 'play-and-record'; } catch (e2) {}
+                            }
+                        }
                     }
                     let dur = audioEl.duration; if(!dur || isNaN(dur)) dur = 15;
                     const role = localStorage.getItem('it9an_role');
@@ -6052,6 +6098,14 @@
                             if (!rawStream) throw lastGumErr || new Error('getUserMedia');
                         } else {
                             rawStream = await navigator.mediaDevices.getUserMedia(getUserMediaConfig);
+                        }
+                    }
+                    if (isIOS && rawStream) {
+                        const mt = rawStream.getAudioTracks()[0];
+                        if (mt && mt.applyConstraints) {
+                            try {
+                                await mt.applyConstraints({ echoCancellation: false, noiseSuppression: false, autoGainControl: false });
+                            } catch (e) { /* Safari ignoriert oft */ }
                         }
                     }
                     lastRecStream = rawStream;
@@ -6120,6 +6174,7 @@
                     const ctxToRelease = recCtx;
                     mediaRecorder.onstop = async () => {
                         releaseWakeLock();
+                        restoreIosMicPlaybackIfAny();
                         const mimeType = mediaRecorder.mimeType || 'audio/mp4';
                         currentBlob = new Blob(chunks, { type: mimeType });
                         showReviewModal();
@@ -6142,6 +6197,7 @@
                     ui.style.display = 'flex'; recSeconds = 0; document.getElementById('recTimer').innerText = "00:00";
                     recInterval = setInterval(() => { recSeconds++; let m = Math.floor(recSeconds / 60); let s = recSeconds % 60; document.getElementById('recTimer').innerText = (m<10?"0"+m:m)+":"+(s<10?"0"+s:s); if(recSeconds >= maxRecDuration) stopRecordingAndReview(); }, 1000);
                 } catch(e) { 
+                    restoreIosMicPlaybackIfAny();
                     console.error('Microphone error:', e);
                     const errMsg = (e && (e.message || e.name)) ? String(e.message || e.name) : '';
                     alert("خطأ في الميكروفون" + (errMsg ? "\n" + errMsg : ""));
