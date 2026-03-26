@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 # Firebase-Deploy (lokal / CI; Gegenstück: .github/workflows/deploy-firebase.yml).
 #
+# Nach Umstellung scheduled Functions auf Gen2 (onSchedule): einmal
+#   ./scripts/delete-gen1-scheduled-functions.sh
+# sonst Firebase: „Upgrading from 1st Gen to 2nd Gen is not yet supported“.
+#
 # Authentifizierung (eine Variante):
 #   - firebase login   (lokal, ohne Token)
 #   - GOOGLE_APPLICATION_CREDENTIALS=/pfad/zu/dienstkonto.json  (empfohlen für CI)
