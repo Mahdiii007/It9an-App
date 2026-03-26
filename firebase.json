@@ -1,8 +1,10 @@
 {
   "functions": {
     "source": "functions",
-    "predeploy": [
-      "node functions/scripts/ensure-ffmpeg-linux.js"
+    "ignore": [
+      "**/node_modules/**",
+      "node_modules.__trash_*",
+      "bin/ffmpeg-linux"
     ]
   },
   "firestore": {

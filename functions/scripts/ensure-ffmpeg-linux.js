@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /**
- * Lädt ein statisches Linux-amd64-FFmpeg (johnvansickle) nach functions/bin/ffmpeg-linux.
- * Wird vor firebase deploy ausgeführt — damit Deploy von macOS/Windows aus funktioniert.
+ * Lädt Linux-amd64-FFmpeg nach functions/bin/ffmpeg-linux.
+ * Läuft in der Cloud als npm „gcp-build“ nach npm ci (Upload bleibt klein).
+ * Lokal/Emulator: einmal manuell: node scripts/ensure-ffmpeg-linux.js
  */
 'use strict';
 

@@ -37,12 +37,6 @@ jobs:
         working-directory: functions
         run: npm ci
 
-      - name: Cache FFmpeg (Linux-Binary für transcodeUploadAudio)
-        uses: actions/cache@v5
-        with:
-          path: functions/bin/ffmpeg-linux
-          key: ffmpeg-linux-amd64-johnvansickle-v1
-
       - name: Install Firebase CLI (Major 13, weniger firepit-Probleme)
         run: npm install -g firebase-tools@13
 

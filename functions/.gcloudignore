@@ -14,8 +14,9 @@ yarn-error.log*
 .env
 .env.*
 
-# Nur predeploy lokal (ensure-ffmpeg-linux.js), Laufzeit braucht es nicht
-scripts/
+# Script muss mit hoch — wird in der Cloud per gcp-build ausgeführt
+# FFmpeg-Binary (~79 MB) nicht hochladen: wird in Google Cloud gebaut (schnelles „preparing“)
+bin/ffmpeg-linux
 
 .DS_Store
 .vscode/
