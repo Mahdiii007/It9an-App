@@ -7,7 +7,7 @@
     "start": "npm run shell",
     "deploy": "firebase deploy --only functions",
     "logs": "firebase functions:log",
-    "gcp-build": "node scripts/ensure-ffmpeg-linux.js"
+    "gcp-build": "node tools/ensure-ffmpeg-linux.js"
   },
   "engines": {
     "node": "22"
@@ -21,5 +21,10 @@
   "overrides": {
     "@tootallnate/once": "^3.0.1"
   },
+  "files": [
+    "index.js",
+    "package-lock.json",
+    "tools"
+  ],
   "private": true
 }

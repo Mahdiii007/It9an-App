@@ -14,7 +14,7 @@ yarn-error.log*
 .env
 .env.*
 
-# Script muss mit hoch — wird in der Cloud per gcp-build ausgeführt
+# tools/ensure-ffmpeg-linux.js muss mit hoch (gcp-build) — nicht unter scripts/ (Packaging)
 # FFmpeg-Binary (~79 MB) nicht hochladen: wird in Google Cloud gebaut (schnelles „preparing“)
 bin/ffmpeg-linux
 

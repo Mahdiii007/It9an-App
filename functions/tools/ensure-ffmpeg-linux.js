@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 /**
  * Lädt Linux-amd64-FFmpeg nach functions/bin/ffmpeg-linux.
- * Läuft in der Cloud als npm „gcp-build“ nach npm ci (Upload bleibt klein).
- * Lokal/Emulator: einmal manuell: node scripts/ensure-ffmpeg-linux.js
+ * Liegt unter tools/ (nicht scripts/) — manche Packager ignorieren Ordner „scripts“ fälschlich.
+ * Läuft in der Cloud als npm „gcp-build“ nach npm ci.
+ * Lokal/Emulator: node tools/ensure-ffmpeg-linux.js
  */
 'use strict';
 

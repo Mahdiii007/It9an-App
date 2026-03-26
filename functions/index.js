@@ -10,7 +10,7 @@ const { onObjectFinalized } = require('firebase-functions/v2/storage');
 
 admin.initializeApp();
 
-/** Von ensure-ffmpeg-linux.js vor deploy nach functions/bin/ffmpeg-linux */
+/** Von tools/ensure-ffmpeg-linux.js (gcp-build) nach functions/bin/ffmpeg-linux */
 const _ffmpegPath = (() => {
   const p = path.join(__dirname, 'bin', 'ffmpeg-linux');
   if (fsSync.existsSync(p)) return p;
