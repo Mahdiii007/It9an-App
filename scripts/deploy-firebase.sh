@@ -15,7 +15,13 @@ cd "$ROOT"
 
 PROJECT="${FIREBASE_PROJECT:-it9an-neu}"
 
-(cd functions && npm ci)
+# Copy-Paste / .env-Zeilen: Zeilenumbruch im Token → „Bearer … is not a legal HTTP header value“
+if [[ -n "${FIREBASE_TOKEN:-}" ]]; then
+  FIREBASE_TOKEN="$(printf '%s' "$FIREBASE_TOKEN" | tr -d '\r\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+  export FIREBASE_TOKEN
+fi
+
+bash "${ROOT}/scripts/functions-npm-ci.sh"
 
 FT_VER="${FIREBASE_TOOLS_VERSION:-13}"
 if [[ "${USE_SYSTEM_FIREBASE:-0}" == "1" ]] && command -v firebase >/dev/null 2>&1 && firebase --version >/dev/null 2>&1; then

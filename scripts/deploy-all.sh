@@ -44,6 +44,13 @@ trap 'on_err $LINENO' ERR
 
 cd "$ROOT"
 
+if [[ "${SKIP_GIT:-0}" != "1" && -f .git/index.lock ]]; then
+  echo "=== FEHLER: .git/index.lock existiert ==="
+  echo "Anderes Git/Cursor-Panel nutzt das Repo, oder ein git ist abgestürzt."
+  echo "Wenn sicher kein git mehr läuft: rm -f .git/index.lock"
+  exit 1
+fi
+
 COMMIT_MSG="${1:-chore: deploy $(date -u +%Y-%m-%dT%H:%M:%SZ)}"
 BRANCH="$(git rev-parse --abbrev-ref HEAD)"
 
@@ -55,6 +62,7 @@ if [[ "${SKIP_GIT:-0}" != "1" ]]; then
   # Vor Commit: app-version.json ins Repo — deploy-firebase schreibt sie erst NACH dem ersten Push (fb-*).
   SHA_PRE="$(git rev-parse HEAD 2>/dev/null || echo unknown)"
   printf '%s\n' "{\"version\":\"pre-${SHA_PRE}\",\"builtAt\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}" > app-version.json
+  echo "→ git add -A …"
   git add -A
   if git diff --staged --quiet; then
     if [[ "${FORCE_GITHUB_PAGES:-0}" == "1" ]]; then
@@ -65,8 +73,10 @@ if [[ "${SKIP_GIT:-0}" != "1" ]]; then
       echo "Tipp: FORCE_GITHUB_PAGES=1 ./scripts/deploy-all.sh  oder eine Datei aendern und erneut ausfuehren."
     fi
   else
+    echo "→ git commit …"
     git commit -m "$COMMIT_MSG"
   fi
+  echo "→ git push (bei Rückfrage zu Anmeldung/SSH hier warten) …"
   git push -u origin "$BRANCH"
   _GIT_PUSH_OK=1
   echo "Git push erledigt. Pages: Repository → Actions → „Deploy to GitHub Pages“ pruefen (nur bei neuem Commit auf main/master)."
