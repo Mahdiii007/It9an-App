@@ -20,6 +20,12 @@
 #   • oder „Firebase Administrator“ — roles/firebase.admin (breiter, umfasst Rules + mehr)
 #   Console: https://console.cloud.google.com/iam-admin/iam?project=it9an-neu
 #
+# IAM bei HTTP 403 auf serviceusage.googleapis.com / runtimeconfig.googleapis.com:
+#   Die CLI prüft u. a. „Runtime Config API“. Ohne Leserecht auf Service Usage: 403.
+#   Dem Dienstkonto mindestens „Service Usage Viewer“ — roles/serviceusage.serviceUsageViewer
+#   (oder breiter: „Service Usage Admin“ — roles/serviceusage.serviceUsageAdmin, falls APIs aktiviert werden sollen).
+#   API einmal aktivieren: https://console.cloud.google.com/apis/library/runtimeconfig.googleapis.com?project=it9an-neu
+#
 name: Deploy Firebase
 
 env:
