@@ -21,14 +21,20 @@
 #   Oder in der Console: Storage einmal einrichten + Bucket prüfen (appspot vs firebasestorage.app).
 set -euo pipefail
 
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+
 on_err() {
-  echo ">>> Fehler (Zeile $1). Git ok? Firebase-Login: firebase login  oder FIREBASE_TOKEN setzen."
-  echo ">>> Firebase-CLI kaputt? Versuch: npx firebase-tools@latest --version"
+  echo ">>> Fehler (Zeile $1)."
+  echo ">>> Firebase: unset FIREBASE_TOKEN und „firebase login“ ODER Dienstkonto: export GOOGLE_APPLICATION_CREDENTIALS=/pfad/key.json"
+  echo ">>> Debug: DEBUG=1 ./scripts/deploy-firebase.sh"
+  if [[ -f "${ROOT}/firebase-debug.log" ]]; then
+    echo ">>> firebase-debug.log (Auszug):"
+    tail -40 "${ROOT}/firebase-debug.log" 2>/dev/null || true
+  fi
   exit 1
 }
 trap 'on_err $LINENO' ERR
 
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
 COMMIT_MSG="${1:-chore: deploy $(date -u +%Y-%m-%dT%H:%M:%SZ)}"

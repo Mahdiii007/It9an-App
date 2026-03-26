@@ -1,9 +1,14 @@
 #!/usr/bin/env bash
-# Firebase-Deploy (lokal). Voraussetzung: firebase login oder FIREBASE_TOKEN.
-# Debug: DEBUG=1 ./scripts/deploy-firebase.sh  (mehr Firebase-CLI-Log)
-# Optional: FIREBASE_ONLY="functions,firestore,storage"
-# Optional: FIREBASE_PROJECT=it9an-neu
-# Falls „firebase“ abstürzt: npx firebase-tools@latest deploy …
+# Firebase-Deploy (lokal / CI).
+#
+# Authentifizierung (eine Variante):
+#   - firebase login   (lokal, ohne Token)
+#   - GOOGLE_APPLICATION_CREDENTIALS=/pfad/zu/dienstkonto.json  (empfohlen für CI)
+#   - FIREBASE_TOKEN=…   (firebase login:ci — kann bei Firestore/Storage mit „unexpected error“ ausfallen)
+#
+# Debug: DEBUG=1 ./scripts/deploy-firebase.sh
+# System-weites „firebase“ erzwingen: USE_SYSTEM_FIREBASE=1
+# CLI-Version pinnen: FIREBASE_TOOLS_VERSION=13.34.0 (Standard: Major 13)
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
@@ -15,21 +20,26 @@ echo "Wrote app-version.json"
 
 (cd functions && npm ci)
 
-# Global „firebase“ nutzt oft firepit — bei „unexpected error“: USE_NPX_FIREBASE=1 oder npm i -g firebase-tools@latest
-if [[ "${USE_NPX_FIREBASE:-0}" == "1" ]]; then
-  FIREBASE_CMD=(npx --yes firebase-tools)
-elif command -v firebase >/dev/null 2>&1 && firebase --version >/dev/null 2>&1; then
+FT_VER="${FIREBASE_TOOLS_VERSION:-13}"
+if [[ "${USE_SYSTEM_FIREBASE:-0}" == "1" ]] && command -v firebase >/dev/null 2>&1 && firebase --version >/dev/null 2>&1; then
   FIREBASE_CMD=(firebase)
+  echo "Nutze systemweites firebase ($(command -v firebase))"
 else
-  echo "Hinweis: firebase-CLI fehlt oder antwortet nicht — nutze npx firebase-tools"
-  FIREBASE_CMD=(npx --yes firebase-tools)
+  FIREBASE_CMD=(npx --yes "firebase-tools@${FT_VER}")
+  echo "Nutze npx firebase-tools@${FT_VER} (stabiler als manche globale firepit-Installationen)"
 fi
 
-# Globale Flags zuerst (robuster als am Ende)
 FB_BASE=(deploy --project "$PROJECT" --non-interactive)
-if [[ -n "${FIREBASE_TOKEN:-}" ]]; then
+
+if [[ -n "${GOOGLE_APPLICATION_CREDENTIALS:-}" && -f "${GOOGLE_APPLICATION_CREDENTIALS}" ]]; then
+  echo "Auth: GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS}"
+elif [[ -n "${FIREBASE_TOKEN:-}" ]]; then
   FB_BASE+=(--token "$FIREBASE_TOKEN")
+  echo "Auth: FIREBASE_TOKEN (bei Fehlern Dienstkonto oder firebase login probieren)"
+else
+  echo "Auth: interaktives firebase login (kein Token gesetzt)"
 fi
+
 if [[ "${DEBUG:-0}" == "1" ]] || [[ "${FIREBASE_DEBUG:-0}" == "1" ]]; then
   FB_BASE+=(--debug)
 fi
