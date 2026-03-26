@@ -1,5 +1,8 @@
 # Einheitliche Zeilenenden → weniger „M“ nach Editor/OS-Wechsel
 *.sh text eol=lf
+# Explizit (IDE/macOS): dieselben Regeln wie für alle *.sh
+scripts/deploy-firebase.sh text eol=lf
+scripts/functions-npm-ci.sh text eol=lf
 *.yml text eol=lf
 *.yaml text eol=lf
 app-version.json text eol=lf

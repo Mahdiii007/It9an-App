@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Sauberes npm ci in functions/: altes node_modules per mv aus dem Weg.
+# Sauberes npm ci in functions/: altes node_modules per mv aus dem Weg (wird von deploy-firebase.sh aufgerufen).
 # Wichtig: Kein paralleles rm -rf während npm ci (sonst I/O-Stau → „hängt“).
 # Nicht nach $TMPDIR mv-en: von iCloud-Desktop aus kann das eine vollständige Kopie sein (wirkt „hängend“).
 # Stattdessen nur im functions/-Ordner umbenennen (gleiches Volume → meist sofort).

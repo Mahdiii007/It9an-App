@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Firebase-Deploy (lokal / CI).
+# Firebase-Deploy (lokal / CI; Gegenstück: .github/workflows/deploy-firebase.yml).
 #
 # Authentifizierung (eine Variante):
 #   - firebase login   (lokal, ohne Token)
