@@ -4357,12 +4357,13 @@
                 const isIOSMic = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
                 let stream = null;
                 if (isIOSMic) {
-                    /* AGC aus zuerst: weniger „unterdrückte“ Stimme durch iOS/Sprachverarbeitung; Mono bevorzugen */
+                    /* Voice Memos „Stereo“: System nutzt oft aggressivere Verarbeitung → unterdrückte Stimme. Mono bevorzugen (wie Memo Mono). */
                     const micCandidates = [
                         { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: { ideal: 1 } } },
                         { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: { exact: 1 } } },
-                        { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: true, channelCount: { exact: 1 } } },
+                        { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } },
                         { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: true, channelCount: { ideal: 1 } } },
+                        { audio: true },
                         { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: true } }
                     ];
                     for (const c of micCandidates) {
@@ -6008,9 +6009,8 @@
                     } else {
                         getUserMediaConfig = { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, sampleRate: 48000, channelCount: 1 } };
                     }
-                    /* Android: Downmix. iOS: bei System-„Stereo“ oft nur ein Kanal nutzbar → L+R zu Mono summieren (wie Memo auf Mono). */
+                    /* Android: Downmix per Web Audio. iOS: Mono anfragen (Memo-Stereo-Pfad unterdrückt oft); roher Stream; Web Audio nur bei ch≥2. */
                     const useWebAudioDownmix = !isMacDesktop && !isIOS;
-                    const useWebAudioIOSMono = isIOS;
                     if (!isMacDesktop) {
                         if (lastRecStream) { lastRecStream.getTracks().forEach(t => t.stop()); lastRecStream = null; }
                         if (lastRecCtx && lastRecCtx.state !== 'closed') { try { await lastRecCtx.close(); } catch(e) {} lastRecCtx = null; }
@@ -6028,16 +6028,14 @@
                     } else {
                         if (isMacDesktop && lastRecStream) { lastRecStream.getTracks().forEach(t => t.stop()); lastRecStream = null; }
                         if (isIOS) {
-                            /* Reihenfolge: zuerst ohne AGC (oft weniger „geduckte“ Stimme); Safari ignoriert Teile davon → Fallbacks */
+                            /* Memo auf Stereo: oft unterdrückte Stimme — zuerst Mono + wenig DSP; { audio: true } kann Stereo-Session wählen → Fallback am Ende */
                             const iosCandidates = [
-                                { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: { ideal: 1 }, sampleRate: { ideal: 48000 } } },
-                                { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: { exact: 1 }, sampleRate: { ideal: 48000 } } },
                                 { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: { ideal: 1 } } },
                                 { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: { exact: 1 } } },
-                                { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: true, channelCount: { exact: 1 }, sampleRate: { ideal: 48000 } } },
-                                { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: true, channelCount: { exact: 1 } } },
-                                { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: true, channelCount: { ideal: 1 }, sampleRate: { ideal: 48000 } } },
+                                { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } },
                                 { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: true, channelCount: { ideal: 1 } } },
+                                { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: true, channelCount: { exact: 1 } } },
+                                { audio: true },
                                 { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: true } }
                             ];
                             let lastGumErr = null;
@@ -6058,18 +6056,15 @@
                     }
                     lastRecStream = rawStream;
                     let stream = rawStream;
-                    if (useWebAudioIOSMono) {
-                        recCtx = new (window.AudioContext || window.webkitAudioContext)();
-                        lastRecCtx = recCtx;
-                        if (recCtx.state === 'suspended') await recCtx.resume();
-                        const srcIOS = recCtx.createMediaStreamSource(rawStream);
-                        const destIOS = recCtx.createMediaStreamDestination();
+                    if (isIOS) {
                         const t0 = rawStream.getAudioTracks()[0];
                         const ch = (t0 && t0.getSettings && t0.getSettings().channelCount) || 0;
-                        /* Mono + ChannelSplitter(2): nur Kanal 0 hat Signal → 0,5·L+0,5·R halbiert Pegel (−6 dB). Stereo: echtes Downmix. */
-                        const useStereoDownmix = ch >= 2;
-                        const gainIOS = recCtx.createGain();
-                        if (useStereoDownmix) {
+                        /* Trotz Mono-Wunsch manchmal ch≥2 (Gerät/System): nur dann Downmix — kann nicht die volle Memo-Mono-Qualität ersetzen */
+                        if (ch >= 2) {
+                            recCtx = new (window.AudioContext || window.webkitAudioContext)();
+                            lastRecCtx = recCtx;
+                            if (recCtx.state === 'suspended') await recCtx.resume();
+                            const srcIOS = recCtx.createMediaStreamSource(rawStream);
                             const splitterIOS = recCtx.createChannelSplitter(2);
                             const mergerIOS = recCtx.createChannelMerger(1);
                             const gainLi = recCtx.createGain();
@@ -6081,22 +6076,10 @@
                             splitterIOS.connect(gainRi, 1);
                             gainLi.connect(mergerIOS, 0, 0);
                             gainRi.connect(mergerIOS, 0, 0);
-                            const compIOS = recCtx.createDynamicsCompressor();
-                            compIOS.threshold.value = -14;
-                            compIOS.knee.value = 24;
-                            compIOS.ratio.value = 2;
-                            compIOS.attack.value = 0.003;
-                            compIOS.release.value = 0.2;
-                            mergerIOS.connect(compIOS);
-                            gainIOS.gain.value = 1.7;
-                            compIOS.connect(gainIOS);
-                        } else {
-                            /* Mono: kein Kompressor (weniger „unterdrückt“); digitaler Pegel nach oben, falls AGC aus */
-                            gainIOS.gain.value = 2.35;
-                            srcIOS.connect(gainIOS);
+                            const destIOS = recCtx.createMediaStreamDestination();
+                            mergerIOS.connect(destIOS);
+                            stream = destIOS.stream;
                         }
-                        gainIOS.connect(destIOS);
-                        stream = destIOS.stream;
                     } else if (useWebAudioDownmix) {
                         recCtx = new (window.AudioContext || window.webkitAudioContext)();
                         lastRecCtx = recCtx;
