@@ -1043,7 +1043,7 @@
         <div class="review-box">
             <button class="review-close-x" onclick="cancelRecord()" title="إغلاق">✕</button>
             <div id="review-content"></div>
-            <audio id="reviewAudio" style="display:none;"></audio>
+            <audio id="reviewAudio" style="display:none;" playsinline webkit-playsinline preload="metadata"></audio>
         </div>
     </div>
 
@@ -4357,14 +4357,15 @@
                 const isIOSMic = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
                 let stream = null;
                 if (isIOSMic) {
-                    /* iOS: Echo-/Rauschunterdrückung aus (sonst „verstopft“). AGC nicht erzwingen — WebKit setzt Pegel sonst oft zu niedrig. Mono ideal. */
+                    /* Wie toggleRecord: zuerst System-Default, dann spezifischere Constraints (identische Reihenfolge vermeidet „falsches“ Profil nach Permission). */
                     const micCandidates = [
+                        { audio: true },
+                        { audio: { channelCount: { ideal: 1 } } },
+                        { audio: { echoCancellation: false, noiseSuppression: false } },
                         { audio: { echoCancellation: false, noiseSuppression: false, channelCount: { ideal: 1 } } },
                         { audio: { echoCancellation: false, noiseSuppression: false, channelCount: { exact: 1 } } },
-                        { audio: { echoCancellation: false, noiseSuppression: false } },
                         { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: { ideal: 1 } } },
                         { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } },
-                        { audio: true },
                         { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: true, channelCount: { ideal: 1 } } }
                     ];
                     for (const c of micCandidates) {
@@ -6033,7 +6034,7 @@
                         if (lastRecCtx && lastRecCtx.state !== 'closed') { try { await lastRecCtx.close(); } catch(e) {} lastRecCtx = null; }
                         await new Promise(r => setTimeout(r, 100));
                     }
-                    /* iPhone: play-and-record hält oft Echo-/Sprach-Pfad aktiv → gedämpftes Mikro (Memo spielt nichts ab). Alles stumm, Session „auto“, kurz warten. */
+                    /* iPhone: Jede laufende Wiedergabe hält die Audio-Session im Ducking/Playback-Pfad → leises Mikro. Pausieren + stumm, Session „auto“, dann warten. */
                     if (isIOS) {
                         pauseFeedAudio();
                         iosMicPlaybackRestore = {
@@ -6046,22 +6047,24 @@
                         if (revA) {
                             iosMicPlaybackRestore.revMuted = revA.muted;
                             iosMicPlaybackRestore.revVol = revA.volume;
+                            revA.pause();
                             revA.muted = true;
                             revA.volume = 0;
                         }
+                        audioEl.pause();
                         audioEl.muted = true;
                         audioEl.volume = 0;
+                        feedAudioEl.pause();
                         feedAudioEl.muted = true;
                         feedAudioEl.volume = 0;
-                        await new Promise(r => setTimeout(r, 400));
+                        await new Promise(r => setTimeout(r, 500));
                     }
-                    /* Nach stopLoop() ist Haupt-Wiedergabe gestoppt — play-and-record für Mic (vorher iOS nur „auto“, was den Aufnahmepegel oft drosselte). */
                     if (navigator.audioSession) {
                         try {
-                            navigator.audioSession.type = 'play-and-record';
+                            navigator.audioSession.type = isIOS ? 'auto' : 'play-and-record';
                         } catch (e) {
                             if (isIOS) {
-                                try { navigator.audioSession.type = 'auto'; } catch (e2) {}
+                                try { navigator.audioSession.type = 'play-and-record'; } catch (e2) {}
                             }
                         }
                     }
@@ -6074,15 +6077,16 @@
                     } else {
                         if (isMacDesktop && lastRecStream) { lastRecStream.getTracks().forEach(t => t.stop()); lastRecStream = null; }
                         if (isIOS) {
-                            /* Kein sofortiges autoGainControl:false — kann nach erfolgreichem GUM die System-AGC abschalten und Pegel killen. Stereo: s. WebAudio nur Kanal 0. */
+                            /* 1) System-Default zuerst; Aufnahme läuft danach durch WebAudio (Boost+Kompressor), weil der rohe MediaRecorder-Pfad auf iOS oft unterpegelt ist. */
                             const iosCandidates = [
+                                { audio: true },
+                                { audio: { channelCount: { ideal: 1 } } },
+                                { audio: { echoCancellation: false, noiseSuppression: false } },
                                 { audio: { echoCancellation: false, noiseSuppression: false, channelCount: { ideal: 1 } } },
                                 { audio: { echoCancellation: false, noiseSuppression: false, channelCount: { exact: 1 } } },
-                                { audio: { echoCancellation: false, noiseSuppression: false } },
                                 { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: { ideal: 1 } } },
                                 { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: { exact: 1 } } },
                                 { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } },
-                                { audio: true },
                                 { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: true, channelCount: { ideal: 1 } } },
                                 { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: true } }
                             ];
@@ -6102,39 +6106,55 @@
                             rawStream = await navigator.mediaDevices.getUserMedia(getUserMediaConfig);
                         }
                     }
-                    /* Nicht autoGainControl hier überschreiben — häufige Ursache für „flüsterndes“ iPhone-Mic nach dem Track schon mit sinnvollem AGC geöffnet wurde. */
-                    if (isIOS && rawStream) {
-                        const mt = rawStream.getAudioTracks()[0];
-                        if (mt && mt.applyConstraints) {
-                            try {
-                                await mt.applyConstraints({ echoCancellation: false, noiseSuppression: false });
-                            } catch (e) { /* Safari ignoriert oft */ }
-                        }
-                    }
                     lastRecStream = rawStream;
+                    /* iOS: WebKit liefert in MediaRecorder oft stark unterpegelte Samples; Vorschau-Blob ist dann schon leise. Ausgleich per WebAudio (Kompressor + linearer Boost), Fallback ohne Graph bei Fehler. */
                     let stream = rawStream;
                     if (isIOS) {
-                        const t0 = rawStream.getAudioTracks()[0];
-                        const ch = (t0 && t0.getSettings && t0.getSettings().channelCount) || 0;
-                        /* Trotz Mono-Wunsch manchmal ch≥2 (Gerät/System): nur dann Downmix — kann nicht die volle Memo-Mono-Qualität ersetzen */
-                        if (ch >= 2) {
+                        try {
                             recCtx = new (window.AudioContext || window.webkitAudioContext)();
                             lastRecCtx = recCtx;
                             if (recCtx.state === 'suspended') await recCtx.resume();
-                            const srcIOS = recCtx.createMediaStreamSource(rawStream);
-                            const splitterIOS = recCtx.createChannelSplitter(2);
-                            const mergerIOS = recCtx.createChannelMerger(1);
-                            /* (L+R)/2 halbiert oft den Pegel, wenn Kanäle unkorreliert (Beamforming/Second Mic) — primärer Mic-Tap ist typ. Kanal 0 */
-                            const passIOS = recCtx.createGain();
-                            passIOS.gain.value = 1.0;
-                            srcIOS.connect(splitterIOS);
-                            splitterIOS.connect(passIOS, 0);
-                            passIOS.connect(mergerIOS, 0, 0);
-                            const destIOS = recCtx.createMediaStreamDestination();
-                            mergerIOS.connect(destIOS);
-                            stream = destIOS.stream;
+                            const srcIn = recCtx.createMediaStreamSource(rawStream);
+                            const destOut = recCtx.createMediaStreamDestination();
+                            const tMic = rawStream.getAudioTracks()[0];
+                            const chMic = (tMic && tMic.getSettings && tMic.getSettings().channelCount) || 1;
+                            const comp = recCtx.createDynamicsCompressor();
+                            comp.threshold.value = -22;
+                            comp.knee.value = 18;
+                            comp.ratio.value = 3.5;
+                            comp.attack.value = 0.004;
+                            comp.release.value = 0.2;
+                            const boost = recCtx.createGain();
+                            boost.gain.value = 2.35;
+                            if (chMic >= 2) {
+                                const sp = recCtx.createChannelSplitter(2);
+                                const mg = recCtx.createChannelMerger(1);
+                                const gL = recCtx.createGain();
+                                const gR = recCtx.createGain();
+                                gL.gain.value = 0.5;
+                                gR.gain.value = 0.5;
+                                srcIn.connect(sp);
+                                sp.connect(gL, 0);
+                                sp.connect(gR, 1);
+                                gL.connect(mg, 0, 0);
+                                gR.connect(mg, 0, 0);
+                                mg.connect(comp);
+                            } else {
+                                srcIn.connect(comp);
+                            }
+                            comp.connect(boost);
+                            boost.connect(destOut);
+                            stream = destOut.stream;
+                        } catch (e) {
+                            console.warn('iOS-Aufnahme: WebAudio-Kette fehlgeschlagen, direkter Stream', e);
+                            if (recCtx) {
+                                try { recCtx.close(); } catch (e2) {}
+                                if (lastRecCtx === recCtx) lastRecCtx = null;
+                            }
+                            recCtx = null;
+                            stream = rawStream;
                         }
-                    } else if (useWebAudioDownmix) {
+                    } else if (!isIOS && useWebAudioDownmix) {
                         /* Android: immer direkter Mic-Stream — WebAudio→MediaStreamDestination→MediaRecorder erzeugt auf vielen Geräten kurze Aussetzer */
                         if (!isAndroid) {
                             const t1 = rawStream.getAudioTracks()[0];
@@ -6173,6 +6193,11 @@
                     if (MediaRecorder.isTypeSupported('audio/mp4;codecs=mp4a.40.2')) options.mimeType = 'audio/mp4;codecs=mp4a.40.2'; 
                     else if (MediaRecorder.isTypeSupported('audio/mp4')) options.mimeType = 'audio/mp4';
                     else if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) options.mimeType = 'audio/webm;codecs=opus';
+                    if (isIOS) {
+                        if (/mp4/i.test(options.mimeType || '')) {
+                            options.audioBitsPerSecond = 256000;
+                        }
+                    }
 
                     mediaRecorder = new MediaRecorder(stream, options);
                     chunks = [];
@@ -6227,6 +6252,8 @@
             const content = document.getElementById('review-content');
             if (!currentBlob || !modal || !audio || !content) return;
             audio.src = URL.createObjectURL(currentBlob);
+            audio.muted = false;
+            audio.volume = 1;
             const isReply = !!replyTargetId;
             const verseImgHtml = !isReply && currentGlobalFileId != null ? `<img class="review-verse-img" src="${getAssetUrl(getVerseAssetPath(currentGlobalFileId) + '.png')}" alt="المقطع" onerror="verseImgFallback(this)">` : '';
             const noteHtml = !isReply ? `<div class="review-note">يرجى التأكد من أن التسجيل يتطابق مع المقطع.</div>` : '';
