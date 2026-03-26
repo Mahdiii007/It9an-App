@@ -14,6 +14,12 @@
 #   Console: https://console.cloud.google.com/iam-admin/iam?project=it9an-neu
 #   → Dienstkonto auswählen → „Zugriff gewähren“ / IAM → Rolle „Service Account User“ (projektweit).
 #
+# IAM bei HTTP 403 auf firebaserules.googleapis.com („caller does not have permission“):
+#   Demselben Dienstkonto (client_email) zusätzlich eine Rules-/Firebase-Rolle geben, z. B.:
+#   • „Firebase Rules Administrator“ / Firebase Rules Admin — roles/firebaserules.admin
+#   • oder „Firebase Administrator“ — roles/firebase.admin (breiter, umfasst Rules + mehr)
+#   Console: https://console.cloud.google.com/iam-admin/iam?project=it9an-neu
+#
 name: Deploy Firebase
 
 env:
