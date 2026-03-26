@@ -26,6 +26,12 @@
 #   (oder breiter: „Service Usage Admin“ — roles/serviceusage.serviceUsageAdmin, falls APIs aktiviert werden sollen).
 #   API einmal aktivieren: https://console.cloud.google.com/apis/library/runtimeconfig.googleapis.com?project=it9an-neu
 #
+# HTTP 403 cloudbilling.googleapis.com („Cloud Billing API has not been used or is disabled“):
+#   Im selben GCP-Projekt die „Cloud Billing API“ aktivieren (einmalig, ggf. einige Minuten warten):
+#   https://console.cloud.google.com/apis/library/cloudbilling.googleapis.com?project=it9an-neu
+#   Zusätzlich braucht das Deploy-Dienstkonto oft Leserechte auf Abrechnung, z. B. „Rechnungskonten-Viewer“
+#   / Billing Account Viewer auf das verknüpfte Rechnungskonto, oder breiter „Projekt“-Rolle mit Billing-Zugriff.
+#
 name: Deploy Firebase
 
 env:
@@ -78,8 +84,9 @@ jobs:
             }
           " "${RUNNER_TEMP}/firebase-sa-validate.json"
 
+      # v3 nutzt Node 24 (v2 noch node20 → Deprecation-Warnung auf den Runnern)
       - name: Google Cloud anmelden (ADC für Firebase CLI)
-        uses: google-github-actions/auth@v2
+        uses: google-github-actions/auth@v3
         with:
           credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}
 
