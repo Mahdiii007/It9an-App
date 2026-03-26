@@ -16,6 +16,13 @@
 #   FULL_FIREBASE=1 ./scripts/deploy-all.sh   → komplettes firebase deploy inkl. Hosting
 set -euo pipefail
 
+on_err() {
+  echo ">>> Fehler (Zeile $1). Git ok? Firebase-Login: firebase login  oder FIREBASE_TOKEN setzen."
+  echo ">>> Firebase-CLI kaputt? Versuch: npx firebase-tools@latest --version"
+  exit 1
+}
+trap 'on_err $LINENO' ERR
+
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
