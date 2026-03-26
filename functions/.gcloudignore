@@ -1,0 +1,22 @@
+# Upload-Archiv klein halten — „preparing functions directory“ sonst sehr langsam (v. a. mit node_modules + iCloud).
+# Dependencies installiert Google Cloud Build bei deploy (npm ci mit package-lock.json).
+
+node_modules/
+node_modules.__trash_*/
+
+.git/
+.gitignore
+.gcloudignore
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+.env
+.env.*
+
+# Nur predeploy lokal (ensure-ffmpeg-linux.js), Laufzeit braucht es nicht
+scripts/
+
+.DS_Store
+.vscode/
+.idea/
