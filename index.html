@@ -718,7 +718,9 @@
             } catch (e) { console.warn('App Check:', e); }
         }
         window.firebaseApp = app;
-        window.db = getFirestore(app); window.storage = getStorage(app);
+        window.db = getFirestore(app);
+        /* Expliziter gs://-Bucket vermeidet „Unexpected error when fetching default storage bucket“ (SDK/CLI) */
+        window.storage = getStorage(app, 'gs://it9an-neu.firebasestorage.app');
         
         try { enableIndexedDbPersistence(window.db).catch((err) => { console.log("Persistence error:", err.code); }); } catch(e){}
         try { window.dispatchEvent(new Event('firebase-ready')); } catch(e){}

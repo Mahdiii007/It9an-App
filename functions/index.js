@@ -625,12 +625,12 @@ QURAN_REMINDER_SLOTS.forEach((slot, idx) => {
  * Original-WebM bleibt vorerst (vermeidet Race mit getDownloadURL); optional später aufräumen.
  * Deploy: npm install in functions muss das Linux-FFmpeg-Binary enthalten (CI: ubuntu, lokal: npm i --force).
  */
+/* bucket weglassen = Standard-Bucket des Projekts (vermeidet falschen Namen appspot vs firebasestorage.app) */
 exports.transcodeUploadAudio = onObjectFinalized(
   {
     region: 'europe-west3',
     memory: '2GiB',
     timeoutSeconds: 300,
-    bucket: 'it9an-neu.firebasestorage.app',
   },
   async (event) => {
     const filePath = event.data.name;
