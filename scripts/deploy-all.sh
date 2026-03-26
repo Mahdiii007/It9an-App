@@ -14,6 +14,11 @@
 #
 # Hosting liegt bei GitHub Pages; Firebase ohne Hosting (anpassbar):
 #   FULL_FIREBASE=1 ./scripts/deploy-all.sh   → komplettes firebase deploy inkl. Hosting
+#
+# Storage-Deploy schlägt fehl („fetching default storage bucket“)?
+#   Standard: nur functions + firestore. Storage-Regeln separat:
+#   FIREBASE_ONLY=functions,firestore,storage ./scripts/deploy-all.sh
+#   Oder in der Console: Storage einmal einrichten + Bucket prüfen (appspot vs firebasestorage.app).
 set -euo pipefail
 
 on_err() {
@@ -48,7 +53,8 @@ if [[ "${SKIP_FIREBASE:-0}" != "1" ]]; then
   if [[ "${FULL_FIREBASE:-0}" == "1" ]]; then
     unset FIREBASE_ONLY
   else
-    export FIREBASE_ONLY="${FIREBASE_ONLY:-functions,firestore,storage}"
+    # Ohne storage: vermeidet CLI-Fehler, wenn kein Standard-Bucket/API/Token-Rechte
+    export FIREBASE_ONLY="${FIREBASE_ONLY:-functions,firestore}"
   fi
   "$ROOT/scripts/deploy-firebase.sh"
   echo "Firebase fertig."
