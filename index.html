@@ -4357,7 +4357,10 @@
                 const isIOSMic = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
                 let stream = null;
                 if (isIOSMic) {
+                    /* AGC aus zuerst: weniger „unterdrückte“ Stimme durch iOS/Sprachverarbeitung; Mono bevorzugen */
                     const micCandidates = [
+                        { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: { ideal: 1 } } },
+                        { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: { exact: 1 } } },
                         { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: true, channelCount: { exact: 1 } } },
                         { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: true, channelCount: { ideal: 1 } } },
                         { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: true } }
@@ -6025,13 +6028,17 @@
                     } else {
                         if (isMacDesktop && lastRecStream) { lastRecStream.getTracks().forEach(t => t.stop()); lastRecStream = null; }
                         if (isIOS) {
+                            /* Reihenfolge: zuerst ohne AGC (oft weniger „geduckte“ Stimme); Safari ignoriert Teile davon → Fallbacks */
                             const iosCandidates = [
+                                { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: { ideal: 1 }, sampleRate: { ideal: 48000 } } },
+                                { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: { exact: 1 }, sampleRate: { ideal: 48000 } } },
+                                { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: { ideal: 1 } } },
+                                { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: { exact: 1 } } },
                                 { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: true, channelCount: { exact: 1 }, sampleRate: { ideal: 48000 } } },
                                 { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: true, channelCount: { exact: 1 } } },
                                 { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: true, channelCount: { ideal: 1 }, sampleRate: { ideal: 48000 } } },
                                 { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: true, channelCount: { ideal: 1 } } },
-                                { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: true } },
-                                { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: { ideal: 1 } } }
+                                { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: true } }
                             ];
                             let lastGumErr = null;
                             rawStream = null;
@@ -6056,28 +6063,38 @@
                         lastRecCtx = recCtx;
                         if (recCtx.state === 'suspended') await recCtx.resume();
                         const srcIOS = recCtx.createMediaStreamSource(rawStream);
-                        const splitterIOS = recCtx.createChannelSplitter(2);
-                        const mergerIOS = recCtx.createChannelMerger(1);
-                        const gainLi = recCtx.createGain();
-                        const gainRi = recCtx.createGain();
-                        gainLi.gain.value = 0.5;
-                        gainRi.gain.value = 0.5;
-                        srcIOS.connect(splitterIOS);
-                        splitterIOS.connect(gainLi, 0);
-                        splitterIOS.connect(gainRi, 1);
-                        gainLi.connect(mergerIOS, 0, 0);
-                        gainRi.connect(mergerIOS, 0, 0);
-                        const compIOS = recCtx.createDynamicsCompressor();
-                        compIOS.threshold.value = -22;
-                        compIOS.knee.value = 18;
-                        compIOS.ratio.value = 2.5;
-                        compIOS.attack.value = 0.005;
-                        compIOS.release.value = 0.12;
-                        const gainIOS = recCtx.createGain();
-                        gainIOS.gain.value = 1.45;
                         const destIOS = recCtx.createMediaStreamDestination();
-                        mergerIOS.connect(compIOS);
-                        compIOS.connect(gainIOS);
+                        const t0 = rawStream.getAudioTracks()[0];
+                        const ch = (t0 && t0.getSettings && t0.getSettings().channelCount) || 0;
+                        /* Mono + ChannelSplitter(2): nur Kanal 0 hat Signal → 0,5·L+0,5·R halbiert Pegel (−6 dB). Stereo: echtes Downmix. */
+                        const useStereoDownmix = ch >= 2;
+                        const gainIOS = recCtx.createGain();
+                        if (useStereoDownmix) {
+                            const splitterIOS = recCtx.createChannelSplitter(2);
+                            const mergerIOS = recCtx.createChannelMerger(1);
+                            const gainLi = recCtx.createGain();
+                            const gainRi = recCtx.createGain();
+                            gainLi.gain.value = 0.5;
+                            gainRi.gain.value = 0.5;
+                            srcIOS.connect(splitterIOS);
+                            splitterIOS.connect(gainLi, 0);
+                            splitterIOS.connect(gainRi, 1);
+                            gainLi.connect(mergerIOS, 0, 0);
+                            gainRi.connect(mergerIOS, 0, 0);
+                            const compIOS = recCtx.createDynamicsCompressor();
+                            compIOS.threshold.value = -14;
+                            compIOS.knee.value = 24;
+                            compIOS.ratio.value = 2;
+                            compIOS.attack.value = 0.003;
+                            compIOS.release.value = 0.2;
+                            mergerIOS.connect(compIOS);
+                            gainIOS.gain.value = 1.7;
+                            compIOS.connect(gainIOS);
+                        } else {
+                            /* Mono: kein Kompressor (weniger „unterdrückt“); digitaler Pegel nach oben, falls AGC aus */
+                            gainIOS.gain.value = 2.35;
+                            srcIOS.connect(gainIOS);
+                        }
                         gainIOS.connect(destIOS);
                         stream = destIOS.stream;
                     } else if (useWebAudioDownmix) {
