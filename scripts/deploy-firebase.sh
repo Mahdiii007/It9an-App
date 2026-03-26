@@ -21,7 +21,10 @@ if [[ -n "${FIREBASE_TOKEN:-}" ]]; then
   export FIREBASE_TOKEN
 fi
 
-bash "${ROOT}/scripts/functions-npm-ci.sh"
+# CI: zweiter Aufruf (z. B. nur storage) soll nicht erneut npm ci ausführen
+if [[ "${SKIP_FUNCTIONS_NPM_CI:-0}" != "1" ]]; then
+  bash "${ROOT}/scripts/functions-npm-ci.sh"
+fi
 
 FT_VER="${FIREBASE_TOOLS_VERSION:-13}"
 if [[ "${USE_SYSTEM_FIREBASE:-0}" == "1" ]] && command -v firebase >/dev/null 2>&1 && firebase --version >/dev/null 2>&1; then

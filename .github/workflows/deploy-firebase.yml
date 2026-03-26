@@ -1,12 +1,13 @@
 # Firebase: Functions + Firestore (+ Storage optional)
 #
-# Authentifizierung (empfohlen):
-#   Secret FIREBASE_SERVICE_ACCOUNT_KEY = vollständiger Inhalt der JSON-Datei
-#   (Firebase Console → Projekteinstellungen → Dienstkonten → „Neuen privaten Schlüssel“)
-#   → GitHub: Repo → Settings → Secrets → Actions → New repository secret
+# Authentifizierung (empfohlen — vermeidet 401 bei Firestore Rules):
+#   Secret FIREBASE_SERVICE_ACCOUNT_KEY = exakt der Inhalt der heruntergeladenen JSON
+#   (ohne Anführungszeichen drumherum; eine Zeile oder mehrere ist ok)
+#   Firebase Console → Projekteinstellungen → Dienstkonten → „Neuen privaten Schlüssel“
+#   GitHub → Repo → Settings → Secrets and variables → Actions → New repository secret
 #
-# Fallback (oft 401 nach Ablauf):
-#   FIREBASE_TOKEN = Ausgabe von firebase login:ci  (von firebase-tools als veraltet markiert)
+# Fallback (läuft ab, firebase-tools markiert --token als deprecated):
+#   FIREBASE_TOKEN = firebase login:ci
 #
 name: Deploy Firebase
 
@@ -19,11 +20,14 @@ on:
     branches: [main, master]
     paths:
       - "functions/**"
+      - "scripts/deploy-firebase.sh"
+      - "scripts/functions-npm-ci.sh"
       - "firebase.json"
       - ".firebaserc"
       - "firestore.rules"
       - "firestore.indexes.json"
       - "storage.rules"
+      - ".github/workflows/deploy-firebase.yml"
 
 permissions:
   contents: read
@@ -40,10 +44,7 @@ jobs:
           cache: npm
           cache-dependency-path: functions/package-lock.json
 
-      - name: Install functions dependencies
-        working-directory: functions
-        run: npm ci
-
+      # Entspricht lokal: scripts/functions-npm-ci.sh (wird von deploy-firebase.sh aufgerufen)
       - name: Install Firebase CLI (Major 13, weniger firepit-Probleme)
         run: npm install -g firebase-tools@13
 
@@ -53,37 +54,53 @@ jobs:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
         run: |
           set -euo pipefail
-          if [ -n "${FIREBASE_SERVICE_ACCOUNT_KEY:-}" ]; then
-            printf '%s' "$FIREBASE_SERVICE_ACCOUNT_KEY" > "${RUNNER_TEMP}/firebase-ci-sa.json"
+          SA_RAW="${FIREBASE_SERVICE_ACCOUNT_KEY:-}"
+          SA_TRIM="$(printf '%s' "$SA_RAW" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+          if [ -n "$SA_TRIM" ]; then
+            printf '%s' "$SA_TRIM" > "${RUNNER_TEMP}/firebase-ci-sa.json"
+            node -e "
+              const fs = require('fs');
+              const p = process.argv[1];
+              const j = JSON.parse(fs.readFileSync(p, 'utf8'));
+              if (!j.private_key || !j.client_email) {
+                console.error('JSON muss client_email und private_key enthalten (Firebase-Dienstkontoschlüssel).');
+                process.exit(1);
+              }
+            " "${RUNNER_TEMP}/firebase-ci-sa.json"
             echo "GOOGLE_APPLICATION_CREDENTIALS=${RUNNER_TEMP}/firebase-ci-sa.json" >> "$GITHUB_ENV"
             echo "firebase_auth_mode=sa" >> "$GITHUB_ENV"
             echo "Nutze Dienstkonto (GOOGLE_APPLICATION_CREDENTIALS)."
           else
-            T="$(printf '%s' "${FIREBASE_TOKEN:-}" | tr -d '\r\n')"
+            T="$(printf '%s' "${FIREBASE_TOKEN:-}" | tr -d '\r\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
             if [ -z "$T" ]; then
-              echo "::error::Secret FIREBASE_SERVICE_ACCOUNT_KEY (JSON) oder FIREBASE_TOKEN setzen. 401 = Token abgelaufen oder ungültig — Dienstkonto bevorzugen."
+              echo "::error::Kein gültiges Secret: Lege FIREBASE_SERVICE_ACCOUNT_KEY an (empfohlen) oder FIREBASE_TOKEN."
+              echo "::error::401 bei firebaserules = meist abgelaufenes FIREBASE_TOKEN — in GitHub: Repo → Settings → Secrets → FIREBASE_SERVICE_ACCOUNT_KEY = komplette JSON-Datei (Firebase Console → Projekteinstellungen → Dienstkonten → Neuer privater Schlüssel)."
               exit 1
             fi
             echo "firebase_auth_mode=token" >> "$GITHUB_ENV"
             echo "FIREBASE_CI_TOKEN=$T" >> "$GITHUB_ENV"
-            echo "::warning::FIREBASE_TOKEN-Fallback; langfristig FIREBASE_SERVICE_ACCOUNT_KEY nutzen (siehe Workflow-Kopf)."
+            echo "::warning::FIREBASE_TOKEN ist veraltet und führt oft zu 401; bitte FIREBASE_SERVICE_ACCOUNT_KEY setzen (siehe Workflow-Kopf)."
           fi
 
       - name: Deploy functions + firestore
         run: |
           set -euo pipefail
-          if [ "${firebase_auth_mode:-}" = "sa" ]; then
-            firebase deploy --only functions,firestore --project it9an-neu --non-interactive
-          else
-            firebase deploy --only functions,firestore --project it9an-neu --non-interactive --token "${FIREBASE_CI_TOKEN}"
+          if [ "${firebase_auth_mode:-}" = "token" ]; then
+            export FIREBASE_TOKEN="${FIREBASE_CI_TOKEN}"
           fi
+          export USE_SYSTEM_FIREBASE=1
+          export FIREBASE_ONLY=functions,firestore
+          bash scripts/deploy-firebase.sh
 
       - name: Deploy storage rules (optional)
         continue-on-error: true
+        env:
+          SKIP_FUNCTIONS_NPM_CI: "1"
         run: |
           set -euo pipefail
-          if [ "${firebase_auth_mode:-}" = "sa" ]; then
-            firebase deploy --only storage --project it9an-neu --non-interactive
-          else
-            firebase deploy --only storage --project it9an-neu --non-interactive --token "${FIREBASE_CI_TOKEN}"
+          if [ "${firebase_auth_mode:-}" = "token" ]; then
+            export FIREBASE_TOKEN="${FIREBASE_CI_TOKEN}"
           fi
+          export USE_SYSTEM_FIREBASE=1
+          export FIREBASE_ONLY=storage
+          bash scripts/deploy-firebase.sh

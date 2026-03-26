@@ -1,0 +1,5 @@
+# Einheitliche Zeilenenden → weniger „M“ nach Editor/OS-Wechsel
+*.sh text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+app-version.json text eol=lf

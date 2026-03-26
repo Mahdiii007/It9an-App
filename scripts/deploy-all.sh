@@ -96,11 +96,17 @@ if [[ "${SKIP_FIREBASE:-0}" != "1" ]]; then
   echo "Firebase fertig."
   # deploy-firebase setzt app-version.json auf fb-<SHA> — zweiter Push, damit GitHub die Datei wirklich hat
   if [[ "${SKIP_GIT:-0}" != "1" ]]; then
-    if [[ -n "$(git status --porcelain -- app-version.json 2>/dev/null || true)" ]]; then
+    if ! git diff --quiet HEAD -- app-version.json 2>/dev/null; then
       git add app-version.json
       git commit -m "chore: app-version.json nach Firebase-Deploy"
       git push -u origin "$BRANCH"
       echo "app-version.json (fb-*) als zweiter Commit gepusht."
+    fi
+    if [[ -n "$(git status --porcelain 2>/dev/null)" ]]; then
+      echo ""
+      echo "=== Hinweis: Git-Arbeitsbaum ist nach Deploy nicht leer ==="
+      git status -sb
+      echo "Oft: Zeilenenden (.gitattributes), ausführbar-Bit bei *.sh, oder Editor hat Dateien während des Laufs geändert."
     fi
   fi
 else
