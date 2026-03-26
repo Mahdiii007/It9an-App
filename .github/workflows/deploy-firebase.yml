@@ -7,6 +7,13 @@
 #
 # Hinweis: FIREBASE_TOKEN / firebase login:ci liefert bei firebaserules.googleapis.com oft HTTP 401.
 #
+# IAM (ohne das schlägt „firebase deploy“ für Functions fehl):
+#   Dem Dienstkonto aus FIREBASE_SERVICE_ACCOUNT_KEY (client_email in der JSON) muss in GCP die Rolle
+#   „Dienstkontonutzer“ / „Service Account User“ (roles/iam.serviceAccountUser) zugewiesen werden,
+#   damit es iam.serviceAccounts.actAs für it9an-neu@appspot.gserviceaccount.com ausführen darf.
+#   Console: https://console.cloud.google.com/iam-admin/iam?project=it9an-neu
+#   → Dienstkonto auswählen → „Zugriff gewähren“ / IAM → Rolle „Service Account User“ (projektweit).
+#
 name: Deploy Firebase
 
 env:
