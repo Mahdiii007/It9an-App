@@ -6107,9 +6107,38 @@
                         }
                     }
                     lastRecStream = rawStream;
-                    /* iOS: direkter Mic-Stream → MediaRecorder (kein WebAudio, kein Boost). */
+                    /* iOS: nur linearer Pegel-Ausgleich (WebKit/MediaRecorder unterpegelt). Kein Echo-/Rauschfilter in getUserMedia; hier kein Kompressor/Filter. */
                     let stream = rawStream;
-                    if (!isIOS && useWebAudioDownmix) {
+                    if (isIOS) {
+                        try {
+                            recCtx = new (window.AudioContext || window.webkitAudioContext)();
+                            lastRecCtx = recCtx;
+                            if (recCtx.state === 'suspended') await recCtx.resume();
+                            const srcIn = recCtx.createMediaStreamSource(rawStream);
+                            const destOut = recCtx.createMediaStreamDestination();
+                            const gainOnly = recCtx.createGain();
+                            gainOnly.gain.value = 2.3;
+                            const tMic = rawStream.getAudioTracks()[0];
+                            const chMic = (tMic && tMic.getSettings && tMic.getSettings().channelCount) || 1;
+                            if (chMic >= 2) {
+                                const sp = recCtx.createChannelSplitter(2);
+                                srcIn.connect(sp);
+                                sp.connect(gainOnly, 0);
+                            } else {
+                                srcIn.connect(gainOnly);
+                            }
+                            gainOnly.connect(destOut);
+                            stream = destOut.stream;
+                        } catch (e) {
+                            console.warn('iOS-Aufnahme: WebAudio-Gain fehlgeschlagen, direkter Stream', e);
+                            if (recCtx) {
+                                try { recCtx.close(); } catch (e2) {}
+                                if (lastRecCtx === recCtx) lastRecCtx = null;
+                            }
+                            recCtx = null;
+                            stream = rawStream;
+                        }
+                    } else if (!isIOS && useWebAudioDownmix) {
                         /* Android: immer direkter Mic-Stream — WebAudio→MediaStreamDestination→MediaRecorder erzeugt auf vielen Geräten kurze Aussetzer */
                         if (!isAndroid) {
                             const t1 = rawStream.getAudioTracks()[0];
