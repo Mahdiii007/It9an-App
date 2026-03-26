@@ -6014,6 +6014,7 @@
                 try {
                     const isMacDesktop = /Mac|Macintosh/.test(navigator.platform) && !navigator.maxTouchPoints;
                     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+                    const isAndroid = /Android/i.test(navigator.userAgent || '');
                     /* getUserMedia erwartet genau eine Ebene { audio: … }, keine doppelte Verschachtelung */
                     let getUserMediaConfig;
                     if (isIOS) {
@@ -6021,9 +6022,10 @@
                     } else if (isMacDesktop) {
                         getUserMediaConfig = { audio: true };
                     } else {
-                        getUserMediaConfig = { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, sampleRate: 48000, channelCount: 1 } };
+                        /* Kein fixes sampleRate: 48000 — sonst Resampling auf 44,1-kHz-Geräten → kurze Aussetzer. Mono ideal. */
+                        getUserMediaConfig = { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: { ideal: 1 } } };
                     }
-                    /* Android: Downmix per Web Audio. iOS: Mono anfragen (Memo-Stereo-Pfad unterdrückt oft); roher Stream; Web Audio nur bei ch≥2. */
+                    /* Android: Aufnahme ohne Web-Audio (stabiler). Andere Mobile (nicht iOS): Downmix nur bei ch≥2. iOS: siehe oben. */
                     const useWebAudioDownmix = !isMacDesktop && !isIOS;
                     if (!isMacDesktop) {
                         if (lastRecStream) { lastRecStream.getTracks().forEach(t => t.stop()); lastRecStream = null; }
@@ -6135,29 +6137,40 @@
                             stream = destIOS.stream;
                         }
                     } else if (useWebAudioDownmix) {
-                        recCtx = new (window.AudioContext || window.webkitAudioContext)();
-                        lastRecCtx = recCtx;
-                        if (recCtx.state === 'suspended') await recCtx.resume();
-                        const sourceNode = recCtx.createMediaStreamSource(rawStream);
-                        const splitter = recCtx.createChannelSplitter(2);
-                        const merger = recCtx.createChannelMerger(1);
-                        const gainL = recCtx.createGain();
-                        const gainR = recCtx.createGain();
-                        gainL.gain.value = 0.5;
-                        gainR.gain.value = 0.5;
-                        sourceNode.connect(splitter);
-                        splitter.connect(gainL, 0);
-                        splitter.connect(gainR, 1);
-                        gainL.connect(merger, 0, 0);
-                        gainR.connect(merger, 0, 0);
-                        const gainBoost = recCtx.createGain();
-                        gainBoost.gain.value = 1.0;
-                        merger.connect(gainBoost);
-                        const destNode = recCtx.createMediaStreamDestination();
-                        gainBoost.connect(destNode);
-                        stream = destNode.stream;
+                        /* Android: immer direkter Mic-Stream — WebAudio→MediaStreamDestination→MediaRecorder erzeugt auf vielen Geräten kurze Aussetzer */
+                        if (!isAndroid) {
+                            const t1 = rawStream.getAudioTracks()[0];
+                            const chMob = (t1 && t1.getSettings && t1.getSettings().channelCount) || 0;
+                            if (chMob >= 2) {
+                                try {
+                                    recCtx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'playback' });
+                                } catch (e) {
+                                    recCtx = new (window.AudioContext || window.webkitAudioContext)();
+                                }
+                                lastRecCtx = recCtx;
+                                if (recCtx.state === 'suspended') await recCtx.resume();
+                                const sourceNode = recCtx.createMediaStreamSource(rawStream);
+                                const splitter = recCtx.createChannelSplitter(2);
+                                const merger = recCtx.createChannelMerger(1);
+                                const gainL = recCtx.createGain();
+                                const gainR = recCtx.createGain();
+                                gainL.gain.value = 0.5;
+                                gainR.gain.value = 0.5;
+                                sourceNode.connect(splitter);
+                                splitter.connect(gainL, 0);
+                                splitter.connect(gainR, 1);
+                                gainL.connect(merger, 0, 0);
+                                gainR.connect(merger, 0, 0);
+                                const gainBoost = recCtx.createGain();
+                                gainBoost.gain.value = 1.0;
+                                merger.connect(gainBoost);
+                                const destNode = recCtx.createMediaStreamDestination();
+                                gainBoost.connect(destNode);
+                                stream = destNode.stream;
+                            }
+                        }
                     }
-                    let options = { audioBitsPerSecond: 128000 };
+                    let options = { audioBitsPerSecond: (isAndroid && MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) ? 192000 : 128000 };
                     // MP4/AAC zuerst: spielt auf iPhone/Mac/Safari flüssig. WebM/Opus verursacht Ruckler auf Safari.
                     if (MediaRecorder.isTypeSupported('audio/mp4;codecs=mp4a.40.2')) options.mimeType = 'audio/mp4;codecs=mp4a.40.2'; 
                     else if (MediaRecorder.isTypeSupported('audio/mp4')) options.mimeType = 'audio/mp4';
