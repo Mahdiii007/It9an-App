@@ -52,6 +52,9 @@ if [[ "${SKIP_GIT:-0}" != "1" ]]; then
   if [[ "$BRANCH" != "main" && "$BRANCH" != "master" ]]; then
     echo "Hinweis: Der Pages-Workflow (.github/workflows/deploy-pages.yml) laeuft nur auf „main“ oder „master“."
   fi
+  # Vor Commit: app-version.json ins Repo — deploy-firebase schreibt sie erst NACH dem ersten Push (fb-*).
+  SHA_PRE="$(git rev-parse HEAD 2>/dev/null || echo unknown)"
+  printf '%s\n' "{\"version\":\"pre-${SHA_PRE}\",\"builtAt\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}" > app-version.json
   git add -A
   if git diff --staged --quiet; then
     if [[ "${FORCE_GITHUB_PAGES:-0}" == "1" ]]; then
@@ -81,6 +84,15 @@ if [[ "${SKIP_FIREBASE:-0}" != "1" ]]; then
   fi
   "$ROOT/scripts/deploy-firebase.sh"
   echo "Firebase fertig."
+  # deploy-firebase setzt app-version.json auf fb-<SHA> — zweiter Push, damit GitHub die Datei wirklich hat
+  if [[ "${SKIP_GIT:-0}" != "1" ]]; then
+    if [[ -n "$(git status --porcelain -- app-version.json 2>/dev/null || true)" ]]; then
+      git add app-version.json
+      git commit -m "chore: app-version.json nach Firebase-Deploy"
+      git push -u origin "$BRANCH"
+      echo "app-version.json (fb-*) als zweiter Commit gepusht."
+    fi
+  fi
 else
   echo "=== Firebase übersprungen (SKIP_FIREBASE=1) ==="
 fi

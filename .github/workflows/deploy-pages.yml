@@ -33,6 +33,8 @@ jobs:
       - name: Write deploy version (PWA lädt Updates ohne Neuinstallation)
         run: |
           printf '%s\n' "{\"version\":\"gh-${GITHUB_SHA}\",\"builtAt\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}" > app-version.json
+          test -s app-version.json
+          echo "app-version.json:" && cat app-version.json
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

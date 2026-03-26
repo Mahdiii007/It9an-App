@@ -14,9 +14,6 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
 PROJECT="${FIREBASE_PROJECT:-it9an-neu}"
-SHA="$(git rev-parse HEAD 2>/dev/null || echo local)"
-printf '%s\n' "{\"version\":\"fb-${SHA}\",\"builtAt\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}" > app-version.json
-echo "Wrote app-version.json"
 
 (cd functions && npm ci)
 
@@ -51,3 +48,7 @@ else
   echo "${FIREBASE_CMD[*]} ${FB_BASE[*]}"
   "${FIREBASE_CMD[@]}" "${FB_BASE[@]}"
 fi
+
+SHA="$(git rev-parse HEAD 2>/dev/null || echo local)"
+printf '%s\n' "{\"version\":\"fb-${SHA}\",\"builtAt\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}" > app-version.json
+echo "Wrote app-version.json (nach erfolgreichem Deploy)"
