@@ -1,4 +1,4 @@
 {
   "git.openRepositoryInParentFolders": "always",
-  "git.repositoryScanMaxDepth": 5
+  "git.repositoryScanMaxDepth": 8
 }

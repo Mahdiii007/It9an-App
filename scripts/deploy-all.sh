@@ -50,6 +50,14 @@ trap 'on_err $LINENO' ERR
 
 cd "$ROOT"
 
+if [[ ! -d .git ]]; then
+  echo "=== FEHLER: Hier ist kein Git-Repository (.git fehlt) ==="
+  echo "Aktueller Ordner: $ROOT"
+  echo "Cursor/VS Code: den geklonten App-Ordner öffnen (…/Github bzw. It9an-App), nicht den übergeordneten „Cursor“-Ordner."
+  echo "Oder: It9an-App.code-workspace aus dem Repo doppelklicken. Sonst zeigt die IDE falsche M/U bei scripts/."
+  exit 1
+fi
+
 if [[ "${SKIP_GIT:-0}" != "1" && -f .git/index.lock ]]; then
   echo "=== FEHLER: .git/index.lock existiert ==="
   echo "Anderes Git/Cursor-Panel nutzt das Repo, oder ein git ist abgestürzt."
