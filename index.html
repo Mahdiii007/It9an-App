@@ -4357,15 +4357,15 @@
                 const isIOSMic = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
                 let stream = null;
                 if (isIOSMic) {
-                    /* Wie toggleRecord: zuerst System-Default, dann spezifischere Constraints (identische Reihenfolge vermeidet „falsches“ Profil nach Permission). */
+                    /* Wie toggleRecord: kein Echo-/Rauschfilter (explizit false); { audio: true } nur letzter Fallback. */
                     const micCandidates = [
-                        { audio: true },
-                        { audio: { channelCount: { ideal: 1 } } },
-                        { audio: { echoCancellation: false, noiseSuppression: false } },
                         { audio: { echoCancellation: false, noiseSuppression: false, channelCount: { ideal: 1 } } },
                         { audio: { echoCancellation: false, noiseSuppression: false, channelCount: { exact: 1 } } },
+                        { audio: { echoCancellation: false, noiseSuppression: false } },
                         { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: { ideal: 1 } } },
                         { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } },
+                        { audio: { channelCount: { ideal: 1 } } },
+                        { audio: true },
                         { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: true, channelCount: { ideal: 1 } } }
                     ];
                     for (const c of micCandidates) {
@@ -6077,16 +6077,16 @@
                     } else {
                         if (isMacDesktop && lastRecStream) { lastRecStream.getTracks().forEach(t => t.stop()); lastRecStream = null; }
                         if (isIOS) {
-                            /* 1) System-Default zuerst; Aufnahme läuft danach durch WebAudio (Boost+Kompressor), weil der rohe MediaRecorder-Pfad auf iOS oft unterpegelt ist. */
+                            /* Kein Echo-/Rauschfilter; kein WebAudio-Boost — direkter Stream. { audio: true } nur Fallback. */
                             const iosCandidates = [
-                                { audio: true },
-                                { audio: { channelCount: { ideal: 1 } } },
-                                { audio: { echoCancellation: false, noiseSuppression: false } },
                                 { audio: { echoCancellation: false, noiseSuppression: false, channelCount: { ideal: 1 } } },
                                 { audio: { echoCancellation: false, noiseSuppression: false, channelCount: { exact: 1 } } },
+                                { audio: { echoCancellation: false, noiseSuppression: false } },
                                 { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: { ideal: 1 } } },
                                 { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: { exact: 1 } } },
                                 { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } },
+                                { audio: { channelCount: { ideal: 1 } } },
+                                { audio: true },
                                 { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: true, channelCount: { ideal: 1 } } },
                                 { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: true } }
                             ];
@@ -6107,54 +6107,9 @@
                         }
                     }
                     lastRecStream = rawStream;
-                    /* iOS: WebKit liefert in MediaRecorder oft stark unterpegelte Samples; Vorschau-Blob ist dann schon leise. Ausgleich per WebAudio (Kompressor + linearer Boost), Fallback ohne Graph bei Fehler. */
+                    /* iOS: direkter Mic-Stream → MediaRecorder (kein WebAudio, kein Boost). */
                     let stream = rawStream;
-                    if (isIOS) {
-                        try {
-                            recCtx = new (window.AudioContext || window.webkitAudioContext)();
-                            lastRecCtx = recCtx;
-                            if (recCtx.state === 'suspended') await recCtx.resume();
-                            const srcIn = recCtx.createMediaStreamSource(rawStream);
-                            const destOut = recCtx.createMediaStreamDestination();
-                            const tMic = rawStream.getAudioTracks()[0];
-                            const chMic = (tMic && tMic.getSettings && tMic.getSettings().channelCount) || 1;
-                            const comp = recCtx.createDynamicsCompressor();
-                            comp.threshold.value = -22;
-                            comp.knee.value = 18;
-                            comp.ratio.value = 3.5;
-                            comp.attack.value = 0.004;
-                            comp.release.value = 0.2;
-                            const boost = recCtx.createGain();
-                            boost.gain.value = 2.35;
-                            if (chMic >= 2) {
-                                const sp = recCtx.createChannelSplitter(2);
-                                const mg = recCtx.createChannelMerger(1);
-                                const gL = recCtx.createGain();
-                                const gR = recCtx.createGain();
-                                gL.gain.value = 0.5;
-                                gR.gain.value = 0.5;
-                                srcIn.connect(sp);
-                                sp.connect(gL, 0);
-                                sp.connect(gR, 1);
-                                gL.connect(mg, 0, 0);
-                                gR.connect(mg, 0, 0);
-                                mg.connect(comp);
-                            } else {
-                                srcIn.connect(comp);
-                            }
-                            comp.connect(boost);
-                            boost.connect(destOut);
-                            stream = destOut.stream;
-                        } catch (e) {
-                            console.warn('iOS-Aufnahme: WebAudio-Kette fehlgeschlagen, direkter Stream', e);
-                            if (recCtx) {
-                                try { recCtx.close(); } catch (e2) {}
-                                if (lastRecCtx === recCtx) lastRecCtx = null;
-                            }
-                            recCtx = null;
-                            stream = rawStream;
-                        }
-                    } else if (!isIOS && useWebAudioDownmix) {
+                    if (!isIOS && useWebAudioDownmix) {
                         /* Android: immer direkter Mic-Stream — WebAudio→MediaStreamDestination→MediaRecorder erzeugt auf vielen Geräten kurze Aussetzer */
                         if (!isAndroid) {
                             const t1 = rawStream.getAudioTracks()[0];
@@ -6193,11 +6148,6 @@
                     if (MediaRecorder.isTypeSupported('audio/mp4;codecs=mp4a.40.2')) options.mimeType = 'audio/mp4;codecs=mp4a.40.2'; 
                     else if (MediaRecorder.isTypeSupported('audio/mp4')) options.mimeType = 'audio/mp4';
                     else if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) options.mimeType = 'audio/webm;codecs=opus';
-                    if (isIOS) {
-                        if (/mp4/i.test(options.mimeType || '')) {
-                            options.audioBitsPerSecond = 256000;
-                        }
-                    }
 
                     mediaRecorder = new MediaRecorder(stream, options);
                     chunks = [];
