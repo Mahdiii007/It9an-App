@@ -4357,14 +4357,15 @@
                 const isIOSMic = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
                 let stream = null;
                 if (isIOSMic) {
-                    /* Voice Memos „Stereo“: System nutzt oft aggressivere Verarbeitung → unterdrückte Stimme. Mono bevorzugen (wie Memo Mono). */
+                    /* iOS: Echo-/Rauschunterdrückung aus (sonst „verstopft“). AGC nicht erzwingen — WebKit setzt Pegel sonst oft zu niedrig. Mono ideal. */
                     const micCandidates = [
+                        { audio: { echoCancellation: false, noiseSuppression: false, channelCount: { ideal: 1 } } },
+                        { audio: { echoCancellation: false, noiseSuppression: false, channelCount: { exact: 1 } } },
+                        { audio: { echoCancellation: false, noiseSuppression: false } },
                         { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: { ideal: 1 } } },
-                        { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: { exact: 1 } } },
                         { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } },
-                        { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: true, channelCount: { ideal: 1 } } },
                         { audio: true },
-                        { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: true } }
+                        { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: true, channelCount: { ideal: 1 } } }
                     ];
                     for (const c of micCandidates) {
                         try {
@@ -6052,18 +6053,15 @@
                         audioEl.volume = 0;
                         feedAudioEl.muted = true;
                         feedAudioEl.volume = 0;
-                        await new Promise(r => setTimeout(r, 240));
+                        await new Promise(r => setTimeout(r, 400));
                     }
+                    /* Nach stopLoop() ist Haupt-Wiedergabe gestoppt — play-and-record für Mic (vorher iOS nur „auto“, was den Aufnahmepegel oft drosselte). */
                     if (navigator.audioSession) {
                         try {
-                            if (isIOS) {
-                                navigator.audioSession.type = 'auto';
-                            } else {
-                                navigator.audioSession.type = 'play-and-record';
-                            }
+                            navigator.audioSession.type = 'play-and-record';
                         } catch (e) {
-                            if (!isIOS) {
-                                try { navigator.audioSession.type = 'play-and-record'; } catch (e2) {}
+                            if (isIOS) {
+                                try { navigator.audioSession.type = 'auto'; } catch (e2) {}
                             }
                         }
                     }
@@ -6076,14 +6074,16 @@
                     } else {
                         if (isMacDesktop && lastRecStream) { lastRecStream.getTracks().forEach(t => t.stop()); lastRecStream = null; }
                         if (isIOS) {
-                            /* Memo auf Stereo: oft unterdrückte Stimme — zuerst Mono + wenig DSP; { audio: true } kann Stereo-Session wählen → Fallback am Ende */
+                            /* Kein sofortiges autoGainControl:false — kann nach erfolgreichem GUM die System-AGC abschalten und Pegel killen. Stereo: s. WebAudio nur Kanal 0. */
                             const iosCandidates = [
+                                { audio: { echoCancellation: false, noiseSuppression: false, channelCount: { ideal: 1 } } },
+                                { audio: { echoCancellation: false, noiseSuppression: false, channelCount: { exact: 1 } } },
+                                { audio: { echoCancellation: false, noiseSuppression: false } },
                                 { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: { ideal: 1 } } },
                                 { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: { exact: 1 } } },
                                 { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } },
-                                { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: true, channelCount: { ideal: 1 } } },
-                                { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: true, channelCount: { exact: 1 } } },
                                 { audio: true },
+                                { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: true, channelCount: { ideal: 1 } } },
                                 { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: true } }
                             ];
                             let lastGumErr = null;
@@ -6102,11 +6102,12 @@
                             rawStream = await navigator.mediaDevices.getUserMedia(getUserMediaConfig);
                         }
                     }
+                    /* Nicht autoGainControl hier überschreiben — häufige Ursache für „flüsterndes“ iPhone-Mic nach dem Track schon mit sinnvollem AGC geöffnet wurde. */
                     if (isIOS && rawStream) {
                         const mt = rawStream.getAudioTracks()[0];
                         if (mt && mt.applyConstraints) {
                             try {
-                                await mt.applyConstraints({ echoCancellation: false, noiseSuppression: false, autoGainControl: false });
+                                await mt.applyConstraints({ echoCancellation: false, noiseSuppression: false });
                             } catch (e) { /* Safari ignoriert oft */ }
                         }
                     }
@@ -6123,15 +6124,12 @@
                             const srcIOS = recCtx.createMediaStreamSource(rawStream);
                             const splitterIOS = recCtx.createChannelSplitter(2);
                             const mergerIOS = recCtx.createChannelMerger(1);
-                            const gainLi = recCtx.createGain();
-                            const gainRi = recCtx.createGain();
-                            gainLi.gain.value = 0.5;
-                            gainRi.gain.value = 0.5;
+                            /* (L+R)/2 halbiert oft den Pegel, wenn Kanäle unkorreliert (Beamforming/Second Mic) — primärer Mic-Tap ist typ. Kanal 0 */
+                            const passIOS = recCtx.createGain();
+                            passIOS.gain.value = 1.0;
                             srcIOS.connect(splitterIOS);
-                            splitterIOS.connect(gainLi, 0);
-                            splitterIOS.connect(gainRi, 1);
-                            gainLi.connect(mergerIOS, 0, 0);
-                            gainRi.connect(mergerIOS, 0, 0);
+                            splitterIOS.connect(passIOS, 0);
+                            passIOS.connect(mergerIOS, 0, 0);
                             const destIOS = recCtx.createMediaStreamDestination();
                             mergerIOS.connect(destIOS);
                             stream = destIOS.stream;
