@@ -30,8 +30,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      # Kein beweglicher Tag „v6“ im Marketplace — exakte Version nutzen (Node 24)
       - name: Setup Pages
-        uses: actions/configure-pages@v6
+        uses: actions/configure-pages@v6.0.0
 
       # Repo-Wurzel = ausgelieferte Website (GitHub Pages)
       - name: Write deploy version (PWA lädt Updates ohne Neuinstallation)
