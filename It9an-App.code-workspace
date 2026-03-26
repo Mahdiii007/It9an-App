@@ -1,0 +1,12 @@
+{
+  "folders": [
+    {
+      "name": "It9an-App",
+      "path": "."
+    }
+  ],
+  "settings": {
+    "git.openRepositoryInParentFolders": "always",
+    "git.repositoryScanMaxDepth": 5
+  }
+}
