@@ -1,6 +1,6 @@
 /* PWA Service Worker: Push (Ton+Vibration) + Offline-Caching
  * CACHE_NAME bei größeren Strategie-Änderungen erhöhen (alte Caches werden in activate entfernt). */
-const CACHE_NAME = 'it9an-v7';
+const CACHE_NAME = 'it9an-v8';
 const CACHE_MAX_AGE = 24 * 60 * 60 * 1000;
 
 self.addEventListener('install', (e) => {
@@ -80,6 +80,23 @@ const messaging = firebase.messaging();
 const _fcmMsgDedup = new Map();
 const FCM_MSG_DEDUP_MS = 8000;
 
+async function setAppBadgeCount(n) {
+  const v = Math.max(0, Math.min(999999, parseInt(n, 10) || 0));
+  try {
+    if (self.registration && typeof self.registration.setAppBadge === 'function') {
+      if (v > 0) await self.registration.setAppBadge(v);
+      else await self.registration.clearAppBadge();
+      return;
+    }
+  } catch (e) { /* ignore */ }
+  try {
+    if (typeof navigator !== 'undefined' && typeof navigator.setAppBadge === 'function') {
+      if (v > 0) await navigator.setAppBadge(v);
+      else if (typeof navigator.clearAppBadge === 'function') await navigator.clearAppBadge();
+    }
+  } catch (e2) { /* ignore */ }
+}
+
 function shouldSkipDuplicateFcmDelivery(msgId) {
   if (!msgId) return false;
   const now = Date.now();
@@ -131,9 +148,7 @@ messaging.onBackgroundMessage((payload) => {
     const title = data.title || 'تطبيق إتقان';
     const body = data.body || 'إشعار جديد';
     const badgeCount = parseInt(data.badge || '1', 10) || 1;
-    if ('setAppBadge' in navigator) {
-      try { navigator.setAppBadge(badgeCount); } catch(e) {}
-    }
+    await setAppBadgeCount(badgeCount);
     const iconUrl = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect fill='%230f4c3a' width='192' height='192' rx='24'/%3E%3Ctext x='96' y='120' font-size='100' text-anchor='middle' fill='%23d4af37' font-family='serif'%3Eٱ%3C/text%3E%3C/svg%3E";
     const urlParams = new URLSearchParams();
     if (data.openLesson === '1') {

@@ -2316,18 +2316,51 @@
             if (uid && uid !== 'admin_super' && uid !== 'guest') requestPushPermissionAndSaveToken(uid, role, false, true);
             if (!_tokenRefreshListenerAdded) {
                 _tokenRefreshListenerAdded = true;
-                const refreshIfVisible = function() {
+                let pageHiddenAt = 0;
+                let refreshPushDebounce = null;
+                function syncBadgeFromCache() {
+                    setTimeout(function() {
+                        if (typeof window.applyNotifStageFilter === 'function') window.applyNotifStageFilter();
+                    }, 400);
+                }
+                const refreshIfVisible = function(forceToken) {
                     if (document.visibilityState !== 'visible') return;
                     const u = localStorage.getItem('it9an_uid');
                     const r = localStorage.getItem('it9an_role');
                     if (!u || u === 'admin_super' || u === 'guest') return;
                     if (Notification.permission !== 'granted') return;
-                    requestPushPermissionAndSaveToken(u, r, false, false);
+                    const hiddenMs = pageHiddenAt ? (Date.now() - pageHiddenAt) : 0;
+                    const force = forceToken === true || hiddenMs > 25000;
+                    clearTimeout(refreshPushDebounce);
+                    refreshPushDebounce = setTimeout(function() {
+                        pageHiddenAt = 0;
+                        requestPushPermissionAndSaveToken(u, r, false, force).then(function() { syncBadgeFromCache(); }).catch(function() { syncBadgeFromCache(); });
+                    }, 320);
                 };
-                document.addEventListener('visibilitychange', refreshIfVisible);
-                window.addEventListener('pageshow', function(ev) {
-                    if (ev.persisted) refreshIfVisible();
+                document.addEventListener('visibilitychange', function() {
+                    if (document.visibilityState === 'hidden') pageHiddenAt = Date.now();
+                    else refreshIfVisible(false);
                 });
+                window.addEventListener('focus', function() { refreshIfVisible(false); });
+                window.addEventListener('online', function() {
+                    if (document.visibilityState !== 'visible') return;
+                    const u = localStorage.getItem('it9an_uid');
+                    const r = localStorage.getItem('it9an_role');
+                    if (!u || u === 'admin_super' || u === 'guest') return;
+                    if (Notification.permission !== 'granted') return;
+                    requestPushPermissionAndSaveToken(u, r, false, true).then(function() { syncBadgeFromCache(); }).catch(function() { syncBadgeFromCache(); });
+                });
+                window.addEventListener('pageshow', function(ev) {
+                    if (ev.persisted) refreshIfVisible(true);
+                });
+                setInterval(function() {
+                    if (document.visibilityState !== 'visible') return;
+                    const u = localStorage.getItem('it9an_uid');
+                    const r = localStorage.getItem('it9an_role');
+                    if (!u || u === 'admin_super' || u === 'guest') return;
+                    if (Notification.permission !== 'granted') return;
+                    requestPushPermissionAndSaveToken(u, r, false, true).catch(function() {});
+                }, 40 * 60 * 1000);
             }
         }
 
@@ -4201,7 +4234,7 @@
                 }
                 if (!showResult && !forceRefresh) {
                     const last = parseInt(sessionStorage.getItem('it9an_fcm_last_refresh') || '0', 10);
-                    if (last && (Date.now() - last) < 25 * 60 * 1000) return true;
+                    if (last && (Date.now() - last) < 12 * 60 * 1000) return true;
                 }
                 if (typeof window.isSupportedFcm === 'function') {
                     const supported = await window.isSupportedFcm();
@@ -4319,8 +4352,24 @@
                 return;
             }
             try {
-                const ac = /iPad|iPhone|iPod/.test(navigator.userAgent) ? { audio: { echoCancellation: false } } : { audio: true };
-                const stream = await navigator.mediaDevices.getUserMedia(ac);
+                const isIOSMic = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+                let stream = null;
+                if (isIOSMic) {
+                    const micCandidates = [
+                        { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: true, channelCount: { exact: 1 } } },
+                        { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: true, channelCount: { ideal: 1 } } },
+                        { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: true } }
+                    ];
+                    for (const c of micCandidates) {
+                        try {
+                            stream = await navigator.mediaDevices.getUserMedia(c);
+                            break;
+                        } catch (e) { /* nächster Versuch */ }
+                    }
+                } else {
+                    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                }
+                if (!stream) throw new Error('getUserMedia');
                 stream.getTracks().forEach(t => t.stop());
                 alert('تم تفعيل الميكروفون بنجاح. يمكنك التسجيل الآن.');
             } catch (e) {
@@ -5947,14 +5996,16 @@
                     /* getUserMedia erwartet genau eine Ebene { audio: … }, keine doppelte Verschachtelung */
                     let getUserMediaConfig;
                     if (isIOS) {
-                        getUserMediaConfig = { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } };
+                        /* Kein Noise-Suppression (frisst Stimme); AGC an gegen zu leise Pegel — Safari ignoriert Teile, daher Fallback-Kette */
+                        getUserMediaConfig = null;
                     } else if (isMacDesktop) {
                         getUserMediaConfig = { audio: true };
                     } else {
                         getUserMediaConfig = { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, sampleRate: 48000, channelCount: 1 } };
                     }
-                    /* Web-Audio-Downmix nur Android/Desktop-Chrome – auf iOS verursacht Graph+Mono oft Ruckler */
+                    /* Android: Downmix. iOS: bei System-„Stereo“ oft nur ein Kanal nutzbar → L+R zu Mono summieren (wie Memo auf Mono). */
                     const useWebAudioDownmix = !isMacDesktop && !isIOS;
+                    const useWebAudioIOSMono = isIOS;
                     if (!isMacDesktop) {
                         if (lastRecStream) { lastRecStream.getTracks().forEach(t => t.stop()); lastRecStream = null; }
                         if (lastRecCtx && lastRecCtx.state !== 'closed') { try { await lastRecCtx.close(); } catch(e) {} lastRecCtx = null; }
@@ -5971,11 +6022,63 @@
                         rawStream = lastRecStream;
                     } else {
                         if (isMacDesktop && lastRecStream) { lastRecStream.getTracks().forEach(t => t.stop()); lastRecStream = null; }
-                        rawStream = await navigator.mediaDevices.getUserMedia(getUserMediaConfig);
+                        if (isIOS) {
+                            const iosCandidates = [
+                                { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: true, channelCount: { exact: 1 }, sampleRate: { ideal: 48000 } } },
+                                { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: true, channelCount: { exact: 1 } } },
+                                { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: true, channelCount: { ideal: 1 }, sampleRate: { ideal: 48000 } } },
+                                { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: true, channelCount: { ideal: 1 } } },
+                                { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: true } },
+                                { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: { ideal: 1 } } }
+                            ];
+                            let lastGumErr = null;
+                            rawStream = null;
+                            for (const c of iosCandidates) {
+                                try {
+                                    rawStream = await navigator.mediaDevices.getUserMedia(c);
+                                    lastGumErr = null;
+                                    break;
+                                } catch (e) {
+                                    lastGumErr = e;
+                                }
+                            }
+                            if (!rawStream) throw lastGumErr || new Error('getUserMedia');
+                        } else {
+                            rawStream = await navigator.mediaDevices.getUserMedia(getUserMediaConfig);
+                        }
                     }
                     lastRecStream = rawStream;
                     let stream = rawStream;
-                    if (useWebAudioDownmix) {
+                    if (useWebAudioIOSMono) {
+                        recCtx = new (window.AudioContext || window.webkitAudioContext)();
+                        lastRecCtx = recCtx;
+                        if (recCtx.state === 'suspended') await recCtx.resume();
+                        const srcIOS = recCtx.createMediaStreamSource(rawStream);
+                        const splitterIOS = recCtx.createChannelSplitter(2);
+                        const mergerIOS = recCtx.createChannelMerger(1);
+                        const gainLi = recCtx.createGain();
+                        const gainRi = recCtx.createGain();
+                        gainLi.gain.value = 0.5;
+                        gainRi.gain.value = 0.5;
+                        srcIOS.connect(splitterIOS);
+                        splitterIOS.connect(gainLi, 0);
+                        splitterIOS.connect(gainRi, 1);
+                        gainLi.connect(mergerIOS, 0, 0);
+                        gainRi.connect(mergerIOS, 0, 0);
+                        const compIOS = recCtx.createDynamicsCompressor();
+                        compIOS.threshold.value = -22;
+                        compIOS.knee.value = 18;
+                        compIOS.ratio.value = 2.5;
+                        compIOS.attack.value = 0.005;
+                        compIOS.release.value = 0.12;
+                        const gainIOS = recCtx.createGain();
+                        gainIOS.gain.value = 1.45;
+                        const destIOS = recCtx.createMediaStreamDestination();
+                        mergerIOS.connect(compIOS);
+                        compIOS.connect(gainIOS);
+                        gainIOS.connect(destIOS);
+                        stream = destIOS.stream;
+                    } else if (useWebAudioDownmix) {
                         recCtx = new (window.AudioContext || window.webkitAudioContext)();
                         lastRecCtx = recCtx;
                         if (recCtx.state === 'suspended') await recCtx.resume();
