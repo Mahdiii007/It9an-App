@@ -32,6 +32,13 @@
 #   Zusätzlich braucht das Deploy-Dienstkonto oft Leserechte auf Abrechnung, z. B. „Rechnungskonten-Viewer“
 #   / Billing Account Viewer auf das verknüpfte Rechnungskonto, oder breiter „Projekt“-Rolle mit Billing-Zugriff.
 #
+# „Unhandled error cleaning up build images“ / Workflow Exit 2 nach Deploy:
+#   Die Warnung betrifft oft nur das Löschen alter Cloud-Build-Images (Artifact Registry / gcf).
+#   Wenn im Log trotzdem „Deploy complete!“ steht, sind Functions meist live — Exit 2 kann von der CLI
+#   oder einem Folgeschritt kommen. Vollständiges Actions-Log prüfen (erste Zeile mit „Error:“).
+#   IAM (optional, für sauberes Aufräumen): Dem Dienstkonto aus FIREBASE_SERVICE_ACCOUNT_KEY zusätzlich z. B.
+#   „Artifact Registry Administrator“ — roles/artifactregistry.admin (projektweit oder auf die Region eu).
+#
 # „Failed to upsert schedule function …“ (pubsub.schedule / 1st Gen, z. B. sendQuranReminderScheduled*, europe-west3):
 #   Scheduled Functions legen Cloud-Scheduler-Jobs an. Ohne API oder IAM schlägt der Deploy fehl.
 #   • API aktivieren: https://console.cloud.google.com/apis/library/cloudscheduler.googleapis.com?project=it9an-neu
