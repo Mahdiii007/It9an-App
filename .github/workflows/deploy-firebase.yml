@@ -3,6 +3,9 @@
 # Für Hosting mit Firebase zusätzlich FIREBASE_ONLY leer lassen und unten deploy-Ziel anpassen.
 name: Deploy Firebase
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 on:
   workflow_dispatch:
   push:
@@ -22,9 +25,9 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: "22"
           cache: npm
@@ -35,7 +38,7 @@ jobs:
         run: npm ci
 
       - name: Cache FFmpeg (Linux-Binary für transcodeUploadAudio)
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: functions/bin/ffmpeg-linux
           key: ffmpeg-linux-amd64-johnvansickle-v1
@@ -47,16 +50,19 @@ jobs:
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
         run: |
-          if [ -z "${FIREBASE_TOKEN}" ]; then
+          # Secret oft mit Zeilenende aus Editor → „Bearer … is not a legal HTTP header value“
+          TOKEN="$(printf '%s' "${FIREBASE_TOKEN}" | tr -d '\r\n')"
+          if [ -z "${TOKEN}" ]; then
             echo "::error::Secret FIREBASE_TOKEN ist leer. Anlegen: GitHub → Repo → Settings → Secrets and variables → Actions → New repository secret"
             echo "Wert lokal erzeugen: firebase login:ci"
             exit 1
           fi
-          firebase deploy --only functions,firestore --project it9an-neu --non-interactive --token "${FIREBASE_TOKEN}"
+          firebase deploy --only functions,firestore --project it9an-neu --non-interactive --token "${TOKEN}"
 
       - name: Deploy storage rules (optional)
         continue-on-error: true
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
         run: |
-          firebase deploy --only storage --project it9an-neu --non-interactive --token "${FIREBASE_TOKEN}"
+          TOKEN="$(printf '%s' "${FIREBASE_TOKEN}" | tr -d '\r\n')"
+          firebase deploy --only storage --project it9an-neu --non-interactive --token "${TOKEN}"
