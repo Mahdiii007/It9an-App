@@ -1,13 +1,11 @@
 # Firebase: Functions + Firestore (+ Storage optional)
 #
-# Authentifizierung (empfohlen — vermeidet 401 bei Firestore Rules):
-#   Secret FIREBASE_SERVICE_ACCOUNT_KEY = exakt der Inhalt der heruntergeladenen JSON
-#   (ohne Anführungszeichen drumherum; eine Zeile oder mehrere ist ok)
+# Pflicht in GitHub (ohne das schlägt der Workflow sofort fehl — FIREBASE_TOKEN reicht für Rules nicht):
+#   Secret FIREBASE_SERVICE_ACCOUNT_KEY = kompletter Inhalt der JSON-Datei
 #   Firebase Console → Projekteinstellungen → Dienstkonten → „Neuen privaten Schlüssel“
 #   GitHub → Repo → Settings → Secrets and variables → Actions → New repository secret
 #
-# Fallback (läuft ab, firebase-tools markiert --token als deprecated):
-#   FIREBASE_TOKEN = firebase login:ci
+# Hinweis: FIREBASE_TOKEN / firebase login:ci liefert bei firebaserules.googleapis.com oft HTTP 401.
 #
 name: Deploy Firebase
 
@@ -38,56 +36,46 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      # Ohne dieses Secret: sofort abbrechen (kein sinnloser Deploy-Versuch mit Token)
+      - name: Firebase-Dienstkonto prüfen
+        env:
+          FIREBASE_SERVICE_ACCOUNT_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}
+        run: |
+          set -euo pipefail
+          SA_TRIM="$(printf '%s' "${FIREBASE_SERVICE_ACCOUNT_KEY:-}" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+          if [ -z "$SA_TRIM" ]; then
+            echo "::error title=FIREBASE_SERVICE_ACCOUNT_KEY fehlt::In GitHub unter Settings → Secrets → Actions anlegen (komplette JSON vom Firebase-Dienstkonto)."
+            echo "::error::FIREBASE_TOKEN führt bei Firestore/Firebase Rules zu 401 — nur Dienstkonto-JSON wird unterstützt."
+            exit 1
+          fi
+          printf '%s' "$SA_TRIM" > "${RUNNER_TEMP}/firebase-sa-validate.json"
+          node -e "
+            const fs = require('fs');
+            const p = process.argv[1];
+            const j = JSON.parse(fs.readFileSync(p, 'utf8'));
+            if (!j.private_key || !j.client_email) {
+              console.error('JSON braucht client_email und private_key.');
+              process.exit(1);
+            }
+          " "${RUNNER_TEMP}/firebase-sa-validate.json"
+
+      - name: Google Cloud anmelden (ADC für Firebase CLI)
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}
+
       - uses: actions/setup-node@v6
         with:
           node-version: "22"
           cache: npm
           cache-dependency-path: functions/package-lock.json
 
-      # Entspricht lokal: scripts/functions-npm-ci.sh (wird von deploy-firebase.sh aufgerufen)
       - name: Install Firebase CLI (Major 13, weniger firepit-Probleme)
         run: npm install -g firebase-tools@13
-
-      - name: Prepare Firebase credentials
-        env:
-          FIREBASE_SERVICE_ACCOUNT_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}
-          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
-        run: |
-          set -euo pipefail
-          SA_RAW="${FIREBASE_SERVICE_ACCOUNT_KEY:-}"
-          SA_TRIM="$(printf '%s' "$SA_RAW" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
-          if [ -n "$SA_TRIM" ]; then
-            printf '%s' "$SA_TRIM" > "${RUNNER_TEMP}/firebase-ci-sa.json"
-            node -e "
-              const fs = require('fs');
-              const p = process.argv[1];
-              const j = JSON.parse(fs.readFileSync(p, 'utf8'));
-              if (!j.private_key || !j.client_email) {
-                console.error('JSON muss client_email und private_key enthalten (Firebase-Dienstkontoschlüssel).');
-                process.exit(1);
-              }
-            " "${RUNNER_TEMP}/firebase-ci-sa.json"
-            echo "GOOGLE_APPLICATION_CREDENTIALS=${RUNNER_TEMP}/firebase-ci-sa.json" >> "$GITHUB_ENV"
-            echo "firebase_auth_mode=sa" >> "$GITHUB_ENV"
-            echo "Nutze Dienstkonto (GOOGLE_APPLICATION_CREDENTIALS)."
-          else
-            T="$(printf '%s' "${FIREBASE_TOKEN:-}" | tr -d '\r\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
-            if [ -z "$T" ]; then
-              echo "::error::Kein gültiges Secret: Lege FIREBASE_SERVICE_ACCOUNT_KEY an (empfohlen) oder FIREBASE_TOKEN."
-              echo "::error::401 bei firebaserules = meist abgelaufenes FIREBASE_TOKEN — in GitHub: Repo → Settings → Secrets → FIREBASE_SERVICE_ACCOUNT_KEY = komplette JSON-Datei (Firebase Console → Projekteinstellungen → Dienstkonten → Neuer privater Schlüssel)."
-              exit 1
-            fi
-            echo "firebase_auth_mode=token" >> "$GITHUB_ENV"
-            echo "FIREBASE_CI_TOKEN=$T" >> "$GITHUB_ENV"
-            echo "::warning::FIREBASE_TOKEN ist veraltet und führt oft zu 401; bitte FIREBASE_SERVICE_ACCOUNT_KEY setzen (siehe Workflow-Kopf)."
-          fi
 
       - name: Deploy functions + firestore
         run: |
           set -euo pipefail
-          if [ "${firebase_auth_mode:-}" = "token" ]; then
-            export FIREBASE_TOKEN="${FIREBASE_CI_TOKEN}"
-          fi
           export USE_SYSTEM_FIREBASE=1
           export FIREBASE_ONLY=functions,firestore
           bash scripts/deploy-firebase.sh
@@ -98,9 +86,6 @@ jobs:
           SKIP_FUNCTIONS_NPM_CI: "1"
         run: |
           set -euo pipefail
-          if [ "${firebase_auth_mode:-}" = "token" ]; then
-            export FIREBASE_TOKEN="${FIREBASE_CI_TOKEN}"
-          fi
           export USE_SYSTEM_FIREBASE=1
           export FIREBASE_ONLY=storage
           bash scripts/deploy-firebase.sh

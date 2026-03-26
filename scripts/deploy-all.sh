@@ -7,6 +7,7 @@
 #
 # Nur Git (kein Firebase):  SKIP_FIREBASE=1 ./scripts/deploy-all.sh
 # Nur Firebase (kein Push):    SKIP_GIT=1 ./scripts/deploy-all.sh
+#   (dann bleibt u.a. app-version.json oft geändert — kein Auto-Sync ohne Git.)
 #
 # Firebase ohne interaktives Login (Token von: firebase login:ci):
 #   export FIREBASE_TOKEN="…"
@@ -23,6 +24,11 @@
 # GitHub Pages startet nur bei einem Push mit neuem Commit auf main/master.
 #   Keine lokalen Änderungen? FORCE_GITHUB_PAGES=1 ./scripts/deploy-all.sh
 #   (leerer Commit triggert den Workflow erneut.)
+#
+# Am Ende soll der Arbeitsbaum leer sein (kein M/U in der IDE):
+#   Nach Firebase wird alles Relevante mit „git add -A“ committed und gepusht.
+#   Abschließend bis zu 3 Sync-Versuche (falls der Editor parallel speichert).
+#   Abschalten: SYNC_CLEAN_AFTER_DEPLOY=0
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -53,6 +59,28 @@ fi
 
 COMMIT_MSG="${1:-chore: deploy $(date -u +%Y-%m-%dT%H:%M:%SZ)}"
 BRANCH="$(git rev-parse --abbrev-ref HEAD)"
+
+# Committet alle getrackten/ungetrackten (nicht ignorierten) Änderungen und pusht, bis status leer oder max n.
+sync_worktree_clean() {
+  local max="${1:-3}"
+  local i=0
+  while [[ $i -lt "$max" ]]; do
+    i=$((i + 1))
+    git add -A
+    if git diff --staged --quiet 2>/dev/null; then
+      break
+    fi
+    git commit -m "chore: Arbeitsbaum nach Deploy synchronisieren"
+    git push -u origin "$BRANCH"
+  done
+  if [[ -n "$(git status --porcelain 2>/dev/null)" ]]; then
+    echo ""
+    echo "=== FEHLER: Git-Arbeitsbaum ist nach Deploy nicht leer ==="
+    git status -sb
+    echo "Prüfe offene Dateien im Editor, Submodule oder setze SYNC_CLEAN_AFTER_DEPLOY=0 und committe manuell."
+    exit 1
+  fi
+}
 
 if [[ "${SKIP_GIT:-0}" != "1" ]]; then
   echo "=== Git: add / commit / push ($BRANCH) ==="
@@ -94,23 +122,15 @@ if [[ "${SKIP_FIREBASE:-0}" != "1" ]]; then
   fi
   "$ROOT/scripts/deploy-firebase.sh"
   echo "Firebase fertig."
-  # deploy-firebase setzt app-version.json auf fb-<SHA> — zweiter Push, damit GitHub die Datei wirklich hat
-  if [[ "${SKIP_GIT:-0}" != "1" ]]; then
-    if ! git diff --quiet HEAD -- app-version.json 2>/dev/null; then
-      git add app-version.json
-      git commit -m "chore: app-version.json nach Firebase-Deploy"
-      git push -u origin "$BRANCH"
-      echo "app-version.json (fb-*) als zweiter Commit gepusht."
-    fi
-    if [[ -n "$(git status --porcelain 2>/dev/null)" ]]; then
-      echo ""
-      echo "=== Hinweis: Git-Arbeitsbaum ist nach Deploy nicht leer ==="
-      git status -sb
-      echo "Oft: Zeilenenden (.gitattributes), ausführbar-Bit bei *.sh, oder Editor hat Dateien während des Laufs geändert."
-    fi
-  fi
 else
   echo "=== Firebase übersprungen (SKIP_FIREBASE=1) ==="
+fi
+
+# app-version.json (fb-*), Zeilenenden, Skript-Modi, usw. — ein Commit, danach leerer Arbeitsbaum
+if [[ "${SKIP_GIT:-0}" != "1" && "${SYNC_CLEAN_AFTER_DEPLOY:-1}" == "1" ]]; then
+  echo "=== Git: Arbeitsbaum mit Remote abgleichen (soll leer werden) ==="
+  sync_worktree_clean 3
+  echo "Git: Arbeitsbaum sauber (keine offenen M/U für getrackte/committbare Dateien)."
 fi
 
 echo "Fertig."
