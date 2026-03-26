@@ -19,12 +19,19 @@
 #   Standard: nur functions + firestore. Storage-Regeln separat:
 #   FIREBASE_ONLY=functions,firestore,storage ./scripts/deploy-all.sh
 #   Oder in der Console: Storage einmal einrichten + Bucket prüfen (appspot vs firebasestorage.app).
+#
+# GitHub Pages startet nur bei einem Push mit neuem Commit auf main/master.
+#   Keine lokalen Änderungen? FORCE_GITHUB_PAGES=1 ./scripts/deploy-all.sh
+#   (leerer Commit triggert den Workflow erneut.)
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
 on_err() {
   echo ">>> Fehler (Zeile $1)."
+  if [[ "${_GIT_PUSH_OK:-0}" == "1" ]]; then
+    echo ">>> Git push war erfolgreich — GitHub Pages ggf. unter Actions sichtbar; unten nur Firebase betroffen."
+  fi
   echo ">>> Firebase: unset FIREBASE_TOKEN und „firebase login“ ODER Dienstkonto: export GOOGLE_APPLICATION_CREDENTIALS=/pfad/key.json"
   echo ">>> Debug: DEBUG=1 ./scripts/deploy-firebase.sh"
   if [[ -f "${ROOT}/firebase-debug.log" ]]; then
@@ -42,14 +49,24 @@ BRANCH="$(git rev-parse --abbrev-ref HEAD)"
 
 if [[ "${SKIP_GIT:-0}" != "1" ]]; then
   echo "=== Git: add / commit / push ($BRANCH) ==="
+  if [[ "$BRANCH" != "main" && "$BRANCH" != "master" ]]; then
+    echo "Hinweis: Der Pages-Workflow (.github/workflows/deploy-pages.yml) laeuft nur auf „main“ oder „master“."
+  fi
   git add -A
   if git diff --staged --quiet; then
-    echo "Nichts zu committen — push trotzdem falls lokale Commits fehlen."
+    if [[ "${FORCE_GITHUB_PAGES:-0}" == "1" ]]; then
+      git commit --allow-empty -m "chore: trigger GitHub Pages redeploy"
+      echo "Leerer Commit erzeugt — loest GitHub Actions (Pages) aus."
+    else
+      echo "Nichts zu committen. „git push“ aktualisiert ggf. nichts — oft startet dann KEIN neues Pages-Deployment."
+      echo "Tipp: FORCE_GITHUB_PAGES=1 ./scripts/deploy-all.sh  oder eine Datei aendern und erneut ausfuehren."
+    fi
   else
     git commit -m "$COMMIT_MSG"
   fi
   git push -u origin "$BRANCH"
-  echo "GitHub Pages startet per Workflow nach Push auf $BRANCH."
+  _GIT_PUSH_OK=1
+  echo "Git push erledigt. Pages: Repository → Actions → „Deploy to GitHub Pages“ pruefen (nur bei neuem Commit auf main/master)."
 else
   echo "=== Git übersprungen (SKIP_GIT=1) ==="
 fi
