@@ -896,7 +896,7 @@
             <button id="maintenanceModeBtn" class="btn-admin-reset" onclick="toggleMaintenanceMode()" title="إصلاح التطبيق: إظهار رسالة للجميع ما عدا المعلم 9898 والطالب 0860">🔧 وضع الإصلاح</button>
             <button class="btn-admin-reset" onclick="restoreStudentRecordingNotifications()" title="إعادة إشعارات التسجيلات والردود لجميع المستخدمين في جميع المراحل (يتم تشغيله تلقائياً يومياً الساعة 6 صباحاً)">🔔 استعادة إشعارات التسجيلات</button>
             <button class="btn-admin-reset" onclick="resetAllNotifications()">🔔 تصفير كل الإشعارات</button>
-            <button class="btn-admin-reset" onclick="resetAllViews()">👁️ تصفير كل المشاهدات</button>
+            <button class="btn-admin-reset" onclick="resetAllViews()">👂 تصفير كل المشاهدات</button>
             <button class="btn-admin-reset" onclick="resetAllLikes()">👍 تصفير كل الإعجابات</button>
             <button class="btn-admin-reset" onclick="deleteAllTeacherReplies()">↩️ حذف كل ردود المعلمين</button>
             <button class="btn-admin-reset btn-admin-delete-all" onclick="deleteAllPostsGlobal()">🗑️ حذف كل التسجيلات</button>
@@ -908,7 +908,7 @@
         <div id="app-stats-card" class="leaderboard-card" style="margin-bottom:20px;">
             <div class="lb-title">📊 إحصائيات التطبيق</div>
             <div id="appStatsContent">
-                <span class="stat-clickable" id="statRepetitionsWrap" title="اضغط لعرض الرسم البياني"><span title="إجمالي التكرارات — اضغط لعرض">👁️ <span id="statRepetitions">—</span> <span class="stat-click-hint">↗</span></span></span>
+                <span class="stat-clickable" id="statRepetitionsWrap" title="اضغط لعرض الرسم البياني"><span title="إجمالي التكرارات — اضغط لعرض">👂 <span id="statRepetitions">—</span> <span class="stat-click-hint">↗</span></span></span>
                 <span class="stat-clickable" id="statRecordingsWrap" title="اضغط لعرض الرسم البياني"><span title="تسجيلات الطلاب — اضغط لعرض" style="display:inline-flex;align-items:center;gap:4px;"><svg class="icon-mic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg><span id="statStudentRecordings">—</span> <span class="stat-click-hint">↗</span></span></span>
                 <span title="عدد الطلاب">🎓 <span id="statStudents">—</span></span>
                 <span title="عدد المعلمين">👨‍🏫 <span id="statTeachers">—</span></span>
@@ -985,7 +985,7 @@
         <div id="adminPlayerPanel" class="admin-panel">
             <div class="admin-title">🔒 إدارة المقطع الحالي</div>
             <div class="admin-actions">
-                <button class="btn-admin-reset" onclick="resetLocalViews()">👁️ تصفير المشاهدات</button>
+                <button class="btn-admin-reset" onclick="resetLocalViews()">👂 تصفير المشاهدات</button>
                 <button class="btn-admin-reset" onclick="resetLocalLikes()">👍 تصفير الإعجابات</button>
                 <button class="btn-admin-reset btn-admin-delete-all" onclick="deleteAllLocalPosts()">🗑️ حذف تسجيلات المقطع</button>
             </div>
@@ -2547,6 +2547,7 @@
             if (uid === 'admin_super') {
                 if(notifContainer) notifContainer.style.display = 'none';
                 recBtn.style.display = 'flex';
+                recBtn.style.filter = '';
                 recBtn.style.opacity = '';
                 recBtn.style.cursor = '';
                 recBtn.title = '';
@@ -2555,6 +2556,7 @@
             } else if (uid === 'guest' || role === 'guest') {
                 if(notifContainer) notifContainer.style.display = 'none';
                 recBtn.style.display = 'flex';
+                recBtn.style.filter = '';
                 recBtn.style.opacity = '0.5';
                 recBtn.style.cursor = 'pointer';
                 recBtn.title = 'التسجيل مطلوب للتسجيل الصوتي - انقر للتفاصيل';
@@ -2563,6 +2565,7 @@
                 if(adminPlayerPanel) adminPlayerPanel.style.display = 'none';
             } else {
                 if(notifContainer) notifContainer.style.display = 'flex';
+                recBtn.style.filter = '';
                 recBtn.style.opacity = '';
                 recBtn.style.cursor = '';
                 recBtn.title = '';
@@ -2894,8 +2897,8 @@
                 const lbDateStr = isAdmin ? formatDateLatin(getLastLoginForDisplay(u)) : '';
                 const pinBadge = isAdmin ? `<span class="lb-pin" title="الرمز الشخصي">${u.personalPin ? String(u.personalPin).padStart(4,'0') : '—'}</span>` : '';
                 const adminBtns = isAdmin ? `<button class="delete-btn" onclick="deleteUser('${u.uid}')" title="حذف">🗑️</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="editUserName('${u.uid}')" title="تعديل الاسم">✏️</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="swapFirstLastName('${u.uid}')" title="تبديل الاسم الأول واللقب">🔄</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="sendPrivateMessageToUser('${u.uid}')" title="رسالة خاصة">✉️</button><button class="${blockBtnClass}" style="padding:4px 10px; font-size:12px;" onclick="toggleBlockUser('${u.uid}', ${isBlocked})">${blockBtnText}</button>` : '';
-                const nameRow = isAdmin ? `<div class="lb-admin-name-row">${pinBadge}<span class="lb-rank">#${rank}</span><span class="lb-name">${(lbDisplayName || '—').replace(/</g,'&lt;')}</span><span class="lb-admin-date">${lbDateStr}</span></div>` : `<div class="lb-item-top-row" style="display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%; min-width:0;"><div class="lb-name-pin-wrap" style="display:flex; align-items:center; gap:6px; flex:1; min-width:0; overflow:hidden;">${pinBadge}<span class="lb-rank">#${rank}</span><span class="lb-name">${(lbDisplayName || '—').replace(/</g,'&lt;')}</span></div><div class="lb-stats"><span class="lb-score lb-likes-click" onclick="toggleLbViews('${u.uid}')" title="عرض المشاهدات">👁️ ${u.totalVerseViews || 0}</span><span class="lb-score lb-likes-click" onclick="toggleLbRecordings('${u.uid}')" title="عرض التسجيلات">${ICON_MIC_HTML} ${u.postsCount || 0}</span><span class="lb-likes lb-likes-click" onclick="toggleLbLikes('${u.uid}')" title="عرض الإعجابات">👍 ${likesCount}</span></div></div>`;
-                const iconsRow = isAdmin ? `<div class="lb-stats" style="display:flex; gap:8px; flex-shrink:0; margin-top:6px;"><span class="lb-score lb-likes-click" onclick="toggleLbViews('${u.uid}')" title="عرض المشاهدات">👁️ ${u.totalVerseViews || 0}</span><span class="lb-score lb-likes-click" onclick="toggleLbRecordings('${u.uid}')" title="عرض التسجيلات">${ICON_MIC_HTML} ${u.postsCount || 0}</span><span class="lb-likes lb-likes-click" onclick="toggleLbLikes('${u.uid}')" title="عرض الإعجابات">👍 ${likesCount}</span></div>` : '';
+                const nameRow = isAdmin ? `<div class="lb-admin-name-row">${pinBadge}<span class="lb-rank">#${rank}</span><span class="lb-name">${(lbDisplayName || '—').replace(/</g,'&lt;')}</span><span class="lb-admin-date">${lbDateStr}</span></div>` : `<div class="lb-item-top-row" style="display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%; min-width:0;"><div class="lb-name-pin-wrap" style="display:flex; align-items:center; gap:6px; flex:1; min-width:0; overflow:hidden;">${pinBadge}<span class="lb-rank">#${rank}</span><span class="lb-name">${(lbDisplayName || '—').replace(/</g,'&lt;')}</span></div><div class="lb-stats"><span class="lb-score lb-likes-click" onclick="toggleLbViews('${u.uid}')" title="عرض المشاهدات">👂 ${u.totalVerseViews || 0}</span><span class="lb-score lb-likes-click" onclick="toggleLbRecordings('${u.uid}')" title="عرض التسجيلات">${ICON_MIC_HTML} ${u.postsCount || 0}</span><span class="lb-likes lb-likes-click" onclick="toggleLbLikes('${u.uid}')" title="عرض الإعجابات">👍 ${likesCount}</span></div></div>`;
+                const iconsRow = isAdmin ? `<div class="lb-stats" style="display:flex; gap:8px; flex-shrink:0; margin-top:6px;"><span class="lb-score lb-likes-click" onclick="toggleLbViews('${u.uid}')" title="عرض المشاهدات">👂 ${u.totalVerseViews || 0}</span><span class="lb-score lb-likes-click" onclick="toggleLbRecordings('${u.uid}')" title="عرض التسجيلات">${ICON_MIC_HTML} ${u.postsCount || 0}</span><span class="lb-likes lb-likes-click" onclick="toggleLbLikes('${u.uid}')" title="عرض الإعجابات">👍 ${likesCount}</span></div>` : '';
                 list.innerHTML += `
                 <li class="${cls}">
                     <div class="lb-item">
@@ -4474,6 +4477,46 @@
             }
             el.innerText = count;
         }
+        function isMyStudentMainPostOnFeed(p, myUid) {
+            if (!p || p.uid !== myUid) return false;
+            if (p.uid === 'admin_super') return false;
+            if (p.role === 'teacher') return false;
+            return p.role === 'student' || p.role == null || p.role === '';
+        }
+        function isPostFullyRatedAndAnsweredByTeacher(p) {
+            const verdict = p.teacherRating && p.teacherRating.verdict;
+            const rated = verdict === 'accepted' || verdict === 'needs_improvement';
+            const hasTeacherReply = p.replies && p.replies.some(r => r.role === 'teacher');
+            return rated && hasTeacherReply;
+        }
+        function studentHasUnfinishedAmongPosts(posts, studentUid, fileId, stageId) {
+            const fidStr = String(fileId != null ? fileId : '');
+            const sidNum = Number(stageId != null ? stageId : 4);
+            for (const p of posts || []) {
+                if (String(p.fileId) !== fidStr) continue;
+                const ps = p.stageId != null ? p.stageId : 4;
+                if (Number(ps) !== sidNum) continue;
+                if (!isMyStudentMainPostOnFeed(p, studentUid)) continue;
+                if (!isPostFullyRatedAndAnsweredByTeacher(p)) return true;
+            }
+            return false;
+        }
+        /** طالب له تسجيل (أو أكثر) تحت المقطع الحالي بلا تقييم كامل أو بلا رد صوتي من معلم */
+        function studentHasUnfinishedRecordingOnCurrentVerse() {
+            const myUid = localStorage.getItem('it9an_uid');
+            const role = localStorage.getItem('it9an_role');
+            if (role !== 'student' || !myUid || myUid === 'guest') return false;
+            return studentHasUnfinishedAmongPosts(allLoadedPosts, myUid, currentGlobalFileId, currentStageId);
+        }
+        async function studentHasUnfinishedRecordingForVerseServer(fileIdStr, stageIdNum, studentUid) {
+            const coll = window.collection(window.db, "posts");
+            const q = window.query(coll, window.where("fileId", "==", fileIdStr), window.where("uid", "==", studentUid));
+            let snap;
+            try { snap = await window.getDocsFromServer(q); } catch (e) { snap = await window.getDocs(q); }
+            const posts = [];
+            snap.forEach(doc => posts.push({ id: doc.id, ...doc.data() }));
+            return studentHasUnfinishedAmongPosts(posts, studentUid, fileIdStr, stageIdNum);
+        }
         function updateRecButtonForStudentNotifications() {
             const recBtn = document.getElementById('recBtn');
             const playerView = document.getElementById('player-view');
@@ -4482,20 +4525,30 @@
             const uid = localStorage.getItem('it9an_uid');
             if (role !== 'student' || !uid || uid === 'guest') return;
             const notifBlocked = hasUnlistenedNotificationsForStage(currentStageId);
+            const pendingTeacher = studentHasUnfinishedRecordingOnCurrentVerse();
             const repCount = getMyRepetitionCountForCurrentVerse();
             const repBlocked = repCount < MIN_REPETITIONS_FOR_REC;
             if (notifBlocked) {
+                recBtn.style.filter = '';
                 recBtn.style.opacity = '0.5';
                 recBtn.style.cursor = 'pointer';
                 recBtn.title = 'استخدم إشعارات الجرس لسماع جميع ردود المعلم لهذه المرحلة حتى النهاية';
-            } else if (repBlocked) {
+            } else if (pendingTeacher) {
                 recBtn.style.opacity = '0.5';
+                recBtn.style.filter = 'grayscale(1)';
                 recBtn.style.cursor = 'pointer';
-                recBtn.title = 'مطلوب 30 تكرار على الأقل - انقر للتفاصيل';
+                recBtn.title = 'لديك تسجيل تحت هذا المقطع لم يُكمَّل بعد (تقييم المعلم والرد الصوتي) — اضغط للتفاصيل';
             } else {
-                recBtn.style.opacity = '';
-                recBtn.style.cursor = '';
-                recBtn.title = '';
+                recBtn.style.filter = '';
+                if (repBlocked) {
+                    recBtn.style.opacity = '0.5';
+                    recBtn.style.cursor = 'pointer';
+                    recBtn.title = 'مطلوب 30 تكرار على الأقل - انقر للتفاصيل';
+                } else {
+                    recBtn.style.opacity = '';
+                    recBtn.style.cursor = '';
+                    recBtn.title = '';
+                }
             }
         }
         let notificationsReturnToStages = false;
@@ -5445,8 +5498,8 @@
                 }
             }
             entries.forEach(e => { if (!e.name) e.name = 'مستخدم'; });
-            let lines = ["👁️ " + total + " المجموع الكلي\n"];
-            entries.sort((a,b) => (b.count || 0) - (a.count || 0)).forEach(e => { lines.push("👁️ " + e.count + "  " + e.name); });
+            let lines = ["👂 " + total + " المجموع الكلي\n"];
+            entries.sort((a,b) => (b.count || 0) - (a.count || 0)).forEach(e => { lines.push("👂 " + e.count + "  " + e.name); });
             alert(lines.join("\n"));
         }
 
@@ -5519,6 +5572,7 @@
                     }
                     renderPosts(div, userRole, myUid, savedIdsForFeed);
                     updateParticipationsCount();
+                    if (typeof updateRecButtonForStudentNotifications === 'function') updateRecButtonForStudentNotifications();
                     if (activePostFilter) {
                         const postIdToScroll = activePostFilter;
                         const feedDiv = document.getElementById('community-feed');
@@ -5533,6 +5587,7 @@
                 } else {
                     div.innerHTML = "<div style='text-align:center; color:#999; font-size:16px; padding:20px;'>لا توجد مشاركات حتى الآن</div>";
                     updateParticipationsCount();
+                    if (typeof updateRecButtonForStudentNotifications === 'function') updateRecButtonForStudentNotifications();
                 }
             } catch (e) { console.warn('loadFeed initial:', e); }
             unsubscribeFeed = window.onSnapshot(qListen, async (snap) => {
@@ -5545,7 +5600,7 @@
                     nextPosts.push({ id: doc.id, ...d });
                 });
                 allLoadedPosts = nextPosts;
-                if (allLoadedPosts.length === 0) { div.innerHTML = "<div style='text-align:center; color:#999; font-size:16px; padding:20px;'>لا توجد مشاركات حتى الآن</div>"; updateParticipationsCount(); return; }
+                if (allLoadedPosts.length === 0) { div.innerHTML = "<div style='text-align:center; color:#999; font-size:16px; padding:20px;'>لا توجد مشاركات حتى الآن</div>"; updateParticipationsCount(); if (typeof updateRecButtonForStudentNotifications === 'function') updateRecButtonForStudentNotifications(); return; }
 
                 if (activePostFilter) {
                     let hp = allLoadedPosts.find(p => p.id === activePostFilter);
@@ -5583,6 +5638,7 @@
                 }
                 renderPosts(div, userRole, myUid, savedIdsForFeed);
                 updateParticipationsCount();
+                if (typeof updateRecButtonForStudentNotifications === 'function') updateRecButtonForStudentNotifications();
                 
                 if (activePostFilter) {
                     const postIdToScroll = activePostFilter;
@@ -5974,6 +6030,7 @@
         }
 
         const REC_BLOCKED_MSG = 'يرجى استخدام إشعارات الجرس لسماع جميع ردود المعلم لهذه المرحلة حتى النهاية. يمكنك التسجيل في هذه المرحلة مرة أخرى فقط عندما تكون جميع ردود المعلم قد سُمعت حتى النهاية. هكذا تتعلم بشكل أفضل.';
+        const REC_PENDING_TEACHER_MSG = 'لديك بالفعل تسجيل تحت هذا المقطع لم يُقيِّمه المعلم بعد أو لم يُرَدَّ عليه صوتياً بعد. لا يمكنك بدء تسجيل جديد هنا حتى يُقيَّم كل تسجيلاتك لهذا المقطع ويصلك رد صوتي من المعلم على كل منها.\n\nإن أردت إعادة التسجيل من جديد، احذف أولاً التسجيل القديم غير المكتمل (زر الحذف 🗑️ بجانب تسجيلك في الخلاصة أدناه)، ثم يمكنك استخدام الميكروفون مرة أخرى.';
         const MIN_REPETITIONS_FOR_REC = 30;
         const REC_REPETITIONS_MSG = 'معلمو هذه المنصة متفقون على أن الطلاب يُفضّل أن يكرّروا المقاطع 30 مرة على الأقل قبل البدء بالتسجيل. يُنصح بـ 100 تكرار على الأقل. بعد 30 تكرار يُفتح الميكروفون لهذا المقطع.';
 
@@ -5985,6 +6042,10 @@
             if (localStorage.getItem('it9an_role') === 'student') {
                 if (hasUnlistenedNotificationsForStage(currentStageId)) {
                     alert(REC_BLOCKED_MSG);
+                    return;
+                }
+                if (!replyTargetId && studentHasUnfinishedRecordingOnCurrentVerse()) {
+                    alert(REC_PENDING_TEACHER_MSG);
                     return;
                 }
                 if (getMyRepetitionCountForCurrentVerse() < MIN_REPETITIONS_FOR_REC) {
@@ -6381,6 +6442,10 @@
                     const stageCfg = getStageConfig(sid) || { name: '' };
 
                     if (role === 'student') {
+                        if (await studentHasUnfinishedRecordingForVerseServer(fileIdStr, stageIdNum, uid)) {
+                            alert(REC_PENDING_TEACHER_MSG);
+                            return;
+                        }
                         const postRef = window.doc(window.collection(window.db, "posts"));
                         const notifRef = window.doc(window.collection(window.db, "notifications"));
                         const batch = window.writeBatch(window.db);
