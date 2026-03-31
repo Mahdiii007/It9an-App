@@ -6857,8 +6857,10 @@
             const ctx = new (window.AudioContext || window.webkitAudioContext)();
             if (ctx.state === 'suspended') await ctx.resume();
 
+            const syncReplyIsIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
             const studentGain = ctx.createGain();
-            studentGain.gain.value = 1;
+            /* iPhone: Web-Audio→MediaRecorder und Monitoring sind gegenüber <audio> im Feed oft unterpegelt; الرد normal nutzt Mic-Gain 2.3. */
+            studentGain.gain.value = syncReplyIsIOS ? 1.55 : 1;
 
             let revokeBlobUrl = null;
             let studentDriver = null;
@@ -6892,7 +6894,7 @@
 
             const dest = ctx.createMediaStreamDestination();
             const monitorGain = ctx.createGain();
-            monitorGain.gain.value = 0.88;
+            monitorGain.gain.value = syncReplyIsIOS ? 1 : 0.88;
             studentGain.connect(dest);
             studentGain.connect(monitorGain);
             monitorGain.connect(ctx.destination);
@@ -6903,7 +6905,7 @@
 
             const micSrc = ctx.createMediaStreamSource(rawStream);
             const preMic = ctx.createGain();
-            preMic.gain.value = isIOS ? 2.2 : 1;
+            preMic.gain.value = isIOS ? 2.3 : 1;
             micSrc.connect(preMic);
             preMic.connect(micGain);
 
