@@ -21,6 +21,9 @@
 #   FIREBASE_ONLY=functions,firestore,storage ./scripts/deploy-all.sh
 #   Oder in der Console: Storage einmal einrichten + Bucket prüfen (appspot vs firebasestorage.app).
 #
+# „Error: Can't find the storage bucket region“: (1) keinen zweiten storage-Bucket in firebase.json eintragen;
+#   (2) in onObjectFinalized kein „bucket:“ setzen — nur Standard-Bucket; sonst schlägt oft schon functions-Deploy fehl.
+#
 # GitHub Pages startet nur bei einem Push mit neuem Commit auf main/master.
 #   Keine lokalen Änderungen? FORCE_GITHUB_PAGES=1 ./scripts/deploy-all.sh
 #   (leerer Commit triggert den Workflow erneut.)

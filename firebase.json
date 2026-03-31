@@ -11,16 +11,9 @@
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"
   },
-  "storage": [
-    {
-      "bucket": "it9an-neu.appspot.com",
-      "rules": "storage.rules"
-    },
-    {
-      "bucket": "it9an-neu.firebasestorage.app",
-      "rules": "storage.rules"
-    }
-  ],
+  "storage": {
+    "rules": "storage.rules"
+  },
   "hosting": {
     "public": ".",
     "ignore": [

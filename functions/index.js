@@ -8,6 +8,10 @@ const { randomUUID } = require('crypto');
 const { spawn } = require('child_process');
 const { onObjectFinalized } = require('firebase-functions/v2/storage');
 const { onSchedule } = require('firebase-functions/v2/scheduler');
+const { setGlobalOptions } = require('firebase-functions/v2');
+
+/* Gen2-Standardregion: sonst wäre Fallback us-central1. Gen1-Exports nutzen .region('europe-west3'). */
+setGlobalOptions({ region: 'europe-west3' });
 
 admin.initializeApp();
 
@@ -636,10 +640,10 @@ QURAN_REMINDER_SLOTS.forEach((slot, idx) => {
  * Ergebnis: audio/mp4, mono 44,1 kHz, 128 kbit/s — einheitlich für Safari/Android/iOS und synchronen Lehrer-Reply.
  * Ausgabe *.m4a löst keinen erneuten Lauf aus. Nach erfolgreicher URL-Patch wird die Originaldatei gelöscht.
  * Deploy: firebase deploy --only functions:transcodeUploadAudio (FFmpeg: gcp-build / tools/ensure-ffmpeg-linux.js).
- */
-/**
- * Zwei Trigger: Die App lädt nach gs://it9an-neu.firebasestorage.app hoch; der Default-Trigger
- * lauschte oft nur auf …appspot.com — dann lief keine Transkodierung und Safari bekam weiter WebM.
+ *
+ * Kein bucket: in onObjectFinalized — sonst meldet firebase-tools oft „Can't find the storage bucket region“,
+ * wenn der Name nicht exakt dem Standard-Bucket des Projekts entspricht (appspot vs firebasestorage.app).
+ * Ohne bucket lauscht der Trigger auf dem Standard-Bucket (bei neuen Projekten: …firebasestorage.app).
  */
 const TRANSCODE_INPUT_EXT = /\.(webm|ogg|mp4|wav)$/i;
 
@@ -723,12 +727,4 @@ async function transcodeUploadAudioHandler(event) {
   }
 }
 
-exports.transcodeUploadAudio = onObjectFinalized(
-  { ...transcodeUploadAudioOpts, bucket: 'it9an-neu.firebasestorage.app' },
-  transcodeUploadAudioHandler
-);
-
-exports.transcodeUploadAudioAppspot = onObjectFinalized(
-  { ...transcodeUploadAudioOpts, bucket: 'it9an-neu.appspot.com' },
-  transcodeUploadAudioHandler
-);
+exports.transcodeUploadAudio = onObjectFinalized(transcodeUploadAudioOpts, transcodeUploadAudioHandler);
