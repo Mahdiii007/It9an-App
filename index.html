@@ -599,7 +599,8 @@
         .sync-reply-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; margin-bottom: 8px; }
         .sync-reply-timer { font-size: 24px; font-weight: bold; font-family: monospace; color: var(--text); }
         .sync-reply-status { font-size: 14px; color: #333; font-weight: 600; text-align: center; margin: 6px 0 10px; line-height: 1.45; min-height: 2.8em; }
-        .sync-reply-hold-btn { width: 80px; height: 80px; min-height: 0; padding: 0; margin: 10px auto 6px; align-self: center; border-radius: 50%; border: 3px solid #b71c1c; background: linear-gradient(180deg, #e53935 0%, #c62828 100%); color: #fff; font-size: 36px; line-height: 1; display: flex; align-items: center; justify-content: center; cursor: pointer; touch-action: none; user-select: none; -webkit-user-select: none; box-shadow: 0 4px 14px rgba(198,40,40,0.35); }
+        .sync-reply-hold-btn { width: 80px; height: 80px; min-height: 0; padding: 0; margin: 10px auto 6px; align-self: center; border-radius: 50%; border: 3px solid #b71c1c; background: linear-gradient(180deg, #e53935 0%, #c62828 100%); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; touch-action: none; user-select: none; -webkit-user-select: none; box-shadow: 0 4px 14px rgba(198,40,40,0.35); }
+        .sync-reply-hold-btn .icon-mic { width: 30px; height: 30px; }
         .sync-reply-hold-btn:active, .sync-reply-hold-btn.sync-hold-active { background: linear-gradient(180deg, #b71c1c 0%, #8e0000 100%); transform: scale(0.96); }
         .sync-reply-hold-btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
         .sync-append-done-btn { width: 100%; margin-top: 8px; padding: 12px; border-radius: 14px; border: none; background: var(--primary); color: #fff; font-size: 16px; font-weight: bold; font-family: 'Amiri'; cursor: pointer; display: none; }
@@ -1062,7 +1063,7 @@
             <button type="button" class="stop-ui-btn" onclick="stopSyncReplySession()">⏹ إنهاء</button>
         </div>
         <div id="sync-reply-status" class="sync-reply-status"></div>
-        <button type="button" id="sync-reply-hold-btn" class="sync-reply-hold-btn" disabled aria-label="اضغط مع الاستمرار للتعليق على التسجيل">🎤</button>
+        <button type="button" id="sync-reply-hold-btn" class="sync-reply-hold-btn" disabled aria-label="اضغط مع الاستمرار للتعليق على التسجيل"><svg class="icon-mic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
         <button type="button" id="sync-append-done-btn" class="sync-append-done-btn">انتهيت من الإضافة</button>
     </div>
 
