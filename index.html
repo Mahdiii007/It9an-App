@@ -1857,14 +1857,22 @@
                 _feedAudioBlobCache.delete(k);
             }
         }
-        /** Safari/iOS: WebM/Remote-URL per Range-Streaming → kurze Aussetzer; voller Download + Blob-URL spielt flüssiger. */
+        /** Safari/iOS + WebKit-PWA: Remote-URL / MediaElementSource — voller Download + Blob-URL (auch wenn UA in installierter PWA knapper ist). */
         function shouldBufferFeedAudioFully() {
             const ua = navigator.userAgent || '';
             if (/iPhone|iPad|iPod/i.test(ua)) return true;
             if (navigator.maxTouchPoints > 1 && /Macintosh|MacIntel|Mac ARM/i.test(navigator.platform || '')) return true;
             const isChromeFamily = /CriOS|Chrome|Chromium|Edg|OPR|FxiOS|Android.*Chrome/i.test(ua);
             const looksSafari = /Safari/i.test(ua);
-            return looksSafari && !isChromeFamily;
+            if (looksSafari && !isChromeFamily) return true;
+            try {
+                const inInstalledPwa = window.matchMedia('(display-mode: standalone)').matches
+                    || window.matchMedia('(display-mode: minimal-ui)').matches
+                    || window.matchMedia('(display-mode: fullscreen)').matches
+                    || window.navigator.standalone === true;
+                if (inInstalledPwa && /AppleWebKit/i.test(ua) && !isChromeFamily) return true;
+            } catch (e) {}
+            return false;
         }
         async function resolveFeedAudioPlayUrl(remoteUrl) {
             if (!remoteUrl || !/^https?:/i.test(remoteUrl)) return remoteUrl;
@@ -6306,6 +6314,35 @@
             }
         }
 
+        /** سفاري: <audio crossOrigin + رابط Firebase> يعطي «Load failed» رغم صلاحية الملف — الجلب ثم blob يعمل مع createMediaElementSource. */
+        async function syncReplyHttpsToBlobPlayUrl(httpsUrl) {
+            if (!httpsUrl || !/^https?:/i.test(httpsUrl)) return null;
+            const res = await fetch(httpsUrl, { mode: 'cors', credentials: 'omit', cache: 'default' });
+            if (!res.ok) return null;
+            const ab = await res.arrayBuffer();
+            if (!ab.byteLength) return null;
+            let ct = ((res.headers.get('content-type') || '').split(';')[0] || '').trim();
+            const pathPart = (syncReplyExtractStorageObjectPath(httpsUrl) || httpsUrl).toLowerCase();
+            if (pathPart.endsWith('.m4a') || /mp4|mpeg|audio\/mp4/i.test(ct)) {
+                ct = 'audio/mp4';
+            } else if (!ct || ct === 'application/octet-stream') {
+                if (pathPart.includes('.webm')) ct = 'audio/webm';
+                else if (pathPart.includes('.ogg')) ct = 'audio/ogg';
+                else if (pathPart.includes('.wav')) ct = 'audio/wav';
+                else if (pathPart.includes('.mp4')) ct = 'audio/mp4';
+            }
+            return URL.createObjectURL(new Blob([ab], { type: ct || 'application/octet-stream' }));
+        }
+
+        function syncReplyRevokePrefetchBlobs(list, keepBlobUrl) {
+            if (!list || !list.length) return;
+            for (const b of list) {
+                if (keepBlobUrl != null && b === keepBlobUrl) continue;
+                try { URL.revokeObjectURL(b); } catch (e) {}
+            }
+            list.length = 0;
+        }
+
         function syncReplyUnshiftUrl(list, u) {
             if (!u || typeof u !== 'string') return;
             const ix = list.indexOf(u);
@@ -6400,7 +6437,8 @@
         async function loadSyncReplyMediaElementOnce(ctx, studentGain, mode, primaryUrlOrBlob) {
             let studentAudioEl = null;
             let revokeBlobUrl = null;
-            const tryUrls = [];
+            let tryUrls = [];
+            const prefetchBlobs = [];
 
             if (mode === 'student') {
                 const primaryUrl = primaryUrlOrBlob;
@@ -6410,6 +6448,26 @@
                 } catch (e) {}
                 syncReplyPushUrl(tryUrls, primaryUrl);
                 try { syncReplyPushUrl(tryUrls, await resolveFeedAudioPlayUrl(primaryUrl)); } catch (e) {}
+                if (shouldBufferFeedAudioFully()) {
+                    const seenH = new Set();
+                    const httpsOrdered = [];
+                    for (const u of tryUrls) {
+                        if (!/^https?:/i.test(u) || seenH.has(u)) continue;
+                        seenH.add(u);
+                        httpsOrdered.push(u);
+                    }
+                    const front = [];
+                    for (const u of httpsOrdered) {
+                        try {
+                            const blobPlay = await syncReplyHttpsToBlobPlayUrl(u);
+                            if (blobPlay) {
+                                front.push(blobPlay);
+                                prefetchBlobs.push(blobPlay);
+                            }
+                        } catch (e) {}
+                    }
+                    if (front.length) tryUrls = front.concat(tryUrls);
+                }
             } else {
                 if (!(primaryUrlOrBlob instanceof Blob)) throw new Error('invalid draft');
                 let b = primaryUrlOrBlob;
@@ -6426,8 +6484,17 @@
                 try {
                     const r = await attachSyncReplyMediaElement(ctx, studentGain, url);
                     studentAudioEl = r.el;
-                    if (revokeBlobUrl && url !== revokeBlobUrl) {
-                        try { URL.revokeObjectURL(revokeBlobUrl); } catch (e) {}
+                    if (/^blob:/i.test(url)) {
+                        syncReplyRevokePrefetchBlobs(prefetchBlobs, url);
+                        if (revokeBlobUrl && url !== revokeBlobUrl) {
+                            try { URL.revokeObjectURL(revokeBlobUrl); } catch (e) {}
+                        }
+                        revokeBlobUrl = url;
+                    } else {
+                        syncReplyRevokePrefetchBlobs(prefetchBlobs, null);
+                        if (revokeBlobUrl) {
+                            try { URL.revokeObjectURL(revokeBlobUrl); } catch (e) {}
+                        }
                         revokeBlobUrl = null;
                     }
                     lastErr = null;
@@ -6438,24 +6505,55 @@
             }
 
             if (!studentAudioEl && mode === 'student') {
-                let fetchUrl = primaryUrlOrBlob;
-                try { fetchUrl = await resolveFeedAudioPlayUrl(primaryUrlOrBlob); } catch (e) {}
-                const res = await fetch(fetchUrl, { mode: 'cors', credentials: 'omit', cache: 'default' });
-                if (!res.ok) throw lastErr || new Error('fetch ' + res.status);
-                const ab = await res.arrayBuffer();
-                if (!ab || ab.byteLength === 0) throw lastErr || new Error('empty');
-                const ct = ((res.headers.get('content-type') || '').split(';')[0] || '').trim();
-                const blobType = (ct && ct.length > 0) ? ct : 'application/octet-stream';
-                const blobRevoke = URL.createObjectURL(new Blob([ab], { type: blobType }));
+                syncReplyRevokePrefetchBlobs(prefetchBlobs, null);
+                const primary = primaryUrlOrBlob;
+                const fetchSources = [];
                 try {
-                    const r = await attachSyncReplyMediaElement(ctx, studentGain, blobRevoke);
-                    studentAudioEl = r.el;
-                    if (revokeBlobUrl) { try { URL.revokeObjectURL(revokeBlobUrl); } catch (e) {} }
-                    revokeBlobUrl = blobRevoke;
-                    lastErr = null;
-                } catch (e) {
-                    try { URL.revokeObjectURL(blobRevoke); } catch (e2) {}
-                    throw lastErr || e;
+                    const m4aU = await tryGetSiblingM4aDownloadUrl(primary);
+                    if (m4aU) fetchSources.push(m4aU);
+                } catch (e) {}
+                fetchSources.push(primary);
+                let blobRevoke = null;
+                let lastFetch = null;
+                for (const src of fetchSources) {
+                    let fetchUrl = src;
+                    try { fetchUrl = await resolveFeedAudioPlayUrl(src); } catch (e) {}
+                    try {
+                        const res = await fetch(fetchUrl, { mode: 'cors', credentials: 'omit', cache: 'default' });
+                        lastFetch = res;
+                        if (!res.ok) continue;
+                        const ab = await res.arrayBuffer();
+                        if (!ab.byteLength) continue;
+                        let blobType = ((res.headers.get('content-type') || '').split(';')[0] || '').trim();
+                        const pathPart = (syncReplyExtractStorageObjectPath(src) || src || '').toLowerCase();
+                        if (pathPart.endsWith('.m4a') || /mp4|mpeg|audio\/mp4/i.test(blobType)) blobType = 'audio/mp4';
+                        else if (!blobType || blobType === 'application/octet-stream') {
+                            if (pathPart.includes('.webm')) blobType = 'audio/webm';
+                            else if (pathPart.includes('.ogg')) blobType = 'audio/ogg';
+                            else if (pathPart.includes('.wav')) blobType = 'audio/wav';
+                            else blobType = 'application/octet-stream';
+                        }
+                        blobRevoke = URL.createObjectURL(new Blob([ab], { type: blobType }));
+                        try {
+                            const r = await attachSyncReplyMediaElement(ctx, studentGain, blobRevoke);
+                            studentAudioEl = r.el;
+                            if (revokeBlobUrl) { try { URL.revokeObjectURL(revokeBlobUrl); } catch (e) {} }
+                            revokeBlobUrl = blobRevoke;
+                            blobRevoke = null;
+                            lastErr = null;
+                            break;
+                        } catch (e) {
+                            try { URL.revokeObjectURL(blobRevoke); } catch (e2) {}
+                            blobRevoke = null;
+                            lastErr = e;
+                        }
+                    } catch (e) {
+                        lastErr = e;
+                    }
+                }
+                if (!studentAudioEl) {
+                    if (lastFetch && !lastFetch.ok) throw lastErr || new Error('fetch ' + lastFetch.status);
+                    throw lastErr || new Error('audio load');
                 }
             }
 
