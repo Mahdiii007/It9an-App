@@ -455,7 +455,7 @@
             .feed-msg .feed-player-wrap, .reply-player-wrap { min-width: 0; }
             .feed-msg .feed-play-remarks .feed-player-wrap, .reply-play-remarks .reply-player-wrap { width: auto !important; }
             .custom-player { padding: 0; }
-            #recording-ui { width: 95%; padding: 12px 14px; bottom: 180px; }
+            #recording-ui, #sync-reply-ui { width: 95%; padding: 12px 14px; bottom: 180px; }
             .rec-timer { font-size: 22px; }
             .recording-row { gap: 20px; }
             .settings-box { padding: 10px 15px; gap: 10px; flex-wrap: wrap; }
@@ -506,8 +506,9 @@
         .feed-msg .feed-row2 .feed-datetime { margin-left: auto; }
         .feed-msg .feed-row2 .feed-delete-wrap { flex-shrink: 0; }
         .feed-msg .feed-player-wrap { flex-shrink: 0; display: flex; align-items: center; width: auto; }
-        .feed-reply-wrap { display: inline-flex; align-items: center; flex-shrink: 0; }
+        .feed-reply-wrap { display: inline-flex; align-items: center; flex-shrink: 0; flex-wrap: wrap; gap: 6px; }
         .feed-reply-wrap .reply-btn { display: inline-flex; align-items: center; min-height: 32px; padding: 4px 10px; border-radius: 16px; font-size: 13px; }
+        .reply-btn-sync { border-color: #c62828; color: #c62828; }
         .like-btn { display: flex; align-items: center; border-radius: 16px; font-size: 13px; background: #f9f9f9; border: 1px solid #eee; overflow: hidden; min-height: 32px; }
         .like-btn.liked { color: var(--primary); background: #e8f5e9; border-color: var(--primary); font-weight: bold; }
         .like-btn.disabled { opacity: 0.5; filter: grayscale(1); }
@@ -593,6 +594,16 @@
         .rec-status-text { font-size: 14px; color: var(--red); animation: blink 1.5s infinite; margin-top: 6px; font-weight: bold; }
         .stop-ui-btn { background: var(--red); color: white; border: none; padding: 8px 20px; border-radius: 20px; font-size: 14px; font-weight: bold; cursor: pointer; font-family: 'Amiri'; flex-shrink: 0; }
 
+        #sync-reply-ui { display: none; position: fixed; bottom: 200px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px; background: rgba(255,255,255,0.97); backdrop-filter: blur(6px); border: 2px solid #c62828; border-radius: 20px; padding: 14px 16px; z-index: 1600; flex-direction: column; align-items: stretch; box-shadow: 0 10px 40px rgba(0,0,0,0.2); direction: rtl; }
+        .sync-reply-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; margin-bottom: 8px; }
+        .sync-reply-timer { font-size: 24px; font-weight: bold; font-family: monospace; color: var(--text); }
+        .sync-reply-status { font-size: 14px; color: #333; font-weight: 600; text-align: center; margin: 6px 0 10px; line-height: 1.45; min-height: 2.8em; }
+        .sync-reply-hint { font-size: 12px; color: #666; text-align: center; margin-bottom: 10px; line-height: 1.4; }
+        .sync-reply-hold-btn { width: 100%; min-height: 72px; padding: 14px 16px; border-radius: 16px; border: 3px solid #b71c1c; background: linear-gradient(180deg, #e53935 0%, #c62828 100%); color: #fff; font-size: 17px; font-weight: bold; font-family: 'Amiri'; cursor: pointer; touch-action: none; user-select: none; -webkit-user-select: none; box-shadow: 0 4px 14px rgba(198,40,40,0.35); }
+        .sync-reply-hold-btn:active, .sync-reply-hold-btn.sync-hold-active { background: linear-gradient(180deg, #b71c1c 0%, #8e0000 100%); transform: scale(0.98); }
+        .sync-reply-hold-btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+        .sync-append-done-btn { width: 100%; margin-top: 8px; padding: 12px; border-radius: 14px; border: none; background: var(--primary); color: #fff; font-size: 16px; font-weight: bold; font-family: 'Amiri'; cursor: pointer; display: none; }
+
         #review-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(3px); z-index: 6000; justify-content: center; align-items: center; }
         .review-box { background: white; padding: 30px; padding-right: 50px; border-radius: 25px; width: 85%; max-width: 380px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.3); border: 2px solid var(--primary); position: relative; }
         .review-close-x { position: absolute; top: 8px; right: 8px; width: 36px; height: 36px; padding: 0; border: none; background: transparent; font-size: 24px; cursor: pointer; color: #888; line-height: 1; display: flex; align-items: center; justify-content: center; border-radius: 8px; }
@@ -608,6 +619,7 @@
         .r-btn { padding: 15px; border: none; border-radius: 12px; font-size: 18px; font-weight: bold; cursor: pointer; font-family: 'Amiri'; }
         .btn-send { background: var(--primary); color: white; }
         .btn-retry { background: var(--gold); color: white; }
+        .btn-append { background: #3949ab; color: white; }
         .btn-cancel { background: #f1f2f6; color: #555; }
 
         /* FOOTER: smaller height so recording frame is not hidden */
@@ -1037,6 +1049,17 @@
             <button class="stop-ui-btn" onclick="stopRecordingAndReview()">⏹ إنهاء</button>
         </div>
         <div id="recText" class="rec-status-text">جاري التسجيل...</div>
+    </div>
+
+    <div id="sync-reply-ui">
+        <div class="sync-reply-row">
+            <span id="sync-reply-timer" class="sync-reply-timer">00:00</span>
+            <button type="button" class="stop-ui-btn" onclick="stopSyncReplySession()">⏹ إنهاء</button>
+        </div>
+        <div id="sync-reply-status" class="sync-reply-status"></div>
+        <div id="sync-reply-hint" class="sync-reply-hint">خفّض صوت تشغيل تسجيل الطالب على الجهاز قدر الإمكان، ويفضّل مكان هادئ، لتقليل دخول صدى التسجيل في الميكروفون.</div>
+        <button type="button" id="sync-reply-hold-btn" class="sync-reply-hold-btn" disabled>اضغط مع الاستمرار للتعليق على التسجيل</button>
+        <button type="button" id="sync-append-done-btn" class="sync-append-done-btn">انتهيت من الإضافة</button>
     </div>
 
     <div id="review-modal">
@@ -1801,6 +1824,8 @@
         let mediaRecorder, chunks = [], recInterval = null, recSeconds = 0;
         let currentBlob = null, replyTargetId = null, maxRecDuration = 0;
         let lastRecStream = null, lastRecCtx = null;
+        let teacherSyncReplyActive = false;
+        let syncReplySessionHandle = null;
         let recordingFileId = null, recordingStageId = null; // Beim Aufnahmestart gespeichert, damit die Aufnahme dem richtigen Vers zugeordnet bleibt (auch wenn der Vers während der Aufnahme wechselt)
         const ICON_MIC_HTML = '<svg class="icon-mic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>';
 
@@ -5794,7 +5819,7 @@
                 }
                 
                 const hasTeacherReply = d.replies && d.replies.some(r => r.role === 'teacher');
-                const replyBtnWrap = ((userRole === 'teacher' || isAdmin) && isStudentPost && !hasTeacherReply) ? `<div class="feed-reply-wrap"><button class="reply-btn" onclick="startReply('${d.id}')">↩️ الرد</button></div>` : '';
+                const replyBtnWrap = ((userRole === 'teacher' || isAdmin) && isStudentPost && !hasTeacherReply) ? `<div class="feed-reply-wrap"><button class="reply-btn" onclick="startReply('${d.id}')">↩️ الرد</button><button type="button" class="reply-btn reply-btn-sync" onclick="startSyncReply('${d.id}')">رد متزامن</button></div>` : '';
                 let postDateStr = formatDateTime(d.timestamp);
                 const isSaved = savedIds.has(d.id);
                 const saveBtnHtml = (myUid && myUid !== 'admin_super' && myUid !== 'guest') ? `<button class="save-btn ${isSaved ? 'saved' : ''}" onclick="toggleSaveForLater('${d.id}', ${isSaved})" title="${isSaved ? 'إزالة من القائمة' : 'حفظ للمشاهدة لاحقاً'}"><svg class="save-icon" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></button>` : '';
@@ -6029,12 +6054,379 @@
             toggleRecord();
         }
 
+        function playSyncTransitionBeep(audioCtx, isCommentStart) {
+            try {
+                const osc = audioCtx.createOscillator();
+                const g = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.value = isCommentStart ? 880 : 660;
+                g.gain.value = 0.0001;
+                osc.connect(g);
+                g.connect(audioCtx.destination);
+                const t0 = audioCtx.currentTime;
+                g.gain.exponentialRampToValueAtTime(0.18, t0 + 0.02);
+                g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.14);
+                osc.start(t0);
+                osc.stop(t0 + 0.15);
+            } catch (e) {}
+        }
+
+        function syncReplyUiSetVisible(visible) {
+            const el = document.getElementById('sync-reply-ui');
+            if (el) el.style.display = visible ? 'flex' : 'none';
+        }
+
+        window.stopSyncReplySession = function() {
+            if (syncReplySessionHandle && typeof syncReplySessionHandle.abort === 'function') syncReplySessionHandle.abort();
+        };
+
+        async function acquireMicStreamForTeacherSync() {
+            const isMacDesktop = /Mac|Macintosh/.test(navigator.platform) && !navigator.maxTouchPoints;
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+            let getUserMediaConfig;
+            if (isIOS) {
+                getUserMediaConfig = null;
+            } else if (isMacDesktop) {
+                getUserMediaConfig = { audio: true };
+            } else {
+                getUserMediaConfig = { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: { ideal: 1 } } };
+            }
+            if (!isMacDesktop) {
+                if (lastRecStream) { lastRecStream.getTracks().forEach(t => t.stop()); lastRecStream = null; }
+                if (lastRecCtx && lastRecCtx.state !== 'closed') { try { await lastRecCtx.close(); } catch (e) {} lastRecCtx = null; }
+                await new Promise(r => setTimeout(r, 100));
+            }
+            if (navigator.audioSession) {
+                try { navigator.audioSession.type = 'play-and-record'; } catch (e) {
+                    try { if (isIOS) navigator.audioSession.type = 'auto'; } catch (e2) {}
+                }
+            }
+            let rawStream = null;
+            if (isIOS) {
+                const iosCandidates = [
+                    { audio: { echoCancellation: false, noiseSuppression: false, channelCount: { ideal: 1 } } },
+                    { audio: { echoCancellation: false, noiseSuppression: false, channelCount: { exact: 1 } } },
+                    { audio: { echoCancellation: false, noiseSuppression: false } },
+                    { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: { ideal: 1 } } },
+                    { audio: { channelCount: { ideal: 1 } } },
+                    { audio: true }
+                ];
+                let lastErr = null;
+                for (const c of iosCandidates) {
+                    try {
+                        rawStream = await navigator.mediaDevices.getUserMedia(c);
+                        lastErr = null;
+                        break;
+                    } catch (e) { lastErr = e; }
+                }
+                if (!rawStream) throw lastErr || new Error('mic');
+            } else {
+                rawStream = await navigator.mediaDevices.getUserMedia(getUserMediaConfig || { audio: true });
+            }
+            return { rawStream, isIOS, isMacDesktop };
+        }
+
+        window.startSyncReply = async function(postId) {
+            if (localStorage.getItem('it9an_uid') === 'guest') {
+                showGuestRegisterModal();
+                return;
+            }
+            const uid = localStorage.getItem('it9an_uid');
+            const role = localStorage.getItem('it9an_role');
+            if (role !== 'teacher' && uid !== 'admin_super') return;
+            const post = allLoadedPosts.find(p => p.id === postId);
+            if (!post || !post.audioUrl) {
+                alert('تعذر تحميل تسجيل الطالب.');
+                return;
+            }
+            if (post.replies && post.replies.some(r => r.role === 'teacher')) {
+                alert('يُسمح برد واحد فقط من المعلم لكل تسجيل طالب.');
+                return;
+            }
+            replyTargetId = postId;
+            if (post.fileId != null) { recordingFileId = parseInt(String(post.fileId), 10); recordingStageId = post.stageId ?? currentStageId; }
+            teacherSyncReplyActive = true;
+            if (isPlaying) stopLoop();
+            pauseFeedAudio();
+            syncReplyUiSetVisible(true);
+            const holdBtn = document.getElementById('sync-reply-hold-btn');
+            const appendDoneBtn = document.getElementById('sync-append-done-btn');
+            const statusEl = document.getElementById('sync-reply-status');
+            const timerEl = document.getElementById('sync-reply-timer');
+            if (holdBtn) { holdBtn.style.display = ''; holdBtn.disabled = true; holdBtn.classList.remove('sync-hold-active'); }
+            if (appendDoneBtn) { appendDoneBtn.style.display = 'none'; }
+            if (statusEl) statusEl.textContent = 'جاري التحضير...';
+            try {
+                await runTeacherSyncReplySession(post.audioUrl, { mode: 'student', statusEl, timerEl, holdBtn, appendDoneBtn });
+            } catch (e) {
+                console.error('sync reply', e);
+                if (e && e.message !== 'aborted') alert('تعذر بدء الرد المتزامن. جرّب «الرد» العادي أو جهازاً آخر.\n' + (e.message || ''));
+                teacherSyncReplyActive = false;
+                replyTargetId = null;
+                recordingFileId = null;
+                recordingStageId = null;
+            }
+            syncReplyUiSetVisible(false);
+            if (holdBtn) holdBtn.classList.remove('sync-hold-active');
+        };
+
+        async function runTeacherSyncReplySession(audioInput, opts) {
+            const mode = opts.mode || 'student';
+            const statusEl = opts.statusEl;
+            const timerEl = opts.timerEl;
+            const holdBtn = opts.holdBtn;
+            const appendDoneBtn = opts.appendDoneBtn;
+            const hintEl = document.getElementById('sync-reply-hint');
+            if (hintEl) hintEl.style.display = mode === 'append' ? 'none' : '';
+
+            let aborted = false;
+            const abort = () => { aborted = true; };
+            syncReplySessionHandle = { abort };
+
+            const isAndroid = /Android/i.test(navigator.userAgent || '');
+            let options = { audioBitsPerSecond: (isAndroid && window.MediaRecorder && MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) ? 192000 : 128000 };
+            if (window.MediaRecorder) {
+                if (MediaRecorder.isTypeSupported('audio/mp4;codecs=mp4a.40.2')) options.mimeType = 'audio/mp4;codecs=mp4a.40.2';
+                else if (MediaRecorder.isTypeSupported('audio/mp4')) options.mimeType = 'audio/mp4';
+                else if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) options.mimeType = 'audio/webm;codecs=opus';
+            }
+
+            const { rawStream, isIOS } = await acquireMicStreamForTeacherSync();
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            if (ctx.state === 'suspended') await ctx.resume();
+
+            let audioBuffer;
+            if (mode === 'student') {
+                let fetchUrl = audioInput;
+                try { fetchUrl = await resolveFeedAudioPlayUrl(audioInput); } catch (e) {}
+                const res = await fetch(fetchUrl);
+                if (!res.ok) throw new Error('audio fetch');
+                audioBuffer = await ctx.decodeAudioData(await res.arrayBuffer());
+            } else {
+                audioBuffer = await ctx.decodeAudioData(await audioInput.arrayBuffer());
+            }
+            if (aborted) {
+                rawStream.getTracks().forEach(t => t.stop());
+                try { await ctx.close(); } catch (e) {}
+                syncReplySessionHandle = null;
+                return;
+            }
+
+            const dest = ctx.createMediaStreamDestination();
+            const studentGain = ctx.createGain();
+            studentGain.gain.value = 1;
+            const micGain = ctx.createGain();
+            micGain.gain.value = 0;
+            studentGain.connect(dest);
+            micGain.connect(dest);
+
+            const micSrc = ctx.createMediaStreamSource(rawStream);
+            const preMic = ctx.createGain();
+            preMic.gain.value = isIOS ? 2.2 : 1;
+            micSrc.connect(preMic);
+            preMic.connect(micGain);
+
+            const mediaRecorder = new MediaRecorder(dest.stream, options);
+            const chunks = [];
+            mediaRecorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+
+            let studentSource = null;
+            let activeSegmentStartInBuffer = 0;
+            let playTickCtxTime = 0;
+            let resumeFrom = 0;
+            let isCommenting = false;
+            let sessionFinished = false;
+            let wallSeconds = 0;
+            let wallTimer = null;
+            const maxWall = 600;
+
+            function stopStudentNode() {
+                if (studentSource) {
+                    try { studentSource.stop(); } catch (e) {}
+                    studentSource = null;
+                }
+            }
+
+            function finishSession() {
+                if (sessionFinished) return;
+                sessionFinished = true;
+                stopStudentNode();
+                micGain.gain.setValueAtTime(0, ctx.currentTime);
+                if (wallTimer) clearInterval(wallTimer);
+                if (holdBtn) { holdBtn.disabled = true; holdBtn.classList.remove('sync-hold-active'); }
+                if (appendDoneBtn) appendDoneBtn.style.display = 'none';
+                if (mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+            }
+
+            const sessionDone = new Promise((resolve, reject) => {
+                mediaRecorder.onstop = async () => {
+                    try {
+                        releaseWakeLock();
+                        rawStream.getTracks().forEach(t => t.stop());
+                        try { await ctx.close(); } catch (e) {}
+                        const mimeType = mediaRecorder.mimeType || 'audio/mp4';
+                        currentBlob = new Blob(chunks, { type: mimeType });
+                        syncReplySessionHandle = null;
+                        showReviewModal();
+                        resolve();
+                    } catch (e) {
+                        reject(e);
+                    }
+                };
+                mediaRecorder.onerror = () => reject(new Error('recorder'));
+            });
+
+            function beginStudent(fromOff) {
+                if (sessionFinished || aborted) return;
+                stopStudentNode();
+                if (fromOff >= audioBuffer.duration - 0.04) {
+                    finishSession();
+                    return;
+                }
+                activeSegmentStartInBuffer = fromOff;
+                playTickCtxTime = ctx.currentTime;
+                studentSource = ctx.createBufferSource();
+                studentSource.buffer = audioBuffer;
+                studentSource.connect(studentGain);
+                studentSource.onended = () => {
+                    if (sessionFinished || aborted) return;
+                    if (isCommenting) return;
+                    studentSource = null;
+                    finishSession();
+                };
+                studentSource.start(0, fromOff, audioBuffer.duration - fromOff);
+                if (holdBtn && mode === 'student') {
+                    holdBtn.disabled = false;
+                }
+            }
+
+            function onHoldStart(e) {
+                if (e) { e.preventDefault(); if (e.button === 2) return; }
+                if (!studentSource || isCommenting || sessionFinished || aborted) return;
+                const played = ctx.currentTime - playTickCtxTime;
+                resumeFrom = Math.min(audioBuffer.duration, activeSegmentStartInBuffer + Math.max(0, played));
+                isCommenting = true;
+                try { studentSource.stop(); } catch (err) {}
+                studentSource = null;
+                micGain.gain.setValueAtTime(1, ctx.currentTime);
+                playSyncTransitionBeep(ctx, true);
+                if (statusEl) statusEl.textContent = 'تسجيل تعليقك — أفلت الزر لمتابعة تسجيل الطالب';
+                if (holdBtn) holdBtn.classList.add('sync-hold-active');
+            }
+
+            function onHoldEnd() {
+                if (!isCommenting || sessionFinished || aborted) return;
+                isCommenting = false;
+                micGain.gain.setValueAtTime(0, ctx.currentTime);
+                playSyncTransitionBeep(ctx, false);
+                if (holdBtn) holdBtn.classList.remove('sync-hold-active');
+                if (statusEl) statusEl.textContent = 'تشغيل تسجيل الطالب وتسجيل الرد...';
+                beginStudent(resumeFrom);
+            }
+
+            if (mode === 'student') {
+                if (statusEl) statusEl.textContent = 'تشغيل تسجيل الطالب وتسجيل الرد — اضغط الزر الأحمر أثناء التشغيل للتعليق';
+                requestWakeLock();
+                mediaRecorder.start();
+                wallTimer = setInterval(() => {
+                    wallSeconds++;
+                    if (timerEl) {
+                        const m = Math.floor(wallSeconds / 60), s = wallSeconds % 60;
+                        timerEl.textContent = (m < 10 ? '0' + m : m) + ':' + (s < 10 ? '0' + s : s);
+                    }
+                    if (wallSeconds >= maxWall) finishSession();
+                }, 1000);
+                beginStudent(0);
+
+                const ptrUp = () => onHoldEnd();
+                if (holdBtn) {
+                    holdBtn.addEventListener('pointerdown', onHoldStart);
+                    window.addEventListener('pointerup', ptrUp);
+                    window.addEventListener('pointercancel', ptrUp);
+                    syncReplySessionHandle._removePtr = () => {
+                        holdBtn.removeEventListener('pointerdown', onHoldStart);
+                        window.removeEventListener('pointerup', ptrUp);
+                        window.removeEventListener('pointercancel', ptrUp);
+                    };
+                }
+                syncReplySessionHandle.abort = () => {
+                    aborted = true;
+                    if (syncReplySessionHandle._removePtr) syncReplySessionHandle._removePtr();
+                    finishSession();
+                };
+            } else {
+                if (statusEl) statusEl.textContent = 'تشغيل المسودة...';
+                requestWakeLock();
+                mediaRecorder.start();
+                wallTimer = setInterval(() => {
+                    wallSeconds++;
+                    if (timerEl) {
+                        const m = Math.floor(wallSeconds / 60), s = wallSeconds % 60;
+                        timerEl.textContent = (m < 10 ? '0' + m : m) + ':' + (s < 10 ? '0' + s : s);
+                    }
+                    if (wallSeconds >= maxWall) finishSession();
+                }, 1000);
+                stopStudentNode();
+                activeSegmentStartInBuffer = 0;
+                playTickCtxTime = ctx.currentTime;
+                studentSource = ctx.createBufferSource();
+                studentSource.buffer = audioBuffer;
+                studentSource.connect(studentGain);
+                studentSource.onended = () => {
+                    if (sessionFinished || aborted) return;
+                    studentSource = null;
+                    micGain.gain.setValueAtTime(1, ctx.currentTime);
+                    if (statusEl) statusEl.textContent = 'تكلّم الآن — إضافة في نهاية الرد';
+                    if (appendDoneBtn) appendDoneBtn.style.display = 'block';
+                };
+                studentSource.start(0, 0, audioBuffer.duration);
+                syncReplySessionHandle.abort = () => {
+                    aborted = true;
+                    finishSession();
+                };
+                if (appendDoneBtn) {
+                    appendDoneBtn.onclick = () => {
+                        micGain.gain.setValueAtTime(0, ctx.currentTime);
+                        appendDoneBtn.style.display = 'none';
+                        finishSession();
+                    };
+                }
+            }
+
+            await sessionDone;
+            if (syncReplySessionHandle && syncReplySessionHandle._removePtr) syncReplySessionHandle._removePtr();
+        }
+
+        window.appendSyncReplyAtEnd = async function() {
+            if (!teacherSyncReplyActive || !currentBlob) return;
+            const ra = document.getElementById('reviewAudio');
+            if (ra) { ra.pause(); ra.src = ''; }
+            document.getElementById('review-modal').style.display = 'none';
+            syncReplyUiSetVisible(true);
+            const holdBtn = document.getElementById('sync-reply-hold-btn');
+            const appendDoneBtn = document.getElementById('sync-append-done-btn');
+            const statusEl = document.getElementById('sync-reply-status');
+            const timerEl = document.getElementById('sync-reply-timer');
+            if (holdBtn) holdBtn.style.display = 'none';
+            if (timerEl) timerEl.textContent = '00:00';
+            try {
+                await runTeacherSyncReplySession(currentBlob, { mode: 'append', statusEl, timerEl, holdBtn, appendDoneBtn });
+            } catch (e) {
+                console.error('append sync', e);
+                alert('تعذر إكمال الإضافة.');
+            }
+            syncReplyUiSetVisible(false);
+            if (holdBtn) holdBtn.style.display = '';
+        };
+
         const REC_BLOCKED_MSG = 'يرجى استخدام إشعارات الجرس لسماع جميع ردود المعلم لهذه المرحلة حتى النهاية. يمكنك التسجيل في هذه المرحلة مرة أخرى فقط عندما تكون جميع ردود المعلم قد سُمعت حتى النهاية. هكذا تتعلم بشكل أفضل.';
         const REC_PENDING_TEACHER_MSG = 'لديك بالفعل تسجيل تحت هذا المقطع لم يُقيِّمه المعلم بعد أو لم يُرَدَّ عليه صوتياً بعد. لا يمكنك بدء تسجيل جديد هنا حتى يُقيَّم كل تسجيلاتك لهذا المقطع ويصلك رد صوتي من المعلم على كل منها.\n\nإن أردت إعادة التسجيل من جديد، احذف أولاً التسجيل القديم غير المكتمل (زر الحذف 🗑️ بجانب تسجيلك في الخلاصة أدناه)، ثم يمكنك استخدام الميكروفون مرة أخرى.';
         const MIN_REPETITIONS_FOR_REC = 20;
         const REC_REPETITIONS_MSG = 'معلمو هذه المنصة متفقون على أن الطلاب يُفضّل أن يكرّروا المقاطع 20 مرة على الأقل قبل البدء بالتسجيل. يُنصح بـ 100 تكرار على الأقل. بعد 20 تكرار يُفتح الميكروفون لهذا المقطع.';
 
         window.toggleRecord = async function() {
+            const syncUi = document.getElementById('sync-reply-ui');
+            if (syncUi && syncUi.style.display === 'flex') return;
             if (localStorage.getItem('it9an_uid') === 'guest') {
                 showGuestRegisterModal();
                 return;
@@ -6297,6 +6689,8 @@
             const isReply = !!replyTargetId;
             const verseImgHtml = !isReply && currentGlobalFileId != null ? `<img class="review-verse-img" src="${getAssetUrl(getVerseAssetPath(currentGlobalFileId) + '.png')}" alt="المقطع" onerror="verseImgFallback(this)">` : '';
             const noteHtml = !isReply ? `<div class="review-note">يرجى التأكد من أن التسجيل يتطابق مع المقطع.</div>` : '';
+            const syncHint = (teacherSyncReplyActive && isReply) ? `<div class="review-note">رد متزامن: يُستحسن أن يستمع الطالب في مكان هادئ وبصوت معتدل على الجهاز.</div>` : '';
+            const appendHtml = (teacherSyncReplyActive && isReply) ? `<button type="button" class="r-btn btn-append" onclick="appendSyncReplyAtEnd()">➕ إضافة في نهاية الرد</button>` : '';
             content.innerHTML = `
                 <div class="review-title">${isReply ? 'مراجعة الرد' : 'مراجعة التسجيل'}</div>
                 ${verseImgHtml}
@@ -6308,9 +6702,11 @@
                     </div>
                 </div>
                 ${noteHtml}
+                ${syncHint}
                 <div class="review-btns">
-                    <button class="r-btn btn-retry" onclick="retryRecord()">🔄 إعادة</button>
-                    <button class="r-btn btn-send" onclick="confirmSend()">✅ إرسال</button>
+                    <button type="button" class="r-btn btn-retry" onclick="retryRecord()">🔄 إعادة</button>
+                    ${appendHtml}
+                    <button type="button" class="r-btn btn-send" onclick="confirmSend()">✅ إرسال</button>
                 </div>`;
             modal.style.display = 'flex';
             setupReviewAudioListeners();
@@ -6432,6 +6828,7 @@
                            if (cont) fetchUserRecordings(lbRecordingsOpenUid, lbRecordingsOpenRole, true).then(items => { lbRecordingsCache[lbRecordingsOpenUid] = items; renderLbRecordingsList(cont, lbRecordingsOpenUid, lbRecordingsOpenOffset); });
                        }
                     }
+                    teacherSyncReplyActive = false;
                     replyTargetId = null; 
                 } else {
                     const fid = recordingFileId != null ? recordingFileId : currentGlobalFileId;
@@ -6488,6 +6885,10 @@
             if (ra) { ra.pause(); ra.src = ''; }
             document.getElementById('review-modal').style.display = 'none';
             recordingFileId = null; recordingStageId = null;
+            if (teacherSyncReplyActive && replyTargetId) {
+                startSyncReply(replyTargetId);
+                return;
+            }
             toggleRecord();
         }
         window.cancelRecord = function() {
@@ -6495,6 +6896,7 @@
             if (ra) { ra.pause(); ra.src = ''; }
             document.getElementById('review-modal').style.display = 'none';
             currentBlob = null;
+            teacherSyncReplyActive = false;
             replyTargetId = null;
             recordingFileId = null; recordingStageId = null;
             if (lastRecStream) { lastRecStream.getTracks().forEach(t => t.stop()); lastRecStream = null; }
