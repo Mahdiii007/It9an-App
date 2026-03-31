@@ -6211,10 +6211,10 @@
                     const ix = allLoadedPosts.findIndex(p => p.id === postId);
                     if (ix >= 0) allLoadedPosts[ix].audioUrl = audioUrl;
                 }
-                if (syncReplyUrlPathLooksPreM4a(audioUrl)) {
+                if (syncReplyUrlIndicatesWebmOrOgg(audioUrl)) {
                     const m4aOk = await tryGetSiblingM4aDownloadUrl(audioUrl);
                     if (!m4aOk) {
-                        alert('هذا التسجيل يبدو قديماً: الرابط ما زال إلى WebM ولا يوجد ملف M4A مطابق على الخادم (غالباً رُفع قبل التحويل التلقائي، أو فشل التحويل). على آيفون/سفاري لا يُشغَّل WebM في الرد المتزامن.\n\nاستخدم «الرد» العادي. إن كان التسجيل حديثاً انتظر دقيقة ثم أعد فتح المنشور؛ وإلا يلزم إعادة رفع الصوت أو إصلاح التخزين.');
+                        alert('هذا التسجيل يبدو قديماً: الرابط ما زال إلى WebM/OGG ولا يوجد ملف M4A مطابق على الخادم (غالباً رُفع قبل التحويل التلقائي، أو فشل التحويل). على آيفون/سفاري لا يُشغَّل WebM في الرد المتزامن.\n\nاستخدم «الرد» العادي. إن كان التسجيل حديثاً انتظر دقيقة ثم أعد فتح المنشور؛ وإلا يلزم إعادة رفع الصوت أو إصلاح التخزين.');
                         teacherSyncReplyActive = false;
                         replyTargetId = null;
                         recordingFileId = null;
@@ -6227,8 +6227,14 @@
                 await runTeacherSyncReplySession(audioUrl, { mode: 'student', postId, statusEl, timerEl, holdBtn, appendDoneBtn });
             } catch (e) {
                 console.error('sync reply', e);
-                if (e && e.message !== 'aborted') {
-                    alert('تعذر بدء الرد المتزامن. جرّب «الرد» العادي.\n\nإن ظهر «Load failed» على آيفون/سفاري: غالباً التسجيل ما زال WebM ولم يُحوَّل إلى M4A — منها تسجيلات قديمة في التطبيق قبل التحويل على الخادم. تأكد أن دالة transcodeUploadAudio منشورة وعلى نفس التخزين (it9an-neu.firebasestorage.app).\n\n' + (e.message || ''));
+                if (e && e.message !== 'aborted' && e.message !== 'sync-reply-no-m4a') {
+                    const extra = (e && e.message === 'Load failed')
+                        ? '\n\n«Load failed» على سفاري غالباً يعني: الملف WebM/غير مدعوم في هذا الوضع، أو لا يزال الرابط يشير لملف لم يُحوَّل إلى M4A. إن استمرّ الأمر مع تسجيلات جديدة، راجع نشر transcodeUploadAudio والتخزين it9an-neu.firebasestorage.app.'
+                        : '';
+                    alert('تعذر بدء الرد المتزامن. جرّب «الرد» العادي.\n\nتسجيلات قديمة: غالباً WebM بلا M4A على الخادم. تسجيلات جديدة: انتظر التحويل أو راجع الدالة على نفس التخزين.' + extra + '\n\n' + (e.message || ''));
+                }
+                if (e && e.message === 'sync-reply-no-m4a') {
+                    alert('لا يوجد ملف M4A مطابق لهذا التسجيل على الخادم — الرد المتزامن على آيفون/سفاري لا يعمل مع WebM فقط.\n\nاستخدم «الرد» العادي، أو أعد رفع التسجيل، أو أصلح التحويل (transcodeUploadAudio).');
                 }
                 teacherSyncReplyActive = false;
                 replyTargetId = null;
@@ -6261,9 +6267,35 @@
             }
         }
 
+        /** Pfad wie uploads/… in der Storage-URL — Fallback wenn /o/ nicht erkannt wird. */
+        function syncReplyExtractStorageObjectPath(url) {
+            if (!url || typeof url !== 'string') return null;
+            const fromO = syncReplyStoragePathFromDownloadUrl(url);
+            if (fromO) return fromO;
+            try {
+                const u = new URL(url);
+                const dec = decodeURIComponent(u.pathname);
+                const ix = dec.indexOf('uploads/');
+                if (ix >= 0) return dec.slice(ix).split(/[?#]/)[0];
+            } catch (e) {}
+            try {
+                const m = url.match(/uploads(?:%2F|%2f)([^?&]+)/i);
+                if (m) return 'uploads/' + decodeURIComponent(m[1]);
+            } catch (e2) {}
+            return null;
+        }
+
+        /** Firestore/URL noch WebM oder Ogg (Safari spielt das im الرد المتزامن nicht zuverlässig). */
+        function syncReplyUrlIndicatesWebmOrOgg(audioUrl) {
+            if (!audioUrl || typeof audioUrl !== 'string') return false;
+            const p = syncReplyExtractStorageObjectPath(audioUrl);
+            if (p && /\.(webm|ogg)$/i.test(p)) return true;
+            return /(\.|%2e)webm([?&#]|$)/i.test(audioUrl) || /(\.|%2e)ogg([?&#]|$)/i.test(audioUrl);
+        }
+
         async function tryGetSiblingM4aDownloadUrl(audioUrl) {
             if (!audioUrl || !window.storage || !window.ref || !window.getDownloadURL) return null;
-            const path = syncReplyStoragePathFromDownloadUrl(audioUrl);
+            const path = syncReplyExtractStorageObjectPath(audioUrl);
             if (!path || !/\.(webm|ogg|mp4|wav)$/i.test(path)) return null;
             const m4aPath = path.replace(/\.(webm|ogg|mp4|wav)$/i, '.m4a');
             if (m4aPath === path) return null;
@@ -6272,13 +6304,6 @@
             } catch (e) {
                 return null;
             }
-        }
-
-        /** تسجيلات قديمة: ما زال الرابط يشير إلى WebM/OGG ولا يوجد ملف .m4a بجانبه — سفاري/آيفون لا يشغّلان WebM في <audio>. */
-        function syncReplyUrlPathLooksPreM4a(audioUrl) {
-            if (!audioUrl || typeof audioUrl !== 'string') return false;
-            const path = syncReplyStoragePathFromDownloadUrl(audioUrl) || '';
-            return /\.(webm|ogg)$/i.test(path);
         }
 
         function syncReplyUnshiftUrl(list, u) {
@@ -6466,6 +6491,15 @@
                     return await loadSyncReplyMediaElementOnce(ctx, studentGain, mode, url);
                 } catch (e) {
                     lastErr = e;
+                    /* WebM/Ogg ohne .m4a im Bucket: Warten auf Firestore nützt nicht — nicht 20× × 2 s blockieren */
+                    if (mode === 'student' && refreshPostId && syncReplyUrlIndicatesWebmOrOgg(url)) {
+                        const sib = await tryGetSiblingM4aDownloadUrl(url);
+                        if (!sib) {
+                            const out = new Error('sync-reply-no-m4a');
+                            out.cause = e;
+                            throw out;
+                        }
+                    }
                     if (mode !== 'student' || !refreshPostId || attempt === maxAttempts - 1) throw e;
                 }
             }
