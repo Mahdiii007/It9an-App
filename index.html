@@ -6857,10 +6857,12 @@
             const ctx = new (window.AudioContext || window.webkitAudioContext)();
             if (ctx.state === 'suspended') await ctx.resume();
 
-            const syncReplyIsIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+            /* Einheitlich für alle Geräte: gleiche Mic-Vorverstärkung wie im normalen الرد (2.3), Stereo→nur Kanal 0, Aufnahme-Bus mit Compressor+Make-up (keine iOS-/Android-Sonderwerte). */
+            const SYNC_REPLY_MIC_PRE = 2.3;
+            const SYNC_REPLY_MONITOR_MASTER = 0.92;
+            const SYNC_REPLY_REC_MAKEUP = 1.58;
             const studentGain = ctx.createGain();
-            /* iPhone: gleiche Kompensation wie beim normalen الرد (Mic gainOnly 2.3) — Web-Audio→MediaRecorder ist unterpegelt; Schülerdatei soll wie Original wirken. */
-            studentGain.gain.value = syncReplyIsIOS ? 2.3 : 1;
+            studentGain.gain.value = 1;
 
             let revokeBlobUrl = null;
             let studentDriver = null;
@@ -6879,11 +6881,10 @@
                 throw loadErr;
             }
 
-            let rawStream, isIOS;
+            let rawStream;
             try {
                 const mic = await acquireMicStreamForTeacherSync();
                 rawStream = mic.rawStream;
-                isIOS = mic.isIOS;
             } catch (micErr) {
                 if (revokeBlobUrl) { try { URL.revokeObjectURL(revokeBlobUrl); } catch (e) {} revokeBlobUrl = null; }
                 if (studentDriver) studentDriver.removeDom();
@@ -6894,22 +6895,39 @@
 
             const dest = ctx.createMediaStreamDestination();
             const monitorGain = ctx.createGain();
-            monitorGain.gain.value = syncReplyIsIOS ? 1 : 0.88;
-            studentGain.connect(dest);
-            studentGain.connect(monitorGain);
+            monitorGain.gain.value = SYNC_REPLY_MONITOR_MASTER;
+            const studentToRecord = ctx.createGain();
+            const studentToMonitor = ctx.createGain();
+            studentToRecord.gain.value = 1;
+            studentToMonitor.gain.value = 1;
+            studentGain.connect(studentToRecord);
+            studentGain.connect(studentToMonitor);
+            studentToMonitor.connect(monitorGain);
             monitorGain.connect(ctx.destination);
 
             const micGain = ctx.createGain();
             micGain.gain.value = 0;
-            micGain.connect(dest);
+
+            const recBusComp = ctx.createDynamicsCompressor();
+            recBusComp.threshold.value = -22;
+            recBusComp.knee.value = 26;
+            recBusComp.ratio.value = 4;
+            recBusComp.attack.value = 0.003;
+            recBusComp.release.value = 0.2;
+            const recBusMakeup = ctx.createGain();
+            recBusMakeup.gain.value = SYNC_REPLY_REC_MAKEUP;
+            studentToRecord.connect(recBusComp);
+            micGain.connect(recBusComp);
+            recBusComp.connect(recBusMakeup);
+            recBusMakeup.connect(dest);
 
             const micSrc = ctx.createMediaStreamSource(rawStream);
             const preMic = ctx.createGain();
-            preMic.gain.value = isIOS ? 2.3 : 1;
-            /* Wie toggleRecord (iOS): bei Stereo nur Kanal 0 — sonst Downmix L+R vor Gain oft viel leiser als normaler الرد. */
+            preMic.gain.value = SYNC_REPLY_MIC_PRE;
+            /* Überall gleich wie dokumentierter الرد-Pfad: Stereo-Mik → nur Kanal 0 (sonst oft zu leise / falscher Mix). */
             const tMicSync = rawStream.getAudioTracks()[0];
             const chMicSync = (tMicSync && tMicSync.getSettings && tMicSync.getSettings().channelCount) || 1;
-            if (isIOS && chMicSync >= 2) {
+            if (chMicSync >= 2) {
                 const micSplit = ctx.createChannelSplitter(2);
                 micSrc.connect(micSplit);
                 micSplit.connect(preMic, 0);
