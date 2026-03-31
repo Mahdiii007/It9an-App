@@ -6098,6 +6098,13 @@
             if (syncReplySessionHandle && typeof syncReplySessionHandle.abort === 'function') syncReplySessionHandle.abort();
         };
 
+        /** Nach رد متزامن: wie toggleRecord — sonst bleibt iOS/WKWebKit oft auf play-and-record → Feed + normaler الرد klingen gedämpft/schlecht. */
+        function restoreAudioSessionAfterSyncReply() {
+            if (navigator.audioSession) {
+                try { navigator.audioSession.type = 'playback'; } catch (e) {}
+            }
+        }
+
         async function acquireMicStreamForTeacherSync() {
             const isMacDesktop = /Mac|Macintosh/.test(navigator.platform) && !navigator.maxTouchPoints;
             const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -6246,6 +6253,7 @@
                 await runTeacherSyncReplySession(audioUrl, { mode: 'student', postId, statusEl, timerEl, holdBtn, appendDoneBtn });
             } catch (e) {
                 console.error('sync reply', e);
+                restoreAudioSessionAfterSyncReply();
                 if (e && e.message === 'sync-reply-decode-failed') {
                     alert('تعذّر فك ترميز تسجيل الطالب للرد المتزامن (Web Audio). جرّب «الرد» العادي.\n\n• تسجيل حديث: انتظر اكتمال التحويل إلى M4A ثم أعد المحاولة.\n• تحقق من أن الملف موجود في التخزين (it9an-neu) وأن رابط المنشور محدّث بعد transcodeUploadAudio.\n• إن ظهر خطأ شبكة: راجع CORS وقواعد Storage.');
                 } else if (e && e.message !== 'aborted' && e.message !== 'sync-reply-no-m4a') {
@@ -6882,6 +6890,7 @@
                 }
             } catch (loadErr) {
                 try { await ctx.close(); } catch (e) {}
+                restoreAudioSessionAfterSyncReply();
                 throw loadErr;
             }
 
@@ -6894,6 +6903,7 @@
                 if (studentDriver) studentDriver.removeDom();
                 studentDriver = null;
                 try { await ctx.close(); } catch (e) {}
+                restoreAudioSessionAfterSyncReply();
                 throw micErr;
             }
 
@@ -6933,6 +6943,7 @@
                 studentDriver = null;
                 rawStream.getTracks().forEach(t => t.stop());
                 try { await ctx.close(); } catch (e) {}
+                restoreAudioSessionAfterSyncReply();
                 throw recCtorErr;
             }
             const chunks = [];
@@ -6977,16 +6988,21 @@
                         if (studentDriver) studentDriver.removeDom();
                         studentDriver = null;
                         try { await ctx.close(); } catch (e) {}
+                        restoreAudioSessionAfterSyncReply();
                         const mimeType = mediaRecorder.mimeType || 'audio/mp4';
                         currentBlob = new Blob(chunks, { type: mimeType });
                         syncReplySessionHandle = null;
                         showReviewModal();
                         resolve();
                     } catch (e) {
+                        restoreAudioSessionAfterSyncReply();
                         reject(e);
                     }
                 };
-                mediaRecorder.onerror = () => reject(new Error('recorder'));
+                mediaRecorder.onerror = () => {
+                    restoreAudioSessionAfterSyncReply();
+                    reject(new Error('recorder'));
+                };
             });
 
             function beginStudent(fromOff) {
@@ -7048,6 +7064,7 @@
                     studentDriver = null;
                     rawStream.getTracks().forEach(t => t.stop());
                     try { await ctx.close(); } catch (e) {}
+                    restoreAudioSessionAfterSyncReply();
                     syncReplySessionHandle = null;
                     throw startErr;
                 }
@@ -7091,6 +7108,7 @@
                     studentDriver = null;
                     rawStream.getTracks().forEach(t => t.stop());
                     try { await ctx.close(); } catch (e) {}
+                    restoreAudioSessionAfterSyncReply();
                     syncReplySessionHandle = null;
                     throw startErr;
                 }
@@ -7148,6 +7166,7 @@
                 await runTeacherSyncReplySession(currentBlob, { mode: 'append', statusEl, timerEl, holdBtn, appendDoneBtn });
             } catch (e) {
                 console.error('append sync', e);
+                restoreAudioSessionAfterSyncReply();
                 alert('تعذر إكمال الإضافة.');
             }
             syncReplyUiSetVisible(false);
