@@ -6531,8 +6531,8 @@
             });
         }
 
-        async function syncReplyTryDecodeAudioBuffer(ctx, primaryUrl) {
-            if (!primaryUrl || typeof primaryUrl !== 'string' || !/^https?:/i.test(primaryUrl)) return null;
+        async function syncReplyBuildStudentCandidateHttpsList(primaryUrl) {
+            if (!primaryUrl || typeof primaryUrl !== 'string' || !/^https?:/i.test(primaryUrl)) return [];
             const list = [];
             const webmish = syncReplyUrlIndicatesWebmOrOgg(primaryUrl);
             if (webmish) {
@@ -6558,7 +6558,8 @@
             } catch (e) {}
             const seen = new Set();
             const httpsList = [];
-            for (const u of list) {
+            for (let li = 0; li < list.length; li++) {
+                const u = list[li];
                 if (!u || seen.has(u)) continue;
                 seen.add(u);
                 if (!/^https?:/i.test(u)) continue;
@@ -6570,6 +6571,11 @@
                 return 1;
             }
             httpsList.sort((a, b) => syncReplyUrlDecodePriority(a) - syncReplyUrlDecodePriority(b));
+            return httpsList;
+        }
+
+        async function syncReplyTryDecodeAudioBuffer(ctx, primaryUrl) {
+            const httpsList = await syncReplyBuildStudentCandidateHttpsList(primaryUrl);
             for (let hi = 0; hi < httpsList.length; hi++) {
                 const u = httpsList[hi];
                 try {
@@ -6684,7 +6690,7 @@
             let tryUrls = [];
             const prefetchBlobs = [];
 
-            /* تسجيل الطالب: فقط Web Audio decode — لا <audio>/Load failed على سفاري. المحاولات = إعادة جلب الرابط من Firestore في الحلقة الخارجية. */
+            /* تسجيل الطالب: أولاً decodeAudioData؛ إن رفض سفاري بعض M4A — نفس البيانات عبر fetch→blob ثم <audio> بدون crossOrigin على HTTPS (انظر syncReplyHttpsToBlobPlayUrl). */
             if (mode === 'student') {
                 const primaryUrl = primaryUrlOrBlob;
                 if (!primaryUrl || typeof primaryUrl !== 'string' || !/^https?:/i.test(primaryUrl)) {
@@ -6693,6 +6699,23 @@
                 const decodedBuf = await syncReplyTryDecodeAudioBuffer(ctx, primaryUrl);
                 if (decodedBuf) {
                     return { studentAudioEl: null, studentDecodedBuffer: decodedBuf, revokeBlobUrl: null };
+                }
+                const candidates = await syncReplyBuildStudentCandidateHttpsList(primaryUrl);
+                for (let ci = 0; ci < candidates.length; ci++) {
+                    let blobPlay = null;
+                    try {
+                        blobPlay = await syncReplyHttpsToBlobPlayUrl(candidates[ci]);
+                        if (!blobPlay) continue;
+                        const r = await attachSyncReplyMediaElement(ctx, studentGain, blobPlay);
+                        studentAudioEl = r.el;
+                        revokeBlobUrl = blobPlay;
+                        await waitSyncReplyAudioMetadata(studentAudioEl);
+                        return { studentAudioEl, studentDecodedBuffer: null, revokeBlobUrl };
+                    } catch (e) {
+                        if (blobPlay) {
+                            try { URL.revokeObjectURL(blobPlay); } catch (e2) {}
+                        }
+                    }
                 }
                 const decFail = new Error('sync-reply-decode-failed');
                 decFail.syncReplyStudent = true;
