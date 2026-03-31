@@ -21,8 +21,11 @@
 #   FIREBASE_ONLY=functions,firestore,storage ./scripts/deploy-all.sh
 #   Oder in der Console: Storage einmal einrichten + Bucket prüfen (appspot vs firebasestorage.app).
 #
-# „Error: Can't find the storage bucket region“: (1) keinen zweiten storage-Bucket in firebase.json eintragen;
-#   (2) in onObjectFinalized kein „bucket:“ setzen — nur Standard-Bucket; sonst schlägt oft schon functions-Deploy fehl.
+# „Error: Can't find the storage bucket region“: in onObjectFinalized kein „bucket:“ setzen (Standard-Bucket).
+#   In firebase.json genau EIN Eintrag mit dem echten Default-Bucket (…firebasestorage.app), damit die CLI die Region findet.
+#
+# „Error Precondition failed“ (v. a. sendQuranReminderScheduled*): Cloud Scheduler — Deploy einfach erneut ausführen oder
+#   FIREBASE_DEPLOY_RETRIES=3 ./scripts/deploy-firebase.sh
 #
 # GitHub Pages startet nur bei einem Push mit neuem Commit auf main/master.
 #   Keine lokalen Änderungen? FORCE_GITHUB_PAGES=1 ./scripts/deploy-all.sh

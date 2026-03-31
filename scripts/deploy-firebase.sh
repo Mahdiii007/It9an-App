@@ -54,13 +54,33 @@ if [[ "${DEBUG:-0}" == "1" ]] || [[ "${FIREBASE_DEBUG:-0}" == "1" ]]; then
   FB_BASE+=(--debug)
 fi
 
-if [[ -n "${FIREBASE_ONLY:-}" ]]; then
-  echo "${FIREBASE_CMD[*]} ${FB_BASE[*]} --only ${FIREBASE_ONLY}"
-  "${FIREBASE_CMD[@]}" "${FB_BASE[@]}" --only "${FIREBASE_ONLY}"
-else
-  echo "${FIREBASE_CMD[*]} ${FB_BASE[*]}"
-  "${FIREBASE_CMD[@]}" "${FB_BASE[@]}"
-fi
+# Parallele Cloud-Scheduler-Updates können „Precondition failed“ liefern — optional wiederholen (Standard: 2 Versuche).
+FB_RETRIES="${FIREBASE_DEPLOY_RETRIES:-2}"
+fb_run_deploy() {
+  if [[ -n "${FIREBASE_ONLY:-}" ]]; then
+    echo "${FIREBASE_CMD[*]} ${FB_BASE[*]} --only ${FIREBASE_ONLY}"
+    "${FIREBASE_CMD[@]}" "${FB_BASE[@]}" --only "${FIREBASE_ONLY}"
+  else
+    echo "${FIREBASE_CMD[*]} ${FB_BASE[*]}"
+    "${FIREBASE_CMD[@]}" "${FB_BASE[@]}"
+  fi
+}
+attempt=1
+while true; do
+  set +e
+  fb_run_deploy
+  st=$?
+  set -e
+  if [[ "$st" -eq 0 ]]; then
+    break
+  fi
+  if [[ "$attempt" -ge "$FB_RETRIES" ]]; then
+    exit "$st"
+  fi
+  attempt=$((attempt + 1))
+  echo "firebase deploy fehlgeschlagen (Versuch $((attempt - 1))/$FB_RETRIES) — erneuter Versuch in 25s (häufig Cloud Scheduler / API)."
+  sleep 25
+done
 
 SHA="$(git rev-parse HEAD 2>/dev/null || echo local)"
 printf '%s\n' "{\"version\":\"fb-${SHA}\",\"builtAt\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}" > app-version.json

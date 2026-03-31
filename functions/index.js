@@ -13,7 +13,7 @@ const { setGlobalOptions } = require('firebase-functions/v2');
 /* Gen2-Standardregion: sonst wäre Fallback us-central1. Gen1-Exports nutzen .region('europe-west3'). */
 setGlobalOptions({ region: 'europe-west3' });
 
-admin.initializeApp();
+admin.initializeApp({ storageBucket: 'it9an-neu.firebasestorage.app' });
 
 /** Von tools/ensure-ffmpeg-linux.js (gcp-build) nach functions/bin/ffmpeg-linux */
 const _ffmpegPath = (() => {
