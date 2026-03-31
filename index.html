@@ -599,9 +599,8 @@
         .sync-reply-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; margin-bottom: 8px; }
         .sync-reply-timer { font-size: 24px; font-weight: bold; font-family: monospace; color: var(--text); }
         .sync-reply-status { font-size: 14px; color: #333; font-weight: 600; text-align: center; margin: 6px 0 10px; line-height: 1.45; min-height: 2.8em; }
-        .sync-reply-hint { font-size: 12px; color: #666; text-align: center; margin-bottom: 10px; line-height: 1.4; }
-        .sync-reply-hold-btn { width: 100%; min-height: 72px; padding: 14px 16px; border-radius: 16px; border: 3px solid #b71c1c; background: linear-gradient(180deg, #e53935 0%, #c62828 100%); color: #fff; font-size: 17px; font-weight: bold; font-family: 'Amiri'; cursor: pointer; touch-action: none; user-select: none; -webkit-user-select: none; box-shadow: 0 4px 14px rgba(198,40,40,0.35); }
-        .sync-reply-hold-btn:active, .sync-reply-hold-btn.sync-hold-active { background: linear-gradient(180deg, #b71c1c 0%, #8e0000 100%); transform: scale(0.98); }
+        .sync-reply-hold-btn { width: 80px; height: 80px; min-height: 0; padding: 0; margin: 10px auto 6px; align-self: center; border-radius: 50%; border: 3px solid #b71c1c; background: linear-gradient(180deg, #e53935 0%, #c62828 100%); color: #fff; font-size: 36px; line-height: 1; display: flex; align-items: center; justify-content: center; cursor: pointer; touch-action: none; user-select: none; -webkit-user-select: none; box-shadow: 0 4px 14px rgba(198,40,40,0.35); }
+        .sync-reply-hold-btn:active, .sync-reply-hold-btn.sync-hold-active { background: linear-gradient(180deg, #b71c1c 0%, #8e0000 100%); transform: scale(0.96); }
         .sync-reply-hold-btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
         .sync-append-done-btn { width: 100%; margin-top: 8px; padding: 12px; border-radius: 14px; border: none; background: var(--primary); color: #fff; font-size: 16px; font-weight: bold; font-family: 'Amiri'; cursor: pointer; display: none; }
 
@@ -1063,8 +1062,7 @@
             <button type="button" class="stop-ui-btn" onclick="stopSyncReplySession()">⏹ إنهاء</button>
         </div>
         <div id="sync-reply-status" class="sync-reply-status"></div>
-        <div id="sync-reply-hint" class="sync-reply-hint">خفّض صوت تشغيل تسجيل الطالب على الجهاز قدر الإمكان، ويفضّل مكان هادئ، لتقليل دخول صدى التسجيل في الميكروفون.</div>
-        <button type="button" id="sync-reply-hold-btn" class="sync-reply-hold-btn" disabled>اضغط مع الاستمرار للتعليق على التسجيل</button>
+        <button type="button" id="sync-reply-hold-btn" class="sync-reply-hold-btn" disabled aria-label="اضغط مع الاستمرار للتعليق على التسجيل">🎤</button>
         <button type="button" id="sync-append-done-btn" class="sync-append-done-btn">انتهيت من الإضافة</button>
     </div>
 
@@ -6855,9 +6853,6 @@
             const timerEl = opts.timerEl;
             const holdBtn = opts.holdBtn;
             const appendDoneBtn = opts.appendDoneBtn;
-            const hintEl = document.getElementById('sync-reply-hint');
-            if (hintEl) hintEl.style.display = mode === 'append' ? 'none' : '';
-
             let aborted = false;
             syncReplySessionHandle = { abort: () => {} };
 
@@ -7054,12 +7049,12 @@
                 micGain.gain.setValueAtTime(0, ctx.currentTime);
                 playSyncTransitionBeep(ctx, false);
                 if (holdBtn) holdBtn.classList.remove('sync-hold-active');
-                if (statusEl) statusEl.textContent = 'تشغيل تسجيل الطالب وتسجيل الرد...';
+                if (statusEl) statusEl.textContent = '';
                 beginStudent(resumeFrom);
             }
 
             if (mode === 'student') {
-                if (statusEl) statusEl.textContent = 'تشغيل تسجيل الطالب وتسجيل الرد — اضغط الزر الأحمر أثناء التشغيل للتعليق';
+                if (statusEl) statusEl.textContent = '';
                 requestWakeLock();
                 try {
                     mediaRecorder.start();
@@ -7450,7 +7445,6 @@
             const isReply = !!replyTargetId;
             const verseImgHtml = !isReply && currentGlobalFileId != null ? `<img class="review-verse-img" src="${getAssetUrl(getVerseAssetPath(currentGlobalFileId) + '.png')}" alt="المقطع" onerror="verseImgFallback(this)">` : '';
             const noteHtml = !isReply ? `<div class="review-note">يرجى التأكد من أن التسجيل يتطابق مع المقطع.</div>` : '';
-            const syncHint = (teacherSyncReplyActive && isReply) ? `<div class="review-note">رد متزامن: يُستحسن أن يستمع الطالب في مكان هادئ وبصوت معتدل على الجهاز.</div>` : '';
             const appendHtml = (teacherSyncReplyActive && isReply) ? `<button type="button" class="r-btn btn-append" onclick="appendSyncReplyAtEnd()">➕ إضافة في نهاية الرد</button>` : '';
             content.innerHTML = `
                 <div class="review-title">${isReply ? 'مراجعة الرد' : 'مراجعة التسجيل'}</div>
@@ -7463,7 +7457,6 @@
                     </div>
                 </div>
                 ${noteHtml}
-                ${syncHint}
                 <div class="review-btns">
                     <button type="button" class="r-btn btn-retry" onclick="retryRecord()">🔄 إعادة</button>
                     ${appendHtml}
