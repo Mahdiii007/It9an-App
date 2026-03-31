@@ -6205,7 +6205,13 @@
             if (appendDoneBtn) { appendDoneBtn.style.display = 'none'; }
             if (statusEl) statusEl.textContent = 'جاري التحضير...';
             try {
-                await runTeacherSyncReplySession(post.audioUrl, { mode: 'student', statusEl, timerEl, holdBtn, appendDoneBtn });
+                let audioUrl = await getFreshPostAudioUrl(postId) || post.audioUrl;
+                if (audioUrl && post.audioUrl !== audioUrl) {
+                    post.audioUrl = audioUrl;
+                    const ix = allLoadedPosts.findIndex(p => p.id === postId);
+                    if (ix >= 0) allLoadedPosts[ix].audioUrl = audioUrl;
+                }
+                await runTeacherSyncReplySession(audioUrl, { mode: 'student', postId, statusEl, timerEl, holdBtn, appendDoneBtn });
             } catch (e) {
                 console.error('sync reply', e);
                 if (e && e.message !== 'aborted') alert('تعذر بدء الرد المتزامن. جرّب «الرد» العادي أو جهازاً آخر.\n' + (e.message || ''));
@@ -6218,13 +6224,28 @@
             if (holdBtn) holdBtn.classList.remove('sync-hold-active');
         };
 
+        async function getFreshPostAudioUrl(postId) {
+            if (!postId || !window.db) return null;
+            try {
+                const snap = await window.getDocFromServer(window.doc(window.db, 'posts', postId));
+                const d = snap.data();
+                return (d && typeof d.audioUrl === 'string' && d.audioUrl.length > 0) ? d.audioUrl : null;
+            } catch (e) {
+                return null;
+            }
+        }
+
         async function attachSyncReplyMediaElement(ctx, studentGain, srcUrl) {
             const el = document.createElement('audio');
             el.setAttribute('playsinline', '');
             el.setAttribute('webkit-playsinline', '');
-            el.crossOrigin = 'anonymous';
             el.preload = 'auto';
             el.style.display = 'none';
+            if (/^blob:|^data:/i.test(String(srcUrl || ''))) {
+                el.removeAttribute('crossorigin');
+            } else {
+                el.crossOrigin = 'anonymous';
+            }
             el.src = srcUrl;
             document.body.appendChild(el);
             try {
@@ -6245,13 +6266,19 @@
                         if (settled) return;
                         settled = true;
                         clearTimeout(t);
-                        reject(el.error || new Error('media'));
+                        const me = el.error;
+                        let detail = 'media';
+                        if (me) {
+                            detail = (me.message && String(me.message).trim()) ? String(me.message).trim() : ('MediaError ' + me.code);
+                        }
+                        reject(new Error(detail));
                     };
                     el.addEventListener('canplaythrough', ok, { once: true });
                     el.addEventListener('canplay', ok, { once: true });
+                    el.addEventListener('loadeddata', ok, { once: true });
                     el.addEventListener('error', fail, { once: true });
                     try { el.load(); } catch (e) { clearTimeout(t); reject(e); return; }
-                    if (el.readyState >= 3) ok();
+                    if (el.readyState >= 2) ok();
                 });
             } catch (err) {
                 if (el.parentNode) try { el.parentNode.removeChild(el); } catch (e) {}
@@ -6292,27 +6319,18 @@
             });
         }
 
-        async function loadSyncReplyMediaElementOnly(ctx, studentGain, mode, audioInput) {
+        async function loadSyncReplyMediaElementOnce(ctx, studentGain, mode, primaryUrlOrBlob) {
             let studentAudioEl = null;
             let revokeBlobUrl = null;
             const tryUrls = [];
 
             if (mode === 'student') {
-                let fetchUrl = audioInput;
-                try { fetchUrl = await resolveFeedAudioPlayUrl(audioInput); } catch (e) {}
-                const res = await fetch(fetchUrl, { mode: 'cors', credentials: 'omit', cache: 'default' });
-                if (!res.ok) throw new Error('fetch ' + res.status);
-                const ab = await res.arrayBuffer();
-                if (!ab || ab.byteLength === 0) throw new Error('empty');
-                const ct = ((res.headers.get('content-type') || '').split(';')[0] || '').trim();
-                const blobType = (ct && ct.length > 0) ? ct : 'application/octet-stream';
-                revokeBlobUrl = URL.createObjectURL(new Blob([ab], { type: blobType }));
-                syncReplyPushUrl(tryUrls, revokeBlobUrl);
-                syncReplyPushUrl(tryUrls, fetchUrl);
-                syncReplyPushUrl(tryUrls, audioInput);
+                const primaryUrl = primaryUrlOrBlob;
+                syncReplyPushUrl(tryUrls, primaryUrl);
+                try { syncReplyPushUrl(tryUrls, await resolveFeedAudioPlayUrl(primaryUrl)); } catch (e) {}
             } else {
-                if (!(audioInput instanceof Blob)) throw new Error('invalid draft');
-                let b = audioInput;
+                if (!(primaryUrlOrBlob instanceof Blob)) throw new Error('invalid draft');
+                let b = primaryUrlOrBlob;
                 if (!b.type || !b.type.startsWith('audio/')) {
                     b = new Blob([await b.arrayBuffer()], { type: 'audio/mp4' });
                 }
@@ -6336,6 +6354,29 @@
                     lastErr = e;
                 }
             }
+
+            if (!studentAudioEl && mode === 'student') {
+                let fetchUrl = primaryUrlOrBlob;
+                try { fetchUrl = await resolveFeedAudioPlayUrl(primaryUrlOrBlob); } catch (e) {}
+                const res = await fetch(fetchUrl, { mode: 'cors', credentials: 'omit', cache: 'default' });
+                if (!res.ok) throw lastErr || new Error('fetch ' + res.status);
+                const ab = await res.arrayBuffer();
+                if (!ab || ab.byteLength === 0) throw lastErr || new Error('empty');
+                const ct = ((res.headers.get('content-type') || '').split(';')[0] || '').trim();
+                const blobType = (ct && ct.length > 0) ? ct : 'application/octet-stream';
+                const blobRevoke = URL.createObjectURL(new Blob([ab], { type: blobType }));
+                try {
+                    const r = await attachSyncReplyMediaElement(ctx, studentGain, blobRevoke);
+                    studentAudioEl = r.el;
+                    if (revokeBlobUrl) { try { URL.revokeObjectURL(revokeBlobUrl); } catch (e) {} }
+                    revokeBlobUrl = blobRevoke;
+                    lastErr = null;
+                } catch (e) {
+                    try { URL.revokeObjectURL(blobRevoke); } catch (e2) {}
+                    throw lastErr || e;
+                }
+            }
+
             if (!studentAudioEl) throw lastErr || new Error('audio load');
 
             await waitSyncReplyAudioMetadata(studentAudioEl);
@@ -6347,6 +6388,31 @@
             }
 
             return { studentAudioEl, revokeBlobUrl };
+        }
+
+        async function loadSyncReplyMediaElementOnly(ctx, studentGain, mode, audioInput, refreshPostId, statusElForWait) {
+            const maxAttempts = (mode === 'student' && refreshPostId) ? 20 : 1;
+            let lastErr = null;
+            let url = audioInput;
+            for (let attempt = 0; attempt < maxAttempts; attempt++) {
+                if (attempt > 0 && refreshPostId) {
+                    if (statusElForWait) statusElForWait.textContent = 'انتظر اكتمال تحويل التسجيل على الخادم… (' + (attempt + 1) + '/' + maxAttempts + ')';
+                    await new Promise(r => setTimeout(r, 2000));
+                    const nw = await getFreshPostAudioUrl(refreshPostId);
+                    if (nw) {
+                        url = nw;
+                        const ix = allLoadedPosts.findIndex(p => p.id === refreshPostId);
+                        if (ix >= 0) allLoadedPosts[ix].audioUrl = nw;
+                    }
+                }
+                try {
+                    return await loadSyncReplyMediaElementOnce(ctx, studentGain, mode, url);
+                } catch (e) {
+                    lastErr = e;
+                    if (mode !== 'student' || !refreshPostId || attempt === maxAttempts - 1) throw e;
+                }
+            }
+            throw lastErr || new Error('audio load');
         }
 
         async function runTeacherSyncReplySession(audioInput, opts) {
@@ -6378,7 +6444,7 @@
             let revokeBlobUrl = null;
             let studentAudioEl = null;
             try {
-                const loaded = await loadSyncReplyMediaElementOnly(ctx, studentGain, mode, audioInput);
+                const loaded = await loadSyncReplyMediaElementOnly(ctx, studentGain, mode, audioInput, opts.postId || null, statusEl);
                 studentAudioEl = loaded.studentAudioEl;
                 revokeBlobUrl = loaded.revokeBlobUrl;
             } catch (loadErr) {
