@@ -6859,8 +6859,8 @@
 
             const syncReplyIsIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
             const studentGain = ctx.createGain();
-            /* iPhone: Web-Audio→MediaRecorder und Monitoring sind gegenüber <audio> im Feed oft unterpegelt; الرد normal nutzt Mic-Gain 2.3. */
-            studentGain.gain.value = syncReplyIsIOS ? 1.55 : 1;
+            /* iPhone: gleiche Kompensation wie beim normalen الرد (Mic gainOnly 2.3) — Web-Audio→MediaRecorder ist unterpegelt; Schülerdatei soll wie Original wirken. */
+            studentGain.gain.value = syncReplyIsIOS ? 2.3 : 1;
 
             let revokeBlobUrl = null;
             let studentDriver = null;
@@ -6906,7 +6906,16 @@
             const micSrc = ctx.createMediaStreamSource(rawStream);
             const preMic = ctx.createGain();
             preMic.gain.value = isIOS ? 2.3 : 1;
-            micSrc.connect(preMic);
+            /* Wie toggleRecord (iOS): bei Stereo nur Kanal 0 — sonst Downmix L+R vor Gain oft viel leiser als normaler الرد. */
+            const tMicSync = rawStream.getAudioTracks()[0];
+            const chMicSync = (tMicSync && tMicSync.getSettings && tMicSync.getSettings().channelCount) || 1;
+            if (isIOS && chMicSync >= 2) {
+                const micSplit = ctx.createChannelSplitter(2);
+                micSrc.connect(micSplit);
+                micSplit.connect(preMic, 0);
+            } else {
+                micSrc.connect(preMic);
+            }
             preMic.connect(micGain);
 
             let mediaRecorder;
