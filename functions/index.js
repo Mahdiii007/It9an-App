@@ -701,6 +701,7 @@ async function transcodeUploadAudioHandler(event) {
       '-i', tmpIn,
       '-vn',
       '-c:a', 'aac',
+      '-profile:a', 'aac_low',
       '-b:a', '128k',
       '-ar', '44100',
       '-ac', '1',

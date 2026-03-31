@@ -706,7 +706,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, addDoc, query, where, orderBy, onSnapshot, serverTimestamp, doc, setDoc, updateDoc, increment, arrayUnion, arrayRemove, deleteDoc, getDoc, getDocFromServer, getDocs, getDocsFromServer, enableIndexedDbPersistence, limit, startAfter, deleteField, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject, getBytes } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
         import { getMessaging, getToken, onMessage, isSupported } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging.js";
         import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app-check.js";
 
@@ -746,7 +746,7 @@
         window.collection = collection; window.addDoc = addDoc; window.query = query; 
         window.where = where; window.orderBy = orderBy; window.onSnapshot = onSnapshot; 
         window.serverTimestamp = serverTimestamp; window.ref = ref; 
-        window.uploadBytes = uploadBytes; window.getDownloadURL = getDownloadURL;
+        window.uploadBytes = uploadBytes; window.getDownloadURL = getDownloadURL; window.getBytes = getBytes;
         window.doc = doc; window.setDoc = setDoc; window.updateDoc = updateDoc; window.increment = increment; window.arrayUnion = arrayUnion; window.arrayRemove = arrayRemove; window.deleteDoc = deleteDoc; window.getDoc = getDoc; window.getDocFromServer = getDocFromServer; window.getDocs = getDocs; window.getDocsFromServer = getDocsFromServer; window.deleteField = deleteField; window.writeBatch = writeBatch; 
         window.deleteObject = deleteObject; window.limit = limit; window.startAfter = startAfter;
         window.getMessaging = getMessaging; window.getToken = getToken; window.onMessage = onMessage; window.isSupportedFcm = isSupported;
@@ -6336,14 +6336,41 @@
             return tryGetDownloadURLForPathMultiBucket(path);
         }
 
+        const SYNC_REPLY_MAX_DOWNLOAD_BYTES = 52 * 1024 * 1024;
+
+        /** fetch(CORS) zuerst; fallback getBytes(Storage-SDK) — in manchen PWAs/WebViews schlägt fetch fehl, das SDK lädt trotzdem. */
+        async function syncReplyFetchArrayBuffer(httpsUrl) {
+            if (!httpsUrl || !/^https?:/i.test(httpsUrl)) return null;
+            try {
+                const res = await fetch(httpsUrl, { mode: 'cors', credentials: 'omit', cache: 'no-store' });
+                if (res.ok) {
+                    const ab = await res.arrayBuffer();
+                    if (ab && ab.byteLength) {
+                        const ct = ((res.headers.get('content-type') || '').split(';')[0] || '').trim();
+                        return { ab, ct };
+                    }
+                }
+            } catch (e) {}
+            const path = syncReplyExtractStorageObjectPath(httpsUrl);
+            if (!path || !/^uploads\//i.test(path) || !window.ref || !window.getBytes) return null;
+            const storages = [window.storage, window.storageAlt].filter(Boolean);
+            for (let si = 0; si < storages.length; si++) {
+                try {
+                    const u8 = await window.getBytes(window.ref(storages[si], path), SYNC_REPLY_MAX_DOWNLOAD_BYTES);
+                    if (u8 && u8.byteLength) {
+                        const ab = u8.buffer.slice(u8.byteOffset, u8.byteOffset + u8.byteLength);
+                        return { ab, ct: '' };
+                    }
+                } catch (e) {}
+            }
+            return null;
+        }
+
         /** سفاري: <audio crossOrigin + رابط Firebase> يعطي «Load failed» رغم صلاحية الملف — الجلب ثم blob يعمل مع createMediaElementSource. */
         async function syncReplyHttpsToBlobPlayUrl(httpsUrl) {
-            if (!httpsUrl || !/^https?:/i.test(httpsUrl)) return null;
-            const res = await fetch(httpsUrl, { mode: 'cors', credentials: 'omit', cache: 'no-store' });
-            if (!res.ok) return null;
-            const ab = await res.arrayBuffer();
-            if (!ab.byteLength) return null;
-            let ct = ((res.headers.get('content-type') || '').split(';')[0] || '').trim();
+            const got = await syncReplyFetchArrayBuffer(httpsUrl);
+            if (!got || !got.ab || !got.ab.byteLength) return null;
+            let ct = got.ct;
             const pathPart = (syncReplyExtractStorageObjectPath(httpsUrl) || httpsUrl).toLowerCase();
             if (pathPart.endsWith('.m4a') || /mp4|mpeg|audio\/mp4/i.test(ct)) {
                 ct = 'audio/mp4';
@@ -6353,7 +6380,7 @@
                 else if (pathPart.includes('.wav')) ct = 'audio/wav';
                 else if (pathPart.includes('.mp4')) ct = 'audio/mp4';
             }
-            return URL.createObjectURL(new Blob([ab], { type: ct || 'application/octet-stream' }));
+            return URL.createObjectURL(new Blob([got.ab], { type: ct || 'application/octet-stream' }));
         }
 
         function syncReplyRevokePrefetchBlobs(list, keepBlobUrl) {
@@ -6579,11 +6606,9 @@
             for (let hi = 0; hi < httpsList.length; hi++) {
                 const u = httpsList[hi];
                 try {
-                    const res = await fetch(u, { mode: 'cors', credentials: 'omit', cache: 'no-store' });
-                    if (!res.ok) continue;
-                    const ab = await res.arrayBuffer();
-                    if (!ab.byteLength) continue;
-                    const buf = await syncReplyDecodeArrayBufferToAudio(ctx, ab);
+                    const got = await syncReplyFetchArrayBuffer(u);
+                    if (!got || !got.ab || !got.ab.byteLength) continue;
+                    const buf = await syncReplyDecodeArrayBufferToAudio(ctx, got.ab);
                     if (buf) return buf;
                 } catch (e) {}
             }
@@ -6770,7 +6795,8 @@
         }
 
         async function loadSyncReplyMediaElementOnly(ctx, studentGain, mode, audioInput, refreshPostId, statusElForWait) {
-            const maxAttempts = (mode === 'student' && refreshPostId) ? 20 : 1;
+            const longWaitForTranscode = mode === 'student' && refreshPostId && syncReplyUrlIndicatesWebmOrOgg(audioInput);
+            const maxAttempts = (mode === 'student' && refreshPostId) ? (longWaitForTranscode ? 20 : 3) : 1;
             let lastErr = null;
             let url = audioInput;
             for (let attempt = 0; attempt < maxAttempts; attempt++) {
@@ -6796,6 +6822,10 @@
                             out.cause = e;
                             throw out;
                         }
+                    }
+                    /* URL bereits M4A (أو غير webm): إعادة المحاولة 20× لا تغيّر سوى التأخير — فشل فك/تشغيل ثابت. */
+                    if (mode === 'student' && refreshPostId && e && e.message === 'sync-reply-decode-failed' && !syncReplyUrlIndicatesWebmOrOgg(url)) {
+                        throw e;
                     }
                     if (mode !== 'student' || !refreshPostId || attempt === maxAttempts - 1) throw e;
                 }
