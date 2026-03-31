@@ -509,6 +509,7 @@
         .feed-reply-wrap { display: inline-flex; align-items: center; flex-shrink: 0; flex-wrap: wrap; gap: 6px; }
         .feed-reply-wrap .reply-btn { display: inline-flex; align-items: center; min-height: 32px; padding: 4px 10px; border-radius: 16px; font-size: 13px; }
         .reply-btn-sync { border-color: #c62828; color: #c62828; }
+        .reply-btn-sync:disabled { opacity: 0.45; cursor: not-allowed; }
         .like-btn { display: flex; align-items: center; border-radius: 16px; font-size: 13px; background: #f9f9f9; border: 1px solid #eee; overflow: hidden; min-height: 32px; }
         .like-btn.liked { color: var(--primary); background: #e8f5e9; border-color: var(--primary); font-weight: bold; }
         .like-btn.disabled { opacity: 0.5; filter: grayscale(1); }
@@ -1841,7 +1842,7 @@
         let activePostFilter = null;
         let activePostFilterNotifId = null;
 
-        /* Audio-Umwandlung: Cloud Function transcodeUploadAudio (FFmpeg auf dem Server) — zuverlässiger als WASM auf Android */
+        /* Audio: Uploads uploads/*.(webm|ogg|mp4|wav) → Cloud Function transcodeUploadAudio → .m4a (AAC/MP4), Firestore-URLs werden ersetzt */
 
         // --- GLOBAL FEED PLAYER LOGIC ---
         let currentFeedAudioId = null;
@@ -5819,7 +5820,10 @@
                 }
                 
                 const hasTeacherReply = d.replies && d.replies.some(r => r.role === 'teacher');
-                const replyBtnWrap = ((userRole === 'teacher' || isAdmin) && isStudentPost && !hasTeacherReply) ? `<div class="feed-reply-wrap"><button class="reply-btn" onclick="startReply('${d.id}')">↩️ الرد</button><button type="button" class="reply-btn reply-btn-sync" onclick="startSyncReply('${d.id}')">رد متزامن</button></div>` : '';
+                const syncReplyBtnHtml = isSyncReplyEnvironmentSupported()
+                    ? `<button type="button" class="reply-btn reply-btn-sync" onclick="startSyncReply('${d.id}')">رد متزامن</button>`
+                    : `<button type="button" class="reply-btn reply-btn-sync" disabled title="غير متاح: متصفح قديم أو اتصال غير آمن (HTTPS)">رد متزامن</button>`;
+                const replyBtnWrap = ((userRole === 'teacher' || isAdmin) && isStudentPost && !hasTeacherReply) ? `<div class="feed-reply-wrap"><button class="reply-btn" onclick="startReply('${d.id}')">↩️ الرد</button>${syncReplyBtnHtml}</div>` : '';
                 let postDateStr = formatDateTime(d.timestamp);
                 const isSaved = savedIds.has(d.id);
                 const saveBtnHtml = (myUid && myUid !== 'admin_super' && myUid !== 'guest') ? `<button class="save-btn ${isSaved ? 'saved' : ''}" onclick="toggleSaveForLater('${d.id}', ${isSaved})" title="${isSaved ? 'إزالة من القائمة' : 'حفظ للمشاهدة لاحقاً'}"><svg class="save-icon" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></button>` : '';
@@ -6126,9 +6130,53 @@
             return { rawStream, isIOS, isMacDesktop };
         }
 
+        let syncReplyEnvSupportCache = null;
+        function isSyncReplyEnvironmentSupported() {
+            if (syncReplyEnvSupportCache !== null) return syncReplyEnvSupportCache;
+            try {
+                if (typeof window.isSecureContext !== 'undefined' && !window.isSecureContext) {
+                    syncReplyEnvSupportCache = false;
+                    return false;
+                }
+                if (!navigator.mediaDevices || typeof navigator.mediaDevices.getUserMedia !== 'function') {
+                    syncReplyEnvSupportCache = false;
+                    return false;
+                }
+                if (typeof window.MediaRecorder !== 'function') {
+                    syncReplyEnvSupportCache = false;
+                    return false;
+                }
+                const MR = window.MediaRecorder;
+                const canRec = MR.isTypeSupported('audio/mp4;codecs=mp4a.40.2') || MR.isTypeSupported('audio/mp4') || MR.isTypeSupported('audio/webm;codecs=opus') || MR.isTypeSupported('audio/webm') || MR.isTypeSupported('audio/ogg;codecs=opus');
+                if (!canRec) {
+                    syncReplyEnvSupportCache = false;
+                    return false;
+                }
+                const Ctx = window.AudioContext || window.webkitAudioContext;
+                if (!Ctx) {
+                    syncReplyEnvSupportCache = false;
+                    return false;
+                }
+                const ctx = new Ctx();
+                const dest = ctx.createMediaStreamDestination();
+                const tr = dest.stream.getAudioTracks();
+                const ok = tr && tr.length > 0;
+                ctx.close();
+                syncReplyEnvSupportCache = ok;
+                return ok;
+            } catch (e) {
+                syncReplyEnvSupportCache = false;
+                return false;
+            }
+        }
+
         window.startSyncReply = async function(postId) {
             if (localStorage.getItem('it9an_uid') === 'guest') {
                 showGuestRegisterModal();
+                return;
+            }
+            if (!isSyncReplyEnvironmentSupported()) {
+                alert('الرد المتزامن غير مدعوم على هذا المتصفح أو الاتصال. استخدم «الرد» العادي أو متصفحاً محدّثاً عبر HTTPS.');
                 return;
             }
             const uid = localStorage.getItem('it9an_uid');
@@ -6170,6 +6218,137 @@
             if (holdBtn) holdBtn.classList.remove('sync-hold-active');
         };
 
+        async function attachSyncReplyMediaElement(ctx, studentGain, srcUrl) {
+            const el = document.createElement('audio');
+            el.setAttribute('playsinline', '');
+            el.setAttribute('webkit-playsinline', '');
+            el.crossOrigin = 'anonymous';
+            el.preload = 'auto';
+            el.style.display = 'none';
+            el.src = srcUrl;
+            document.body.appendChild(el);
+            try {
+                await new Promise((resolve, reject) => {
+                    let settled = false;
+                    const t = setTimeout(() => {
+                        if (settled) return;
+                        settled = true;
+                        reject(new Error('timeout'));
+                    }, 90000);
+                    const ok = () => {
+                        if (settled) return;
+                        settled = true;
+                        clearTimeout(t);
+                        resolve();
+                    };
+                    const fail = () => {
+                        if (settled) return;
+                        settled = true;
+                        clearTimeout(t);
+                        reject(el.error || new Error('media'));
+                    };
+                    el.addEventListener('canplaythrough', ok, { once: true });
+                    el.addEventListener('canplay', ok, { once: true });
+                    el.addEventListener('error', fail, { once: true });
+                    try { el.load(); } catch (e) { clearTimeout(t); reject(e); return; }
+                    if (el.readyState >= 3) ok();
+                });
+            } catch (err) {
+                if (el.parentNode) try { el.parentNode.removeChild(el); } catch (e) {}
+                throw err;
+            }
+            const mes = ctx.createMediaElementSource(el);
+            mes.connect(studentGain);
+            return { el, mes };
+        }
+
+        function syncReplyPushUrl(list, u) {
+            if (!u || typeof u !== 'string') return;
+            if (list.indexOf(u) === -1) list.push(u);
+        }
+
+        async function waitSyncReplyAudioMetadata(el) {
+            if (el.duration && isFinite(el.duration) && el.duration > 0) return;
+            await new Promise((resolve, reject) => {
+                const t = setTimeout(() => {
+                    cleanup();
+                    reject(new Error('metadata timeout'));
+                }, 30000);
+                const cleanup = () => {
+                    clearTimeout(t);
+                    el.removeEventListener('loadedmetadata', onMeta);
+                    el.removeEventListener('durationchange', onMeta);
+                };
+                function onMeta() {
+                    if (el.duration && isFinite(el.duration) && el.duration > 0) {
+                        cleanup();
+                        resolve();
+                    }
+                }
+                el.addEventListener('loadedmetadata', onMeta);
+                el.addEventListener('durationchange', onMeta);
+                el.addEventListener('error', () => { cleanup(); reject(el.error || new Error('media')); }, { once: true });
+                onMeta();
+            });
+        }
+
+        async function loadSyncReplyMediaElementOnly(ctx, studentGain, mode, audioInput) {
+            let studentAudioEl = null;
+            let revokeBlobUrl = null;
+            const tryUrls = [];
+
+            if (mode === 'student') {
+                let fetchUrl = audioInput;
+                try { fetchUrl = await resolveFeedAudioPlayUrl(audioInput); } catch (e) {}
+                const res = await fetch(fetchUrl, { mode: 'cors', credentials: 'omit', cache: 'default' });
+                if (!res.ok) throw new Error('fetch ' + res.status);
+                const ab = await res.arrayBuffer();
+                if (!ab || ab.byteLength === 0) throw new Error('empty');
+                const ct = ((res.headers.get('content-type') || '').split(';')[0] || '').trim();
+                const blobType = (ct && ct.length > 0) ? ct : 'application/octet-stream';
+                revokeBlobUrl = URL.createObjectURL(new Blob([ab], { type: blobType }));
+                syncReplyPushUrl(tryUrls, revokeBlobUrl);
+                syncReplyPushUrl(tryUrls, fetchUrl);
+                syncReplyPushUrl(tryUrls, audioInput);
+            } else {
+                if (!(audioInput instanceof Blob)) throw new Error('invalid draft');
+                let b = audioInput;
+                if (!b.type || !b.type.startsWith('audio/')) {
+                    b = new Blob([await b.arrayBuffer()], { type: 'audio/mp4' });
+                }
+                revokeBlobUrl = URL.createObjectURL(b);
+                syncReplyPushUrl(tryUrls, revokeBlobUrl);
+            }
+
+            let lastErr = null;
+            for (let i = 0; i < tryUrls.length; i++) {
+                const url = tryUrls[i];
+                try {
+                    const r = await attachSyncReplyMediaElement(ctx, studentGain, url);
+                    studentAudioEl = r.el;
+                    if (revokeBlobUrl && url !== revokeBlobUrl) {
+                        try { URL.revokeObjectURL(revokeBlobUrl); } catch (e) {}
+                        revokeBlobUrl = null;
+                    }
+                    lastErr = null;
+                    break;
+                } catch (e) {
+                    lastErr = e;
+                }
+            }
+            if (!studentAudioEl) throw lastErr || new Error('audio load');
+
+            await waitSyncReplyAudioMetadata(studentAudioEl);
+
+            const cur = studentAudioEl.currentSrc || studentAudioEl.src || '';
+            if (revokeBlobUrl && cur && String(cur).indexOf(revokeBlobUrl) === -1) {
+                try { URL.revokeObjectURL(revokeBlobUrl); } catch (e) {}
+                revokeBlobUrl = null;
+            }
+
+            return { studentAudioEl, revokeBlobUrl };
+        }
+
         async function runTeacherSyncReplySession(audioInput, opts) {
             const mode = opts.mode || 'student';
             const statusEl = opts.statusEl;
@@ -6180,8 +6359,7 @@
             if (hintEl) hintEl.style.display = mode === 'append' ? 'none' : '';
 
             let aborted = false;
-            const abort = () => { aborted = true; };
-            syncReplySessionHandle = { abort };
+            syncReplySessionHandle = { abort: () => {} };
 
             const isAndroid = /Android/i.test(navigator.userAgent || '');
             let options = { audioBitsPerSecond: (isAndroid && window.MediaRecorder && MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) ? 192000 : 128000 };
@@ -6191,33 +6369,45 @@
                 else if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) options.mimeType = 'audio/webm;codecs=opus';
             }
 
-            const { rawStream, isIOS } = await acquireMicStreamForTeacherSync();
             const ctx = new (window.AudioContext || window.webkitAudioContext)();
             if (ctx.state === 'suspended') await ctx.resume();
 
-            let audioBuffer;
-            if (mode === 'student') {
-                let fetchUrl = audioInput;
-                try { fetchUrl = await resolveFeedAudioPlayUrl(audioInput); } catch (e) {}
-                const res = await fetch(fetchUrl);
-                if (!res.ok) throw new Error('audio fetch');
-                audioBuffer = await ctx.decodeAudioData(await res.arrayBuffer());
-            } else {
-                audioBuffer = await ctx.decodeAudioData(await audioInput.arrayBuffer());
-            }
-            if (aborted) {
-                rawStream.getTracks().forEach(t => t.stop());
+            const studentGain = ctx.createGain();
+            studentGain.gain.value = 1;
+
+            let revokeBlobUrl = null;
+            let studentAudioEl = null;
+            try {
+                const loaded = await loadSyncReplyMediaElementOnly(ctx, studentGain, mode, audioInput);
+                studentAudioEl = loaded.studentAudioEl;
+                revokeBlobUrl = loaded.revokeBlobUrl;
+            } catch (loadErr) {
                 try { await ctx.close(); } catch (e) {}
-                syncReplySessionHandle = null;
-                return;
+                throw loadErr;
+            }
+
+            let rawStream, isIOS;
+            try {
+                const mic = await acquireMicStreamForTeacherSync();
+                rawStream = mic.rawStream;
+                isIOS = mic.isIOS;
+            } catch (micErr) {
+                if (revokeBlobUrl) { try { URL.revokeObjectURL(revokeBlobUrl); } catch (e) {} revokeBlobUrl = null; }
+                if (studentAudioEl && studentAudioEl.parentNode) { try { studentAudioEl.parentNode.removeChild(studentAudioEl); } catch (e) {} }
+                studentAudioEl = null;
+                try { await ctx.close(); } catch (e) {}
+                throw micErr;
             }
 
             const dest = ctx.createMediaStreamDestination();
-            const studentGain = ctx.createGain();
-            studentGain.gain.value = 1;
+            const monitorGain = ctx.createGain();
+            monitorGain.gain.value = 0.88;
+            studentGain.connect(dest);
+            studentGain.connect(monitorGain);
+            monitorGain.connect(ctx.destination);
+
             const micGain = ctx.createGain();
             micGain.gain.value = 0;
-            studentGain.connect(dest);
             micGain.connect(dest);
 
             const micSrc = ctx.createMediaStreamSource(rawStream);
@@ -6226,13 +6416,20 @@
             micSrc.connect(preMic);
             preMic.connect(micGain);
 
-            const mediaRecorder = new MediaRecorder(dest.stream, options);
+            let mediaRecorder;
+            try {
+                mediaRecorder = new MediaRecorder(dest.stream, options);
+            } catch (recCtorErr) {
+                if (revokeBlobUrl) { try { URL.revokeObjectURL(revokeBlobUrl); } catch (e) {} revokeBlobUrl = null; }
+                if (studentAudioEl && studentAudioEl.parentNode) { try { studentAudioEl.parentNode.removeChild(studentAudioEl); } catch (e) {} }
+                studentAudioEl = null;
+                rawStream.getTracks().forEach(t => t.stop());
+                try { await ctx.close(); } catch (e) {}
+                throw recCtorErr;
+            }
             const chunks = [];
             mediaRecorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
 
-            let studentSource = null;
-            let activeSegmentStartInBuffer = 0;
-            let playTickCtxTime = 0;
             let resumeFrom = 0;
             let isCommenting = false;
             let sessionFinished = false;
@@ -6240,10 +6437,19 @@
             let wallTimer = null;
             const maxWall = 600;
 
+            function getStudentDuration() {
+                if (studentAudioEl && studentAudioEl.duration && !isNaN(studentAudioEl.duration) && isFinite(studentAudioEl.duration)) return studentAudioEl.duration;
+                return 0;
+            }
+
+            function isStudentActivelyPlaying() {
+                return !!(studentAudioEl && !studentAudioEl.paused && !studentAudioEl.ended);
+            }
+
             function stopStudentNode() {
-                if (studentSource) {
-                    try { studentSource.stop(); } catch (e) {}
-                    studentSource = null;
+                if (studentAudioEl) {
+                    studentAudioEl.onended = null;
+                    try { studentAudioEl.pause(); } catch (e) {}
                 }
             }
 
@@ -6263,6 +6469,9 @@
                     try {
                         releaseWakeLock();
                         rawStream.getTracks().forEach(t => t.stop());
+                        if (revokeBlobUrl) { try { URL.revokeObjectURL(revokeBlobUrl); } catch (e) {} revokeBlobUrl = null; }
+                        if (studentAudioEl && studentAudioEl.parentNode) try { studentAudioEl.parentNode.removeChild(studentAudioEl); } catch (e) {}
+                        studentAudioEl = null;
                         try { await ctx.close(); } catch (e) {}
                         const mimeType = mediaRecorder.mimeType || 'audio/mp4';
                         currentBlob = new Blob(chunks, { type: mimeType });
@@ -6277,37 +6486,36 @@
             });
 
             function beginStudent(fromOff) {
-                if (sessionFinished || aborted) return;
+                if (sessionFinished || aborted || !studentAudioEl) return;
                 stopStudentNode();
-                if (fromOff >= audioBuffer.duration - 0.04) {
+                const dur = getStudentDuration();
+                if (dur > 0 && fromOff >= dur - 0.04) {
                     finishSession();
                     return;
                 }
-                activeSegmentStartInBuffer = fromOff;
-                playTickCtxTime = ctx.currentTime;
-                studentSource = ctx.createBufferSource();
-                studentSource.buffer = audioBuffer;
-                studentSource.connect(studentGain);
-                studentSource.onended = () => {
+                studentAudioEl.onended = () => {
                     if (sessionFinished || aborted) return;
                     if (isCommenting) return;
-                    studentSource = null;
                     finishSession();
                 };
-                studentSource.start(0, fromOff, audioBuffer.duration - fromOff);
-                if (holdBtn && mode === 'student') {
-                    holdBtn.disabled = false;
-                }
+                studentAudioEl.currentTime = Math.max(0, fromOff);
+                studentAudioEl.play().then(() => {
+                    if (holdBtn && mode === 'student') holdBtn.disabled = false;
+                }).catch(err => {
+                    console.warn('sync reply play', err);
+                    finishSession();
+                });
             }
 
             function onHoldStart(e) {
                 if (e) { e.preventDefault(); if (e.button === 2) return; }
-                if (!studentSource || isCommenting || sessionFinished || aborted) return;
-                const played = ctx.currentTime - playTickCtxTime;
-                resumeFrom = Math.min(audioBuffer.duration, activeSegmentStartInBuffer + Math.max(0, played));
+                if (!isStudentActivelyPlaying() || isCommenting || sessionFinished || aborted) return;
+                if (!studentAudioEl) return;
+                const dur = getStudentDuration();
+                const ct = studentAudioEl.currentTime;
+                resumeFrom = dur > 0 ? Math.min(dur, ct) : ct;
                 isCommenting = true;
-                try { studentSource.stop(); } catch (err) {}
-                studentSource = null;
+                try { studentAudioEl.pause(); } catch (err) {}
                 micGain.gain.setValueAtTime(1, ctx.currentTime);
                 playSyncTransitionBeep(ctx, true);
                 if (statusEl) statusEl.textContent = 'تسجيل تعليقك — أفلت الزر لمتابعة تسجيل الطالب';
@@ -6327,7 +6535,19 @@
             if (mode === 'student') {
                 if (statusEl) statusEl.textContent = 'تشغيل تسجيل الطالب وتسجيل الرد — اضغط الزر الأحمر أثناء التشغيل للتعليق';
                 requestWakeLock();
-                mediaRecorder.start();
+                try {
+                    mediaRecorder.start();
+                } catch (startErr) {
+                    sessionFinished = true;
+                    if (wallTimer) clearInterval(wallTimer);
+                    if (revokeBlobUrl) { try { URL.revokeObjectURL(revokeBlobUrl); } catch (e) {} revokeBlobUrl = null; }
+                    if (studentAudioEl && studentAudioEl.parentNode) { try { studentAudioEl.parentNode.removeChild(studentAudioEl); } catch (e) {} }
+                    studentAudioEl = null;
+                    rawStream.getTracks().forEach(t => t.stop());
+                    try { await ctx.close(); } catch (e) {}
+                    syncReplySessionHandle = null;
+                    throw startErr;
+                }
                 wallTimer = setInterval(() => {
                     wallSeconds++;
                     if (timerEl) {
@@ -6336,6 +6556,7 @@
                     }
                     if (wallSeconds >= maxWall) finishSession();
                 }, 1000);
+                if (holdBtn) holdBtn.disabled = true;
                 beginStudent(0);
 
                 const ptrUp = () => onHoldEnd();
@@ -6357,7 +6578,19 @@
             } else {
                 if (statusEl) statusEl.textContent = 'تشغيل المسودة...';
                 requestWakeLock();
-                mediaRecorder.start();
+                try {
+                    mediaRecorder.start();
+                } catch (startErr) {
+                    sessionFinished = true;
+                    if (wallTimer) clearInterval(wallTimer);
+                    if (revokeBlobUrl) { try { URL.revokeObjectURL(revokeBlobUrl); } catch (e) {} revokeBlobUrl = null; }
+                    if (studentAudioEl && studentAudioEl.parentNode) { try { studentAudioEl.parentNode.removeChild(studentAudioEl); } catch (e) {} }
+                    studentAudioEl = null;
+                    rawStream.getTracks().forEach(t => t.stop());
+                    try { await ctx.close(); } catch (e) {}
+                    syncReplySessionHandle = null;
+                    throw startErr;
+                }
                 wallTimer = setInterval(() => {
                     wallSeconds++;
                     if (timerEl) {
@@ -6367,19 +6600,16 @@
                     if (wallSeconds >= maxWall) finishSession();
                 }, 1000);
                 stopStudentNode();
-                activeSegmentStartInBuffer = 0;
-                playTickCtxTime = ctx.currentTime;
-                studentSource = ctx.createBufferSource();
-                studentSource.buffer = audioBuffer;
-                studentSource.connect(studentGain);
-                studentSource.onended = () => {
-                    if (sessionFinished || aborted) return;
-                    studentSource = null;
-                    micGain.gain.setValueAtTime(1, ctx.currentTime);
-                    if (statusEl) statusEl.textContent = 'تكلّم الآن — إضافة في نهاية الرد';
-                    if (appendDoneBtn) appendDoneBtn.style.display = 'block';
-                };
-                studentSource.start(0, 0, audioBuffer.duration);
+                if (studentAudioEl) {
+                    studentAudioEl.onended = () => {
+                        if (sessionFinished || aborted) return;
+                        micGain.gain.setValueAtTime(1, ctx.currentTime);
+                        if (statusEl) statusEl.textContent = 'تكلّم الآن — إضافة في نهاية الرد';
+                        if (appendDoneBtn) appendDoneBtn.style.display = 'block';
+                    };
+                    studentAudioEl.currentTime = 0;
+                    studentAudioEl.play().catch(err => { console.warn(err); finishSession(); });
+                }
                 syncReplySessionHandle.abort = () => {
                     aborted = true;
                     finishSession();
@@ -6399,6 +6629,10 @@
 
         window.appendSyncReplyAtEnd = async function() {
             if (!teacherSyncReplyActive || !currentBlob) return;
+            if (!isSyncReplyEnvironmentSupported()) {
+                alert('تعذر إضافة الصوت على هذا الجهاز. أرسل الرد كما هو أو استخدم «الرد» العادي.');
+                return;
+            }
             const ra = document.getElementById('reviewAudio');
             if (ra) { ra.pause(); ra.src = ''; }
             document.getElementById('review-modal').style.display = 'none';

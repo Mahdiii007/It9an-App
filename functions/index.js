@@ -632,11 +632,14 @@ QURAN_REMINDER_SLOTS.forEach((slot, idx) => {
 });
 
 /**
- * Storage: uploads/*.webm|ogg → AAC (.m4a), Firestore-URLs auf neue Datei umbiegen.
- * Original-WebM bleibt vorerst (vermeidet Race mit getDownloadURL); optional später aufräumen.
- * Deploy: npm install in functions muss das Linux-FFmpeg-Binary enthalten (CI: ubuntu, lokal: npm i --force).
+ * Storage: uploads/*.(webm|ogg|mp4|wav) → AAC in MP4-Container (.m4a), Firestore audioUrl + replies.audioUrl auf neue Datei.
+ * Ergebnis: audio/mp4, mono 44,1 kHz, 128 kbit/s — einheitlich für Safari/Android/iOS und synchronen Lehrer-Reply.
+ * Ausgabe *.m4a löst keinen erneuten Lauf aus. Nach erfolgreicher URL-Patch wird die Originaldatei gelöscht.
+ * Deploy: firebase deploy --only functions:transcodeUploadAudio (FFmpeg: gcp-build / tools/ensure-ffmpeg-linux.js).
  */
 /* bucket weglassen = Standard-Bucket des Projekts (vermeidet falschen Namen appspot vs firebasestorage.app) */
+const TRANSCODE_INPUT_EXT = /\.(webm|ogg|mp4|wav)$/i;
+
 exports.transcodeUploadAudio = onObjectFinalized(
   {
     region: 'europe-west3',
@@ -647,13 +650,15 @@ exports.transcodeUploadAudio = onObjectFinalized(
     const filePath = event.data.name;
     if (!filePath || !filePath.startsWith('uploads/')) return;
     const lower = filePath.toLowerCase();
-    if (!lower.endsWith('.webm') && !lower.endsWith('.ogg')) return;
+    if (lower.endsWith('.m4a')) return;
+    if (!TRANSCODE_INPUT_EXT.test(lower)) return;
 
     const bucketName = event.data.bucket;
     const bucket = admin.storage().bucket(bucketName);
     const tmpIn = path.join(os.tmpdir(), `in-${randomUUID()}${path.extname(filePath)}`);
     const tmpOut = path.join(os.tmpdir(), `out-${randomUUID()}.m4a`);
-    const destPath = filePath.replace(/\.(webm|ogg)$/i, '.m4a');
+    const destPath = filePath.replace(TRANSCODE_INPUT_EXT, '.m4a');
+    if (destPath === filePath) return;
     const pathNeedle = encodeURIComponent(filePath);
 
     try {
@@ -701,6 +706,11 @@ exports.transcodeUploadAudio = onObjectFinalized(
         console.warn('transcodeUploadAudio: keine Firestore-Treffer für', filePath, '(Client schreibt evtl. spät; m4a liegt unter', destPath, ')');
       } else {
         console.log('transcodeUploadAudio:', filePath, '→', destPath, 'Posts aktualisiert:', patched);
+        try {
+          await bucket.file(filePath).delete();
+        } catch (delErr) {
+          console.warn('transcodeUploadAudio: Original konnte nicht gelöscht werden', filePath, delErr.message || delErr);
+        }
       }
     } catch (e) {
       console.error('transcodeUploadAudio Fehler', filePath, e);
