@@ -21,6 +21,9 @@
 #   FIREBASE_ONLY=functions,firestore,storage ./scripts/deploy-all.sh
 #   Oder in der Console: Storage einmal einrichten + Bucket prüfen (appspot vs firebasestorage.app).
 #
+# GitHub Pages: fetch/Storage-SDK braucht CORS auf dem Bucket (sonst «Origin … not allowed»):
+#   ./scripts/apply-storage-cors.sh   (gsutil; einmalig, siehe Skriptkopf)
+#
 # „Error: Can't find the storage bucket region“: in onObjectFinalized kein „bucket:“ setzen (Standard-Bucket).
 #   In firebase.json genau EIN Eintrag mit dem echten Default-Bucket (…firebasestorage.app), damit die CLI die Region findet.
 #

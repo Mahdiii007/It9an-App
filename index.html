@@ -1016,7 +1016,7 @@
             </div>
             <div class="quran-frame">
                 <div class="player-container">
-                    <img id="currentImg" class="quran-image" src="" alt="Vers Bild" onerror="this.src='placeholder.png'">
+                    <img id="currentImg" class="quran-image" src="" alt="Vers Bild" onerror="this.onerror=null;this.src='data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'">
                 </div>
             </div>
             <div class="nav-buttons-row">
@@ -1613,10 +1613,11 @@
         function getAssetUrl(relativePath) {
             return ASSETS_BASE + '/' + relativePath.replace(/^\//, '');
         }
+        const IMG_TRANSPARENT_PIXEL = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
         function getVerseImgOnError(img, usePlaceholder) {
             return function() {
                 img.onerror = null;
-                if (usePlaceholder) { img.src = getAssetUrl('placeholder.png'); img.onerror = function(){ img.style.display = 'none'; }; }
+                if (usePlaceholder) { img.src = IMG_TRANSPARENT_PIXEL; img.onerror = function(){ img.style.display = 'none'; }; }
                 else { img.style.display = 'none'; }
             };
         }
