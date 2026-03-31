@@ -6870,9 +6870,8 @@
             const ctx = new (window.AudioContext || window.webkitAudioContext)();
             if (ctx.state === 'suspended') await ctx.resume();
 
-            /* Aufnahme: Schüler Gain 1 wie Feed. Nur Monitoring: Web-Audio→Lautsprecher während play-and-record wirkt leiser als feedAudio — extra Gain nur in den Hör-Pfad, nicht in dest. */
+            /* Schüler Gain 1 → dest (Aufnahme) und → destination (Monitoring), ohne Extra-Verstärkung. */
             const SYNC_REPLY_MIC_PRE = 2.3;
-            const SYNC_REPLY_MONITOR_STUDENT = 1.16;
             const studentGain = ctx.createGain();
             studentGain.gain.value = 1;
 
@@ -6908,13 +6907,10 @@
             }
 
             const dest = ctx.createMediaStreamDestination();
-            const studentMonitorBoost = ctx.createGain();
-            studentMonitorBoost.gain.value = SYNC_REPLY_MONITOR_STUDENT;
             const monitorGain = ctx.createGain();
             monitorGain.gain.value = 1;
             studentGain.connect(dest);
-            studentGain.connect(studentMonitorBoost);
-            studentMonitorBoost.connect(monitorGain);
+            studentGain.connect(monitorGain);
             monitorGain.connect(ctx.destination);
 
             const micGain = ctx.createGain();
