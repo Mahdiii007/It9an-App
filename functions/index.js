@@ -637,86 +637,98 @@ QURAN_REMINDER_SLOTS.forEach((slot, idx) => {
  * Ausgabe *.m4a löst keinen erneuten Lauf aus. Nach erfolgreicher URL-Patch wird die Originaldatei gelöscht.
  * Deploy: firebase deploy --only functions:transcodeUploadAudio (FFmpeg: gcp-build / tools/ensure-ffmpeg-linux.js).
  */
-/* bucket weglassen = Standard-Bucket des Projekts (vermeidet falschen Namen appspot vs firebasestorage.app) */
+/**
+ * Zwei Trigger: Die App lädt nach gs://it9an-neu.firebasestorage.app hoch; der Default-Trigger
+ * lauschte oft nur auf …appspot.com — dann lief keine Transkodierung und Safari bekam weiter WebM.
+ */
 const TRANSCODE_INPUT_EXT = /\.(webm|ogg|mp4|wav)$/i;
 
-exports.transcodeUploadAudio = onObjectFinalized(
-  {
-    region: 'europe-west3',
-    memory: '2GiB',
-    timeoutSeconds: 300,
-  },
-  async (event) => {
-    const filePath = event.data.name;
-    if (!filePath || !filePath.startsWith('uploads/')) return;
-    const lower = filePath.toLowerCase();
-    if (lower.endsWith('.m4a')) return;
-    if (!TRANSCODE_INPUT_EXT.test(lower)) return;
+const transcodeUploadAudioOpts = {
+  region: 'europe-west3',
+  memory: '2GiB',
+  timeoutSeconds: 300,
+};
 
-    const bucketName = event.data.bucket;
-    const bucket = admin.storage().bucket(bucketName);
-    const tmpIn = path.join(os.tmpdir(), `in-${randomUUID()}${path.extname(filePath)}`);
-    const tmpOut = path.join(os.tmpdir(), `out-${randomUUID()}.m4a`);
-    const destPath = filePath.replace(TRANSCODE_INPUT_EXT, '.m4a');
-    if (destPath === filePath) return;
-    const pathNeedle = encodeURIComponent(filePath);
+async function transcodeUploadAudioHandler(event) {
+  const filePath = event.data.name;
+  if (!filePath || !filePath.startsWith('uploads/')) return;
+  const lower = filePath.toLowerCase();
+  if (lower.endsWith('.m4a')) return;
+  if (!TRANSCODE_INPUT_EXT.test(lower)) return;
 
-    try {
-      await bucket.file(filePath).download({ destination: tmpIn });
-      await runFfmpegArgs([
-        '-y',
-        '-fflags', '+genpts+discardcorrupt',
-        '-err_detect', 'ignore_err',
-        '-i', tmpIn,
-        '-vn',
-        '-c:a', 'aac',
-        '-b:a', '128k',
-        '-ar', '44100',
-        '-ac', '1',
-        '-af', 'aresample=async=1',
-        '-movflags', '+faststart',
-        tmpOut,
-      ]);
+  const bucketName = event.data.bucket;
+  const bucket = admin.storage().bucket(bucketName);
+  const tmpIn = path.join(os.tmpdir(), `in-${randomUUID()}${path.extname(filePath)}`);
+  const tmpOut = path.join(os.tmpdir(), `out-${randomUUID()}.m4a`);
+  const destPath = filePath.replace(TRANSCODE_INPUT_EXT, '.m4a');
+  if (destPath === filePath) return;
+  const pathNeedle = encodeURIComponent(filePath);
 
-      const outBuf = await fs.readFile(tmpOut);
-      const token = randomUUID();
-      await bucket.file(destPath).save(outBuf, {
-        metadata: {
-          contentType: 'audio/mp4',
-          cacheControl: 'public, max-age=31536000',
-          metadata: { firebaseStorageDownloadTokens: token },
-        },
-        resumable: false,
-      });
+  try {
+    await bucket.file(filePath).download({ destination: tmpIn });
+    await runFfmpegArgs([
+      '-y',
+      '-fflags', '+genpts+discardcorrupt',
+      '-err_detect', 'ignore_err',
+      '-i', tmpIn,
+      '-vn',
+      '-c:a', 'aac',
+      '-b:a', '128k',
+      '-ar', '44100',
+      '-ac', '1',
+      '-af', 'aresample=async=1',
+      '-movflags', '+faststart',
+      tmpOut,
+    ]);
 
-      const encDest = encodeURIComponent(destPath);
-      const newUrl = `https://firebasestorage.googleapis.com/v0/b/${bucketName}/o/${encDest}?alt=media&token=${token}`;
-      const db = admin.firestore();
+    const outBuf = await fs.readFile(tmpOut);
+    const token = randomUUID();
+    await bucket.file(destPath).save(outBuf, {
+      metadata: {
+        contentType: 'audio/mp4',
+        cacheControl: 'public, max-age=31536000',
+        metadata: { firebaseStorageDownloadTokens: token },
+      },
+      resumable: false,
+    });
 
-      let patched = 0;
-      for (let attempt = 0; attempt < 45; attempt++) {
-        const n = await replaceAudioUrlInPostsOnce(db, pathNeedle, newUrl);
-        if (n > 0) {
-          patched = n;
-          break;
-        }
-        await sleep(2000);
+    const encDest = encodeURIComponent(destPath);
+    const newUrl = `https://firebasestorage.googleapis.com/v0/b/${bucketName}/o/${encDest}?alt=media&token=${token}`;
+    const db = admin.firestore();
+
+    let patched = 0;
+    for (let attempt = 0; attempt < 45; attempt++) {
+      const n = await replaceAudioUrlInPostsOnce(db, pathNeedle, newUrl);
+      if (n > 0) {
+        patched = n;
+        break;
       }
-      if (patched === 0) {
-        console.warn('transcodeUploadAudio: keine Firestore-Treffer für', filePath, '(Client schreibt evtl. spät; m4a liegt unter', destPath, ')');
-      } else {
-        console.log('transcodeUploadAudio:', filePath, '→', destPath, 'Posts aktualisiert:', patched);
-        try {
-          await bucket.file(filePath).delete();
-        } catch (delErr) {
-          console.warn('transcodeUploadAudio: Original konnte nicht gelöscht werden', filePath, delErr.message || delErr);
-        }
-      }
-    } catch (e) {
-      console.error('transcodeUploadAudio Fehler', filePath, e);
-    } finally {
-      await fs.unlink(tmpIn).catch(() => {});
-      await fs.unlink(tmpOut).catch(() => {});
+      await sleep(2000);
     }
+    if (patched === 0) {
+      console.warn('transcodeUploadAudio: keine Firestore-Treffer für', filePath, '(Client schreibt evtl. spät; m4a liegt unter', destPath, ')');
+    } else {
+      console.log('transcodeUploadAudio:', filePath, '→', destPath, 'Posts aktualisiert:', patched);
+      try {
+        await bucket.file(filePath).delete();
+      } catch (delErr) {
+        console.warn('transcodeUploadAudio: Original konnte nicht gelöscht werden', filePath, delErr.message || delErr);
+      }
+    }
+  } catch (e) {
+    console.error('transcodeUploadAudio Fehler', filePath, e);
+  } finally {
+    await fs.unlink(tmpIn).catch(() => {});
+    await fs.unlink(tmpOut).catch(() => {});
   }
+}
+
+exports.transcodeUploadAudio = onObjectFinalized(
+  { ...transcodeUploadAudioOpts, bucket: 'it9an-neu.firebasestorage.app' },
+  transcodeUploadAudioHandler
+);
+
+exports.transcodeUploadAudioAppspot = onObjectFinalized(
+  { ...transcodeUploadAudioOpts, bucket: 'it9an-neu.appspot.com' },
+  transcodeUploadAudioHandler
 );

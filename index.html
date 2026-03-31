@@ -6214,7 +6214,9 @@
                 await runTeacherSyncReplySession(audioUrl, { mode: 'student', postId, statusEl, timerEl, holdBtn, appendDoneBtn });
             } catch (e) {
                 console.error('sync reply', e);
-                if (e && e.message !== 'aborted') alert('تعذر بدء الرد المتزامن. جرّب «الرد» العادي أو جهازاً آخر.\n' + (e.message || ''));
+                if (e && e.message !== 'aborted') {
+                    alert('تعذر بدء الرد المتزامن. جرّب «الرد» العادي.\n\nإن ظهر «Load failed» على آيفون/سفاري: غالباً التسجيل ما زال بصيغة WebM ولم تُحوَّل بعد إلى M4A على الخادم — تأكد من نشر دالة transcodeUploadAudio على نفس مساحة التخزين (it9an-neu.firebasestorage.app).\n\n' + (e.message || ''));
+                }
                 teacherSyncReplyActive = false;
                 replyTargetId = null;
                 recordingFileId = null;
@@ -6233,6 +6235,37 @@
             } catch (e) {
                 return null;
             }
+        }
+
+        function syncReplyStoragePathFromDownloadUrl(url) {
+            try {
+                const u = new URL(url);
+                const idx = u.pathname.indexOf('/o/');
+                if (idx < 0) return null;
+                return decodeURIComponent(u.pathname.slice(idx + 3));
+            } catch (e) {
+                return null;
+            }
+        }
+
+        async function tryGetSiblingM4aDownloadUrl(audioUrl) {
+            if (!audioUrl || !window.storage || !window.ref || !window.getDownloadURL) return null;
+            const path = syncReplyStoragePathFromDownloadUrl(audioUrl);
+            if (!path || !/\.(webm|ogg|mp4|wav)$/i.test(path)) return null;
+            const m4aPath = path.replace(/\.(webm|ogg|mp4|wav)$/i, '.m4a');
+            if (m4aPath === path) return null;
+            try {
+                return await window.getDownloadURL(window.ref(window.storage, m4aPath));
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function syncReplyUnshiftUrl(list, u) {
+            if (!u || typeof u !== 'string') return;
+            const ix = list.indexOf(u);
+            if (ix >= 0) list.splice(ix, 1);
+            list.unshift(u);
         }
 
         async function attachSyncReplyMediaElement(ctx, studentGain, srcUrl) {
@@ -6326,6 +6359,10 @@
 
             if (mode === 'student') {
                 const primaryUrl = primaryUrlOrBlob;
+                try {
+                    const m4aUrl = await tryGetSiblingM4aDownloadUrl(primaryUrl);
+                    if (m4aUrl) syncReplyUnshiftUrl(tryUrls, m4aUrl);
+                } catch (e) {}
                 syncReplyPushUrl(tryUrls, primaryUrl);
                 try { syncReplyPushUrl(tryUrls, await resolveFeedAudioPlayUrl(primaryUrl)); } catch (e) {}
             } else {
