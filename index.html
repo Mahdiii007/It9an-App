@@ -6121,13 +6121,18 @@
             }
             let rawStream = null;
             if (isIOS) {
+                /* Wie toggleRecord: Mono bevorzugen (Stereo-Memos auf manchen iPhones = schlechte / falsche Kapsel auf Kanal 0). */
                 const iosCandidates = [
                     { audio: { echoCancellation: false, noiseSuppression: false, channelCount: { ideal: 1 } } },
                     { audio: { echoCancellation: false, noiseSuppression: false, channelCount: { exact: 1 } } },
                     { audio: { echoCancellation: false, noiseSuppression: false } },
                     { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: { ideal: 1 } } },
+                    { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: { exact: 1 } } },
+                    { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } },
                     { audio: { channelCount: { ideal: 1 } } },
-                    { audio: true }
+                    { audio: true },
+                    { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: true, channelCount: { ideal: 1 } } },
+                    { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: true } }
                 ];
                 let lastErr = null;
                 for (const c of iosCandidates) {
@@ -6857,10 +6862,9 @@
             const ctx = new (window.AudioContext || window.webkitAudioContext)();
             if (ctx.state === 'suspended') await ctx.resume();
 
-            /* Einheitlich für alle Geräte: gleiche Mic-Vorverstärkung wie im normalen الرد (2.3), Stereo→nur Kanal 0, Aufnahme-Bus mit Compressor+Make-up (keine iOS-/Android-Sonderwerte). */
+            /* Wie normaler الرد: kein Compressor auf der Aufnahme. Mic 2.3 + Stereo→Kanal 0 wie toggleRecord. Schüler ohne Extra-Gain — Feed klingt damit schon richtig. */
             const SYNC_REPLY_MIC_PRE = 2.3;
-            const SYNC_REPLY_MONITOR_MASTER = 0.92;
-            const SYNC_REPLY_REC_MAKEUP = 1.58;
+            const SYNC_REPLY_MONITOR_MASTER = 0.94;
             const studentGain = ctx.createGain();
             studentGain.gain.value = 1;
 
@@ -6896,35 +6900,19 @@
             const dest = ctx.createMediaStreamDestination();
             const monitorGain = ctx.createGain();
             monitorGain.gain.value = SYNC_REPLY_MONITOR_MASTER;
-            const studentToRecord = ctx.createGain();
-            const studentToMonitor = ctx.createGain();
-            studentToRecord.gain.value = 1;
-            studentToMonitor.gain.value = 1;
-            studentGain.connect(studentToRecord);
-            studentGain.connect(studentToMonitor);
-            studentToMonitor.connect(monitorGain);
+            studentGain.connect(dest);
+            studentGain.connect(monitorGain);
             monitorGain.connect(ctx.destination);
 
             const micGain = ctx.createGain();
             micGain.gain.value = 0;
 
-            const recBusComp = ctx.createDynamicsCompressor();
-            recBusComp.threshold.value = -22;
-            recBusComp.knee.value = 26;
-            recBusComp.ratio.value = 4;
-            recBusComp.attack.value = 0.003;
-            recBusComp.release.value = 0.2;
-            const recBusMakeup = ctx.createGain();
-            recBusMakeup.gain.value = SYNC_REPLY_REC_MAKEUP;
-            studentToRecord.connect(recBusComp);
-            micGain.connect(recBusComp);
-            recBusComp.connect(recBusMakeup);
-            recBusMakeup.connect(dest);
+            micGain.connect(dest);
 
             const micSrc = ctx.createMediaStreamSource(rawStream);
             const preMic = ctx.createGain();
             preMic.gain.value = SYNC_REPLY_MIC_PRE;
-            /* Überall gleich wie dokumentierter الرد-Pfad: Stereo-Mik → nur Kanal 0 (sonst oft zu leise / falscher Mix). */
+            /* Bewusst identisch zum normalen الرد (toggleRecord, iOS): Stereo → nur Kanal 0, dann gain 2.3 — dort ist die Qualität in Ordnung. */
             const tMicSync = rawStream.getAudioTracks()[0];
             const chMicSync = (tMicSync && tMicSync.getSettings && tMicSync.getSettings().channelCount) || 1;
             if (chMicSync >= 2) {
