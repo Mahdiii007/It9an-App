@@ -6489,6 +6489,135 @@
             });
         }
 
+        /** سفاري: <audio> قد يفشل بـ «Load failed» — decodeAudioData + BufferSource يمرّان عبر Web Audio مباشرة. */
+        async function syncReplyTryDecodeAudioBuffer(ctx, primaryUrl) {
+            if (!shouldBufferFeedAudioFully()) return null;
+            if (!primaryUrl || typeof primaryUrl !== 'string' || !/^https?:/i.test(primaryUrl)) return null;
+            const list = [];
+            try {
+                const f = await tryGetFreshFirebaseStorageDownloadUrl(primaryUrl);
+                if (f) list.push(f);
+            } catch (e) {}
+            try {
+                const m = await tryGetSiblingM4aDownloadUrl(primaryUrl);
+                if (m) list.push(m);
+            } catch (e) {}
+            list.push(primaryUrl);
+            try {
+                const rp = await resolveFeedAudioPlayUrl(primaryUrl);
+                if (rp && /^https?:/i.test(rp)) list.push(rp);
+            } catch (e) {}
+            const seen = new Set();
+            for (const u of list) {
+                if (!u || seen.has(u)) continue;
+                seen.add(u);
+                if (!/^https?:/i.test(u)) continue;
+                try {
+                    const res = await fetch(u, { mode: 'cors', credentials: 'omit', cache: 'no-store' });
+                    if (!res.ok) continue;
+                    const ab = await res.arrayBuffer();
+                    if (!ab.byteLength) continue;
+                    const buf = await ctx.decodeAudioData(ab.slice(0));
+                    if (buf && buf.duration > 0 && isFinite(buf.duration)) return buf;
+                } catch (e) {}
+            }
+            return null;
+        }
+
+        function createSyncReplyElementStudentDriver(el) {
+            return {
+                getDuration() {
+                    if (el.duration && !isNaN(el.duration) && isFinite(el.duration)) return el.duration;
+                    return 0;
+                },
+                isPlaying() {
+                    return !!(el && !el.paused && !el.ended);
+                },
+                stopPlayback() {
+                    if (!el) return;
+                    el.onended = null;
+                    try { el.pause(); } catch (e) {}
+                },
+                currentTime() {
+                    return el.currentTime || 0;
+                },
+                playFrom(off, onNaturalEnd) {
+                    this.stopPlayback();
+                    el.onended = () => {
+                        if (onNaturalEnd) onNaturalEnd();
+                    };
+                    el.currentTime = Math.max(0, off);
+                    return el.play();
+                },
+                removeDom() {
+                    if (el && el.parentNode) try { el.parentNode.removeChild(el); } catch (e) {}
+                }
+            };
+        }
+
+        function createSyncReplyBufferStudentDriver(ctx, studentGain, audioBuffer) {
+            let src = null;
+            let startAtCtx = 0;
+            let startOff = 0;
+            let pausedAt = 0;
+            function silenceSource() {
+                if (src) {
+                    try { src.onended = null; } catch (e) {}
+                    try { src.stop(0); } catch (e) {}
+                    try { src.disconnect(); } catch (e) {}
+                    src = null;
+                }
+            }
+            return {
+                getDuration() {
+                    const d = audioBuffer.duration;
+                    return (d && isFinite(d)) ? d : 0;
+                },
+                isPlaying() {
+                    return src != null;
+                },
+                stopPlayback() {
+                    if (src) {
+                        pausedAt = startOff + (ctx.currentTime - startAtCtx);
+                        silenceSource();
+                    }
+                },
+                currentTime() {
+                    if (src) return startOff + (ctx.currentTime - startAtCtx);
+                    return pausedAt;
+                },
+                playFrom(off, onNaturalEnd) {
+                    silenceSource();
+                    const o = Math.max(0, off);
+                    const dur = audioBuffer.duration;
+                    if (dur > 0 && o >= dur - 0.04) {
+                        if (onNaturalEnd) onNaturalEnd();
+                        return Promise.resolve();
+                    }
+                    const bs = ctx.createBufferSource();
+                    bs.buffer = audioBuffer;
+                    bs.connect(studentGain);
+                    bs.onended = () => {
+                        src = null;
+                        if (onNaturalEnd) onNaturalEnd();
+                    };
+                    src = bs;
+                    startOff = o;
+                    startAtCtx = ctx.currentTime;
+                    try {
+                        bs.start(0, o);
+                    } catch (e) {
+                        silenceSource();
+                        return Promise.reject(e);
+                    }
+                    return Promise.resolve();
+                },
+                removeDom() {
+                    silenceSource();
+                }
+            };
+        }
+
         async function loadSyncReplyMediaElementOnce(ctx, studentGain, mode, primaryUrlOrBlob) {
             let studentAudioEl = null;
             let revokeBlobUrl = null;
@@ -6497,6 +6626,10 @@
 
             if (mode === 'student') {
                 const primaryUrl = primaryUrlOrBlob;
+                const decodedFirst = await syncReplyTryDecodeAudioBuffer(ctx, primaryUrl);
+                if (decodedFirst) {
+                    return { studentAudioEl: null, studentDecodedBuffer: decodedFirst, revokeBlobUrl: null };
+                }
                 try {
                     const freshDl = await tryGetFreshFirebaseStorageDownloadUrl(primaryUrl);
                     if (freshDl) syncReplyUnshiftUrl(tryUrls, freshDl);
@@ -6587,6 +6720,13 @@
                         if (!res.ok) continue;
                         const ab = await res.arrayBuffer();
                         if (!ab.byteLength) continue;
+                        try {
+                            const decBuf = await ctx.decodeAudioData(ab.slice(0));
+                            if (decBuf && decBuf.duration > 0 && isFinite(decBuf.duration)) {
+                                syncReplyRevokePrefetchBlobs(prefetchBlobs, null);
+                                return { studentAudioEl: null, studentDecodedBuffer: decBuf, revokeBlobUrl: null };
+                            }
+                        } catch (de) {}
                         let blobType = ((res.headers.get('content-type') || '').split(';')[0] || '').trim();
                         const pathPart = (syncReplyExtractStorageObjectPath(src) || src || '').toLowerCase();
                         if (pathPart.endsWith('.m4a') || /mp4|mpeg|audio\/mp4/i.test(blobType)) blobType = 'audio/mp4';
@@ -6630,7 +6770,7 @@
                 revokeBlobUrl = null;
             }
 
-            return { studentAudioEl, revokeBlobUrl };
+            return { studentAudioEl, studentDecodedBuffer: null, revokeBlobUrl };
         }
 
         async function loadSyncReplyMediaElementOnly(ctx, studentGain, mode, audioInput, refreshPostId, statusElForWait) {
@@ -6694,11 +6834,17 @@
             studentGain.gain.value = 1;
 
             let revokeBlobUrl = null;
-            let studentAudioEl = null;
+            let studentDriver = null;
             try {
                 const loaded = await loadSyncReplyMediaElementOnly(ctx, studentGain, mode, audioInput, opts.postId || null, statusEl);
-                studentAudioEl = loaded.studentAudioEl;
                 revokeBlobUrl = loaded.revokeBlobUrl;
+                if (loaded.studentDecodedBuffer) {
+                    studentDriver = createSyncReplyBufferStudentDriver(ctx, studentGain, loaded.studentDecodedBuffer);
+                } else if (loaded.studentAudioEl) {
+                    studentDriver = createSyncReplyElementStudentDriver(loaded.studentAudioEl);
+                } else {
+                    throw new Error('audio load');
+                }
             } catch (loadErr) {
                 try { await ctx.close(); } catch (e) {}
                 throw loadErr;
@@ -6711,8 +6857,8 @@
                 isIOS = mic.isIOS;
             } catch (micErr) {
                 if (revokeBlobUrl) { try { URL.revokeObjectURL(revokeBlobUrl); } catch (e) {} revokeBlobUrl = null; }
-                if (studentAudioEl && studentAudioEl.parentNode) { try { studentAudioEl.parentNode.removeChild(studentAudioEl); } catch (e) {} }
-                studentAudioEl = null;
+                if (studentDriver) studentDriver.removeDom();
+                studentDriver = null;
                 try { await ctx.close(); } catch (e) {}
                 throw micErr;
             }
@@ -6739,8 +6885,8 @@
                 mediaRecorder = new MediaRecorder(dest.stream, options);
             } catch (recCtorErr) {
                 if (revokeBlobUrl) { try { URL.revokeObjectURL(revokeBlobUrl); } catch (e) {} revokeBlobUrl = null; }
-                if (studentAudioEl && studentAudioEl.parentNode) { try { studentAudioEl.parentNode.removeChild(studentAudioEl); } catch (e) {} }
-                studentAudioEl = null;
+                if (studentDriver) studentDriver.removeDom();
+                studentDriver = null;
                 rawStream.getTracks().forEach(t => t.stop());
                 try { await ctx.close(); } catch (e) {}
                 throw recCtorErr;
@@ -6756,19 +6902,15 @@
             const maxWall = 600;
 
             function getStudentDuration() {
-                if (studentAudioEl && studentAudioEl.duration && !isNaN(studentAudioEl.duration) && isFinite(studentAudioEl.duration)) return studentAudioEl.duration;
-                return 0;
+                return studentDriver ? studentDriver.getDuration() : 0;
             }
 
             function isStudentActivelyPlaying() {
-                return !!(studentAudioEl && !studentAudioEl.paused && !studentAudioEl.ended);
+                return !!(studentDriver && studentDriver.isPlaying());
             }
 
             function stopStudentNode() {
-                if (studentAudioEl) {
-                    studentAudioEl.onended = null;
-                    try { studentAudioEl.pause(); } catch (e) {}
-                }
+                if (studentDriver) studentDriver.stopPlayback();
             }
 
             function finishSession() {
@@ -6788,8 +6930,8 @@
                         releaseWakeLock();
                         rawStream.getTracks().forEach(t => t.stop());
                         if (revokeBlobUrl) { try { URL.revokeObjectURL(revokeBlobUrl); } catch (e) {} revokeBlobUrl = null; }
-                        if (studentAudioEl && studentAudioEl.parentNode) try { studentAudioEl.parentNode.removeChild(studentAudioEl); } catch (e) {}
-                        studentAudioEl = null;
+                        if (studentDriver) studentDriver.removeDom();
+                        studentDriver = null;
                         try { await ctx.close(); } catch (e) {}
                         const mimeType = mediaRecorder.mimeType || 'audio/mp4';
                         currentBlob = new Blob(chunks, { type: mimeType });
@@ -6804,20 +6946,19 @@
             });
 
             function beginStudent(fromOff) {
-                if (sessionFinished || aborted || !studentAudioEl) return;
+                if (sessionFinished || aborted || !studentDriver) return;
                 stopStudentNode();
                 const dur = getStudentDuration();
                 if (dur > 0 && fromOff >= dur - 0.04) {
                     finishSession();
                     return;
                 }
-                studentAudioEl.onended = () => {
+                const onEnd = () => {
                     if (sessionFinished || aborted) return;
                     if (isCommenting) return;
                     finishSession();
                 };
-                studentAudioEl.currentTime = Math.max(0, fromOff);
-                studentAudioEl.play().then(() => {
+                studentDriver.playFrom(Math.max(0, fromOff), onEnd).then(() => {
                     if (holdBtn && mode === 'student') holdBtn.disabled = false;
                 }).catch(err => {
                     console.warn('sync reply play', err);
@@ -6828,12 +6969,12 @@
             function onHoldStart(e) {
                 if (e) { e.preventDefault(); if (e.button === 2) return; }
                 if (!isStudentActivelyPlaying() || isCommenting || sessionFinished || aborted) return;
-                if (!studentAudioEl) return;
+                if (!studentDriver) return;
                 const dur = getStudentDuration();
-                const ct = studentAudioEl.currentTime;
+                const ct = studentDriver.currentTime();
                 resumeFrom = dur > 0 ? Math.min(dur, ct) : ct;
                 isCommenting = true;
-                try { studentAudioEl.pause(); } catch (err) {}
+                studentDriver.stopPlayback();
                 micGain.gain.setValueAtTime(1, ctx.currentTime);
                 playSyncTransitionBeep(ctx, true);
                 if (statusEl) statusEl.textContent = 'تسجيل تعليقك — أفلت الزر لمتابعة تسجيل الطالب';
@@ -6859,8 +7000,8 @@
                     sessionFinished = true;
                     if (wallTimer) clearInterval(wallTimer);
                     if (revokeBlobUrl) { try { URL.revokeObjectURL(revokeBlobUrl); } catch (e) {} revokeBlobUrl = null; }
-                    if (studentAudioEl && studentAudioEl.parentNode) { try { studentAudioEl.parentNode.removeChild(studentAudioEl); } catch (e) {} }
-                    studentAudioEl = null;
+                    if (studentDriver) studentDriver.removeDom();
+                    studentDriver = null;
                     rawStream.getTracks().forEach(t => t.stop());
                     try { await ctx.close(); } catch (e) {}
                     syncReplySessionHandle = null;
@@ -6902,8 +7043,8 @@
                     sessionFinished = true;
                     if (wallTimer) clearInterval(wallTimer);
                     if (revokeBlobUrl) { try { URL.revokeObjectURL(revokeBlobUrl); } catch (e) {} revokeBlobUrl = null; }
-                    if (studentAudioEl && studentAudioEl.parentNode) { try { studentAudioEl.parentNode.removeChild(studentAudioEl); } catch (e) {} }
-                    studentAudioEl = null;
+                    if (studentDriver) studentDriver.removeDom();
+                    studentDriver = null;
                     rawStream.getTracks().forEach(t => t.stop());
                     try { await ctx.close(); } catch (e) {}
                     syncReplySessionHandle = null;
@@ -6918,15 +7059,13 @@
                     if (wallSeconds >= maxWall) finishSession();
                 }, 1000);
                 stopStudentNode();
-                if (studentAudioEl) {
-                    studentAudioEl.onended = () => {
+                if (studentDriver) {
+                    studentDriver.playFrom(0, () => {
                         if (sessionFinished || aborted) return;
                         micGain.gain.setValueAtTime(1, ctx.currentTime);
                         if (statusEl) statusEl.textContent = 'تكلّم الآن — إضافة في نهاية الرد';
                         if (appendDoneBtn) appendDoneBtn.style.display = 'block';
-                    };
-                    studentAudioEl.currentTime = 0;
-                    studentAudioEl.play().catch(err => { console.warn(err); finishSession(); });
+                    }).catch(err => { console.warn(err); finishSession(); });
                 }
                 syncReplySessionHandle.abort = () => {
                     aborted = true;
