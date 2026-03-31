@@ -4465,8 +4465,8 @@
                 el.style.color = '#fff';
                 el.style.padding = '2px 8px';
                 el.style.borderRadius = '6px';
-                if (count <= 15) el.style.background = '#c0392b';
-                else if (count <= 29) el.style.background = '#d35400';
+                if (count <= 9) el.style.background = '#c0392b';
+                else if (count <= 19) el.style.background = '#c9a227';
                 else el.style.background = 'var(--primary)';
             } else {
                 count = totalRepetitions;
@@ -4543,7 +4543,7 @@
                 if (repBlocked) {
                     recBtn.style.opacity = '0.5';
                     recBtn.style.cursor = 'pointer';
-                    recBtn.title = 'مطلوب 30 تكرار على الأقل - انقر للتفاصيل';
+                    recBtn.title = `مطلوب ${MIN_REPETITIONS_FOR_REC} تكرار على الأقل - انقر للتفاصيل`;
                 } else {
                     recBtn.style.opacity = '';
                     recBtn.style.cursor = '';
@@ -6031,8 +6031,8 @@
 
         const REC_BLOCKED_MSG = 'يرجى استخدام إشعارات الجرس لسماع جميع ردود المعلم لهذه المرحلة حتى النهاية. يمكنك التسجيل في هذه المرحلة مرة أخرى فقط عندما تكون جميع ردود المعلم قد سُمعت حتى النهاية. هكذا تتعلم بشكل أفضل.';
         const REC_PENDING_TEACHER_MSG = 'لديك بالفعل تسجيل تحت هذا المقطع لم يُقيِّمه المعلم بعد أو لم يُرَدَّ عليه صوتياً بعد. لا يمكنك بدء تسجيل جديد هنا حتى يُقيَّم كل تسجيلاتك لهذا المقطع ويصلك رد صوتي من المعلم على كل منها.\n\nإن أردت إعادة التسجيل من جديد، احذف أولاً التسجيل القديم غير المكتمل (زر الحذف 🗑️ بجانب تسجيلك في الخلاصة أدناه)، ثم يمكنك استخدام الميكروفون مرة أخرى.';
-        const MIN_REPETITIONS_FOR_REC = 30;
-        const REC_REPETITIONS_MSG = 'معلمو هذه المنصة متفقون على أن الطلاب يُفضّل أن يكرّروا المقاطع 30 مرة على الأقل قبل البدء بالتسجيل. يُنصح بـ 100 تكرار على الأقل. بعد 30 تكرار يُفتح الميكروفون لهذا المقطع.';
+        const MIN_REPETITIONS_FOR_REC = 20;
+        const REC_REPETITIONS_MSG = 'معلمو هذه المنصة متفقون على أن الطلاب يُفضّل أن يكرّروا المقاطع 20 مرة على الأقل قبل البدء بالتسجيل. يُنصح بـ 100 تكرار على الأقل. بعد 20 تكرار يُفتح الميكروفون لهذا المقطع.';
 
         window.toggleRecord = async function() {
             if (localStorage.getItem('it9an_uid') === 'guest') {
