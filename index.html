@@ -6211,11 +6211,24 @@
                     const ix = allLoadedPosts.findIndex(p => p.id === postId);
                     if (ix >= 0) allLoadedPosts[ix].audioUrl = audioUrl;
                 }
+                if (syncReplyUrlPathLooksPreM4a(audioUrl)) {
+                    const m4aOk = await tryGetSiblingM4aDownloadUrl(audioUrl);
+                    if (!m4aOk) {
+                        alert('هذا التسجيل يبدو قديماً: الرابط ما زال إلى WebM ولا يوجد ملف M4A مطابق على الخادم (غالباً رُفع قبل التحويل التلقائي، أو فشل التحويل). على آيفون/سفاري لا يُشغَّل WebM في الرد المتزامن.\n\nاستخدم «الرد» العادي. إن كان التسجيل حديثاً انتظر دقيقة ثم أعد فتح المنشور؛ وإلا يلزم إعادة رفع الصوت أو إصلاح التخزين.');
+                        teacherSyncReplyActive = false;
+                        replyTargetId = null;
+                        recordingFileId = null;
+                        recordingStageId = null;
+                        syncReplyUiSetVisible(false);
+                        if (holdBtn) holdBtn.classList.remove('sync-hold-active');
+                        return;
+                    }
+                }
                 await runTeacherSyncReplySession(audioUrl, { mode: 'student', postId, statusEl, timerEl, holdBtn, appendDoneBtn });
             } catch (e) {
                 console.error('sync reply', e);
                 if (e && e.message !== 'aborted') {
-                    alert('تعذر بدء الرد المتزامن. جرّب «الرد» العادي.\n\nإن ظهر «Load failed» على آيفون/سفاري: غالباً التسجيل ما زال بصيغة WebM ولم تُحوَّل بعد إلى M4A على الخادم — تأكد من نشر دالة transcodeUploadAudio على نفس مساحة التخزين (it9an-neu.firebasestorage.app).\n\n' + (e.message || ''));
+                    alert('تعذر بدء الرد المتزامن. جرّب «الرد» العادي.\n\nإن ظهر «Load failed» على آيفون/سفاري: غالباً التسجيل ما زال WebM ولم يُحوَّل إلى M4A — منها تسجيلات قديمة في التطبيق قبل التحويل على الخادم. تأكد أن دالة transcodeUploadAudio منشورة وعلى نفس التخزين (it9an-neu.firebasestorage.app).\n\n' + (e.message || ''));
                 }
                 teacherSyncReplyActive = false;
                 replyTargetId = null;
@@ -6259,6 +6272,13 @@
             } catch (e) {
                 return null;
             }
+        }
+
+        /** تسجيلات قديمة: ما زال الرابط يشير إلى WebM/OGG ولا يوجد ملف .m4a بجانبه — سفاري/آيفون لا يشغّلان WebM في <audio>. */
+        function syncReplyUrlPathLooksPreM4a(audioUrl) {
+            if (!audioUrl || typeof audioUrl !== 'string') return false;
+            const path = syncReplyStoragePathFromDownloadUrl(audioUrl) || '';
+            return /\.(webm|ogg)$/i.test(path);
         }
 
         function syncReplyUnshiftUrl(list, u) {
