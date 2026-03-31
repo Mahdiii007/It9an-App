@@ -6489,19 +6489,58 @@
             });
         }
 
-        /** سفاري: <audio> قد يفشل بـ «Load failed» — decodeAudioData + BufferSource يمرّان عبر Web Audio مباشرة. */
+        /** decodeAudioData + BufferSource — على كل المنصات؛ Callback + Promise حيث يدعم المتصفح الاثنين دون resolve مزدوج. */
+        function syncReplyDecodeArrayBufferToAudio(ctx, ab) {
+            if (!ab || !ab.byteLength) return Promise.reject(new Error('empty'));
+            const copy = ab.slice(0);
+            return new Promise((resolve, reject) => {
+                let settled = false;
+                function ok(buffer) {
+                    if (settled) return;
+                    if (buffer && buffer.duration > 0 && isFinite(buffer.duration)) {
+                        settled = true;
+                        resolve(buffer);
+                    } else if (!settled) {
+                        settled = true;
+                        reject(new Error('decode empty'));
+                    }
+                }
+                function fail(e) {
+                    if (settled) return;
+                    settled = true;
+                    reject(e || new Error('decode failed'));
+                }
+                try {
+                    const ret = ctx.decodeAudioData(copy, ok, (err) => fail(err || new Error('decode failed')));
+                    if (ret != null && typeof ret.then === 'function') {
+                        ret.then(ok, fail);
+                    }
+                } catch (e) {
+                    fail(e);
+                }
+            });
+        }
+
         async function syncReplyTryDecodeAudioBuffer(ctx, primaryUrl) {
-            if (!shouldBufferFeedAudioFully()) return null;
             if (!primaryUrl || typeof primaryUrl !== 'string' || !/^https?:/i.test(primaryUrl)) return null;
             const list = [];
+            const webmish = syncReplyUrlIndicatesWebmOrOgg(primaryUrl);
+            if (webmish) {
+                try {
+                    const mFirst = await tryGetSiblingM4aDownloadUrl(primaryUrl);
+                    if (mFirst) list.push(mFirst);
+                } catch (e) {}
+            }
             try {
                 const f = await tryGetFreshFirebaseStorageDownloadUrl(primaryUrl);
                 if (f) list.push(f);
             } catch (e) {}
-            try {
-                const m = await tryGetSiblingM4aDownloadUrl(primaryUrl);
-                if (m) list.push(m);
-            } catch (e) {}
+            if (!webmish) {
+                try {
+                    const m = await tryGetSiblingM4aDownloadUrl(primaryUrl);
+                    if (m) list.push(m);
+                } catch (e) {}
+            }
             list.push(primaryUrl);
             try {
                 const rp = await resolveFeedAudioPlayUrl(primaryUrl);
@@ -6517,8 +6556,8 @@
                     if (!res.ok) continue;
                     const ab = await res.arrayBuffer();
                     if (!ab.byteLength) continue;
-                    const buf = await ctx.decodeAudioData(ab.slice(0));
-                    if (buf && buf.duration > 0 && isFinite(buf.duration)) return buf;
+                    const buf = await syncReplyDecodeArrayBufferToAudio(ctx, ab);
+                    if (buf) return buf;
                 } catch (e) {}
             }
             return null;
@@ -6721,8 +6760,8 @@
                         const ab = await res.arrayBuffer();
                         if (!ab.byteLength) continue;
                         try {
-                            const decBuf = await ctx.decodeAudioData(ab.slice(0));
-                            if (decBuf && decBuf.duration > 0 && isFinite(decBuf.duration)) {
+                            const decBuf = await syncReplyDecodeArrayBufferToAudio(ctx, ab);
+                            if (decBuf) {
                                 syncReplyRevokePrefetchBlobs(prefetchBlobs, null);
                                 return { studentAudioEl: null, studentDecodedBuffer: decBuf, revokeBlobUrl: null };
                             }
