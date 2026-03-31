@@ -734,7 +734,12 @@
         window.db = getFirestore(app);
         /* Expliziter gs://-Bucket vermeidet „Unexpected error when fetching default storage bucket“ (SDK/CLI) */
         window.storage = getStorage(app, 'gs://it9an-neu.firebasestorage.app');
-        
+        try {
+            window.storageAlt = getStorage(app, 'gs://it9an-neu.appspot.com');
+        } catch (e) {
+            window.storageAlt = null;
+        }
+
         try { enableIndexedDbPersistence(window.db).catch((err) => { console.log("Persistence error:", err.code); }); } catch(e){}
         try { window.dispatchEvent(new Event('firebase-ready')); } catch(e){}
 
@@ -6235,7 +6240,9 @@
                 await runTeacherSyncReplySession(audioUrl, { mode: 'student', postId, statusEl, timerEl, holdBtn, appendDoneBtn });
             } catch (e) {
                 console.error('sync reply', e);
-                if (e && e.message !== 'aborted' && e.message !== 'sync-reply-no-m4a') {
+                if (e && e.message === 'sync-reply-decode-failed') {
+                    alert('تعذّر فك ترميز تسجيل الطالب للرد المتزامن (Web Audio). جرّب «الرد» العادي.\n\n• تسجيل حديث: انتظر اكتمال التحويل إلى M4A ثم أعد المحاولة.\n• تحقق من أن الملف موجود في التخزين (it9an-neu) وأن رابط المنشور محدّث بعد transcodeUploadAudio.\n• إن ظهر خطأ شبكة: راجع CORS وقواعد Storage.');
+                } else if (e && e.message !== 'aborted' && e.message !== 'sync-reply-no-m4a') {
                     const extra = (e && e.message === 'Load failed')
                         ? '\n\n«Load failed» على سفاري غالباً يعني: الملف WebM/غير مدعوم في هذا الوضع، أو لا يزال الرابط يشير لملف لم يُحوَّل إلى M4A. إن استمرّ الأمر مع تسجيلات جديدة، راجع نشر transcodeUploadAudio والتخزين it9an-neu.firebasestorage.app.'
                         : '';
@@ -6301,29 +6308,32 @@
             return /(\.|%2e)webm([?&#]|$)/i.test(audioUrl) || /(\.|%2e)ogg([?&#]|$)/i.test(audioUrl);
         }
 
+        async function tryGetDownloadURLForPathMultiBucket(objectPath) {
+            if (!objectPath || !window.ref || !window.getDownloadURL) return null;
+            const buckets = [window.storage, window.storageAlt].filter(Boolean);
+            for (let i = 0; i < buckets.length; i++) {
+                try {
+                    return await window.getDownloadURL(window.ref(buckets[i], objectPath));
+                } catch (e) {}
+            }
+            return null;
+        }
+
         async function tryGetSiblingM4aDownloadUrl(audioUrl) {
-            if (!audioUrl || !window.storage || !window.ref || !window.getDownloadURL) return null;
+            if (!audioUrl) return null;
             const path = syncReplyExtractStorageObjectPath(audioUrl);
             if (!path || !/\.(webm|ogg|mp4|wav)$/i.test(path)) return null;
             const m4aPath = path.replace(/\.(webm|ogg|mp4|wav)$/i, '.m4a');
             if (m4aPath === path) return null;
-            try {
-                return await window.getDownloadURL(window.ref(window.storage, m4aPath));
-            } catch (e) {
-                return null;
-            }
+            return tryGetDownloadURLForPathMultiBucket(m4aPath);
         }
 
         /** نفس المسار في Storage مع token جديد — يرفع أخطاء «Load failed» إن كان رابط Firestore قديماً أو الـ token منتهياً. */
         async function tryGetFreshFirebaseStorageDownloadUrl(audioUrl) {
-            if (!audioUrl || !window.storage || !window.ref || !window.getDownloadURL) return null;
+            if (!audioUrl) return null;
             const path = syncReplyExtractStorageObjectPath(audioUrl);
             if (!path || !/^uploads\//i.test(path)) return null;
-            try {
-                return await window.getDownloadURL(window.ref(window.storage, path));
-            } catch (e) {
-                return null;
-            }
+            return tryGetDownloadURLForPathMultiBucket(path);
         }
 
         /** سفاري: <audio crossOrigin + رابط Firebase> يعطي «Load failed» رغم صلاحية الملف — الجلب ثم blob يعمل مع createMediaElementSource. */
@@ -6547,10 +6557,21 @@
                 if (rp && /^https?:/i.test(rp)) list.push(rp);
             } catch (e) {}
             const seen = new Set();
+            const httpsList = [];
             for (const u of list) {
                 if (!u || seen.has(u)) continue;
                 seen.add(u);
                 if (!/^https?:/i.test(u)) continue;
+                httpsList.push(u);
+            }
+            function syncReplyUrlDecodePriority(u) {
+                if (/\.m4a(\?|#|$)/i.test(u)) return 0;
+                if (/\.(webm|ogg)(\?|#|$)/i.test(u)) return 2;
+                return 1;
+            }
+            httpsList.sort((a, b) => syncReplyUrlDecodePriority(a) - syncReplyUrlDecodePriority(b));
+            for (let hi = 0; hi < httpsList.length; hi++) {
+                const u = httpsList[hi];
                 try {
                     const res = await fetch(u, { mode: 'cors', credentials: 'omit', cache: 'no-store' });
                     if (!res.ok) continue;
@@ -6663,42 +6684,19 @@
             let tryUrls = [];
             const prefetchBlobs = [];
 
+            /* تسجيل الطالب: فقط Web Audio decode — لا <audio>/Load failed على سفاري. المحاولات = إعادة جلب الرابط من Firestore في الحلقة الخارجية. */
             if (mode === 'student') {
                 const primaryUrl = primaryUrlOrBlob;
-                const decodedFirst = await syncReplyTryDecodeAudioBuffer(ctx, primaryUrl);
-                if (decodedFirst) {
-                    return { studentAudioEl: null, studentDecodedBuffer: decodedFirst, revokeBlobUrl: null };
+                if (!primaryUrl || typeof primaryUrl !== 'string' || !/^https?:/i.test(primaryUrl)) {
+                    throw new Error('audio load');
                 }
-                try {
-                    const freshDl = await tryGetFreshFirebaseStorageDownloadUrl(primaryUrl);
-                    if (freshDl) syncReplyUnshiftUrl(tryUrls, freshDl);
-                } catch (e) {}
-                try {
-                    const m4aUrl = await tryGetSiblingM4aDownloadUrl(primaryUrl);
-                    if (m4aUrl) syncReplyUnshiftUrl(tryUrls, m4aUrl);
-                } catch (e) {}
-                syncReplyPushUrl(tryUrls, primaryUrl);
-                try { syncReplyPushUrl(tryUrls, await resolveFeedAudioPlayUrl(primaryUrl)); } catch (e) {}
-                if (shouldBufferFeedAudioFully()) {
-                    const seenH = new Set();
-                    const httpsOrdered = [];
-                    for (const u of tryUrls) {
-                        if (!/^https?:/i.test(u) || seenH.has(u)) continue;
-                        seenH.add(u);
-                        httpsOrdered.push(u);
-                    }
-                    const front = [];
-                    for (const u of httpsOrdered) {
-                        try {
-                            const blobPlay = await syncReplyHttpsToBlobPlayUrl(u);
-                            if (blobPlay) {
-                                front.push(blobPlay);
-                                prefetchBlobs.push(blobPlay);
-                            }
-                        } catch (e) {}
-                    }
-                    if (front.length) tryUrls = front.concat(tryUrls);
+                const decodedBuf = await syncReplyTryDecodeAudioBuffer(ctx, primaryUrl);
+                if (decodedBuf) {
+                    return { studentAudioEl: null, studentDecodedBuffer: decodedBuf, revokeBlobUrl: null };
                 }
+                const decFail = new Error('sync-reply-decode-failed');
+                decFail.syncReplyStudent = true;
+                throw decFail;
             } else {
                 if (!(primaryUrlOrBlob instanceof Blob)) throw new Error('invalid draft');
                 let b = primaryUrlOrBlob;
@@ -6732,70 +6730,6 @@
                     break;
                 } catch (e) {
                     lastErr = e;
-                }
-            }
-
-            if (!studentAudioEl && mode === 'student') {
-                syncReplyRevokePrefetchBlobs(prefetchBlobs, null);
-                const primary = primaryUrlOrBlob;
-                const fetchSources = [];
-                try {
-                    const freshP = await tryGetFreshFirebaseStorageDownloadUrl(primary);
-                    if (freshP) fetchSources.push(freshP);
-                } catch (e) {}
-                try {
-                    const m4aU = await tryGetSiblingM4aDownloadUrl(primary);
-                    if (m4aU) fetchSources.push(m4aU);
-                } catch (e) {}
-                fetchSources.push(primary);
-                let blobRevoke = null;
-                let lastFetch = null;
-                for (const src of fetchSources) {
-                    let fetchUrl = src;
-                    try { fetchUrl = await resolveFeedAudioPlayUrl(src); } catch (e) {}
-                    try {
-                        const res = await fetch(fetchUrl, { mode: 'cors', credentials: 'omit', cache: 'no-store' });
-                        lastFetch = res;
-                        if (!res.ok) continue;
-                        const ab = await res.arrayBuffer();
-                        if (!ab.byteLength) continue;
-                        try {
-                            const decBuf = await syncReplyDecodeArrayBufferToAudio(ctx, ab);
-                            if (decBuf) {
-                                syncReplyRevokePrefetchBlobs(prefetchBlobs, null);
-                                return { studentAudioEl: null, studentDecodedBuffer: decBuf, revokeBlobUrl: null };
-                            }
-                        } catch (de) {}
-                        let blobType = ((res.headers.get('content-type') || '').split(';')[0] || '').trim();
-                        const pathPart = (syncReplyExtractStorageObjectPath(src) || src || '').toLowerCase();
-                        if (pathPart.endsWith('.m4a') || /mp4|mpeg|audio\/mp4/i.test(blobType)) blobType = 'audio/mp4';
-                        else if (!blobType || blobType === 'application/octet-stream') {
-                            if (pathPart.includes('.webm')) blobType = 'audio/webm';
-                            else if (pathPart.includes('.ogg')) blobType = 'audio/ogg';
-                            else if (pathPart.includes('.wav')) blobType = 'audio/wav';
-                            else blobType = 'application/octet-stream';
-                        }
-                        blobRevoke = URL.createObjectURL(new Blob([ab], { type: blobType }));
-                        try {
-                            const r = await attachSyncReplyMediaElement(ctx, studentGain, blobRevoke);
-                            studentAudioEl = r.el;
-                            if (revokeBlobUrl) { try { URL.revokeObjectURL(revokeBlobUrl); } catch (e) {} }
-                            revokeBlobUrl = blobRevoke;
-                            blobRevoke = null;
-                            lastErr = null;
-                            break;
-                        } catch (e) {
-                            try { URL.revokeObjectURL(blobRevoke); } catch (e2) {}
-                            blobRevoke = null;
-                            lastErr = e;
-                        }
-                    } catch (e) {
-                        lastErr = e;
-                    }
-                }
-                if (!studentAudioEl) {
-                    if (lastFetch && !lastFetch.ok) throw lastErr || new Error('fetch ' + lastFetch.status);
-                    throw lastErr || new Error('audio load');
                 }
             }
 

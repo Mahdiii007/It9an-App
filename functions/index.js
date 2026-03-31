@@ -43,8 +43,34 @@ function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-/** Ersetzt eine Storage-URL (encodeURIComponent des alten Objektpfads) in posts + replies. */
-async function replaceAudioUrlInPostsOnce(db, pathNeedle, newUrl) {
+/** Mehrere Such-Strings: gleicher Pfad kann in URLs unterschiedlich kodiert sein (Firestore-Update darf nicht verfehlen). */
+function pathNeedlesForFirestoreUrlReplace(filePath) {
+  const needles = new Set();
+  if (!filePath || typeof filePath !== 'string') return [];
+  needles.add(encodeURIComponent(filePath));
+  try {
+    const parts = filePath.split('/').filter(Boolean);
+    if (parts.length >= 2) {
+      needles.add(parts.map((p) => encodeURIComponent(p)).join('%2F'));
+    }
+  } catch (e) { /* ignore */ }
+  if (filePath.includes('%')) {
+    try {
+      needles.add(encodeURIComponent(decodeURIComponent(filePath)));
+    } catch (e) { /* ignore */ }
+  }
+  return [...needles].filter(Boolean);
+}
+
+function audioUrlMatchesAnyNeedle(url, needles) {
+  if (!url || typeof url !== 'string' || !needles.length) return false;
+  return needles.some((n) => url.includes(n));
+}
+
+/** Ersetzt eine Storage-URL (mehrere Kodierungs-Varianten des Objektpfads) in posts + replies. */
+async function replaceAudioUrlInPostsOnce(db, filePath, newUrl) {
+  const needles = pathNeedlesForFirestoreUrlReplace(filePath);
+  if (needles.length === 0) return 0;
   const snap = await db.collection('posts').get();
   const commits = [];
   let batch = db.batch();
@@ -53,13 +79,13 @@ async function replaceAudioUrlInPostsOnce(db, pathNeedle, newUrl) {
   for (const doc of snap.docs) {
     const d = doc.data();
     const updates = {};
-    if (d.audioUrl && typeof d.audioUrl === 'string' && d.audioUrl.includes(pathNeedle)) {
+    if (d.audioUrl && typeof d.audioUrl === 'string' && audioUrlMatchesAnyNeedle(d.audioUrl, needles)) {
       updates.audioUrl = newUrl;
     }
     if (Array.isArray(d.replies)) {
       let repChanged = false;
       const newReplies = d.replies.map((r) => {
-        if (r && r.audioUrl && typeof r.audioUrl === 'string' && r.audioUrl.includes(pathNeedle)) {
+        if (r && r.audioUrl && typeof r.audioUrl === 'string' && audioUrlMatchesAnyNeedle(r.audioUrl, needles)) {
           repChanged = true;
           return { ...r, audioUrl: newUrl };
         }
@@ -666,8 +692,6 @@ async function transcodeUploadAudioHandler(event) {
   const tmpOut = path.join(os.tmpdir(), `out-${randomUUID()}.m4a`);
   const destPath = filePath.replace(TRANSCODE_INPUT_EXT, '.m4a');
   if (destPath === filePath) return;
-  const pathNeedle = encodeURIComponent(filePath);
-
   try {
     await bucket.file(filePath).download({ destination: tmpIn });
     await runFfmpegArgs([
@@ -702,7 +726,7 @@ async function transcodeUploadAudioHandler(event) {
 
     let patched = 0;
     for (let attempt = 0; attempt < 45; attempt++) {
-      const n = await replaceAudioUrlInPostsOnce(db, pathNeedle, newUrl);
+      const n = await replaceAudioUrlInPostsOnce(db, filePath, newUrl);
       if (n > 0) {
         patched = n;
         break;
