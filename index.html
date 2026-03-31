@@ -6870,9 +6870,9 @@
             const ctx = new (window.AudioContext || window.webkitAudioContext)();
             if (ctx.state === 'suspended') await ctx.resume();
 
-            /* Wie normaler الرد: kein Compressor auf der Aufnahme. Mic 2.3 + Stereo→Kanal 0 wie toggleRecord. Schüler ohne Extra-Gain — Feed klingt damit schon richtig. */
+            /* Aufnahme: Schüler Gain 1 wie Feed. Nur Monitoring: Web-Audio→Lautsprecher während play-and-record wirkt leiser als feedAudio — extra Gain nur in den Hör-Pfad, nicht in dest. */
             const SYNC_REPLY_MIC_PRE = 2.3;
-            const SYNC_REPLY_MONITOR_MASTER = 0.94;
+            const SYNC_REPLY_MONITOR_STUDENT = 1.16;
             const studentGain = ctx.createGain();
             studentGain.gain.value = 1;
 
@@ -6908,10 +6908,13 @@
             }
 
             const dest = ctx.createMediaStreamDestination();
+            const studentMonitorBoost = ctx.createGain();
+            studentMonitorBoost.gain.value = SYNC_REPLY_MONITOR_STUDENT;
             const monitorGain = ctx.createGain();
-            monitorGain.gain.value = SYNC_REPLY_MONITOR_MASTER;
+            monitorGain.gain.value = 1;
             studentGain.connect(dest);
-            studentGain.connect(monitorGain);
+            studentGain.connect(studentMonitorBoost);
+            studentMonitorBoost.connect(monitorGain);
             monitorGain.connect(ctx.destination);
 
             const micGain = ctx.createGain();
