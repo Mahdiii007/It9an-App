@@ -6314,10 +6314,22 @@
             }
         }
 
+        /** نفس المسار في Storage مع token جديد — يرفع أخطاء «Load failed» إن كان رابط Firestore قديماً أو الـ token منتهياً. */
+        async function tryGetFreshFirebaseStorageDownloadUrl(audioUrl) {
+            if (!audioUrl || !window.storage || !window.ref || !window.getDownloadURL) return null;
+            const path = syncReplyExtractStorageObjectPath(audioUrl);
+            if (!path || !/^uploads\//i.test(path)) return null;
+            try {
+                return await window.getDownloadURL(window.ref(window.storage, path));
+            } catch (e) {
+                return null;
+            }
+        }
+
         /** سفاري: <audio crossOrigin + رابط Firebase> يعطي «Load failed» رغم صلاحية الملف — الجلب ثم blob يعمل مع createMediaElementSource. */
         async function syncReplyHttpsToBlobPlayUrl(httpsUrl) {
             if (!httpsUrl || !/^https?:/i.test(httpsUrl)) return null;
-            const res = await fetch(httpsUrl, { mode: 'cors', credentials: 'omit', cache: 'default' });
+            const res = await fetch(httpsUrl, { mode: 'cors', credentials: 'omit', cache: 'no-store' });
             if (!res.ok) return null;
             const ab = await res.arrayBuffer();
             if (!ab.byteLength) return null;
@@ -6351,57 +6363,100 @@
         }
 
         async function attachSyncReplyMediaElement(ctx, studentGain, srcUrl) {
-            const el = document.createElement('audio');
-            el.setAttribute('playsinline', '');
-            el.setAttribute('webkit-playsinline', '');
-            el.preload = 'auto';
-            el.style.display = 'none';
-            if (/^blob:|^data:/i.test(String(srcUrl || ''))) {
-                el.removeAttribute('crossorigin');
-            } else {
-                el.crossOrigin = 'anonymous';
-            }
-            el.src = srcUrl;
-            document.body.appendChild(el);
-            try {
-                await new Promise((resolve, reject) => {
-                    let settled = false;
-                    const t = setTimeout(() => {
-                        if (settled) return;
-                        settled = true;
-                        reject(new Error('timeout'));
-                    }, 90000);
-                    const ok = () => {
-                        if (settled) return;
-                        settled = true;
-                        clearTimeout(t);
-                        resolve();
-                    };
-                    const fail = () => {
-                        if (settled) return;
-                        settled = true;
-                        clearTimeout(t);
-                        const me = el.error;
-                        let detail = 'media';
-                        if (me) {
-                            detail = (me.message && String(me.message).trim()) ? String(me.message).trim() : ('MediaError ' + me.code);
+            const strictMediaReady = shouldBufferFeedAudioFully();
+
+            async function tryOneMediaTag(tagName) {
+                const el = document.createElement(tagName);
+                el.setAttribute('playsinline', '');
+                el.setAttribute('webkit-playsinline', '');
+                el.preload = 'auto';
+                el.style.display = 'none';
+                if (/^blob:|^data:/i.test(String(srcUrl || ''))) {
+                    el.removeAttribute('crossorigin');
+                } else {
+                    el.crossOrigin = 'anonymous';
+                }
+                el.src = srcUrl;
+                document.body.appendChild(el);
+                try {
+                    await new Promise((resolve, reject) => {
+                        let settled = false;
+                        const t = setTimeout(() => {
+                            if (settled) return;
+                            settled = true;
+                            reject(new Error('timeout'));
+                        }, 90000);
+                        let relaxedIosTimer = null;
+                        const ok = () => {
+                            if (relaxedIosTimer) {
+                                clearTimeout(relaxedIosTimer);
+                                relaxedIosTimer = null;
+                            }
+                            if (settled) return;
+                            settled = true;
+                            clearTimeout(t);
+                            resolve();
+                        };
+                        const fail = () => {
+                            if (relaxedIosTimer) {
+                                clearTimeout(relaxedIosTimer);
+                                relaxedIosTimer = null;
+                            }
+                            if (settled) return;
+                            settled = true;
+                            clearTimeout(t);
+                            const me = el.error;
+                            let detail = 'media';
+                            if (me) {
+                                detail = (me.message && String(me.message).trim()) ? String(me.message).trim() : ('MediaError ' + me.code);
+                            }
+                            reject(new Error(detail));
+                        };
+                        el.addEventListener('canplaythrough', ok, { once: true });
+                        if (strictMediaReady) {
+                            /* iOS يتأخر أو لا يرسل canplaythrough لبعض M4A — بعد 8s نفس مستوى الاعتماد السابق */
+                            relaxedIosTimer = setTimeout(() => {
+                                relaxedIosTimer = null;
+                                el.addEventListener('canplay', ok, { once: true });
+                                el.addEventListener('loadeddata', ok, { once: true });
+                            }, 8000);
+                        } else {
+                            el.addEventListener('canplay', ok, { once: true });
+                            el.addEventListener('loadeddata', ok, { once: true });
                         }
-                        reject(new Error(detail));
-                    };
-                    el.addEventListener('canplaythrough', ok, { once: true });
-                    el.addEventListener('canplay', ok, { once: true });
-                    el.addEventListener('loadeddata', ok, { once: true });
-                    el.addEventListener('error', fail, { once: true });
-                    try { el.load(); } catch (e) { clearTimeout(t); reject(e); return; }
-                    if (el.readyState >= 2) ok();
-                });
-            } catch (err) {
-                if (el.parentNode) try { el.parentNode.removeChild(el); } catch (e) {}
-                throw err;
+                        el.addEventListener('error', fail, { once: true });
+                        try { el.load(); } catch (e) { clearTimeout(t); reject(e); return; }
+                        if (strictMediaReady) {
+                            if (el.readyState >= 4) ok();
+                        } else if (el.readyState >= 2) {
+                            ok();
+                        }
+                    });
+                } catch (err) {
+                    if (el.parentNode) try { el.parentNode.removeChild(el); } catch (e) {}
+                    throw err;
+                }
+                let mes;
+                try {
+                    mes = ctx.createMediaElementSource(el);
+                } catch (e) {
+                    if (el.parentNode) try { el.parentNode.removeChild(el); } catch (e2) {}
+                    throw e;
+                }
+                mes.connect(studentGain);
+                return { el, mes };
             }
-            const mes = ctx.createMediaElementSource(el);
-            mes.connect(studentGain);
-            return { el, mes };
+
+            try {
+                return await tryOneMediaTag('audio');
+            } catch (e) {
+                if (strictMediaReady && /^blob:/i.test(String(srcUrl || ''))) {
+                    try {
+                        return await tryOneMediaTag('video');
+                    } catch (e2) { /* fall through */ }
+                }
+                throw e;
+            }
         }
 
         function syncReplyPushUrl(list, u) {
@@ -6442,6 +6497,10 @@
 
             if (mode === 'student') {
                 const primaryUrl = primaryUrlOrBlob;
+                try {
+                    const freshDl = await tryGetFreshFirebaseStorageDownloadUrl(primaryUrl);
+                    if (freshDl) syncReplyUnshiftUrl(tryUrls, freshDl);
+                } catch (e) {}
                 try {
                     const m4aUrl = await tryGetSiblingM4aDownloadUrl(primaryUrl);
                     if (m4aUrl) syncReplyUnshiftUrl(tryUrls, m4aUrl);
@@ -6509,6 +6568,10 @@
                 const primary = primaryUrlOrBlob;
                 const fetchSources = [];
                 try {
+                    const freshP = await tryGetFreshFirebaseStorageDownloadUrl(primary);
+                    if (freshP) fetchSources.push(freshP);
+                } catch (e) {}
+                try {
                     const m4aU = await tryGetSiblingM4aDownloadUrl(primary);
                     if (m4aU) fetchSources.push(m4aU);
                 } catch (e) {}
@@ -6519,7 +6582,7 @@
                     let fetchUrl = src;
                     try { fetchUrl = await resolveFeedAudioPlayUrl(src); } catch (e) {}
                     try {
-                        const res = await fetch(fetchUrl, { mode: 'cors', credentials: 'omit', cache: 'default' });
+                        const res = await fetch(fetchUrl, { mode: 'cors', credentials: 'omit', cache: 'no-store' });
                         lastFetch = res;
                         if (!res.ok) continue;
                         const ab = await res.arrayBuffer();
