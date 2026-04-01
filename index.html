@@ -650,14 +650,16 @@
         .btn:active { transform: scale(0.9); }
         .btn-rec { background: var(--red); border: 4px solid #fff; box-shadow: 0 4px 15px rgba(192, 57, 43, 0.3); }
         .btn-rec.recording { animation: pulse 1s infinite; background: white; color: var(--red); border: 2px solid var(--red); }
+        .btn-rec-yellow { background: #f1c40f; color: #222; border: 4px solid #fff; box-shadow: 0 4px 15px rgba(212, 172, 13, 0.45); }
+        .btn-rec-yellow.recording { animation: pulse 1s infinite; background: #fff; color: #b7950b; border: 2px solid #f1c40f; }
+        .btn-rec-yellow .icon-mic { width: 26px; height: 26px; }
         /* Klassisches Outline-Mikrofon (vergleichbar mit gängigen Social-App-Icons) */
         .icon-mic { display: inline-block; vertical-align: middle; width: 1.15em; height: 1.15em; flex-shrink: 0; color: inherit; }
         .btn-rec .icon-mic { width: 26px; height: 26px; }
         .verse-rec-buttons-wrap { display: flex; align-items: center; justify-content: center; gap: 12px; flex-shrink: 0; flex-wrap: nowrap; }
-        .btn-rec-dual { padding: 0 !important; }
-        .btn-rec-dual .btn-rec-dual-icons { display: inline-flex; align-items: center; justify-content: center; gap: 1px; }
-        .btn-rec-dual .icon-mic-dual { width: 14px; height: 14px; flex-shrink: 0; }
-        .btn-rec-dual .icon-ear-dual { width: 14px; height: 14px; flex-shrink: 0; }
+        .verse-mic-col { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 4px; }
+        .verse-mic-label { font-size: 11px; color: #555; text-align: center; max-width: 76px; line-height: 1.25; font-family: 'Amiri', serif; }
+        .verse-mic-label-sync { color: #9a7b0a; }
         .student-hold-rec-btn { touch-action: none; user-select: none; -webkit-user-select: none; }
         .setup-step-btn .icon-mic { width: 1.2em; height: 1.2em; }
         .verse-list-title .icon-mic { width: 24px; height: 24px; }
@@ -1051,8 +1053,14 @@
                     <div class="setting-group view-count-in-settings" onclick="showViewers()" title="مشاهدة"><span>تكرار</span><span id="viewCount">0</span></div>
                 </div>
                 <div class="verse-rec-buttons-wrap" id="verseRecButtonsWrap">
+                <div class="verse-mic-col">
                 <button type="button" id="recBtn" class="btn btn-rec" onclick="toggleRecord()" title="تسجيل تلاوة كاملة" aria-label="تسجيل"><svg class="icon-mic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
-                <button type="button" id="studentVersePracticeBtn" class="btn btn-rec btn-rec-dual student-hold-rec-btn" style="display:none;" title="تشغيل المقطع — اضغط مع الاستمرار أثناء التشغيل للتسجيل" aria-label="مقطع وتسجيل"><span class="btn-rec-dual-icons" aria-hidden="true"><svg class="icon-mic-dual" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg><svg class="icon-ear-dual" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0v4a4 4 0 0 1-4 4h-2"/><path d="M9 9c0 1.5 1 3 3 3s3-1.5 3-3"/></svg></span></button>
+                <span class="verse-mic-label" id="recBtnSubLabel">رد عادي</span>
+                </div>
+                <div class="verse-mic-col" id="studentVersePracticeWrap" style="display:none;">
+                <button type="button" id="studentVersePracticeBtn" class="btn btn-rec-yellow student-hold-rec-btn" title="نقرة: تشغيل المقطع مع المؤقت و«إنهاء». اضغط مطوّلاً أثناء التشغيل للتسجيل" aria-label="تمرين مع المقطع"><svg class="icon-mic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
+                <span class="verse-mic-label verse-mic-label-sync" id="studentVersePracticeSubLabel">رد متزامن</span>
+                </div>
                 <button id="playBtn" class="btn btn-play" onclick="toggleSmartLoop()">▶</button>
                 </div>
             </div>
@@ -1986,6 +1994,8 @@
         /** Schüler: Vers hören (Dual-Button), Halte-Mikro, nach Vers-Ende Aufnahme; Review grün/gelb. */
         let studentEchoSegmentBlobs = [];
         let studentEchoPostVersePhase = false;
+        /** Gelber Mic: eine Klick-Session mit Timer/إنهاء ab Versstart bis Review */
+        let studentEchoPracticeSessionActive = false;
         let echoHoldMediaRecorder = null, echoHoldChunks = [];
         let echoHoldStream = null, echoHoldRawStream = null, echoHoldRecCtx = null;
         let echoHoldIosPlaybackRestore = null;
@@ -2229,6 +2239,14 @@
             try {
                 if (await maybeStartStudentEchoPostVerse()) return;
             } catch (e) { console.warn('studentEcho post-verse:', e); }
+            if (studentEchoPracticeSessionActive) {
+                isPlaying = false;
+                isPaused = false;
+                releaseWakeLock();
+                const pbe = document.getElementById('playBtn');
+                if (pbe) pbe.innerText = '▶';
+                return;
+            }
             const gapDur = audioEl.duration || 0;
             if (document.getElementById('globalGap').checked) {
                 const pauseTime = Math.ceil((gapDur || 15) * 1.25);
@@ -7611,6 +7629,7 @@
             }
             studentEchoSegmentBlobs = [];
             studentEchoPostVersePhase = false;
+            studentEchoPracticeSessionActive = false;
         }
         function playStudentEchoBeep() {
             try {
@@ -7633,13 +7652,16 @@
         }
         function syncStudentVersEchoUi() {
             const prBtn = document.getElementById('studentVersePracticeBtn');
+            const prWrap = document.getElementById('studentVersePracticeWrap');
             const role = localStorage.getItem('it9an_role');
             const uid = localStorage.getItem('it9an_uid');
             if (!prBtn) return;
             if (role !== 'student' || !uid || uid === 'guest') {
-                prBtn.style.display = 'none';
+                if (prWrap) prWrap.style.display = 'none';
+                else prBtn.style.display = 'none';
                 return;
             }
+            if (prWrap) prWrap.style.display = 'flex';
             prBtn.style.display = '';
             const notifBlocked = hasUnlistenedNotificationsForStage(currentStageId);
             const pendingTeacher = studentHasUnfinishedRecordingOnCurrentVerse();
@@ -7662,7 +7684,7 @@
             } else {
                 prBtn.style.opacity = '';
                 prBtn.style.cursor = '';
-                prBtn.title = 'نقرة: تشغيل/إيقاف المقطع — اضغط مع الاستمرار أثناء التشغيل للتسجيل ثم يكمل المقطع';
+                prBtn.title = 'أول نقرة: بدء التمرين والمؤقت. نقرة أثناء التشغيل: إيقاف مؤقت — ليس للتكرار (ذلك من زر التشغيل الأخضر). ضغط مطوّل: تسجيل';
             }
         }
         function writeWavString(view, offset, str) {
@@ -7800,6 +7822,7 @@
             return encodeWavFloat32Mono(out, sampleRate);
         }
         async function finalizeStudentEchoRecording(tailBlob) {
+            studentEchoPracticeSessionActive = false;
             studentEchoPostVersePhase = false;
             const recBtn = document.getElementById('recBtn');
             if (recBtn) recBtn.classList.remove('recording');
@@ -7830,6 +7853,10 @@
                 currentBlob = tailBlob;
             }
             studentEchoSegmentBlobs = [];
+            if (!currentBlob || currentBlob.size === 0) {
+                alert('تعذّر إنشاء معاينة للتسجيل. تحقّق من الاتصال أو حاوِل مرة أخرى.');
+                return;
+            }
             showReviewModal();
         }
         async function maybeStartStudentEchoPostVerse() {
@@ -8075,19 +8102,29 @@
                 requestWakeLock();
                 const recBtn = document.getElementById('recBtn');
                 if (recBtn && recBtn.style.display !== 'none') recBtn.classList.add('recording');
-                if (ui) ui.style.display = 'flex';
-                recSeconds = 0;
                 const rt = document.getElementById('recTimer');
-                if (rt) rt.innerText = '00:00';
-                recInterval = setInterval(() => {
-                    recSeconds++;
-                    let m = Math.floor(recSeconds / 60);
-                    let s = recSeconds % 60;
-                    if (rt) rt.innerText = (m < 10 ? '0' + m : m) + ':' + (s < 10 ? '0' + s : s);
-                    if (recSeconds >= maxRecDuration) stopRecordingAndReview();
-                }, 1000);
+                if (!studentEchoPracticeSessionActive) {
+                    if (ui) ui.style.display = 'flex';
+                    recSeconds = 0;
+                    if (rt) rt.innerText = '00:00';
+                    recInterval = setInterval(() => {
+                        recSeconds++;
+                        let m = Math.floor(recSeconds / 60);
+                        let s = recSeconds % 60;
+                        if (rt) rt.innerText = (m < 10 ? '0' + m : m) + ':' + (s < 10 ? '0' + s : s);
+                        if (recSeconds >= maxRecDuration) stopRecordingAndReview();
+                    }, 1000);
+                }
             } catch (e) {
                 studentEchoPostVersePhase = false;
+                if (studentEchoPracticeSessionActive) {
+                    studentEchoPracticeSessionActive = false;
+                    clearInterval(recInterval);
+                    const uix = document.getElementById('recording-ui');
+                    if (uix) uix.style.display = 'none';
+                    const recBtnErr = document.getElementById('recBtn');
+                    if (recBtnErr) recBtnErr.classList.remove('recording');
+                }
                 restoreIosMicPlaybackIfAny();
                 console.error('Student echo post-verse:', e);
                 alert('خطأ في الميكروفون');
@@ -8279,12 +8316,12 @@
                 }
             });
         }
-        function studentPracticeBtnGatesOkOrAlert() {
+        function studentPracticeSessionGatesOkOrAlert() {
             if (hasUnlistenedNotificationsForStage(currentStageId)) {
                 alert(REC_BLOCKED_MSG);
                 return false;
             }
-            if (studentHasUnfinishedRecordingOnCurrentVerse()) {
+            if (!replyTargetId && studentHasUnfinishedRecordingOnCurrentVerse()) {
                 alert(REC_PENDING_TEACHER_MSG);
                 return false;
             }
@@ -8293,6 +8330,87 @@
                 return false;
             }
             return true;
+        }
+        async function finishPracticeSessionWithReviewEarly() {
+            if (practiceBtnHoldDelayTimer) {
+                clearTimeout(practiceBtnHoldDelayTimer);
+                practiceBtnHoldDelayTimer = null;
+            }
+            practiceBtnHoldRecordingActive = false;
+            echoHoldPointerDown = false;
+            const prBtn = document.getElementById('studentVersePracticeBtn');
+            if (prBtn) prBtn.classList.remove('recording');
+            if (echoHoldMediaRecorder && echoHoldMediaRecorder.state !== 'inactive') {
+                await stopEchoHoldSegmentRecording();
+            } else {
+                restoreEchoHoldIosPlaybackIfAny();
+            }
+            verseWasPlayingBeforeHold = false;
+            stopLoop();
+            try {
+                await finalizeStudentEchoRecording(null);
+            } catch (e) {
+                console.warn('finishPracticeSessionWithReviewEarly', e);
+            }
+            resetStudentEchoSession();
+        }
+        function startVersePlaybackForPracticeSession() {
+            const dur = audioEl.duration || 0;
+            let t = audioEl.currentTime || 0;
+            if (audioEl.ended || (dur > 0 && t >= dur - 0.08)) {
+                try { audioEl.currentTime = 0; } catch (e) {}
+                t = 0;
+            }
+            isPlaying = true;
+            isPaused = false;
+            const pb = document.getElementById('playBtn');
+            if (pb) pb.innerText = '⏸';
+            requestWakeLock();
+            pauseFeedAudio();
+            audioEl.onended = function () { handleVerseAudioEnded().catch(() => {}); };
+            audioEl.play().catch(() => {
+                isPlaying = false;
+                if (pb) pb.innerText = '▶';
+                releaseWakeLock();
+            });
+        }
+        function beginStudentPracticeSessionFromYellowMic() {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                alert('يوجد تسجيل قائم بالميكروفون الأحمر. أوقف التسجيل أولاً.');
+                return;
+            }
+            resetStudentEchoSession();
+            studentEchoPracticeSessionActive = true;
+            studentEchoSegmentBlobs = [];
+            recordingFileId = currentGlobalFileId;
+            recordingStageId = currentStageId;
+            clearInterval(pauseInterval);
+            pauseSecondsLeft = 0;
+            audioEl.pause();
+            isPlaying = false;
+            isPaused = true;
+            releaseWakeLock();
+            const pbClear = document.getElementById('playBtn');
+            if (pbClear) pbClear.innerText = '▶';
+            const ui = document.getElementById('recording-ui');
+            const statusText = document.getElementById('recText');
+            const rt = document.getElementById('recTimer');
+            let dur = audioEl.duration;
+            if (!dur || isNaN(dur)) dur = 15;
+            maxRecDuration = Math.min(900, Math.ceil(dur * 12));
+            clearInterval(recInterval);
+            recSeconds = 0;
+            if (rt) rt.innerText = '00:00';
+            if (statusText) statusText.innerText = 'تشغيل المقطع… اضغط مطوّلاً على الزر الأصفر أثناء الاستماع للتسجيل، ثم «إنهاء» عند الانتهاء';
+            if (ui) ui.style.display = 'flex';
+            recInterval = setInterval(() => {
+                recSeconds++;
+                let m = Math.floor(recSeconds / 60);
+                let s = recSeconds % 60;
+                if (rt) rt.innerText = (m < 10 ? '0' + m : m) + ':' + (s < 10 ? '0' + s : s);
+                if (recSeconds >= maxRecDuration) stopRecordingAndReview();
+            }, 1000);
+            startVersePlaybackForPracticeSession();
         }
         async function beginPracticeBtnHoldRecording() {
             if (!shouldUseStudentEchoHoldMode() || studentEchoPostVersePhase) return;
@@ -8381,9 +8499,37 @@
                 e.stopPropagation();
                 return;
             }
+            if (localStorage.getItem('it9an_uid') === 'guest') {
+                showGuestRegisterModal();
+                return;
+            }
             if (localStorage.getItem('it9an_role') !== 'student') return;
-            if (!studentPracticeBtnGatesOkOrAlert()) return;
-            toggleSmartLoop();
+            const syncUi = document.getElementById('sync-reply-ui');
+            if (syncUi && syncUi.style.display === 'flex') return;
+            if (studentEchoPracticeSessionActive) {
+                if (studentEchoPostVersePhase) return;
+                if (echoHoldMediaRecorder && echoHoldMediaRecorder.state === 'recording') return;
+                const dur = audioEl.duration || 0;
+                const t = audioEl.currentTime || 0;
+                if (!audioEl.paused && dur > 0 && t < dur - 0.05) {
+                    clearInterval(pauseInterval);
+                    pauseSecondsLeft = 0;
+                    audioEl.pause();
+                    isPlaying = false;
+                    isPaused = true;
+                    releaseWakeLock();
+                    const pb = document.getElementById('playBtn');
+                    if (pb) pb.innerText = '▶';
+                    return;
+                }
+                if (audioEl.paused && dur > 0 && t < dur - 0.05) {
+                    startVersePlaybackForPracticeSession();
+                    return;
+                }
+                return;
+            }
+            if (!studentPracticeSessionGatesOkOrAlert()) return;
+            beginStudentPracticeSessionFromYellowMic();
         }
         (function bindStudentEchoControls() {
             const prBtn = document.getElementById('studentVersePracticeBtn');
@@ -8400,6 +8546,10 @@
             if (syncUi && syncUi.style.display === 'flex') return;
             if (localStorage.getItem('it9an_uid') === 'guest') {
                 showGuestRegisterModal();
+                return;
+            }
+            if (studentEchoPracticeSessionActive) {
+                alert('أنهِ تمرين المقطع بزر «إنهاء» أولاً أو أكمِل التسجيل بعد انتهاء المقطع.');
                 return;
             }
             if (localStorage.getItem('it9an_role') === 'student') {
@@ -8659,11 +8809,17 @@
                     practiceBtnHoldDelayTimer = null;
                 }
                 const needResumeVerse = verseWasPlayingBeforeHold;
+                const endPracticeAfter = studentEchoPracticeSessionActive && !studentEchoPostVersePhase;
                 stopEchoHoldSegmentRecording().then(() => {
                     practiceBtnHoldRecordingActive = false;
                     echoHoldPointerDown = false;
                     const prBtn = document.getElementById('studentVersePracticeBtn');
                     if (prBtn) prBtn.classList.remove('recording');
+                    if (endPracticeAfter) {
+                        verseWasPlayingBeforeHold = false;
+                        finishPracticeSessionWithReviewEarly().catch(err => console.warn(err));
+                        return;
+                    }
                     if (needResumeVerse) {
                         isPlaying = true;
                         isPaused = false;
@@ -8675,8 +8831,15 @@
                     }
                     verseWasPlayingBeforeHold = false;
                 });
+                return;
             }
-            if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+                return;
+            }
+            if (studentEchoPracticeSessionActive && !studentEchoPostVersePhase) {
+                finishPracticeSessionWithReviewEarly().catch(err => console.warn(err));
+            }
         }
         function revokeReviewModalObjectUrls() {
             _reviewModalObjectUrls.forEach(u => { try { URL.revokeObjectURL(u); } catch (e) {} });
