@@ -2237,7 +2237,9 @@
                 } catch (e) {}
             }
             try {
-                if (await maybeStartStudentEchoPostVerse()) return;
+                if (studentEchoPracticeSessionActive) {
+                    if (await maybeStartStudentEchoPostVerse()) return;
+                }
             } catch (e) { console.warn('studentEcho post-verse:', e); }
             if (studentEchoPracticeSessionActive) {
                 isPlaying = false;
