@@ -1,6 +1,8 @@
 /* PWA Service Worker: Push (Ton+Vibration) + Offline-Caching
  * CACHE_NAME bei größeren Strategie-Änderungen erhöhen (alte Caches werden in activate entfernt). */
-const CACHE_NAME = 'it9an-v8';
+const CACHE_NAME = 'it9an-v10';
+const META_CACHE = 'it9an-sw-meta';
+const FORCE_LOGOUT_META_URL = 'https://it9an-sw-meta.local/force-logout-v';
 const CACHE_MAX_AGE = 24 * 60 * 60 * 1000;
 
 self.addEventListener('install', (e) => {
@@ -12,7 +14,11 @@ self.addEventListener('message', (event) => {
 });
 
 self.addEventListener('activate', (e) => {
-  e.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))));
+  e.waitUntil(
+    caches.keys().then((keys) =>
+      Promise.all(keys.filter((k) => k !== CACHE_NAME && k !== META_CACHE).map((k) => caches.delete(k)))
+    )
+  );
   self.clients.claim();
 });
 
@@ -64,6 +70,7 @@ self.addEventListener('fetch', (e) => {
 });
 
 importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js');
 
 firebase.initializeApp({
@@ -76,6 +83,62 @@ firebase.initializeApp({
 });
 
 const messaging = firebase.messaging();
+
+try {
+  if (messaging && typeof messaging.onTokenRefresh === 'function') {
+    messaging.onTokenRefresh(function () {
+      self.clients.matchAll({ type: 'window', includeUnclaimed: true }).then(function (cs) {
+        cs.forEach(function (c) {
+          try { c.postMessage({ type: 'IT9AN_FCM_TOKEN_NEEDS_SYNC' }); } catch (e) {}
+        });
+      });
+    });
+  }
+} catch (e) { /* ältere FCM-Version ohne onTokenRefresh */ }
+
+/* „تسجيل خروج الجميع“ auch für Nutzer mit alter gecachter index.html: Firestore im SW → postMessage */
+function getStoredForceLogoutV() {
+  return caches
+    .open(META_CACHE)
+    .then((c) => c.match(FORCE_LOGOUT_META_URL))
+    .then((r) => (r ? r.text() : '0'))
+    .then((t) => parseInt(t, 10) || 0)
+    .catch(() => 0);
+}
+function setStoredForceLogoutV(v) {
+  return caches
+    .open(META_CACHE)
+    .then((c) => c.put(FORCE_LOGOUT_META_URL, new Response(String(v))))
+    .catch(() => {});
+}
+function notifyForceLogoutToClients(version) {
+  self.clients.matchAll({ type: 'window', includeUnclaimed: true }).then((cs) => {
+    cs.forEach((client) => {
+      try {
+        client.postMessage({ type: 'IT9AN_FORCE_LOGOUT', version: version });
+      } catch (e) {}
+    });
+  });
+}
+try {
+  const db = firebase.firestore();
+  db.collection('appSettings')
+    .doc('forceLogout')
+    .onSnapshot(
+      (snap) => {
+        const v = snap.exists ? Number(snap.data().version) || 0 : 0;
+        getStoredForceLogoutV().then((prev) => {
+          if (v <= prev) return;
+          setStoredForceLogoutV(v).then(() => {
+            notifyForceLogoutToClients(v);
+          });
+        });
+      },
+      (err) => console.warn('forceLogout SW:', err)
+    );
+} catch (e) {
+  console.warn('forceLogout SW init:', e);
+}
 
 const _fcmMsgDedup = new Map();
 const FCM_MSG_DEDUP_MS = 8000;
@@ -123,18 +186,9 @@ function handleDismiss(data) {
   return true;
 }
 
-self.addEventListener('push', (e) => {
-  let payload = {};
-  try {
-    if (e.data) payload = e.data.json() || {};
-  } catch (err) {}
-  const d = payload.data || payload;
-  if (handleDismiss(d)) {
-    e.waitUntil(Promise.resolve());
-    return;
-  }
-  e.waitUntil(Promise.resolve());
-}, { capture: true });
+/* Kein eigener „push“-Listener mit e.data.json(): Der Body ist nur einmal lesbar —
+ * sonst sieht firebase-messaging oft keinen Payload mehr → onBackgroundMessage zeigt nichts.
+ * Dismiss läuft vollständig über onBackgroundMessage + handleDismiss(). */
 
 messaging.onBackgroundMessage((payload) => {
   const data = payload.data || payload || {};
@@ -149,7 +203,7 @@ messaging.onBackgroundMessage((payload) => {
     const body = data.body || 'إشعار جديد';
     const badgeCount = parseInt(data.badge || '1', 10) || 1;
     await setAppBadgeCount(badgeCount);
-    const iconUrl = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect fill='%230f4c3a' width='192' height='192' rx='24'/%3E%3Ctext x='96' y='120' font-size='100' text-anchor='middle' fill='%23d4af37' font-family='serif'%3Eٱ%3C/text%3E%3C/svg%3E";
+    const iconUrl = "data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%20192%20192'%3E%3Crect%20fill%3D'%230f4c3a'%20width%3D'192'%20height%3D'192'%20rx%3D'24'%2F%3E%3Ctext%20x%3D'96'%20y%3D'118'%20font-size%3D'48'%20text-anchor%3D'middle'%20fill%3D'%23d4af37'%20font-family%3D'Amiri%2CNoto%20Naskh%20Arabic%2CNoto%20Sans%20Arabic%2Cserif'%20direction%3D'rtl'%20unicode-bidi%3D'embed'%3E%D8%A5%D8%AA%D9%82%D8%A7%D9%86%3C%2Ftext%3E%3C%2Fsvg%3E";
     const urlParams = new URLSearchParams();
     if (data.openLesson === '1') {
       urlParams.set('openLesson', '1');

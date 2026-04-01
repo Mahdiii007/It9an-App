@@ -229,7 +229,7 @@ async function sendDismissPush(tokens, tag) {
   }
 }
 
-/** Beim Löschen eines Posts: Dismiss-Push senden, dann Firestore-Benachrichtigungen löschen */
+/** Beim Löschen eines Posts: Firestore-Benachrichtigungen löschen (kein Dismiss-Push – kein „Aufnahme gelöscht“ an Lehrer/Schüler). */
 exports.onPostDelete = functions
   .region('europe-west3')
   .firestore.document('posts/{postId}')
@@ -238,12 +238,6 @@ exports.onPostDelete = functions
     const postId = context.params.postId;
     const q = db.collection('notifications').where('postId', '==', postId);
     const snapNotif = await q.get();
-    for (const d of snapNotif.docs) {
-      const data = d.data();
-      const tag = `it9an-${data.type || ''}-${data.postId || ''}-${d.id}`;
-      const tokens = await getFcmTokensForTo(db, data.to, data.stageId, data.type);
-      await sendDismissPush(tokens, tag);
-    }
     const batch = db.batch();
     snapNotif.docs.forEach((d) => batch.delete(d.ref));
     if (snapNotif.size > 0) await batch.commit();

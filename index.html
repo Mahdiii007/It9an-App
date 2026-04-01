@@ -812,7 +812,7 @@
             <div class="verse-list-title" style="margin-bottom:15px;display:flex;align-items:center;justify-content:center;gap:10px;"><svg class="icon-mic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg><span>التسجيل الصوتي</span></div>
             <div style="text-align:right; line-height:1.7; font-size:15px; color:#333; margin-bottom:20px;">
                 <p style="margin:0 0 12px 0;">يجب عليك التسجيل كطالب للتسجيل الصوتي.</p>
-                <p style="margin:0;">إذا رغبت، <a href="#" onclick="hideGuestRegisterModal(); showGuestRegistrationFlow(); return false;" style="color:var(--primary); font-weight:bold; text-decoration:underline;">انقر هنا</a> – وستحصل على رمز شخصي يجب أن تحفظه وتستخدمه في المستقبل بدلاً من رمز الضيف 0000.</p>
+                <p style="margin:0;">إذا رغبت، <a href="#" onclick="hideGuestRegisterModal(); showGuestRegistrationFlow(); return false;" style="color:var(--primary); font-weight:bold; text-decoration:underline;">انقر هنا</a> للتسجيل كطالب والحصول على رمز شخصي.</p>
             </div>
             <button class="verse-list-btn" onclick="hideGuestRegisterModal()">إغلاق</button>
         </div>
@@ -912,6 +912,7 @@
 
         <div class="admin-actions">
             <button id="maintenanceModeBtn" class="btn-admin-reset" onclick="toggleMaintenanceMode()" title="إصلاح التطبيق: إظهار رسالة للجميع ما عدا المعلم 9898 والطالب 0860">🔧 وضع الإصلاح</button>
+            <button class="btn-admin-reset btn-admin-delete-all" onclick="adminForceLogoutAllUsers()" title="إجبار الطلاب والمعلمين على إعادة تسجيل الدخول (المسؤول يبقى متصلاً)">🚪 تسجيل خروج الجميع</button>
             <button class="btn-admin-reset" onclick="restoreStudentRecordingNotifications()" title="إعادة إشعارات التسجيلات والردود لجميع المستخدمين في جميع المراحل (يتم تشغيله تلقائياً يومياً الساعة 6 صباحاً)">🔔 استعادة إشعارات التسجيلات</button>
             <button class="btn-admin-reset" onclick="resetAllNotifications()">🔔 تصفير كل الإشعارات</button>
             <button class="btn-admin-reset" onclick="resetAllViews()">👂 تصفير كل المشاهدات</button>
@@ -1075,7 +1076,7 @@
         </div>
     </div>
 
-    <audio id="feedAudio"></audio>
+    <audio id="feedAudio" preload="none" playsinline webkit-playsinline></audio>
 
     <div class="footer" id="appFooter" style="display:none;">
         <div class="progress-container" style="display:none;">
@@ -1085,7 +1086,7 @@
         </div>
     </div>
     
-    <audio id="mainAudio"></audio>
+    <audio id="mainAudio" preload="none" playsinline webkit-playsinline></audio>
 
     <script>
         var notifUnsubscribe = null;
@@ -1095,7 +1096,26 @@
         const TEACHER_FATHIA_PIN = "9797";
         const TEACHER_MAHDI_PIN = "9696";
         const MAINTENANCE_EXEMPT_STUDENT_PIN = "0860";
-        const RESERVED_PINS = ["9898", "1879", "9797", "9696"];
+        const RESERVED_PINS = ["9898", "1879", "9797", "9696", "0000"];
+        function isBlockedGuestAccount(uid, role, userData) {
+            if (uid === 'guest') return true;
+            const r = role != null ? role : (userData && userData.role);
+            if (r === 'guest') return true;
+            if (userData && userData.uid === 'guest') return true;
+            return false;
+        }
+        function isPinExemptFromMaintenance(pin) {
+            const p = pin != null ? String(pin).trim() : '';
+            if (p.length !== 4) return false;
+            return p === TEACHER_LOTFI_PIN || p === TEACHER_FATHIA_PIN || p === TEACHER_MAHDI_PIN || p === MAINTENANCE_EXEMPT_STUDENT_PIN || p === ADMIN_PIN;
+        }
+        function isStoredSessionExemptFromMaintenance(uid) {
+            if (uid === 'admin_super') return true;
+            try {
+                const p = localStorage.getItem('it9an_pin') || localStorage.getItem('it9an_saved_pin') || '';
+                return isPinExemptFromMaintenance(p);
+            } catch (e) { return false; }
+        }
         function storePushParams(postId, fileId, notifId) {
             const o = { postId, fileId, notifId: notifId || '' };
             try { sessionStorage.setItem('it9an_pushParams', JSON.stringify(o)); } catch(e){}
@@ -1136,6 +1156,31 @@
                     storePushParams(m.postId, m.fileId, m.notifId || '');
                     if (typeof checkPushNotificationParams === 'function') setTimeout(() => checkPushNotificationParams().then(ok => { if (!ok && typeof showStagesView === 'function') showStagesView(); }), 600);
                     else if (m.url) window.location.href = m.url;
+                }
+                if (m && m.type === 'IT9AN_FCM_TOKEN_NEEDS_SYNC' && typeof window.it9anRefreshFcmTokenSilent === 'function') {
+                    window.it9anRefreshFcmTokenSilent(true);
+                }
+                if (m && m.type === 'IT9AN_FORCE_LOGOUT') {
+                    const v = parseInt(m.version, 10) || 0;
+                    try { localStorage.setItem('it9an_logout_gen', String(v)); } catch (e) {}
+                    if (localStorage.getItem('it9an_uid') === 'admin_super') return;
+                    function hardReloadSoon() {
+                        setTimeout(function() { try { window.location.reload(); } catch (e2) {} }, 200);
+                    }
+                    if (typeof window.doLogout === 'function') {
+                        try {
+                            var p = window.doLogout();
+                            if (p && typeof p.then === 'function') p.then(hardReloadSoon).catch(hardReloadSoon);
+                            else hardReloadSoon();
+                        } catch (e3) { hardReloadSoon(); }
+                    } else {
+                        try {
+                            ['it9an_uid', 'it9an_role', 'it9an_name', 'it9an_pin', 'it9an_saved_pin', 'it9an_hidden'].forEach(function(k) {
+                                try { localStorage.removeItem(k); } catch (e4) {}
+                            });
+                        } catch (e5) {}
+                        hardReloadSoon();
+                    }
                 }
             });
         }
@@ -1351,15 +1396,29 @@
         async function getMaintenanceMode() {
             try {
                 const ref = window.doc(window.db, APP_SETTINGS_DOC, 'maintenance');
-                const snap = await window.getDoc(ref);
+                let snap;
+                if (typeof window.getDocFromServer === 'function') {
+                    try {
+                        snap = await window.getDocFromServer(ref);
+                    } catch (e1) {
+                        snap = await window.getDoc(ref);
+                    }
+                } else {
+                    snap = await window.getDoc(ref);
+                }
                 return snap.exists() && snap.data().enabled === true;
-            } catch(e) { return false; }
+            } catch (e) { return false; }
         }
         window.toggleMaintenanceMode = async function() {
             if (!window.db || localStorage.getItem('it9an_uid') !== 'admin_super') return;
             try {
                 const ref = window.doc(window.db, APP_SETTINGS_DOC, 'maintenance');
-                const snap = await window.getDoc(ref);
+                let snap;
+                if (typeof window.getDocFromServer === 'function') {
+                    try { snap = await window.getDocFromServer(ref); } catch (e) { snap = await window.getDoc(ref); }
+                } else {
+                    snap = await window.getDoc(ref);
+                }
                 const current = snap.exists() && snap.data().enabled === true;
                 await window.setDoc(ref, { enabled: !current, updatedAt: window.serverTimestamp() });
                 updateMaintenanceButtonState(!current);
@@ -1380,6 +1439,72 @@
         window.showMaintenanceScreen = function() {
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('maintenance-screen').style.display = 'block';
+        };
+
+        function applyGlobalForceLogoutIfNeeded() {
+            return (async function() {
+                if (!window.db) return false;
+                const uid = localStorage.getItem('it9an_uid');
+                if (!uid || uid === 'admin_super') return false;
+                try {
+                    const ref = window.doc(window.db, APP_SETTINGS_DOC, 'forceLogout');
+                    let snap;
+                    if (typeof window.getDocFromServer === 'function') {
+                        try { snap = await window.getDocFromServer(ref); } catch (e) { snap = await window.getDoc(ref); }
+                    } else {
+                        snap = await window.getDoc(ref);
+                    }
+                    const serverV = snap.exists() ? (Number(snap.data().version) || 0) : 0;
+                    const localV = parseInt(localStorage.getItem('it9an_logout_gen') || '0', 10) || 0;
+                    if (serverV > localV) {
+                        await window.doLogout();
+                        return true;
+                    }
+                } catch (e) { console.warn('applyGlobalForceLogoutIfNeeded:', e); }
+                return false;
+            })();
+        }
+        function syncLogoutGenerationAfterLogin() {
+            if (!window.db) return;
+            (async function() {
+                try {
+                    const ref = window.doc(window.db, APP_SETTINGS_DOC, 'forceLogout');
+                    let snap;
+                    if (typeof window.getDocFromServer === 'function') {
+                        try { snap = await window.getDocFromServer(ref); } catch (e) { snap = await window.getDoc(ref); }
+                    } else {
+                        snap = await window.getDoc(ref);
+                    }
+                    const serverV = snap.exists() ? (Number(snap.data().version) || 0) : 0;
+                    localStorage.setItem('it9an_logout_gen', String(serverV));
+                } catch (e) { /* ignore */ }
+            })();
+        }
+        window.adminForceLogoutAllUsers = async function() {
+            if (!window.db || localStorage.getItem('it9an_uid') !== 'admin_super') return;
+            if (!confirm('سيتم إجبار جميع المستخدمين (عدا المسؤول) على تسجيل الدخول من جديد عند فتح التطبيق أو العودة إليه. متابعة؟')) return;
+            try {
+                const ref = window.doc(window.db, APP_SETTINGS_DOC, 'forceLogout');
+                try {
+                    await window.updateDoc(ref, { version: window.increment(1), updatedAt: window.serverTimestamp() });
+                } catch (e) {
+                    await window.setDoc(ref, { version: 1, updatedAt: window.serverTimestamp() });
+                }
+                try {
+                    let snap;
+                    if (typeof window.getDocFromServer === 'function') {
+                        try { snap = await window.getDocFromServer(ref); } catch (e2) { snap = await window.getDoc(ref); }
+                    } else {
+                        snap = await window.getDoc(ref);
+                    }
+                    const serverV = snap.exists() ? (Number(snap.data().version) || 0) : 0;
+                    localStorage.setItem('it9an_logout_gen', String(serverV));
+                } catch (e3) { /* ignore */ }
+                alert('تم. سيُسجّل خروج الطلاب والمعلمين عند التحديث أو العودة للتطبيق.');
+            } catch (e) {
+                console.error(e);
+                alert('خطأ: ' + (e.message || e));
+            }
         };
 
         const STAGES_CONFIG = [
@@ -1894,6 +2019,33 @@
             return objUrl;
         }
 
+        /** Sperrbildschirm / System-Benachrichtigungsleiste: keine „Geister“-Mediensteuerung ohne Wiedergabe. */
+        function clearIt9anOsMediaSession() {
+            try {
+                if (navigator.mediaSession) {
+                    navigator.mediaSession.playbackState = 'none';
+                    try { navigator.mediaSession.metadata = null; } catch (e1) {}
+                }
+            } catch (e) {}
+        }
+        function unloadVersMainAudioIfIdle() {
+            try {
+                const main = document.getElementById('mainAudio');
+                if (main && main.paused && !isPlaying) {
+                    main.removeAttribute('src');
+                    main.load();
+                }
+            } catch (e) {}
+        }
+        function unloadFeedAudioIfNoActiveClip() {
+            try {
+                if (feedAudioEl && feedAudioEl.paused && !currentFeedAudioId) {
+                    feedAudioEl.removeAttribute('src');
+                    feedAudioEl.load();
+                }
+            } catch (e) {}
+        }
+
         function pauseFeedAudio() {
             if (!feedAudioEl.paused) {
                 feedAudioEl.pause();
@@ -1906,6 +2058,8 @@
                 currentFeedAudioId = null;
                 releaseWakeLock();
             }
+            unloadFeedAudioIfNoActiveClip();
+            clearIt9anOsMediaSession();
         }
 
         feedAudioEl.addEventListener('timeupdate', () => {
@@ -1956,6 +2110,8 @@
             }
             currentFeedAudioId = null;
             releaseWakeLock();
+            unloadFeedAudioIfNoActiveClip();
+            clearIt9anOsMediaSession();
         });
 
         window.playFeedAudio = async function(url, id) {
@@ -2035,7 +2191,46 @@
             try { await sentinel.release(); } catch (e) { console.warn('Wake Lock release:', e); }
         }
         document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'visible' && isPlaying) requestWakeLock();
+            if (document.visibilityState === 'hidden') {
+                clearIt9anOsMediaSession();
+                try {
+                    if (feedAudioEl && feedAudioEl.paused && !currentFeedAudioId) {
+                        feedAudioEl.removeAttribute('src');
+                        feedAudioEl.load();
+                    }
+                } catch (e) {}
+                try {
+                    if (audioEl && audioEl.paused && !isPlaying) {
+                        audioEl.removeAttribute('src');
+                        audioEl.load();
+                    }
+                } catch (e2) {}
+                return;
+            }
+            if (document.visibilityState === 'visible') {
+                if (isPlaying) requestWakeLock();
+                try {
+                    const pv = document.getElementById('player-view');
+                    if (pv && pv.style.display === 'block' && audioEl && currentGlobalFileId != null && !audioEl.getAttribute('src')) {
+                        audioEl.src = getAssetUrl(getVerseAssetPath(currentGlobalFileId) + '.mp3');
+                    }
+                } catch (e3) {}
+            }
+        });
+        window.addEventListener('pagehide', () => {
+            clearIt9anOsMediaSession();
+            try {
+                if (feedAudioEl && feedAudioEl.paused && !currentFeedAudioId) {
+                    feedAudioEl.removeAttribute('src');
+                    feedAudioEl.load();
+                }
+            } catch (e) {}
+            try {
+                if (audioEl && audioEl.paused && !isPlaying) {
+                    audioEl.removeAttribute('src');
+                    audioEl.load();
+                }
+            } catch (e2) {}
         });
 
         audioEl.addEventListener('timeupdate', () => {
@@ -2080,13 +2275,50 @@
             if (!uid || !name || !role) return;
             if (!window.db) return;
             sessionRestoreAttempted = true;
-            getMaintenanceMode().then(function(maintenanceOn) {
-                if (maintenanceOn) { showMaintenanceScreen(); return; }
-                const pin = localStorage.getItem('it9an_pin') || null;
-                doLoginSuccess(uid, name, role, true, pin);
-            }).catch(function() {
-                const pin = localStorage.getItem('it9an_pin') || null;
-                doLoginSuccess(uid, name, role, true, pin);
+            if (isBlockedGuestAccount(uid, role, null)) {
+                try {
+                    localStorage.removeItem('it9an_uid');
+                    localStorage.removeItem('it9an_role');
+                    localStorage.removeItem('it9an_name');
+                    localStorage.removeItem('it9an_pin');
+                    localStorage.removeItem('it9an_saved_pin');
+                } catch (e) {}
+                sessionRestoreAttempted = false;
+                const loginCard = document.querySelector('#login-screen .login-card');
+                const loader = document.getElementById('push-restore-loader');
+                if (loader && loader.parentNode) loader.remove();
+                if (loginCard) { loginCard.style.visibility = ''; loginCard.style.opacity = ''; }
+                return;
+            }
+            applyGlobalForceLogoutIfNeeded().then(function(kicked) {
+                if (kicked) {
+                    sessionRestoreAttempted = false;
+                    const loginCard = document.querySelector('#login-screen .login-card');
+                    const loader = document.getElementById('push-restore-loader');
+                    if (loader && loader.parentNode) loader.remove();
+                    if (loginCard) { loginCard.style.visibility = ''; loginCard.style.opacity = ''; }
+                    return;
+                }
+                getMaintenanceMode().then(function(maintenanceOn) {
+                    if (maintenanceOn && !isStoredSessionExemptFromMaintenance(uid)) {
+                        showMaintenanceScreen();
+                        return;
+                    }
+                    const pin = localStorage.getItem('it9an_pin') || null;
+                    doLoginSuccess(uid, name, role, true, pin);
+                }).catch(function() {
+                    getMaintenanceMode().then(function(maintenanceOn) {
+                        if (maintenanceOn && !isStoredSessionExemptFromMaintenance(uid)) {
+                            showMaintenanceScreen();
+                            return;
+                        }
+                        const pin = localStorage.getItem('it9an_pin') || null;
+                        doLoginSuccess(uid, name, role, true, pin);
+                    }).catch(function() {
+                        const pin = localStorage.getItem('it9an_pin') || null;
+                        doLoginSuccess(uid, name, role, true, pin);
+                    });
+                });
             });
         }
         function runWhenPageReady(fn) {
@@ -2215,9 +2447,13 @@
             const btn = document.getElementById('pinLoginBtn');
             const pin = (pinInput && pinInput.value) ? pinInput.value.trim() : '';
             if (!pin || pin.length !== 4) { alert("الرجاء إدخال رمز من 4 أرقام"); return; }
+            if (pin === '0000') {
+                alert('تم إيقاف الدخول كضيف. سجّل كطالب من «إذا لم يكن لديك رمز» أو استخدم رمزك الشخصي.');
+                return;
+            }
             if (btn) { btn.disabled = true; btn.innerText = "جاري..."; }
             try {
-            const isExemptFromMaintenance = (pin === TEACHER_LOTFI_PIN || pin === TEACHER_FATHIA_PIN || pin === TEACHER_MAHDI_PIN || pin === MAINTENANCE_EXEMPT_STUDENT_PIN || pin === ADMIN_PIN);
+            const isExemptFromMaintenance = isPinExemptFromMaintenance(pin);
             if (pin === TEACHER_MAHDI_PIN) {
                 const first = "Mahdi", last = "Fakhfakh", year = "1996", role = "teacher";
                 const fullNameRaw = first + " " + last;
@@ -2298,6 +2534,11 @@
             if (snap.empty) { alert("الرمز غير موجود"); if (btn) { btn.disabled = false; btn.innerText = "دخول"; } return; }
             const doc = snap.docs[0];
             const data = doc.data();
+            if (isBlockedGuestAccount(doc.id, data.role, data)) {
+                alert('تم إيقاف حساب الضيف. سجّل كطالب من الرابط أسفل شاشة الدخول.');
+                if (btn) { btn.disabled = false; btn.innerText = "دخول"; }
+                return;
+            }
             if (data.blocked) { alert("عذراً، تم حظر هذا الحساب."); if (btn) { btn.disabled = false; btn.innerText = "دخول"; } return; }
             const dispName = data.baseName || data.name || '';
             const year = data.year || '';
@@ -2327,6 +2568,10 @@
         }
 
         function doLoginSuccess(uid, name, role, hideScreen, personalPin) {
+            if (isBlockedGuestAccount(uid, role, null)) {
+                alert('تم إيقاف وضع الضيف. استخدم التسجيل كطالب.');
+                return;
+            }
             localStorage.setItem('it9an_uid', uid);
             localStorage.setItem('it9an_auth', 'true');
             localStorage.setItem('it9an_name', name);
@@ -2335,6 +2580,7 @@
             else localStorage.removeItem('it9an_pin');
             document.getElementById('login-screen').style.display = 'none';
             document.dispatchEvent(new CustomEvent('it9an_session_restored'));
+            syncLogoutGenerationAfterLogin();
             updateUIForRole();
             if (uid !== 'guest') listenForNotifications();
             setupForegroundPushHandler();
@@ -2373,7 +2619,9 @@
                     if (!u || u === 'admin_super' || u === 'guest') return;
                     if (Notification.permission !== 'granted') return;
                     const hiddenMs = pageHiddenAt ? (Date.now() - pageHiddenAt) : 0;
-                    const force = forceToken === true || hiddenMs > 25000;
+                    const lastFcm = parseInt(localStorage.getItem('it9an_fcm_last_refresh') || '0', 10);
+                    const staleFcm = !lastFcm || (Date.now() - lastFcm > 45 * 60 * 1000);
+                    const force = forceToken === true || hiddenMs > 25000 || staleFcm;
                     clearTimeout(refreshPushDebounce);
                     refreshPushDebounce = setTimeout(function() {
                         pageHiddenAt = 0;
@@ -2394,7 +2642,12 @@
                     requestPushPermissionAndSaveToken(u, r, false, true).then(function() { syncBadgeFromCache(); }).catch(function() { syncBadgeFromCache(); });
                 });
                 window.addEventListener('pageshow', function(ev) {
+                    if (document.visibilityState !== 'visible') return;
                     if (ev.persisted) refreshIfVisible(true);
+                    else {
+                        const lf = parseInt(localStorage.getItem('it9an_fcm_last_refresh') || '0', 10);
+                        if (!lf || (Date.now() - lf > 30 * 60 * 1000)) refreshIfVisible(true);
+                    }
                 });
                 setInterval(function() {
                     if (document.visibilityState !== 'visible') return;
@@ -2403,7 +2656,7 @@
                     if (!u || u === 'admin_super' || u === 'guest') return;
                     if (Notification.permission !== 'granted') return;
                     requestPushPermissionAndSaveToken(u, r, false, true).catch(function() {});
-                }, 40 * 60 * 1000);
+                }, 15 * 60 * 1000);
             }
         }
 
@@ -2562,13 +2815,25 @@
                 } catch(e) { console.log("Login Check Error", e); }
 
                 let loginPin = null;
+                let urData = null;
                 try {
                     const ur = await window.getDoc(window.doc(window.db, "users", actualUid));
-                    if (ur.exists()) loginPin = ur.data().personalPin || null;
-                } catch(e){}
+                    if (ur.exists()) {
+                        urData = ur.data();
+                        loginPin = urData.personalPin || null;
+                    }
+                } catch (e) {}
                 const maintenanceOn = await getMaintenanceMode();
-                if (maintenanceOn) {
+                let classicMaintenanceExempt = false;
+                if (!createdNew && urData && urData.personalPin) {
+                    classicMaintenanceExempt = isPinExemptFromMaintenance(urData.personalPin);
+                }
+                if (maintenanceOn && !classicMaintenanceExempt) {
                     showMaintenanceScreen();
+                    return;
+                }
+                if (isBlockedGuestAccount(actualUid, role, urData)) {
+                    alert('تم إيقاف حساب الضيف.');
                     return;
                 }
                 localStorage.removeItem('it9an_hidden');
@@ -3031,6 +3296,7 @@
                 const snap = await window.getDocsFromServer(q);
                 let users = [];
                 snap.forEach(doc => users.push({ ...doc.data(), uid: doc.data().uid || doc.id }));
+                users = users.filter(u => u.uid !== 'guest' && u.role !== 'guest');
                 const stageStats = await fetchStageLeaderboardStats();
                 const stageViews = await fetchStageVerseViewsFromStats(currentStageId);
                 users = users.map(u => {
@@ -3425,7 +3691,7 @@
         function initStatCharts() {
             const role = localStorage.getItem('it9an_role');
             const uid = localStorage.getItem('it9an_uid');
-            const isStudent = role === 'student' || uid === 'guest';
+            const isStudent = role === 'student';
             const repWrap = document.getElementById('statRepetitionsWrap');
             const recWrap = document.getElementById('statRecordingsWrap');
             if (isStudent) {
@@ -3496,6 +3762,7 @@
                 const snap = await window.getDocsFromServer(q);
                 let users = [];
                 snap.forEach(doc => users.push({ ...doc.data(), uid: doc.data().uid || doc.id }));
+                users = users.filter(u => u.uid !== 'guest' && u.role !== 'guest');
                 const stageStats = await fetchStageLeaderboardStats();
                 const stageViews = await fetchStageVerseViewsFromStats(currentStageId);
                 users = users.map(u => {
@@ -4243,7 +4510,7 @@
                     const fileId = String(data.fileId || '').trim();
                     const openLesson = data.openLesson === '1';
                     const stageId = String(data.stageId || '').trim();
-                    const iconUrl = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect fill='%230f4c3a' width='192' height='192' rx='24'/%3E%3Ctext x='96' y='120' font-size='100' text-anchor='middle' fill='%23d4af37' font-family='serif'%3Eٱ%3C/text%3E%3C/svg%3E";
+                    const iconUrl = "data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%20192%20192'%3E%3Crect%20fill%3D'%230f4c3a'%20width%3D'192'%20height%3D'192'%20rx%3D'24'%2F%3E%3Ctext%20x%3D'96'%20y%3D'118'%20font-size%3D'48'%20text-anchor%3D'middle'%20fill%3D'%23d4af37'%20font-family%3D'Amiri%2CNoto%20Naskh%20Arabic%2CNoto%20Sans%20Arabic%2Cserif'%20direction%3D'rtl'%20unicode-bidi%3D'embed'%3E%D8%A5%D8%AA%D9%82%D8%A7%D9%86%3C%2Ftext%3E%3C%2Fsvg%3E";
                     const n = new Notification(title, { body, icon: iconUrl, tag: data.tag || ('it9an-' + (postId || (openLesson ? 'lesson-' + fileId : Date.now()))), renotify: true });
                     n.onclick = () => {
                         n.close();
@@ -4278,9 +4545,10 @@
                     if (showResult) alert('المتصفح لا يدعم الإشعارات.');
                     return false;
                 }
+                /* localStorage: über Sitzungen hinweg — nach Stunden/Tagen immer neuen FCM-Token holen und in Firestore schreiben */
                 if (!showResult && !forceRefresh) {
-                    const last = parseInt(sessionStorage.getItem('it9an_fcm_last_refresh') || '0', 10);
-                    if (last && (Date.now() - last) < 12 * 60 * 1000) return true;
+                    const last = parseInt(localStorage.getItem('it9an_fcm_last_refresh') || '0', 10);
+                    if (last && (Date.now() - last) < 3 * 60 * 1000) return true;
                 }
                 if (typeof window.isSupportedFcm === 'function') {
                     const supported = await window.isSupportedFcm();
@@ -4289,7 +4557,14 @@
                         return false;
                     }
                 }
-                const perm = await Notification.requestPermission();
+                let perm = Notification.permission;
+                if (perm === 'denied') {
+                    if (showResult) alert('تم رفض الإشعارات. فعّل الإشعارات من إعدادات المتصفح.');
+                    return false;
+                }
+                if (perm === 'default') {
+                    perm = await Notification.requestPermission();
+                }
                 if (perm !== 'granted') {
                     if (showResult) alert('تم رفض الإشعارات. فعّل الإشعارات من إعدادات المتصفح.');
                     return false;
@@ -4321,7 +4596,7 @@
                 }
                 await window.setDoc(window.doc(window.db, 'fcmTokens', uid), { token, uid, role, notifStages, updatedAt: window.serverTimestamp() }, { merge: true });
                 await removeOtherUsersWithSameFcmToken(uid, token);
-                try { sessionStorage.setItem('it9an_fcm_last_refresh', String(Date.now())); } catch (e) {}
+                try { localStorage.setItem('it9an_fcm_last_refresh', String(Date.now())); } catch (e) {}
                 setupForegroundPushHandler();
                 if (showResult) {
                     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
@@ -4352,7 +4627,14 @@
             const role = localStorage.getItem('it9an_role');
             if (!uid || uid === 'admin_super' || uid === 'guest') return;
             requestPushPermissionAndSaveToken(uid, role, true);
-        }
+        };
+
+        window.it9anRefreshFcmTokenSilent = function(optForce) {
+            const uid = localStorage.getItem('it9an_uid');
+            const role = localStorage.getItem('it9an_role');
+            if (!uid || uid === 'admin_super' || uid === 'guest') return Promise.resolve(false);
+            return requestPushPermissionAndSaveToken(uid, role, false, optForce === true);
+        };
 
         async function loadTeacherNotifStagesUI() {
             const uid = localStorage.getItem('it9an_uid');
@@ -7686,10 +7968,8 @@
                 const uid = localStorage.getItem('it9an_uid');
                 const myName = localStorage.getItem('it9an_name');
                 const isHidden = localStorage.getItem('it9an_hidden') === 'true';
-                if(uid && uid !== 'admin_super') {
-                    if(uid !== 'guest') {
-                        try { await window.updateDoc(window.doc(window.db, "users", uid), { totalVerseViews: window.increment(1) }); } catch(e){}
-                    }
+                if(uid && uid !== 'admin_super' && uid !== 'guest') {
+                    try { await window.updateDoc(window.doc(window.db, "users", uid), { totalVerseViews: window.increment(1) }); } catch(e){}
                     try {
                         const sRef = window.doc(window.db, "stats", getStatsDocId(currentStageId, currentGlobalFileId));
                         await window.setDoc(sRef, {}, { merge: true });
@@ -7697,8 +7977,7 @@
                         if(verseRepeatsPlayed === 0) updates.verseViewCount = window.increment(1);
                         updates[`viewers.${uid}.count`] = window.increment(1);
                         updates[`viewers.${uid}.lastViewed`] = window.serverTimestamp();
-                        if(uid === 'guest') updates[`viewers.${uid}.name`] = 'ضيف';
-                        else if(myName && !isHidden) updates[`viewers.${uid}.name`] = myName;
+                        if(myName && !isHidden) updates[`viewers.${uid}.name`] = myName;
                         await window.updateDoc(sRef, updates);
                         const today = (function(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); })();
                         window.setDoc(window.doc(window.db, "dailyStats", today), { repetitions: window.increment(1) }, { merge: true }).catch(()=>{});
@@ -7731,6 +8010,8 @@
             audioEl.pause(); audioEl.currentTime = 0; 
             releaseWakeLock();
             pauseFeedAudio();
+            unloadVersMainAudioIfIdle();
+            clearIt9anOsMediaSession();
             document.getElementById('playBtn').innerText = "▶"; 
         }
 
@@ -8395,12 +8676,19 @@
                 clearAllIntervals();
                 unsubscribeAllListeners();
             } else {
-                restoreListenersOnVisible();
-                if (typeof window.applyNotifStageFilter === 'function') setTimeout(window.applyNotifStageFilter, 100);
-                const stagesView = document.getElementById('stages-view');
-                if (stagesView && stagesView.style.display !== 'none' && getStoredPushParams()) {
-                    showStagesView();
-                }
+                applyGlobalForceLogoutIfNeeded().then(function(kicked) {
+                    if (kicked) return;
+                    restoreListenersOnVisible();
+                    if (typeof window.applyNotifStageFilter === 'function') {
+                        setTimeout(window.applyNotifStageFilter, 100);
+                        setTimeout(window.applyNotifStageFilter, 800);
+                        setTimeout(window.applyNotifStageFilter, 2500);
+                    }
+                    const stagesView = document.getElementById('stages-view');
+                    if (stagesView && stagesView.style.display !== 'none' && getStoredPushParams()) {
+                        showStagesView();
+                    }
+                });
             }
         });
 
