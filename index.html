@@ -653,7 +653,7 @@
         /* Klassisches Outline-Mikrofon (vergleichbar mit gängigen Social-App-Icons) */
         .icon-mic { display: inline-block; vertical-align: middle; width: 1.15em; height: 1.15em; flex-shrink: 0; color: inherit; }
         .btn-rec .icon-mic { width: 26px; height: 26px; }
-        .verse-rec-buttons-wrap { display: flex; align-items: center; justify-content: center; gap: 12px; flex-shrink: 0; }
+        .verse-rec-buttons-wrap { display: flex; align-items: center; justify-content: center; gap: 12px; flex-shrink: 0; flex-wrap: nowrap; }
         .btn-rec-dual { padding: 0 !important; }
         .btn-rec-dual .btn-rec-dual-icons { display: inline-flex; align-items: center; justify-content: center; gap: 1px; }
         .btn-rec-dual .icon-mic-dual { width: 14px; height: 14px; flex-shrink: 0; }
@@ -1051,11 +1051,10 @@
                     <div class="setting-group view-count-in-settings" onclick="showViewers()" title="مشاهدة"><span>تكرار</span><span id="viewCount">0</span></div>
                 </div>
                 <div class="verse-rec-buttons-wrap" id="verseRecButtonsWrap">
-                <button type="button" id="studentVerseDualBtn" class="btn btn-rec btn-rec-dual" style="display:none;" title="تشغيل المقطع / إيقاف" aria-label="تشغيل المقطع"><span class="btn-rec-dual-icons" aria-hidden="true"><svg class="icon-mic-dual" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg><svg class="icon-ear-dual" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0v4a4 4 0 0 1-4 4h-2"/><path d="M9 9c0 1.5 1 3 3 3s3-1.5 3-3"/></svg></span></button>
-                <button type="button" id="studentHoldRecBtn" class="btn btn-rec student-hold-rec-btn" style="display:none;" title="اضغط مع الاستمرار للتسجيل" aria-label="تسجيل بالضغط المستمر"><svg class="icon-mic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
                 <button type="button" id="recBtn" class="btn btn-rec" onclick="toggleRecord()" title="تسجيل تلاوة كاملة" aria-label="تسجيل"><svg class="icon-mic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
-                </div>
+                <button type="button" id="studentVersePracticeBtn" class="btn btn-rec btn-rec-dual student-hold-rec-btn" style="display:none;" title="تشغيل المقطع — اضغط مع الاستمرار أثناء التشغيل للتسجيل" aria-label="مقطع وتسجيل"><span class="btn-rec-dual-icons" aria-hidden="true"><svg class="icon-mic-dual" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg><svg class="icon-ear-dual" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0v4a4 4 0 0 1-4 4h-2"/><path d="M9 9c0 1.5 1 3 3 3s3-1.5 3-3"/></svg></span></button>
                 <button id="playBtn" class="btn btn-play" onclick="toggleSmartLoop()">▶</button>
+                </div>
             </div>
 
         <h4 id="participations-header" style="text-align:center; color:var(--primary); margin-top:15px; border-bottom:1px solid #ddd; padding-bottom:10px; font-size:20px;"><span id="participationsCount">(0)</span> المشاركات</h4>
@@ -1992,6 +1991,9 @@
         let echoHoldIosPlaybackRestore = null;
         let echoHoldPointerDown = false;
         let verseWasPlayingBeforeHold = false;
+        let practiceBtnHoldDelayTimer = null;
+        let practiceBtnHoldRecordingActive = false;
+        let _practiceBtnIgnoreClickUntil = 0;
         let reviewBlobGreen = null, reviewBlobYellow = null;
         let reviewYellowEnabled = false;
         let reviewStripSegmentBlobs = [];
@@ -7581,6 +7583,13 @@
             await new Promise(r => setTimeout(r, 500));
         }
         function resetStudentEchoSession() {
+            if (practiceBtnHoldDelayTimer) {
+                clearTimeout(practiceBtnHoldDelayTimer);
+                practiceBtnHoldDelayTimer = null;
+            }
+            practiceBtnHoldRecordingActive = false;
+            const prB = document.getElementById('studentVersePracticeBtn');
+            if (prB) prB.classList.remove('recording');
             try {
                 if (echoHoldMediaRecorder && echoHoldMediaRecorder.state !== 'inactive') echoHoldMediaRecorder.stop();
             } catch (e) {}
@@ -7623,47 +7632,37 @@
             } catch (e) {}
         }
         function syncStudentVersEchoUi() {
-            const dualBtn = document.getElementById('studentVerseDualBtn');
-            const holdBtn = document.getElementById('studentHoldRecBtn');
+            const prBtn = document.getElementById('studentVersePracticeBtn');
             const role = localStorage.getItem('it9an_role');
             const uid = localStorage.getItem('it9an_uid');
-            if (!dualBtn || !holdBtn) return;
+            if (!prBtn) return;
             if (role !== 'student' || !uid || uid === 'guest') {
-                dualBtn.style.display = 'none';
-                holdBtn.style.display = 'none';
+                prBtn.style.display = 'none';
                 return;
             }
-            dualBtn.style.display = '';
-            holdBtn.style.display = '';
+            prBtn.style.display = '';
             const notifBlocked = hasUnlistenedNotificationsForStage(currentStageId);
             const pendingTeacher = studentHasUnfinishedRecordingOnCurrentVerse();
             const repCount = getMyRepetitionCountForCurrentVerse();
             const repBlocked = repCount < MIN_REPETITIONS_FOR_REC;
-            const applyBlockedStyle = (btn) => {
-                btn.style.filter = '';
-                if (notifBlocked) {
-                    btn.style.opacity = '0.5';
-                    btn.style.cursor = 'pointer';
-                    btn.title = 'استخدم إشعارات الجرس أولاً';
-                } else if (pendingTeacher) {
-                    btn.style.opacity = '0.5';
-                    btn.style.filter = 'grayscale(1)';
-                    btn.style.cursor = 'pointer';
-                    btn.title = 'تسجيل غير مكتمل تحت هذا المقطع';
-                } else if (repBlocked) {
-                    btn.style.opacity = '0.5';
-                    btn.style.cursor = 'pointer';
-                    btn.title = `مطلوب ${MIN_REPETITIONS_FOR_REC} تكرار على الأقل`;
-                } else {
-                    btn.style.opacity = '';
-                    btn.style.cursor = '';
-                }
-            };
-            applyBlockedStyle(dualBtn);
-            applyBlockedStyle(holdBtn);
-            if (!notifBlocked && !pendingTeacher && !repBlocked) {
-                dualBtn.title = 'تشغيل المقطع / إيقاف';
-                holdBtn.title = 'اضغط مع الاستمرار للتسجيل (بدون المقطع في المعاينة الخضراء)';
+            prBtn.style.filter = '';
+            if (notifBlocked) {
+                prBtn.style.opacity = '0.5';
+                prBtn.style.cursor = 'pointer';
+                prBtn.title = 'استخدم إشعارات الجرس أولاً';
+            } else if (pendingTeacher) {
+                prBtn.style.opacity = '0.5';
+                prBtn.style.filter = 'grayscale(1)';
+                prBtn.style.cursor = 'pointer';
+                prBtn.title = 'تسجيل غير مكتمل تحت هذا المقطع';
+            } else if (repBlocked) {
+                prBtn.style.opacity = '0.5';
+                prBtn.style.cursor = 'pointer';
+                prBtn.title = `مطلوب ${MIN_REPETITIONS_FOR_REC} تكرار على الأقل`;
+            } else {
+                prBtn.style.opacity = '';
+                prBtn.style.cursor = '';
+                prBtn.title = 'نقرة: تشغيل/إيقاف المقطع — اضغط مع الاستمرار أثناء التشغيل للتسجيل ثم يكمل المقطع';
             }
         }
         function writeWavString(view, offset, str) {
@@ -7840,6 +7839,14 @@
             if (replyTargetId) return false;
             if (!shouldUseStudentEchoHoldMode()) return false;
             if (studentEchoPostVersePhase) return false;
+            if (practiceBtnHoldDelayTimer) {
+                clearTimeout(practiceBtnHoldDelayTimer);
+                practiceBtnHoldDelayTimer = null;
+            }
+            practiceBtnHoldRecordingActive = false;
+            echoHoldPointerDown = false;
+            const prClear = document.getElementById('studentVersePracticeBtn');
+            if (prClear) prClear.classList.remove('recording');
             studentEchoPostVersePhase = true;
             isPlaying = false;
             isPaused = false;
@@ -8272,66 +8279,53 @@
                 }
             });
         }
-        function toggleStudentVerseDualPlayback() {
+        function studentPracticeBtnGatesOkOrAlert() {
             if (hasUnlistenedNotificationsForStage(currentStageId)) {
                 alert(REC_BLOCKED_MSG);
-                return;
+                return false;
             }
             if (studentHasUnfinishedRecordingOnCurrentVerse()) {
                 alert(REC_PENDING_TEACHER_MSG);
-                return;
+                return false;
             }
             if (getMyRepetitionCountForCurrentVerse() < MIN_REPETITIONS_FOR_REC) {
                 alert(REC_REPETITIONS_MSG);
-                return;
+                return false;
             }
-            pauseFeedAudio();
-            if (audioEl.paused) {
-                isPlaying = true;
-                isPaused = false;
-                const pb = document.getElementById('playBtn');
-                if (pb) pb.innerText = '⏸';
-                requestWakeLock();
-                audioEl.onended = function () { handleVerseAudioEnded().catch(() => {}); };
-                audioEl.play().catch(() => {});
-            } else {
-                audioEl.pause();
-                isPlaying = false;
-                const pb = document.getElementById('playBtn');
-                if (pb) pb.innerText = '▶';
-                releaseWakeLock();
-            }
+            return true;
         }
-        async function studentEchoHoldPointerDownHandler(e) {
-            if (typeof e.button === 'number' && e.button !== 0) return;
-            const syncUi = document.getElementById('sync-reply-ui');
-            if (syncUi && syncUi.style.display === 'flex') return;
-            if (!shouldUseStudentEchoHoldMode()) return;
-            if (studentEchoPostVersePhase) return;
-            if (echoHoldPointerDown) return;
+        async function beginPracticeBtnHoldRecording() {
+            if (!shouldUseStudentEchoHoldMode() || studentEchoPostVersePhase) return;
+            if (echoHoldPointerDown || practiceBtnHoldRecordingActive) return;
+            if (audioEl.paused) return;
             echoHoldPointerDown = true;
+            practiceBtnHoldRecordingActive = true;
             playStudentEchoBeep();
-            verseWasPlayingBeforeHold = !audioEl.paused;
-            if (!audioEl.paused) {
-                audioEl.pause();
-                isPlaying = false;
-                const pb = document.getElementById('playBtn');
-                if (pb) pb.innerText = '▶';
-                releaseWakeLock();
-            }
+            verseWasPlayingBeforeHold = true;
+            audioEl.pause();
+            isPlaying = false;
+            isPaused = true;
+            const pb = document.getElementById('playBtn');
+            if (pb) pb.innerText = '▶';
+            releaseWakeLock();
+            const prBtn = document.getElementById('studentVersePracticeBtn');
+            if (prBtn) prBtn.classList.add('recording');
             try {
                 await startEchoHoldSegmentRecording();
             } catch (err) {
-                console.warn('echo hold start', err);
+                console.warn('practice hold start', err);
                 restoreEchoHoldIosPlaybackIfAny();
                 if (navigator.audioSession) {
                     try { navigator.audioSession.type = 'playback'; } catch (e) {}
                 }
                 echoHoldPointerDown = false;
+                practiceBtnHoldRecordingActive = false;
+                if (prBtn) prBtn.classList.remove('recording');
                 if (verseWasPlayingBeforeHold) {
                     isPlaying = true;
-                    const pb = document.getElementById('playBtn');
-                    if (pb) pb.innerText = '⏸';
+                    isPaused = false;
+                    const p2 = document.getElementById('playBtn');
+                    if (p2) p2.innerText = '⏸';
                     requestWakeLock();
                     audioEl.onended = function () { handleVerseAudioEnded().catch(() => {}); };
                     audioEl.play().catch(() => {});
@@ -8339,13 +8333,39 @@
                 verseWasPlayingBeforeHold = false;
             }
         }
-        function studentEchoHoldPointerUpHandler() {
-            if (!echoHoldPointerDown) return;
+        function studentPracticeBtnPointerDown(e) {
+            if (typeof e.button === 'number' && e.button !== 0) return;
+            const syncUi = document.getElementById('sync-reply-ui');
+            if (syncUi && syncUi.style.display === 'flex') return;
+            if (!shouldUseStudentEchoHoldMode() || studentEchoPostVersePhase) return;
+            if (echoHoldPointerDown || practiceBtnHoldRecordingActive) return;
+            if (audioEl.paused) return;
+            if (practiceBtnHoldDelayTimer) {
+                clearTimeout(practiceBtnHoldDelayTimer);
+                practiceBtnHoldDelayTimer = null;
+            }
+            practiceBtnHoldDelayTimer = setTimeout(() => {
+                practiceBtnHoldDelayTimer = null;
+                beginPracticeBtnHoldRecording();
+            }, 220);
+        }
+        function studentPracticeBtnPointerUp() {
+            if (practiceBtnHoldDelayTimer) {
+                clearTimeout(practiceBtnHoldDelayTimer);
+                practiceBtnHoldDelayTimer = null;
+                return;
+            }
+            if (!practiceBtnHoldRecordingActive && !echoHoldPointerDown) return;
             echoHoldPointerDown = false;
+            practiceBtnHoldRecordingActive = false;
+            _practiceBtnIgnoreClickUntil = Date.now() + 450;
             playStudentEchoBeep();
+            const prBtn = document.getElementById('studentVersePracticeBtn');
+            if (prBtn) prBtn.classList.remove('recording');
             stopEchoHoldSegmentRecording().then(() => {
                 if (verseWasPlayingBeforeHold) {
                     isPlaying = true;
+                    isPaused = false;
                     const pb = document.getElementById('playBtn');
                     if (pb) pb.innerText = '⏸';
                     requestWakeLock();
@@ -8355,20 +8375,24 @@
                 verseWasPlayingBeforeHold = false;
             });
         }
+        function studentPracticeBtnClick(e) {
+            if (Date.now() < _practiceBtnIgnoreClickUntil) {
+                e.preventDefault();
+                e.stopPropagation();
+                return;
+            }
+            if (localStorage.getItem('it9an_role') !== 'student') return;
+            if (!studentPracticeBtnGatesOkOrAlert()) return;
+            toggleSmartLoop();
+        }
         (function bindStudentEchoControls() {
-            const dualBtn = document.getElementById('studentVerseDualBtn');
-            const holdBtn = document.getElementById('studentHoldRecBtn');
-            if (dualBtn) {
-                dualBtn.addEventListener('click', function () {
-                    toggleStudentVerseDualPlayback();
-                });
-            }
-            if (holdBtn) {
-                holdBtn.addEventListener('pointerdown', studentEchoHoldPointerDownHandler);
-                holdBtn.addEventListener('pointerup', studentEchoHoldPointerUpHandler);
-                holdBtn.addEventListener('pointerleave', studentEchoHoldPointerUpHandler);
-                holdBtn.addEventListener('pointercancel', studentEchoHoldPointerUpHandler);
-            }
+            const prBtn = document.getElementById('studentVersePracticeBtn');
+            if (!prBtn) return;
+            prBtn.addEventListener('click', studentPracticeBtnClick, true);
+            prBtn.addEventListener('pointerdown', studentPracticeBtnPointerDown);
+            prBtn.addEventListener('pointerup', studentPracticeBtnPointerUp);
+            prBtn.addEventListener('pointerleave', studentPracticeBtnPointerUp);
+            prBtn.addEventListener('pointercancel', studentPracticeBtnPointerUp);
         })();
 
         window.toggleRecord = async function() {
@@ -8630,7 +8654,27 @@
 
         window.stopRecordingAndReview = function() {
             if (echoHoldMediaRecorder && echoHoldMediaRecorder.state !== 'inactive') {
-                try { echoHoldMediaRecorder.stop(); } catch (e) {}
+                if (practiceBtnHoldDelayTimer) {
+                    clearTimeout(practiceBtnHoldDelayTimer);
+                    practiceBtnHoldDelayTimer = null;
+                }
+                const needResumeVerse = verseWasPlayingBeforeHold;
+                stopEchoHoldSegmentRecording().then(() => {
+                    practiceBtnHoldRecordingActive = false;
+                    echoHoldPointerDown = false;
+                    const prBtn = document.getElementById('studentVersePracticeBtn');
+                    if (prBtn) prBtn.classList.remove('recording');
+                    if (needResumeVerse) {
+                        isPlaying = true;
+                        isPaused = false;
+                        const pb = document.getElementById('playBtn');
+                        if (pb) pb.innerText = '⏸';
+                        requestWakeLock();
+                        audioEl.onended = function () { handleVerseAudioEnded().catch(() => {}); };
+                        audioEl.play().catch(() => {});
+                    }
+                    verseWasPlayingBeforeHold = false;
+                });
             }
             if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
         }
