@@ -2028,15 +2028,6 @@
                 }
             } catch (e) {}
         }
-        function unloadVersMainAudioIfIdle() {
-            try {
-                const main = document.getElementById('mainAudio');
-                if (main && main.paused && !isPlaying) {
-                    main.removeAttribute('src');
-                    main.load();
-                }
-            } catch (e) {}
-        }
         function unloadFeedAudioIfNoActiveClip() {
             try {
                 if (feedAudioEl && feedAudioEl.paused && !currentFeedAudioId) {
@@ -8010,7 +8001,6 @@
             audioEl.pause(); audioEl.currentTime = 0; 
             releaseWakeLock();
             pauseFeedAudio();
-            unloadVersMainAudioIfIdle();
             clearIt9anOsMediaSession();
             document.getElementById('playBtn').innerText = "▶"; 
         }
