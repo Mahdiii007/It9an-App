@@ -1086,7 +1086,7 @@
         </div>
     </div>
     
-    <audio id="mainAudio" preload="none" playsinline webkit-playsinline></audio>
+    <audio id="mainAudio" preload="none" playsinline webkit-playsinline disableRemotePlayback></audio>
 
     <script>
         var notifUnsubscribe = null;
@@ -2162,9 +2162,127 @@
         }
 
         const audioEl = document.getElementById('mainAudio');
+        if (audioEl && 'disableRemotePlayback' in audioEl) try { audioEl.disableRemotePlayback = true; } catch (e) {}
         const pBar = document.getElementById('progressBar');
         const cTime = document.getElementById('currentTime');
         const dTime = document.getElementById('durationTime');
+
+        function isIosStandalonePwa() {
+            try {
+                const standalone = window.navigator.standalone === true || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+                const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+                return standalone && ios && (window.AudioContext || window.webkitAudioContext);
+            } catch (e) { return false; }
+        }
+        let iosVerseCtx = null;
+        let iosVerseDecoded = null;
+        let iosVerseDecodedForGlobalId = null;
+        let iosVerseNode = null;
+        let iosVerseT0 = 0;
+        let iosVerseStartOffset = 0;
+        let iosVerseProgressRaf = null;
+
+        async function iosVerseEnsureContext() {
+            const AC = window.AudioContext || window.webkitAudioContext;
+            if (!AC) throw new Error('no AudioContext');
+            if (!iosVerseCtx || iosVerseCtx.state === 'closed') iosVerseCtx = new AC();
+            if (iosVerseCtx.state === 'suspended') await iosVerseCtx.resume();
+        }
+        function iosVerseStopNode() {
+            if (iosVerseProgressRaf) { cancelAnimationFrame(iosVerseProgressRaf); iosVerseProgressRaf = null; }
+            if (iosVerseNode) {
+                try { iosVerseNode.stop(0); } catch (e) {}
+                try { iosVerseNode.disconnect(); } catch (e2) {}
+                iosVerseNode = null;
+            }
+            iosVerseT0 = 0;
+        }
+        async function iosVerseLoadBuffer(globalId) {
+            if (iosVerseDecodedForGlobalId === globalId && iosVerseDecoded) return iosVerseDecoded;
+            const url = getAssetUrl(getVerseAssetPath(globalId) + '.mp3');
+            const ab = await fetch(url).then((r) => r.arrayBuffer());
+            await iosVerseEnsureContext();
+            iosVerseDecoded = await iosVerseCtx.decodeAudioData(ab.slice(0));
+            iosVerseDecodedForGlobalId = globalId;
+            return iosVerseDecoded;
+        }
+        function getMainVerseDuration() {
+            try {
+                if (isIosStandalonePwa() && iosVerseDecoded) return iosVerseDecoded.duration || 0;
+            } catch (e) {}
+            return audioEl.duration || 0;
+        }
+        function iosVerseCurrentTime() {
+            if (!iosVerseDecoded) return iosVerseStartOffset;
+            if (!iosVerseNode || !iosVerseCtx) return iosVerseStartOffset;
+            const elapsed = iosVerseCtx.currentTime - iosVerseT0;
+            return Math.min(iosVerseStartOffset + elapsed, iosVerseDecoded.duration);
+        }
+        function iosVerseSyncProgressUi() {
+            const d = getMainVerseDuration();
+            const t = iosVerseCurrentTime();
+            if (d && pBar && cTime && dTime) {
+                pBar.value = t; pBar.max = d;
+                cTime.innerText = formatTime(t); dTime.innerText = formatTime(d);
+            }
+            if (isPlaying && isIosStandalonePwa() && iosVerseNode) {
+                iosVerseProgressRaf = requestAnimationFrame(iosVerseSyncProgressUi);
+            }
+        }
+        function iosVersePausePlayback() {
+            if (!isIosStandalonePwa() || !iosVerseDecoded) return;
+            iosVerseStartOffset = iosVerseCurrentTime();
+            iosVerseStopNode();
+        }
+        async function handleVerseAudioEnded() {
+            if (!isPlaying) return;
+            const uid = localStorage.getItem('it9an_uid');
+            const myName = localStorage.getItem('it9an_name');
+            const isHidden = localStorage.getItem('it9an_hidden') === 'true';
+            if (uid && uid !== 'admin_super' && uid !== 'guest') {
+                try { await window.updateDoc(window.doc(window.db, "users", uid), { totalVerseViews: window.increment(1) }); } catch (e) {}
+                try {
+                    const sRef = window.doc(window.db, "stats", getStatsDocId(currentStageId, currentGlobalFileId));
+                    await window.setDoc(sRef, {}, { merge: true });
+                    const updates = { totalRepetitions: window.increment(1) };
+                    if (verseRepeatsPlayed === 0) updates.verseViewCount = window.increment(1);
+                    updates[`viewers.${uid}.count`] = window.increment(1);
+                    updates[`viewers.${uid}.lastViewed`] = window.serverTimestamp();
+                    if (myName && !isHidden) updates[`viewers.${uid}.name`] = myName;
+                    await window.updateDoc(sRef, updates);
+                    const today = (function () { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); })();
+                    window.setDoc(window.doc(window.db, "dailyStats", today), { repetitions: window.increment(1) }, { merge: true }).catch(() => {});
+                } catch (e) {}
+            }
+            const gapDur = getMainVerseDuration();
+            if (document.getElementById('globalGap').checked) {
+                const pauseTime = Math.ceil((gapDur || 15) * 1.25);
+                startPauseCountdown(pauseTime);
+            } else {
+                checkNextStep();
+            }
+        }
+        async function iosVerseStartPlayback(fromOffset) {
+            if (!isIosStandalonePwa() || !iosVerseDecoded) return;
+            await iosVerseEnsureContext();
+            iosVerseStopNode();
+            const buf = iosVerseDecoded;
+            const off = Math.max(0, Math.min(fromOffset || 0, Math.max(0, buf.duration - 0.02)));
+            iosVerseStartOffset = off;
+            iosVerseT0 = iosVerseCtx.currentTime;
+            const src = iosVerseCtx.createBufferSource();
+            src.buffer = buf;
+            src.connect(iosVerseCtx.destination);
+            iosVerseNode = src;
+            src.onended = function () {
+                if (iosVerseNode !== src) return;
+                iosVerseStopNode();
+                iosVerseStartOffset = 0;
+                handleVerseAudioEnded().catch(() => {});
+            };
+            src.start(0, off);
+            iosVerseSyncProgressUi();
+        }
 
         let wakeLockSentinel = null;
         async function requestWakeLock() {
@@ -2184,6 +2302,7 @@
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'hidden') {
                 clearIt9anOsMediaSession();
+                if (isIosStandalonePwa()) iosVerseStopNode();
                 try {
                     if (feedAudioEl && feedAudioEl.paused && !currentFeedAudioId) {
                         feedAudioEl.removeAttribute('src');
@@ -2191,7 +2310,7 @@
                     }
                 } catch (e) {}
                 try {
-                    if (audioEl && audioEl.paused && !isPlaying) {
+                    if (audioEl && audioEl.paused && !isPlaying && !isIosStandalonePwa()) {
                         audioEl.removeAttribute('src');
                         audioEl.load();
                     }
@@ -2202,7 +2321,7 @@
                 if (isPlaying) requestWakeLock();
                 try {
                     const pv = document.getElementById('player-view');
-                    if (pv && pv.style.display === 'block' && audioEl && currentGlobalFileId != null && !audioEl.getAttribute('src')) {
+                    if (pv && pv.style.display === 'block' && audioEl && currentGlobalFileId != null && !isIosStandalonePwa() && !audioEl.getAttribute('src')) {
                         audioEl.src = getAssetUrl(getVerseAssetPath(currentGlobalFileId) + '.mp3');
                     }
                 } catch (e3) {}
@@ -2210,6 +2329,7 @@
         });
         window.addEventListener('pagehide', () => {
             clearIt9anOsMediaSession();
+            if (isIosStandalonePwa()) iosVerseStopNode();
             try {
                 if (feedAudioEl && feedAudioEl.paused && !currentFeedAudioId) {
                     feedAudioEl.removeAttribute('src');
@@ -2217,7 +2337,7 @@
                 }
             } catch (e) {}
             try {
-                if (audioEl && audioEl.paused && !isPlaying) {
+                if (audioEl && audioEl.paused && !isPlaying && !isIosStandalonePwa()) {
                     audioEl.removeAttribute('src');
                     audioEl.load();
                 }
@@ -2225,11 +2345,20 @@
         });
 
         audioEl.addEventListener('timeupdate', () => {
-            if(!audioEl.duration) return;
+            if (isIosStandalonePwa() && iosVerseNode) return;
+            if (!audioEl.duration) return;
             pBar.value = audioEl.currentTime; pBar.max = audioEl.duration;
             cTime.innerText = formatTime(audioEl.currentTime); dTime.innerText = formatTime(audioEl.duration);
         });
-        pBar.addEventListener('input', () => { audioEl.currentTime = pBar.value; });
+        pBar.addEventListener('input', () => {
+            if (isIosStandalonePwa() && iosVerseDecoded) {
+                iosVerseStopNode();
+                iosVerseStartOffset = Math.max(0, parseFloat(pBar.value) || 0);
+                if (isPlaying) iosVerseStartPlayback(iosVerseStartOffset).catch(() => { stopLoop(); });
+            } else {
+                audioEl.currentTime = pBar.value;
+            }
+        });
         function formatTime(sec) { if(isNaN(sec)) return "00:00"; let m = Math.floor(sec / 60); let s = Math.floor(sec % 60); return (m<10?"0"+m:m)+":"+(s<10?"0"+s:s); }
         function formatDateTime(ts) {
             if(!ts || !ts.seconds) return '';
@@ -5733,7 +5862,16 @@
             const imgEl = document.getElementById('currentImg');
             imgEl.src = getAssetUrl(getVerseAssetPath(globalId) + '.png');
             imgEl.onerror = getVerseImgOnError(imgEl, true);
-            audioEl.src = getAssetUrl(getVerseAssetPath(globalId) + '.mp3');
+            if (isIosStandalonePwa()) {
+                iosVerseStopNode();
+                iosVerseDecoded = null;
+                iosVerseDecodedForGlobalId = null;
+                iosVerseStartOffset = 0;
+                try { audioEl.removeAttribute('src'); audioEl.load(); } catch (e) {}
+                iosVerseLoadBuffer(globalId).catch(function (err) { console.warn('ios verse preload', err); });
+            } else {
+                audioEl.src = getAssetUrl(getVerseAssetPath(globalId) + '.mp3');
+            }
 
             const verseBadge = document.getElementById('verseStatusBadge');
             const userRole = localStorage.getItem('it9an_role');
@@ -7520,6 +7658,7 @@
                     /* iPhone: Jede laufende Wiedergabe hält die Audio-Session im Ducking/Playback-Pfad → leises Mikro. Pausieren + stumm, Session „auto“, dann warten. */
                     if (isIOS) {
                         pauseFeedAudio();
+                        if (isIosStandalonePwa()) iosVerseStopNode();
                         iosMicPlaybackRestore = {
                             mainMuted: audioEl.muted,
                             mainVol: audioEl.volume,
@@ -7551,7 +7690,9 @@
                             }
                         }
                     }
-                    let dur = audioEl.duration; if(!dur || isNaN(dur)) dur = 15;
+                    let dur = getMainVerseDuration();
+                    if (!dur || isNaN(dur)) dur = audioEl.duration;
+                    if (!dur || isNaN(dur)) dur = 15;
                     const role = localStorage.getItem('it9an_role');
                     maxRecDuration = (replyTargetId && role === 'teacher') ? 600 : Math.ceil(dur * 3);
                     const canReuse = isMacDesktop && lastRecStream && lastRecStream.getTracks().every(t => t.readyState === 'live');
@@ -7933,14 +8074,19 @@
 
         window.toggleSmartLoop = function() {
             if (isPlaying) {
-                isPlaying = false; isPaused = true; audioEl.pause(); clearInterval(pauseInterval);
+                isPlaying = false; isPaused = true; clearInterval(pauseInterval);
+                if (isIosStandalonePwa() && iosVerseDecoded) iosVersePausePlayback();
+                else audioEl.pause();
                 releaseWakeLock();
                 document.getElementById('playBtn').innerText = "▶";
             } else {
                 isPlaying = true; isPaused = false; document.getElementById('playBtn').innerText = "⏸";
                 requestWakeLock();
-                if (pauseSecondsLeft > 0) { startPauseCountdown(pauseSecondsLeft); } 
-                else if (audioEl.currentTime > 0 && audioEl.currentTime < audioEl.duration) {
+                if (pauseSecondsLeft > 0) { startPauseCountdown(pauseSecondsLeft); }
+                else if (isIosStandalonePwa() && iosVerseDecoded && iosVerseStartOffset > 0 && iosVerseStartOffset < iosVerseDecoded.duration - 0.05) {
+                    pauseFeedAudio();
+                    iosVerseStartPlayback(iosVerseStartOffset).catch(e => { stopLoop(); });
+                } else if (!isIosStandalonePwa() && audioEl.currentTime > 0 && audioEl.currentTime < audioEl.duration) {
                     pauseFeedAudio();
                     audioEl.play().catch(e => { stopLoop(); });
                 } else {
@@ -7950,34 +8096,22 @@
         }
         
         function playCycle() {
-            if(!isPlaying) return;
+            if (!isPlaying) return;
             requestWakeLock();
             pauseFeedAudio();
-            audioEl.play().catch(e => { stopLoop(); });
-            audioEl.onended = async function() {
-                if(!isPlaying) return;
-                const uid = localStorage.getItem('it9an_uid');
-                const myName = localStorage.getItem('it9an_name');
-                const isHidden = localStorage.getItem('it9an_hidden') === 'true';
-                if(uid && uid !== 'admin_super' && uid !== 'guest') {
-                    try { await window.updateDoc(window.doc(window.db, "users", uid), { totalVerseViews: window.increment(1) }); } catch(e){}
+            audioEl.onended = function () { handleVerseAudioEnded().catch(() => {}); };
+            if (isIosStandalonePwa()) {
+                (async () => {
                     try {
-                        const sRef = window.doc(window.db, "stats", getStatsDocId(currentStageId, currentGlobalFileId));
-                        await window.setDoc(sRef, {}, { merge: true });
-                        const updates = { totalRepetitions: window.increment(1) };
-                        if(verseRepeatsPlayed === 0) updates.verseViewCount = window.increment(1);
-                        updates[`viewers.${uid}.count`] = window.increment(1);
-                        updates[`viewers.${uid}.lastViewed`] = window.serverTimestamp();
-                        if(myName && !isHidden) updates[`viewers.${uid}.name`] = myName;
-                        await window.updateDoc(sRef, updates);
-                        const today = (function(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); })();
-                        window.setDoc(window.doc(window.db, "dailyStats", today), { repetitions: window.increment(1) }, { merge: true }).catch(()=>{});
-                    } catch(e){}
-                }
-                if(document.getElementById('globalGap').checked) {
-                    let pauseTime = Math.ceil(audioEl.duration * 1.25);
-                    startPauseCountdown(pauseTime);
-                } else { checkNextStep(); }
+                        await iosVerseLoadBuffer(currentGlobalFileId);
+                        await iosVerseStartPlayback(0);
+                    } catch (e) {
+                        console.warn('ios verse play', e);
+                        stopLoop();
+                    }
+                })();
+            } else {
+                audioEl.play().catch(e => { stopLoop(); });
             }
         }
 
@@ -7998,7 +8132,12 @@
         
         function stopLoop() { 
             isPlaying = false; isPaused = false; pauseSecondsLeft = 0; clearInterval(pauseInterval); 
-            audioEl.pause(); audioEl.currentTime = 0; 
+            if (isIosStandalonePwa()) {
+                iosVerseStopNode();
+                iosVerseStartOffset = 0;
+            } else {
+                audioEl.pause(); audioEl.currentTime = 0;
+            }
             releaseWakeLock();
             pauseFeedAudio();
             clearIt9anOsMediaSession();
@@ -8587,6 +8726,7 @@
         // --- ENERGIEEFFIZIENZ: Bei Hintergrund pausieren, Listener stoppen ---
         function pauseAllAudio() {
             try {
+                if (isIosStandalonePwa()) iosVerseStopNode();
                 const mainA = document.getElementById('mainAudio');
                 const feedA = document.getElementById('feedAudio');
                 const reviewA = document.getElementById('reviewAudio');
