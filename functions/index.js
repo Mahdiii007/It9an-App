@@ -544,6 +544,8 @@ exports.restoreStudentRecordingNotificationsScheduled = onSchedule(
 /** Tägliche Quran-Reminder für Schüler: 6–9h und 18–21h. Uhrzeit variiert von Tag zu Tag.
  *  Klick öffnet direkt das Stufenmenu (openStages=1). */
 const QURAN_REMINDER_BODY = 'لا تنسَ اليوم أن تتعلم شيئاً من القرآن عبر التطبيق';
+/** Gleiche Slots/Zeiten wie Schüler */
+const QURAN_REMINDER_BODY_TEACHER = 'تذكّر اليوم مساعدة طلابك على تعلّم القرآن وإتقانه.';
 /* Morgens 6–9h: 6:30, 7:30, 8:30 | Abends 18–21h: 18:30, 19:30, 20:30 */
 const QURAN_REMINDER_SLOTS = [
   { cron: '30 6 * * *', morning: true, idx: 0 },
@@ -589,6 +591,76 @@ async function getStudentFcmTokens(db) {
   return tokens;
 }
 
+async function getTeacherFcmTokens(db) {
+  const tokens = [];
+  const seenTok = new Set();
+  const q = await db.collection('fcmTokens').where('role', '==', 'teacher').get();
+  for (const doc of q.docs) {
+    const d = doc.data();
+    const uid = d.uid || doc.id;
+    if (uid === 'admin_super' || uid === 'guest') continue;
+    const tok = d.token;
+    if (tok && !seenTok.has(tok)) {
+      seenTok.add(tok);
+      tokens.push(tok);
+    }
+  }
+  return tokens;
+}
+
+function buildQuranReminderMessages(tokens, body, tagSuffix) {
+  const title = 'تطبيق إتقان';
+  const tag = `it9an-quran-reminder-${tagSuffix}-${Date.now()}`;
+  const data = {
+    title,
+    body,
+    openStages: '1',
+    tag
+  };
+  return tokens.map((token) => ({
+    token,
+    data: { ...data },
+    webpush: {
+      headers: { Urgency: 'high' },
+      notification: {
+        title: data.title,
+        body: data.body,
+        icon: '/icon-192.png',
+        tag: data.tag,
+        vibrate: [200, 100, 200, 100, 200]
+      },
+      data: { ...data }
+    },
+    android: {
+      priority: 'high',
+      data: { ...data }
+    },
+    apns: {
+      payload: {
+        aps: { sound: 'default', contentAvailable: true },
+        title,
+        body
+      }
+    }
+  }));
+}
+
+async function sendQuranReminderBatch(tokens, body, tagSuffix, logLabel) {
+  if (tokens.length === 0) return;
+  const messages = buildQuranReminderMessages(tokens, body, tagSuffix);
+  try {
+    const res = await admin.messaging().sendEach(messages);
+    if (res.failureCount > 0) {
+      res.responses.forEach((r) => {
+        if (!r.success) console.warn('Quran reminder push failed (' + logLabel + '):', r.error);
+      });
+    }
+    console.log('sendQuranReminderScheduled: sent to', tokens.length, logLabel);
+  } catch (e) {
+    console.error('sendQuranReminderScheduled error (' + logLabel + '):', e);
+  }
+}
+
 QURAN_REMINDER_SLOTS.forEach((slot, idx) => {
   const fnName = 'sendQuranReminderScheduled' + (idx + 1);
   exports[fnName] = onSchedule(
@@ -603,53 +675,12 @@ QURAN_REMINDER_SLOTS.forEach((slot, idx) => {
       const chosen = getChosenSlotForToday(slot.morning);
       if (chosen !== slot.idx) return null;
       const db = admin.firestore();
-      const tokens = await getStudentFcmTokens(db);
-      if (tokens.length === 0) return null;
-      const title = 'تطبيق إتقان';
-      const tag = `it9an-quran-reminder-${Date.now()}`;
-      const data = {
-        title,
-        body: QURAN_REMINDER_BODY,
-        openStages: '1',
-        tag
-      };
-      const messages = tokens.map((token) => ({
-        token,
-        data: { ...data },
-        webpush: {
-          headers: { Urgency: 'high' },
-          notification: {
-            title: data.title,
-            body: data.body,
-            icon: '/icon-192.png',
-            tag: data.tag,
-            vibrate: [200, 100, 200, 100, 200]
-          },
-          data: { ...data }
-        },
-        android: {
-          priority: 'high',
-          data: { ...data }
-        },
-        apns: {
-          payload: {
-            aps: { sound: 'default', contentAvailable: true },
-            title,
-            body: QURAN_REMINDER_BODY
-          }
-        }
-      }));
-      try {
-        const res = await admin.messaging().sendEach(messages);
-        if (res.failureCount > 0) {
-          res.responses.forEach((r, i) => {
-            if (!r.success) console.warn('Quran reminder push failed:', r.error);
-          });
-        }
-        console.log('sendQuranReminderScheduled: sent to', tokens.length, 'students');
-      } catch (e) {
-        console.error('sendQuranReminderScheduled error:', e);
-      }
+      const [studentTokens, teacherTokens] = await Promise.all([
+        getStudentFcmTokens(db),
+        getTeacherFcmTokens(db)
+      ]);
+      await sendQuranReminderBatch(studentTokens, QURAN_REMINDER_BODY, 'stu', 'students');
+      await sendQuranReminderBatch(teacherTokens, QURAN_REMINDER_BODY_TEACHER, 'tch', 'teachers');
       return null;
     }
   );
