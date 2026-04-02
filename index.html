@@ -506,6 +506,8 @@
         .feed-msg .feed-row2 .feed-datetime { margin-left: auto; }
         .feed-msg .feed-row2 .feed-delete-wrap { flex-shrink: 0; }
         .feed-msg .feed-player-wrap { flex-shrink: 0; display: flex; align-items: center; width: auto; }
+        .feed-msg .feed-player-wrap.feed-with-echo-mix { gap: 6px; }
+        .feed-echo-mix-btn { width: 40px; height: 40px; min-width: 40px; flex-shrink: 0; border-radius: 50%; border: none; font-size: 16px; cursor: pointer; background: linear-gradient(180deg, #f1c40f 0%, #d4ac0d 100%); color: #222; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.12); font-family: inherit; }
         .feed-reply-wrap { display: inline-flex; align-items: center; flex-shrink: 0; flex-wrap: wrap; gap: 6px; }
         .feed-reply-wrap .reply-btn { display: inline-flex; align-items: center; min-height: 32px; padding: 4px 10px; border-radius: 16px; font-size: 13px; }
         .reply-btn-sync { border-color: #c62828; color: #c62828; }
@@ -612,9 +614,12 @@
         .review-box .review-title { font-size: 24px; font-weight: bold; margin-bottom: 15px; color: var(--primary); }
         .review-box .review-verse-img { width: 100%; max-width: 100%; height: auto; border-radius: 8px; margin-bottom: 12px; display: block; }
         .review-box .review-player-wrap { margin: 16px 0; width: 100%; display: flex; justify-content: center; align-items: center; }
-        .review-box .review-player-wrap .custom-player { display: flex; justify-content: center; align-items: center; width: 100%; }
+        .review-box .review-player-wrap.review-player-with-echo-side { gap: 14px; flex-wrap: nowrap; max-width: 100%; }
+        .review-box .review-player-wrap .custom-player { display: flex; justify-content: center; align-items: center; width: 100%; flex: 1; min-width: 0; }
         .review-box .review-player-wrap .cp-btn { width: 100px; height: 100px; border-radius: 50%; font-size: 40px; }
         .review-box .review-player-wrap .cp-slider, .review-box .review-player-wrap .cp-time { display: none !important; }
+        .review-yellow-side-btn { width: 56px; height: 56px; min-width: 56px; flex-shrink: 0; border-radius: 50%; border: none; font-size: 22px; cursor: pointer; background: linear-gradient(180deg, #f1c40f 0%, #d4ac0d 100%); color: #222; box-shadow: 0 4px 12px rgba(0,0,0,0.15); font-family: inherit; display: flex; align-items: center; justify-content: center; }
+        .review-yellow-side-btn:disabled { opacity: 0.45; cursor: not-allowed; }
         .review-box .review-note { font-size: 14px; color: #666; margin: 12px 0; text-align: center; line-height: 1.5; }
         .review-box .review-btns { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; }
         .review-dual-play-row { display: flex; flex-direction: row; justify-content: center; align-items: center; gap: 16px; margin: 12px 0; flex-wrap: wrap; }
@@ -2017,6 +2022,8 @@
         let _reviewStripGreenUrls = [];
         let _reviewStripVerseUrls = [];
         let _reviewStripStudentUrls = [];
+        /** Review: true wenn reviewAudio gerade den gelben Mix (Vers+Schüler) abspielt */
+        let _reviewReviewPlayingYellow = false;
         let reviewEchoStripVerseBlobs = [];
         let reviewEchoStripStudentBlobs = [];
         const ICON_MIC_HTML = '<svg class="icon-mic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>';
@@ -3010,6 +3017,7 @@
                         for(const nd of notifSnap1.docs) await window.deleteDoc(window.doc(window.db, "notifications", nd.id));
                         await deleteSavedRecordingsForPost(doc.id);
                         if(data.audioUrl) await cleanupAudioFile(data.audioUrl);
+                        if(data.echoMixAudioUrl) await cleanupAudioFile(data.echoMixAudioUrl);
                         if(data.replies) for(let r of data.replies) if(r.audioUrl) await cleanupAudioFile(r.audioUrl);
                         await window.deleteDoc(doc.ref);
                     } else {
@@ -3041,6 +3049,7 @@
                         for(const nd of notifSnap2.docs) await window.deleteDoc(window.doc(window.db, "notifications", nd.id));
                         await deleteSavedRecordingsForPost(doc.id);
                         if(data.audioUrl) await cleanupAudioFile(data.audioUrl);
+                        if(data.echoMixAudioUrl) await cleanupAudioFile(data.echoMixAudioUrl);
                         await window.deleteDoc(doc.ref);
                     } else if(data.replies && data.replies.some(r => r.uid === uid)) {
                         const toRemove = data.replies.filter(r => r.uid === uid);
@@ -6254,7 +6263,10 @@
                 const ratingStatusBadge = (!isTeacherViewStudent && ratingStatusText) ? `<span class="rating-status-badge ${ratingStatusClass}">${ratingStatusText}</span>` : '';
                 let delBtn = deleteBtnHtml ? `<div class="feed-delete-wrap">${deleteBtnHtml}</div>` : '';
                 const feedRow1Class = isTeacherViewStudent ? 'feed-row1 feed-row1-teacher' : 'feed-row1';
-                const playAndRemarks = `<div class="feed-play-remarks"><div class="feed-player-wrap"><div class="custom-player"><button class="cp-btn" id="btn-${d.id}" onclick="playFeedAudio('${d.audioUrl}', '${d.id}')">▶</button><input type="range" class="cp-slider" id="seek-${d.id}" value="0" min="0" step="0.1" oninput="seekFeedAudio(this.value)"><span class="cp-time" id="time-${d.id}">00:00</span></div></div><div class="feed-remarks-wrap">${ratingStatusBadge}</div></div>`;
+                const echoMixUrlEsc = (d.echoMixAudioUrl && isStudentPost) ? String(d.echoMixAudioUrl).replace(/\\/g, '\\\\').replace(/'/g, "\\'") : '';
+                const echoMixFeedBtn = (isStudentPost && d.echoMixAudioUrl) ? `<button type="button" class="feed-echo-mix-btn" id="btn-${d.id}-echo" onclick="playFeedAudio('${echoMixUrlEsc}', '${d.id}-echo')" title="المقطع + التسجيل" aria-label="مقطع وتسجيل">▶</button>` : '';
+                const feedPlayerWrapClass = (isStudentPost && d.echoMixAudioUrl) ? 'feed-player-wrap feed-with-echo-mix' : 'feed-player-wrap';
+                const playAndRemarks = `<div class="feed-play-remarks"><div class="${feedPlayerWrapClass}"><div class="custom-player"><button class="cp-btn" id="btn-${d.id}" onclick="playFeedAudio('${d.audioUrl}', '${d.id}')">▶</button><input type="range" class="cp-slider" id="seek-${d.id}" value="0" min="0" step="0.1" oninput="seekFeedAudio(this.value)"><span class="cp-time" id="time-${d.id}">00:00</span></div>${echoMixFeedBtn}</div><div class="feed-remarks-wrap">${ratingStatusBadge}</div></div>`;
                 const iconNameSave = `<div class="feed-row1-right"><span class="feed-role-icon">${roleIcon}</span><div class="feed-name-badge">${stripYearFromName(d.name)}</div>${saveBtnHtml}</div>`;
                 const feedLikeHtml = `<div class="feed-like-wrap"><div class="like-btn ${mainLikeClass}"><div class="like-action ${mainLockedClass}" onclick="${mainLikeAction}">👍</div><div class="like-count" onclick="showLikeNames(event, '${mainLikerNames.join('|||')}')">${mainLikesCount}</div></div></div>`;
                 const feedRow1ContentStudent = `<div class="feed-row1-left">${playAndRemarks}</div>${iconNameSave}`;
@@ -6408,12 +6420,12 @@
                         <div class="feed-row2">
                             <span class="feed-datetime">${postDateStr}</span>
                             ${savedRatingBadge}
-                            <div class="feed-player-wrap">
+                            <div class="${d.echoMixAudioUrl ? 'feed-player-wrap feed-with-echo-mix' : 'feed-player-wrap'}">
                                 <div class="custom-player">
                                     <button class="cp-btn" id="btn-saved-${d.id}" onclick="playFeedAudio('${d.audioUrl}', 'saved-${d.id}')">▶</button>
                                     <input type="range" class="cp-slider" id="seek-saved-${d.id}" value="0" min="0" step="0.1" oninput="seekFeedAudio(this.value)">
                                     <span class="cp-time" id="time-saved-${d.id}">00:00</span>
-                                </div>
+                                </div>${d.echoMixAudioUrl ? `<button type="button" class="feed-echo-mix-btn" id="btn-saved-${d.id}-echo" onclick="playFeedAudio('${String(d.echoMixAudioUrl).replace(/\\/g, '\\\\').replace(/'/g, "\\'")}', 'saved-${d.id}-echo')" title="المقطع + التسجيل" aria-label="مقطع وتسجيل">▶</button>` : ''}
                             </div>
                         </div>
                         <div class="feed-row3">${fileId ? `<button class="reply-btn" onclick="${openToFeed}">فتح في الدرس</button>` : ''}</div>
@@ -7997,14 +8009,17 @@
             if (pb) pb.innerText = '▶';
             releaseWakeLock();
             if (echoHoldMediaRecorder && echoHoldMediaRecorder.state !== 'inactive') {
-                try { echoHoldMediaRecorder.stop(); } catch (e) {}
+                await stopEchoHoldSegmentRecording();
+            } else {
+                restoreEchoHoldIosPlaybackIfAny();
             }
-            echoHoldMediaRecorder = null;
-            echoHoldChunks = [];
-            if (echoHoldStream) {
-                try { echoHoldStream.getTracks().forEach(x => x.stop()); } catch (e) {}
-                echoHoldStream = null;
+            if (echoHoldRawStream) {
+                try { echoHoldRawStream.getTracks().forEach(t => t.stop()); } catch (e) {}
+                echoHoldRawStream = null;
+            } else if (echoHoldStream) {
+                try { echoHoldStream.getTracks().forEach(t => t.stop()); } catch (e) {}
             }
+            echoHoldStream = null;
             if (echoHoldRecCtx) {
                 try { echoHoldRecCtx.close(); } catch (e) {}
                 echoHoldRecCtx = null;
@@ -8985,11 +9000,38 @@
             _reviewStripGreenUrls = [];
             _reviewStripVerseUrls = [];
             _reviewStripStudentUrls = [];
+            _reviewReviewPlayingYellow = false;
         }
+        function reviewModalResetYellowSideBtn() {
+            const yBtn = document.getElementById('review-yellow-side-btn');
+            if (yBtn) yBtn.textContent = '▶';
+        }
+        window.reviewModalToggleYellowMix = function() {
+            const audio = document.getElementById('reviewAudio');
+            const yBtn = document.getElementById('review-yellow-side-btn');
+            if (!audio || !_reviewMainYellowUrl || !reviewYellowEnabled) return;
+            if (!_reviewReviewPlayingYellow) {
+                audio.pause();
+                audio.src = _reviewMainYellowUrl;
+                audio.load();
+                _reviewReviewPlayingYellow = true;
+                const mainBtn = document.getElementById('review-play-btn');
+                if (mainBtn) mainBtn.textContent = '▶';
+                audio.play().catch(() => {});
+                return;
+            }
+            if (audio.paused) {
+                audio.play().catch(() => {});
+            } else {
+                audio.pause();
+            }
+        };
         window.reviewModalPlayMainGreen = function() {
             const audio = document.getElementById('reviewAudio');
             const btn = document.getElementById('review-play-btn');
             if (!audio || !_reviewMainGreenUrl) return;
+            _reviewReviewPlayingYellow = false;
+            reviewModalResetYellowSideBtn();
             audio.pause();
             audio.src = _reviewMainGreenUrl;
             audio.load();
@@ -9004,8 +9046,9 @@
             audio.pause();
             audio.src = _reviewMainYellowUrl;
             audio.load();
+            _reviewReviewPlayingYellow = true;
+            if (btn) btn.textContent = '▶';
             audio.play().catch(() => {});
-            if (btn) btn.textContent = '⏸';
         };
         window.reviewModalPlayStripGreen = function(i) {
             const url = _reviewStripGreenUrls[i];
@@ -9013,6 +9056,8 @@
             const audio = document.getElementById('reviewAudio');
             const btn = document.getElementById('review-play-btn');
             if (!audio) return;
+            _reviewReviewPlayingYellow = false;
+            reviewModalResetYellowSideBtn();
             audio.pause();
             audio.src = url;
             audio.load();
@@ -9024,6 +9069,8 @@
                 const audio = document.getElementById('reviewAudio');
                 const btn = document.getElementById('review-play-btn');
                 if (!audio) return;
+                _reviewReviewPlayingYellow = false;
+                reviewModalResetYellowSideBtn();
                 audio.pause();
                 audio.src = _reviewStripStudentUrls[i];
                 audio.load();
@@ -9040,6 +9087,8 @@
             const audio = document.getElementById('reviewAudio');
             const btn = document.getElementById('review-play-btn');
             if (!audio) return;
+            _reviewReviewPlayingYellow = false;
+            reviewModalResetYellowSideBtn();
             audio.pause();
             audio.src = url;
             audio.load();
@@ -9128,35 +9177,32 @@
             }
 
             const hasYellowQuickRow = !!(reviewYellowEnabled && reviewBlobYellow && reviewBlobYellow.size > 0);
-            const yMainClass = reviewYellowEnabled ? 'review-main-play-btn review-play-yellow-main' : 'review-main-play-btn review-play-yellow-main review-btn-muted';
-            const yMainDis = reviewYellowEnabled ? '' : 'disabled';
-            const dualRowHtml = hasYellowQuickRow
-                ? `<div class="review-dual-play-row">
-                    <div class="review-play-label">تشغيل سريع</div>
-                    <button type="button" class="review-main-play-btn review-play-green-main" onclick="reviewModalPlayMainGreen()" title="تسجيلات فقط + فاصل ١ ث">▶</button>
-                    <button type="button" class="${yMainClass}" onclick="reviewModalPlayMainYellow()" title="المقطع + التسجيلات + فواصل" ${yMainDis}>▶</button>
-                </div>`
+            const ySideDis = hasYellowQuickRow ? '' : 'disabled';
+            const playerWrapClass = hasYellowQuickRow ? 'review-player-wrap review-player-with-echo-side' : 'review-player-wrap';
+            const yellowSideBtnHtml = hasYellowQuickRow
+                ? `<button type="button" id="review-yellow-side-btn" class="review-yellow-side-btn" onclick="reviewModalToggleYellowMix()" title="المقطع + تسجيلات الطالب" aria-label="مقطع وتسجيل" ${ySideDis}>▶</button>`
                 : '';
             const noteHtml = hasYellowQuickRow
                 ? (reviewEchoStripVerseBlobs && reviewEchoStripVerseBlobs.length > 0
-                    ? `<div class="review-note">▶ الأخضر (الصف العلوي): تسجيلات الطالب فقط + ثوانٍ صمت — <strong>هذا ما يُرسَل للمعلم</strong> ويُبنى عليه ردُّه في «رد متزامن». ▶ الأصفر: المقطع + تسجيلات الطالب بالتناوب (للاستماع فقط). ▶ في كل صف جزئي: أخضر = جزء المقطع، أصفر = تسجيل الطالب.</div>`
-                    : `<div class="review-note">▶ الأخضر: تسجيل الطالب فقط (أو التلاوة الكاملة من الميكروفون الأحمر) — <strong>يُرسَل للمعلم</strong>. ▶ الأصفر: المقطع + التسجيلات — للاستماع فقط عند «رد متزامن»؛ معطّل مع الميكروفون الأحمر فقط.</div>`)
+                    ? `<div class="review-note">▶ الزر الذهبي بجانب المشغّل: المقطع + تسجيلات الطالب بالتناوب (للاستماع فقط). ▶ المشغّل الكبير: تسجيلات الطالب فقط + فواصل — <strong>يُرسَل للمعلم</strong>. ▶ في كل صف جزئي: أخضر = جزء المقطع، أصفر = تسجيل الطالب.</div>`
+                    : `<div class="review-note">▶ الزر الذهبي: المقطع + التسجيلات (للاستماع فقط). ▶ المشغّل الكبير: تسجيلات الطالب فقط — <strong>يُرسَل للمعلم</strong>.</div>`)
                 : '';
 
             audio.src = greenUrl;
             audio.muted = false;
             audio.volume = 1;
+            _reviewReviewPlayingYellow = false;
 
             content.innerHTML = `
                 <div class="review-title">مراجعة التسجيل</div>
                 ${verseImgHtml}
-                ${dualRowHtml}
-                <div class="review-player-wrap">
+                <div class="${playerWrapClass}">
                     <div class="custom-player">
                         <button class="cp-btn" id="review-play-btn" onclick="toggleReviewAudio()">▶</button>
                         <input type="range" class="cp-slider" id="review-seek" value="0" min="0" step="0.1" oninput="seekReviewAudio(this.value)">
                         <span class="cp-time" id="review-time">00:00</span>
                     </div>
+                    ${yellowSideBtnHtml}
                 </div>
                 ${stripsHtml ? `<div class="review-strip-list">${stripsHtml}</div>` : ''}
                 ${noteHtml}
@@ -9190,9 +9236,38 @@
                     timeEl.textContent = formatTime(audio.currentTime);
                 },
                 loadedmetadata: () => { seek.max = audio.duration; },
-                ended: () => { btn.textContent = '▶'; seek.value = 0; timeEl.textContent = '00:00'; },
-                play: () => { btn.textContent = '⏸'; },
-                pause: () => { btn.textContent = '▶'; }
+                ended: () => {
+                    const yBtn = document.getElementById('review-yellow-side-btn');
+                    if (_reviewReviewPlayingYellow) {
+                        _reviewReviewPlayingYellow = false;
+                        if (yBtn) yBtn.textContent = '▶';
+                        if (_reviewMainGreenUrl) {
+                            audio.src = _reviewMainGreenUrl;
+                            audio.load();
+                        }
+                    }
+                    btn.textContent = '▶';
+                    seek.value = 0;
+                    timeEl.textContent = '00:00';
+                },
+                play: () => {
+                    const yBtn = document.getElementById('review-yellow-side-btn');
+                    if (_reviewReviewPlayingYellow) {
+                        btn.textContent = '▶';
+                        if (yBtn) yBtn.textContent = '⏸';
+                    } else {
+                        btn.textContent = '⏸';
+                        if (yBtn) yBtn.textContent = '▶';
+                    }
+                },
+                pause: () => {
+                    const yBtn = document.getElementById('review-yellow-side-btn');
+                    if (_reviewReviewPlayingYellow) {
+                        if (yBtn) yBtn.textContent = '▶';
+                    } else {
+                        btn.textContent = '▶';
+                    }
+                }
             };
             audio.addEventListener('timeupdate', _reviewAudioHandlers.timeupdate);
             audio.addEventListener('loadedmetadata', _reviewAudioHandlers.loadedmetadata);
@@ -9205,8 +9280,30 @@
             const audio = document.getElementById('reviewAudio');
             const btn = document.getElementById('review-play-btn');
             if (!audio || !btn) return;
-            if (audio.paused) { audio.play(); btn.textContent = '⏸'; }
-            else { audio.pause(); btn.textContent = '▶'; }
+            if (_reviewMainGreenUrl) {
+                if (_reviewReviewPlayingYellow) {
+                    audio.pause();
+                    audio.src = _reviewMainGreenUrl;
+                    audio.load();
+                    _reviewReviewPlayingYellow = false;
+                    reviewModalResetYellowSideBtn();
+                }
+                if (audio.paused) {
+                    audio.play().catch(() => {});
+                    btn.textContent = '⏸';
+                } else {
+                    audio.pause();
+                    btn.textContent = '▶';
+                }
+            } else {
+                if (audio.paused) {
+                    audio.play().catch(() => {});
+                    btn.textContent = '⏸';
+                } else {
+                    audio.pause();
+                    btn.textContent = '▶';
+                }
+            }
         };
         window.seekReviewAudio = function(val) {
             const audio = document.getElementById('reviewAudio');
@@ -9304,10 +9401,22 @@
                             alert(REC_PENDING_TEACHER_MSG);
                             return;
                         }
+                        let echoMixUrl = null;
+                        if (reviewBlobYellow && reviewBlobYellow.size > 0) {
+                            let yext = 'webm';
+                            if (reviewBlobYellow.type.includes('mp4')) yext = 'mp4';
+                            else if (reviewBlobYellow.type.includes('ogg')) yext = 'ogg';
+                            else if (reviewBlobYellow.type.includes('wav')) yext = 'wav';
+                            const refY = window.ref(window.storage, `uploads/${Date.now()}_${uid}_echo.${yext}`);
+                            await window.uploadBytes(refY, reviewBlobYellow);
+                            echoMixUrl = await window.getDownloadURL(refY);
+                        }
                         const postRef = window.doc(window.collection(window.db, "posts"));
                         const notifRef = window.doc(window.collection(window.db, "notifications"));
                         const batch = window.writeBatch(window.db);
-                        batch.set(postRef, { name: name, role: role, uid: uid, audioUrl: url, fileId: fileIdStr, stageId: currentStageId, likes: [], timestamp: window.serverTimestamp() });
+                        const postPayload = { name: name, role: role, uid: uid, audioUrl: url, fileId: fileIdStr, stageId: currentStageId, likes: [], timestamp: window.serverTimestamp() };
+                        if (echoMixUrl) postPayload.echoMixAudioUrl = echoMixUrl;
+                        batch.set(postRef, postPayload);
                         batch.set(notifRef, {
                            to: "teachers",
                            senderName: stripYearFromName(name),
@@ -9771,6 +9880,7 @@
                         for (const nd of notifSnap.docs) await window.deleteDoc(window.doc(window.db, "notifications", nd.id));
                         await deleteSavedRecordingsForPost(docSnap.id);
                         if (data.audioUrl) await cleanupAudioFile(data.audioUrl);
+                        if (data.echoMixAudioUrl) await cleanupAudioFile(data.echoMixAudioUrl);
                         if (data.replies) for (let r of data.replies) if (r.audioUrl) await cleanupAudioFile(r.audioUrl);
                         await window.deleteDoc(docSnap.ref);
                     } else {
@@ -9831,6 +9941,7 @@
                     const data = docSnap.data();
                     await deleteSavedRecordingsForPost(docSnap.id);
                     if(data.audioUrl) await cleanupAudioFile(data.audioUrl);
+                    if(data.echoMixAudioUrl) await cleanupAudioFile(data.echoMixAudioUrl);
                     if(data.replies) {
                         for(let r of data.replies) {
                             if(r.audioUrl) await cleanupAudioFile(r.audioUrl);
@@ -9908,6 +10019,7 @@
                         }
                     }
                     if(data.audioUrl) await cleanupAudioFile(data.audioUrl);
+                    if(data.echoMixAudioUrl) await cleanupAudioFile(data.echoMixAudioUrl);
                     try { await window.updateDoc(window.doc(window.db, "users", data.uid), { postsCount: window.increment(-1), totalLikes: window.increment(-((data.likes && data.likes.length) || 0)) }); } catch(e){}
                     await window.deleteDoc(window.doc(window.db, "posts", docSnap.id));
                 }
@@ -9934,6 +10046,7 @@
                     }
                     await deleteSavedRecordingsForPost(postId);
                     if(data.audioUrl) await cleanupAudioFile(data.audioUrl);
+                    if(data.echoMixAudioUrl) await cleanupAudioFile(data.echoMixAudioUrl);
                     await window.deleteDoc(docRef);
                     if(authorUid) {
                         const userRef = window.doc(window.db, "users", authorUid);
@@ -9977,6 +10090,7 @@
                         }
                         await deleteSavedRecordingsForPost(postId);
                         if(data.audioUrl) await cleanupAudioFile(data.audioUrl);
+                        if(data.echoMixAudioUrl) await cleanupAudioFile(data.echoMixAudioUrl);
                         await window.deleteDoc(docRef);
                         if(authorUid) {
                              const userRef = window.doc(window.db, "users", authorUid);
