@@ -9127,11 +9127,21 @@
                 });
             }
 
+            const hasYellowQuickRow = !!(reviewYellowEnabled && reviewBlobYellow && reviewBlobYellow.size > 0);
             const yMainClass = reviewYellowEnabled ? 'review-main-play-btn review-play-yellow-main' : 'review-main-play-btn review-play-yellow-main review-btn-muted';
             const yMainDis = reviewYellowEnabled ? '' : 'disabled';
-            const noteHtml = reviewEchoStripVerseBlobs && reviewEchoStripVerseBlobs.length > 0
-                ? `<div class="review-note">▶ الأخضر (الصف العلوي): تسجيلات الطالب فقط + ثوانٍ صمت — <strong>هذا ما يُرسَل للمعلم</strong> ويُبنى عليه ردُّه في «رد متزامن». ▶ الأصفر: المقطع + تسجيلات الطالب بالتناوب (للاستماع فقط). ▶ في كل صف جزئي: أخضر = جزء المقطع، أصفر = تسجيل الطالب.</div>`
-                : `<div class="review-note">▶ الأخضر: تسجيل الطالب فقط (أو التلاوة الكاملة من الميكروفون الأحمر) — <strong>يُرسَل للمعلم</strong>. ▶ الأصفر: المقطع + التسجيلات — للاستماع فقط عند «رد متزامن»؛ معطّل مع الميكروفون الأحمر فقط.</div>`;
+            const dualRowHtml = hasYellowQuickRow
+                ? `<div class="review-dual-play-row">
+                    <div class="review-play-label">تشغيل سريع</div>
+                    <button type="button" class="review-main-play-btn review-play-green-main" onclick="reviewModalPlayMainGreen()" title="تسجيلات فقط + فاصل ١ ث">▶</button>
+                    <button type="button" class="${yMainClass}" onclick="reviewModalPlayMainYellow()" title="المقطع + التسجيلات + فواصل" ${yMainDis}>▶</button>
+                </div>`
+                : '';
+            const noteHtml = hasYellowQuickRow
+                ? (reviewEchoStripVerseBlobs && reviewEchoStripVerseBlobs.length > 0
+                    ? `<div class="review-note">▶ الأخضر (الصف العلوي): تسجيلات الطالب فقط + ثوانٍ صمت — <strong>هذا ما يُرسَل للمعلم</strong> ويُبنى عليه ردُّه في «رد متزامن». ▶ الأصفر: المقطع + تسجيلات الطالب بالتناوب (للاستماع فقط). ▶ في كل صف جزئي: أخضر = جزء المقطع، أصفر = تسجيل الطالب.</div>`
+                    : `<div class="review-note">▶ الأخضر: تسجيل الطالب فقط (أو التلاوة الكاملة من الميكروفون الأحمر) — <strong>يُرسَل للمعلم</strong>. ▶ الأصفر: المقطع + التسجيلات — للاستماع فقط عند «رد متزامن»؛ معطّل مع الميكروفون الأحمر فقط.</div>`)
+                : '';
 
             audio.src = greenUrl;
             audio.muted = false;
@@ -9140,11 +9150,7 @@
             content.innerHTML = `
                 <div class="review-title">مراجعة التسجيل</div>
                 ${verseImgHtml}
-                <div class="review-dual-play-row">
-                    <div class="review-play-label">تشغيل سريع</div>
-                    <button type="button" class="review-main-play-btn review-play-green-main" onclick="reviewModalPlayMainGreen()" title="تسجيلات فقط + فاصل ١ ث">▶</button>
-                    <button type="button" class="${yMainClass}" onclick="reviewModalPlayMainYellow()" title="المقطع + التسجيلات + فواصل" ${yMainDis}>▶</button>
-                </div>
+                ${dualRowHtml}
                 <div class="review-player-wrap">
                     <div class="custom-player">
                         <button class="cp-btn" id="review-play-btn" onclick="toggleReviewAudio()">▶</button>
@@ -9358,9 +9364,16 @@
                 startSyncReply(replyTargetId);
                 return;
             }
-            if (localStorage.getItem('it9an_role') === 'student' && !replyTargetId && reviewOpenedFromEchoPractice && typeof shouldUseStudentEchoHoldMode === 'function' && shouldUseStudentEchoHoldMode()) {
+            if (localStorage.getItem('it9an_role') === 'student' && !replyTargetId && reviewOpenedFromEchoPractice) {
+                if (!studentPracticeSessionGatesOkOrAlert()) {
+                    reviewOpenedFromEchoPractice = false;
+                    resetStudentEchoSession();
+                    syncStudentVersEchoUi();
+                    updateRecButtonForStudentNotifications();
+                    return;
+                }
                 reviewOpenedFromEchoPractice = false;
-                resetStudentEchoSession();
+                beginStudentPracticeSessionFromYellowMic();
                 syncStudentVersEchoUi();
                 updateRecButtonForStudentNotifications();
                 return;
