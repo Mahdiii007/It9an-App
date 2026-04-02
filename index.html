@@ -2007,6 +2007,8 @@
         let reviewBlobGreen = null, reviewBlobYellow = null;
         let reviewYellowEnabled = false;
         let reviewStripSegmentBlobs = [];
+        /** true nur wenn die Review aus finalizeStudentEchoRecording (رد متزامن) kommt — nicht beim roten Mic */
+        let reviewOpenedFromEchoPractice = false;
         let _reviewModalObjectUrls = [];
         let _reviewMainGreenUrl = '', _reviewMainYellowUrl = '';
         let _reviewStripGreenUrls = [];
@@ -7366,6 +7368,7 @@
                         const mimeType = mediaRecorder.mimeType || 'audio/mp4';
                         currentBlob = new Blob(chunks, { type: mimeType });
                         syncReplySessionHandle = null;
+                        reviewOpenedFromEchoPractice = false;
                         showReviewModal();
                         resolve();
                     } catch (e) {
@@ -7859,6 +7862,7 @@
                 alert('تعذّر إنشاء معاينة للتسجيل. تحقّق من الاتصال أو حاوِل مرة أخرى.');
                 return;
             }
+            reviewOpenedFromEchoPractice = true;
             showReviewModal();
         }
         async function maybeStartStudentEchoPostVerse() {
@@ -8382,6 +8386,7 @@
                 return;
             }
             resetStudentEchoSession();
+            reviewOpenedFromEchoPractice = false;
             studentEchoPracticeSessionActive = true;
             studentEchoSegmentBlobs = [];
             recordingFileId = currentGlobalFileId;
@@ -8772,6 +8777,7 @@
                         reviewBlobYellow = null;
                         reviewYellowEnabled = false;
                         reviewStripSegmentBlobs = [];
+                        reviewOpenedFromEchoPractice = false;
                         showReviewModal();
                         const recBtn = document.getElementById('recBtn'); if(recBtn) recBtn.classList.remove('recording');
                         clearInterval(recInterval); ui.style.display = 'none';
@@ -9154,6 +9160,7 @@
                 reviewBlobYellow = null;
                 reviewYellowEnabled = false;
                 reviewStripSegmentBlobs = [];
+                reviewOpenedFromEchoPractice = false;
                 if (lastRecStream) { lastRecStream.getTracks().forEach(t => t.stop()); lastRecStream = null; }
                 if (navigator.audioSession) { try { navigator.audioSession.type = 'playback'; } catch(e) {} }
             } catch(e) { alert("خطأ في الإرسال"); }
@@ -9173,7 +9180,8 @@
                 startSyncReply(replyTargetId);
                 return;
             }
-            if (localStorage.getItem('it9an_role') === 'student' && !replyTargetId && typeof shouldUseStudentEchoHoldMode === 'function' && shouldUseStudentEchoHoldMode()) {
+            if (localStorage.getItem('it9an_role') === 'student' && !replyTargetId && reviewOpenedFromEchoPractice && typeof shouldUseStudentEchoHoldMode === 'function' && shouldUseStudentEchoHoldMode()) {
+                reviewOpenedFromEchoPractice = false;
                 resetStudentEchoSession();
                 syncStudentVersEchoUi();
                 updateRecButtonForStudentNotifications();
@@ -9194,6 +9202,7 @@
             teacherSyncReplyActive = false;
             replyTargetId = null;
             recordingFileId = null; recordingStageId = null;
+            reviewOpenedFromEchoPractice = false;
             if (typeof resetStudentEchoSession === 'function') resetStudentEchoSession();
             if (typeof syncStudentVersEchoUi === 'function') syncStudentVersEchoUi();
             if (lastRecStream) { lastRecStream.getTracks().forEach(t => t.stop()); lastRecStream = null; }
