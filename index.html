@@ -1993,6 +1993,9 @@
         let recordingFileId = null, recordingStageId = null; // Beim Aufnahmestart gespeichert, damit die Aufnahme dem richtigen Vers zugeordnet bleibt (auch wenn der Vers während der Aufnahme wechselt)
         /** Schüler: Vers hören (Dual-Button), Halte-Mikro, nach Vers-Ende Aufnahme; Review grün/gelb. */
         let studentEchoSegmentBlobs = [];
+        /** Vers-Abschnitte für رد متزامن: Startzeit der aktuellen Wiedergabe bis zur nächsten Halte-Pause bzw. Versende */
+        let echoVerseSliceOpenStartSec = 0;
+        let echoVerseSliceRanges = [];
         let studentEchoPostVersePhase = false;
         /** Gelber Mic: eine Klick-Session mit Timer/إنهاء ab Versstart bis Review */
         let studentEchoPracticeSessionActive = false;
@@ -2012,6 +2015,10 @@
         let _reviewModalObjectUrls = [];
         let _reviewMainGreenUrl = '', _reviewMainYellowUrl = '';
         let _reviewStripGreenUrls = [];
+        let _reviewStripVerseUrls = [];
+        let _reviewStripStudentUrls = [];
+        let reviewEchoStripVerseBlobs = [];
+        let reviewEchoStripStudentBlobs = [];
         const ICON_MIC_HTML = '<svg class="icon-mic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>';
 
         window.currentViewersData = { viewers: {}, totalRepetitions: 0 }; 
@@ -2237,6 +2244,9 @@
                     const today = (function () { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); })();
                     window.setDoc(window.doc(window.db, "dailyStats", today), { repetitions: window.increment(1) }, { merge: true }).catch(() => {});
                 } catch (e) {}
+            }
+            if (studentEchoPracticeSessionActive) {
+                closeEchoVerseSliceAtVerseEnd();
             }
             try {
                 if (studentEchoPracticeSessionActive) {
@@ -7633,8 +7643,18 @@
                 echoHoldRecCtx = null;
             }
             studentEchoSegmentBlobs = [];
+            echoVerseSliceOpenStartSec = 0;
+            echoVerseSliceRanges = [];
             studentEchoPostVersePhase = false;
             studentEchoPracticeSessionActive = false;
+        }
+        function closeEchoVerseSliceAtVerseEnd() {
+            const dur = audioEl.duration;
+            if (!dur || isNaN(dur) || dur <= 0) return;
+            if (dur > echoVerseSliceOpenStartSec + 0.02) {
+                echoVerseSliceRanges.push({ startSec: echoVerseSliceOpenStartSec, endSec: dur });
+            }
+            echoVerseSliceOpenStartSec = dur;
         }
         function playStudentEchoBeep() {
             try {
@@ -7826,6 +7846,67 @@
             }
             return encodeWavFloat32Mono(out, sampleRate);
         }
+        function sliceVerseSamplesCopy(verseSamples, sampleRate, startSec, endSec) {
+            const i0 = Math.max(0, Math.min(verseSamples.length, Math.floor(startSec * sampleRate)));
+            const i1 = Math.max(0, Math.min(verseSamples.length, Math.ceil(endSec * sampleRate)));
+            if (i1 <= i0) return new Float32Array(0);
+            const out = new Float32Array(i1 - i0);
+            out.set(verseSamples.subarray(i0, i1));
+            return out;
+        }
+        async function buildEchoPracticeYellowAndVerseStrips(fid, ranges, orderedStudentParts, gapSec) {
+            if (!fid || !ranges || !orderedStudentParts || ranges.length !== orderedStudentParts.length || !orderedStudentParts.length) {
+                return { yellowBlob: null, verseStripWavs: [] };
+            }
+            const verseUrl = getAssetUrl(getVerseAssetPath(fid) + '.mp3');
+            let verseAb;
+            try {
+                const r = await fetch(verseUrl);
+                if (!r.ok) return { yellowBlob: null, verseStripWavs: [] };
+                verseAb = await r.arrayBuffer();
+            } catch (e) {
+                return { yellowBlob: null, verseStripWavs: [] };
+            }
+            const AC = window.AudioContext || window.webkitAudioContext;
+            const ctx = new AC();
+            const verseStripWavs = [];
+            try {
+                const verseBuf = await ctx.decodeAudioData(verseAb.slice(0));
+                const verseSr = verseBuf.sampleRate;
+                const verseCh = verseBuf.getChannelData(0);
+                const parts = [];
+                for (let i = 0; i < ranges.length; i++) {
+                    let vs = sliceVerseSamplesCopy(verseCh, verseSr, ranges[i].startSec, ranges[i].endSec);
+                    if (vs.length === 0) vs = new Float32Array(Math.max(1, Math.round(0.04 * verseSr)));
+                    parts.push(vs);
+                    const ab = await orderedStudentParts[i].arrayBuffer();
+                    const sBuf = await ctx.decodeAudioData(ab.slice(0));
+                    let s0 = sBuf.getChannelData(0);
+                    s0 = resampleFloat32Linear(s0, sBuf.sampleRate, verseSr);
+                    parts.push(s0);
+                    const vOnly = sliceVerseSamplesCopy(verseCh, verseSr, ranges[i].startSec, ranges[i].endSec);
+                    if (vOnly.length > 0) verseStripWavs.push(encodeWavFloat32Mono(vOnly, verseSr));
+                    else verseStripWavs.push(encodeWavFloat32Mono(vs, verseSr));
+                }
+                const gapSamples = Math.max(0, Math.round(gapSec * verseSr));
+                let total = 0;
+                for (let i = 0; i < parts.length; i++) {
+                    total += parts[i].length;
+                    if (i < parts.length - 1) total += gapSamples;
+                }
+                const out = new Float32Array(total);
+                let pos = 0;
+                for (let i = 0; i < parts.length; i++) {
+                    out.set(parts[i], pos);
+                    pos += parts[i].length;
+                    if (i < parts.length - 1) pos += gapSamples;
+                }
+                const yellowBlob = encodeWavFloat32Mono(out, verseSr);
+                return { yellowBlob, verseStripWavs };
+            } finally {
+                try { await ctx.close(); } catch (e) {}
+            }
+        }
         async function finalizeStudentEchoRecording(tailBlob) {
             studentEchoPracticeSessionActive = false;
             studentEchoPostVersePhase = false;
@@ -7837,27 +7918,53 @@
             const segs = studentEchoSegmentBlobs.slice();
             const fid = recordingFileId != null ? recordingFileId : currentGlobalFileId;
             reviewStripSegmentBlobs = segs.slice();
+            const orderedStudentParts = segs.slice();
+            if (tailBlob && tailBlob.size > 0) orderedStudentParts.push(tailBlob);
+            const ranges = echoVerseSliceRanges.map(r => ({ startSec: r.startSec, endSec: r.endSec }));
             let greenBlob = null;
+            reviewEchoStripVerseBlobs = [];
+            reviewEchoStripStudentBlobs = [];
             try {
-                if (segs.length > 0) {
-                    greenBlob = await mergeStudentEchoSegmentsAndTailWav(segs, 1, null);
+                greenBlob = await mergeStudentEchoSegmentsAndTailWav(segs, 1, tailBlob && tailBlob.size > 0 ? tailBlob : null);
+                if (!greenBlob && tailBlob && tailBlob.size > 0) greenBlob = tailBlob;
+                let yellowBlob = null;
+                const useSliced = fid != null && ranges.length === orderedStudentParts.length && orderedStudentParts.length > 0;
+                if (useSliced) {
+                    const built = await buildEchoPracticeYellowAndVerseStrips(fid, ranges, orderedStudentParts, 1);
+                    if (built.yellowBlob && built.yellowBlob.size > 0) {
+                        yellowBlob = built.yellowBlob;
+                        reviewEchoStripVerseBlobs = built.verseStripWavs || [];
+                        reviewEchoStripStudentBlobs = orderedStudentParts.slice();
+                    }
                 }
-                if (!greenBlob && tailBlob && tailBlob.size > 0) {
-                    greenBlob = tailBlob;
+                if (!yellowBlob || !yellowBlob.size) {
+                    yellowBlob = await mergeVersePlusSegmentsAndTailWav(fid, segs, tailBlob && tailBlob.size > 0 ? tailBlob : null, 1);
+                    reviewEchoStripVerseBlobs = [];
+                    reviewEchoStripStudentBlobs = [];
                 }
-                let yellowBlob = await mergeVersePlusSegmentsAndTailWav(fid, segs, tailBlob && tailBlob.size > 0 ? tailBlob : null, 1);
                 reviewBlobGreen = greenBlob;
                 reviewBlobYellow = yellowBlob;
                 reviewYellowEnabled = !!(yellowBlob && yellowBlob.size > 0);
-                currentBlob = (yellowBlob && yellowBlob.size > 0) ? yellowBlob : (greenBlob || tailBlob);
+                /* إرسال وللمعنى في رد متزامن: دائماً ما تحت الزر الأخضر (تسجيلات الطالب فقط)، لا المسار الأصفر */
+                if (greenBlob && greenBlob.size > 0) {
+                    currentBlob = greenBlob;
+                } else if (tailBlob && tailBlob.size > 0) {
+                    currentBlob = tailBlob;
+                } else {
+                    currentBlob = yellowBlob;
+                }
             } catch (e) {
                 console.warn('finalizeStudentEchoRecording:', e);
                 reviewBlobGreen = null;
                 reviewBlobYellow = null;
                 reviewYellowEnabled = false;
+                reviewEchoStripVerseBlobs = [];
+                reviewEchoStripStudentBlobs = [];
                 currentBlob = tailBlob;
             }
             studentEchoSegmentBlobs = [];
+            echoVerseSliceRanges = [];
+            echoVerseSliceOpenStartSec = 0;
             if (!currentBlob || currentBlob.size === 0) {
                 alert('تعذّر إنشاء معاينة للتسجيل. تحقّق من الاتصال أو حاوِل مرة أخرى.');
                 return;
@@ -8342,6 +8449,15 @@
                 clearTimeout(practiceBtnHoldDelayTimer);
                 practiceBtnHoldDelayTimer = null;
             }
+            if (studentEchoPracticeSessionActive && !studentEchoPostVersePhase) {
+                const dur = audioEl.duration || 0;
+                const t = audioEl.currentTime || 0;
+                const endSec = dur > 0 ? Math.min(dur, t) : t;
+                if (endSec > echoVerseSliceOpenStartSec + 0.02) {
+                    echoVerseSliceRanges.push({ startSec: echoVerseSliceOpenStartSec, endSec: endSec });
+                }
+                echoVerseSliceOpenStartSec = endSec;
+            }
             practiceBtnHoldRecordingActive = false;
             echoHoldPointerDown = false;
             const prBtn = document.getElementById('studentVersePracticeBtn');
@@ -8366,6 +8482,10 @@
             if (audioEl.ended || (dur > 0 && t >= dur - 0.08)) {
                 try { audioEl.currentTime = 0; } catch (e) {}
                 t = 0;
+                if (studentEchoPracticeSessionActive) {
+                    echoVerseSliceOpenStartSec = 0;
+                    echoVerseSliceRanges = [];
+                }
             }
             isPlaying = true;
             isPaused = false;
@@ -8417,12 +8537,20 @@
                 if (rt) rt.innerText = (m < 10 ? '0' + m : m) + ':' + (s < 10 ? '0' + s : s);
                 if (recSeconds >= maxRecDuration) stopRecordingAndReview();
             }, 1000);
+            echoVerseSliceOpenStartSec = audioEl.currentTime || 0;
             startVersePlaybackForPracticeSession();
         }
         async function beginPracticeBtnHoldRecording() {
             if (!shouldUseStudentEchoHoldMode() || studentEchoPostVersePhase) return;
             if (echoHoldPointerDown || practiceBtnHoldRecordingActive) return;
             if (audioEl.paused) return;
+            const tCut = audioEl.currentTime;
+            if (studentEchoPracticeSessionActive) {
+                if (tCut > echoVerseSliceOpenStartSec + 0.02) {
+                    echoVerseSliceRanges.push({ startSec: echoVerseSliceOpenStartSec, endSec: tCut });
+                }
+                echoVerseSliceOpenStartSec = tCut;
+            }
             echoHoldPointerDown = true;
             practiceBtnHoldRecordingActive = true;
             playStudentEchoBeep();
@@ -8855,6 +8983,8 @@
             _reviewMainGreenUrl = '';
             _reviewMainYellowUrl = '';
             _reviewStripGreenUrls = [];
+            _reviewStripVerseUrls = [];
+            _reviewStripStudentUrls = [];
         }
         window.reviewModalPlayMainGreen = function() {
             const audio = document.getElementById('reviewAudio');
@@ -8889,9 +9019,35 @@
             audio.play().catch(() => {});
             if (btn) btn.textContent = '⏸';
         };
-        window.reviewModalPlayStripYellow = function() {
+        window.reviewModalPlayStripYellow = function(i) {
+            if (typeof i === 'number' && _reviewStripStudentUrls && _reviewStripStudentUrls[i]) {
+                const audio = document.getElementById('reviewAudio');
+                const btn = document.getElementById('review-play-btn');
+                if (!audio) return;
+                audio.pause();
+                audio.src = _reviewStripStudentUrls[i];
+                audio.load();
+                audio.play().catch(() => {});
+                if (btn) btn.textContent = '⏸';
+                return;
+            }
             if (!reviewYellowEnabled || !_reviewMainYellowUrl) return;
             window.reviewModalPlayMainYellow();
+        };
+        window.reviewModalPlayStripVerse = function(i) {
+            const url = _reviewStripVerseUrls && _reviewStripVerseUrls[i];
+            if (!url) return;
+            const audio = document.getElementById('reviewAudio');
+            const btn = document.getElementById('review-play-btn');
+            if (!audio) return;
+            audio.pause();
+            audio.src = url;
+            audio.load();
+            audio.play().catch(() => {});
+            if (btn) btn.textContent = '⏸';
+        };
+        window.reviewModalPlayStripStudent = function(i) {
+            window.reviewModalPlayStripYellow(i);
         };
         function showReviewModal() {
             const modal = document.getElementById('review-modal');
@@ -8946,8 +9102,21 @@
             }
 
             _reviewStripGreenUrls = [];
+            _reviewStripVerseUrls = [];
+            _reviewStripStudentUrls = [];
             let stripsHtml = '';
-            if (reviewStripSegmentBlobs.length > 0) {
+            if (reviewEchoStripVerseBlobs && reviewEchoStripStudentBlobs && reviewEchoStripVerseBlobs.length === reviewEchoStripStudentBlobs.length && reviewEchoStripVerseBlobs.length > 0) {
+                reviewEchoStripVerseBlobs.forEach((vb, i) => {
+                    const sb = reviewEchoStripStudentBlobs[i];
+                    if (!sb) return;
+                    const vu = URL.createObjectURL(vb);
+                    const su = URL.createObjectURL(sb);
+                    _reviewModalObjectUrls.push(vu, su);
+                    _reviewStripVerseUrls[i] = vu;
+                    _reviewStripStudentUrls[i] = su;
+                });
+                stripsHtml = reviewEchoStripVerseBlobs.map((_, i) => `<div class="review-strip-row"><span>تسجيل جزئي ${i + 1}</span><div class="review-strip-btns"><button type="button" class="review-strip-play review-strip-green" onclick="reviewModalPlayStripVerse(${i})" title="جزء المقطع" aria-label="مقطع">▶</button><button type="button" class="review-strip-play review-strip-yellow" onclick="reviewModalPlayStripStudent(${i})" title="تسجيل الطالب" aria-label="تلميذ">▶</button></div></div>`).join('');
+            } else if (reviewStripSegmentBlobs.length > 0) {
                 reviewStripSegmentBlobs.forEach((b, i) => {
                     const ug = URL.createObjectURL(b);
                     _reviewModalObjectUrls.push(ug);
@@ -8960,7 +9129,9 @@
 
             const yMainClass = reviewYellowEnabled ? 'review-main-play-btn review-play-yellow-main' : 'review-main-play-btn review-play-yellow-main review-btn-muted';
             const yMainDis = reviewYellowEnabled ? '' : 'disabled';
-            const noteHtml = `<div class="review-note">▶ الأخضر: التسجيلات فقط وبينها ثانية صمت (أو تسجيل كامل من الميكروفون القديم). ▶ الأصفر: المقطع + التسجيلات وبينها ثانية — معطّل إذا استخدمت الميكروفون القديم فقط.</div>`;
+            const noteHtml = reviewEchoStripVerseBlobs && reviewEchoStripVerseBlobs.length > 0
+                ? `<div class="review-note">▶ الأخضر (الصف العلوي): تسجيلات الطالب فقط + ثوانٍ صمت — <strong>هذا ما يُرسَل للمعلم</strong> ويُبنى عليه ردُّه في «رد متزامن». ▶ الأصفر: المقطع + تسجيلات الطالب بالتناوب (للاستماع فقط). ▶ في كل صف جزئي: أخضر = جزء المقطع، أصفر = تسجيل الطالب.</div>`
+                : `<div class="review-note">▶ الأخضر: تسجيل الطالب فقط (أو التلاوة الكاملة من الميكروفون الأحمر) — <strong>يُرسَل للمعلم</strong>. ▶ الأصفر: المقطع + التسجيلات — للاستماع فقط عند «رد متزامن»؛ معطّل مع الميكروفون الأحمر فقط.</div>`;
 
             audio.src = greenUrl;
             audio.muted = false;
@@ -9046,7 +9217,10 @@
             const uid = localStorage.getItem('it9an_uid');
 
             try {
-                const blobToUpload = currentBlob;
+                /* تسجيل طالب جديد: رفع المسار الأخضر إن وُجد (رد متزامن)، وإلا currentBlob (مثلاً الميكروفون الأحمر) */
+                const blobToUpload = (role === 'student' && !replyTargetId && reviewBlobGreen && reviewBlobGreen.size > 0)
+                    ? reviewBlobGreen
+                    : currentBlob;
                 let ext = 'webm';
                 if (blobToUpload.type.includes('mp4')) ext = 'mp4';
                 else if (blobToUpload.type.includes('ogg')) ext = 'ogg';
@@ -9161,6 +9335,8 @@
                 reviewYellowEnabled = false;
                 reviewStripSegmentBlobs = [];
                 reviewOpenedFromEchoPractice = false;
+                reviewEchoStripVerseBlobs = [];
+                reviewEchoStripStudentBlobs = [];
                 if (lastRecStream) { lastRecStream.getTracks().forEach(t => t.stop()); lastRecStream = null; }
                 if (navigator.audioSession) { try { navigator.audioSession.type = 'playback'; } catch(e) {} }
             } catch(e) { alert("خطأ في الإرسال"); }
@@ -9174,6 +9350,8 @@
             reviewBlobYellow = null;
             reviewYellowEnabled = false;
             reviewStripSegmentBlobs = [];
+            reviewEchoStripVerseBlobs = [];
+            reviewEchoStripStudentBlobs = [];
             document.getElementById('review-modal').style.display = 'none';
             recordingFileId = null; recordingStageId = null;
             if (teacherSyncReplyActive && replyTargetId) {
@@ -9197,6 +9375,8 @@
             reviewBlobYellow = null;
             reviewYellowEnabled = false;
             reviewStripSegmentBlobs = [];
+            reviewEchoStripVerseBlobs = [];
+            reviewEchoStripStudentBlobs = [];
             document.getElementById('review-modal').style.display = 'none';
             currentBlob = null;
             teacherSyncReplyActive = false;
