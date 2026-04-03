@@ -7934,11 +7934,59 @@
                 try { await ctx.close(); } catch (e2) {}
             }
         }
-        async function appendTailRowToEchoReviewStrips(verseArr, studentArr, tailBlob) {
+        /** Rest des Vers-MP3 ab Ende der *vorletzten* Sync-Slice bis Dateiende (bei nur einer Slice: ab Ende dieser Slice). */
+        async function buildVerseRestAfterPenultimateEndWav(fid, ranges) {
+            if (fid == null || !ranges || !ranges.length) return null;
+            const verseUrl = getAssetUrl(getVerseAssetPath(fid) + '.mp3');
+            let verseAb;
+            try {
+                const r = await fetch(verseUrl);
+                if (!r.ok) return null;
+                verseAb = await r.arrayBuffer();
+            } catch (e) {
+                return null;
+            }
+            const AC = window.AudioContext || window.webkitAudioContext;
+            const ctx = new AC();
+            try {
+                const verseBuf = await ctx.decodeAudioData(verseAb.slice(0));
+                const verseSr = verseBuf.sampleRate;
+                const verseCh = verseBuf.getChannelData(0);
+                const verseDurSec = verseBuf.duration;
+                let startSec;
+                if (ranges.length >= 2) {
+                    startSec = ranges[ranges.length - 2].endSec;
+                } else {
+                    startSec = ranges[ranges.length - 1].endSec;
+                }
+                startSec = Math.max(0, Math.min(startSec, verseDurSec));
+                const endSec = verseDurSec;
+                if (endSec <= startSec + 0.015) {
+                    const n = Math.max(1, Math.round(verseSr * 0.08));
+                    return encodeWavFloat32Mono(new Float32Array(n), verseSr);
+                }
+                let vs = sliceVerseSamplesCopy(verseCh, verseSr, startSec, endSec);
+                if (vs.length === 0) {
+                    vs = new Float32Array(Math.max(1, Math.round(0.06 * verseSr)));
+                }
+                return encodeWavFloat32Mono(vs, verseSr);
+            } finally {
+                try { await ctx.close(); } catch (e2) {}
+            }
+        }
+        async function appendTailRowToEchoReviewStrips(verseArr, studentArr, tailBlob, fid, ranges) {
             if (!tailBlob || tailBlob.size === 0 || !verseArr.length) return;
-            const sr = await getDecodedAudioSampleRateFromBlob(verseArr[0]);
-            const nSilent = Math.max(1, Math.round(sr * 0.06));
-            verseArr.push(encodeWavFloat32Mono(new Float32Array(nSilent), sr));
+            let verseTailWav = null;
+            if (fid != null && ranges && ranges.length) {
+                verseTailWav = await buildVerseRestAfterPenultimateEndWav(fid, ranges);
+            }
+            if (verseTailWav && verseTailWav.size > 0) {
+                verseArr.push(verseTailWav);
+            } else {
+                const sr = await getDecodedAudioSampleRateFromBlob(verseArr[0]);
+                const nSilent = Math.max(1, Math.round(sr * 0.06));
+                verseArr.push(encodeWavFloat32Mono(new Float32Array(nSilent), sr));
+            }
             studentArr.push(tailBlob);
         }
         function resampleFloat32Linear(input, fromRate, toRate) {
@@ -8133,7 +8181,7 @@
                 reviewEchoStripVerseBlobs = verseStrips;
                 reviewEchoStripStudentBlobs = studentPartsForStripBuild.slice();
                 if (hasTail && tailB && tailB.size > 0) {
-                    await appendTailRowToEchoReviewStrips(reviewEchoStripVerseBlobs, reviewEchoStripStudentBlobs, tailB);
+                    await appendTailRowToEchoReviewStrips(reviewEchoStripVerseBlobs, reviewEchoStripStudentBlobs, tailB, fid, ranges);
                 }
                 reviewStripSegmentBlobs = segsOnly.slice();
                 currentBlob = greenBlob;
@@ -8345,7 +8393,7 @@
                         reviewEchoStripVerseBlobs = vStrips;
                         reviewEchoStripStudentBlobs = studentPartsForStripBuild.slice();
                         if (tailPart && tailPart.size > 0) {
-                            await appendTailRowToEchoReviewStrips(reviewEchoStripVerseBlobs, reviewEchoStripStudentBlobs, tailPart);
+                            await appendTailRowToEchoReviewStrips(reviewEchoStripVerseBlobs, reviewEchoStripStudentBlobs, tailPart, fid, reviewEchoEditableRanges);
                         }
                         if (built.yellowBlob && built.yellowBlob.size > 0) {
                             reviewBlobYellow = built.yellowBlob;
@@ -9754,13 +9802,17 @@
                     _reviewStripVerseUrls[i] = vu;
                     _reviewStripStudentUrls[i] = su;
                 });
+                const nVerseStripRows = reviewEchoEditableHasTail ? reviewEchoStripVerseBlobs.length - 1 : reviewEchoStripVerseBlobs.length;
                 const retakeOk = reviewEchoEditableRanges.length > 0
-                    && reviewEchoStripVerseBlobs.length === reviewEchoEditableRanges.length
-                    && reviewEchoEditableOrderedBlobs.length >= reviewEchoEditableRanges.length;
+                    && nVerseStripRows === reviewEchoEditableRanges.length
+                    && reviewEchoEditableOrderedBlobs.length >= reviewEchoEditableRanges.length + (reviewEchoEditableHasTail ? 1 : 0);
                 stripsHtml = reviewEchoStripVerseBlobs.map((_, i) => {
                     const isTailStripRow = !!(reviewEchoEditableHasTail && i === reviewEchoStripVerseBlobs.length - 1);
                     const rowLabel = isTailStripRow ? 'بعد انتهاء المقطع' : ('تسجيل جزئي ' + (i + 1));
-                    const greenPart = isTailStripRow ? '' : `<button type="button" class="review-strip-play review-strip-green" onclick="reviewModalPlayStripVerse(${i})" title="جزء المقطع" aria-label="مقطع">▶</button>`;
+                    const greenTitle = isTailStripRow
+                        ? 'باقي المقطع: من نهاية التسجيل قبل الأخير حتى نهاية الصوت'
+                        : 'جزء المقطع';
+                    const greenPart = `<button type="button" class="review-strip-play review-strip-green" onclick="reviewModalPlayStripVerse(${i})" title="${greenTitle}" aria-label="مقطع">▶</button>`;
                     const retakePart = (!isTailStripRow && retakeOk && i < reviewEchoEditableRanges.length)
                         ? `<button type="button" class="review-strip-retake-btn" onclick="openReviewEchoSegmentRetake(${i})" title="إعادة تسجيل هذا الجزء">🔄 إعادة</button>`
                         : '';
@@ -9794,7 +9846,7 @@
                     ? `<div class="review-note">▶ الزر الذهبي بجانب المشغّل: المقطع + تسجيلات الطالب بالتناوب (للاستماع فقط). ▶ المشغّل الكبير: تسجيلات الطالب فقط + فواصل — <strong>يُرسَل للمعلم</strong>. ▶ في كل صف جزئي: أخضر = جزء المقطع، أصفر = تسجيل الطالب.</div>`
                     : `<div class="review-note">▶ الزر الذهبي: المقطع + التسجيلات (للاستماع فقط). ▶ المشغّل الكبير: تسجيلات الطالب فقط — <strong>يُرسَل للمعلم</strong>.</div>`)
                 : (hasEchoStripsNote
-                    ? `<div class="review-note">▶ في كل صف أثناء المقطع: أخضر = جزء المقطع، أصفر = تسجيلك. صف <strong>بعد انتهاء المقطع</strong>: الزر الأصفر فقط (كلامك بعد انتهاء التشغيل). 🔄 إعادة للأجزاء أثناء المقطع فقط. المشغّل الكبير = التسجيل الكامل المُرسَل للمعلم.</div>`
+                    ? `<div class="review-note">▶ في كل صف أثناء المقطع: أخضر = جزء المقطع، أصفر = تسجيلك. صف <strong>بعد انتهاء المقطع</strong>: أخضر = باقي المقطع (من نهاية التسجيل قبل الأخير حتى نهاية الصوت)، أصفر = تسجيلك بعد انتهاء التشغيل. 🔄 إعادة للأجزاء أثناء المقطع فقط. المشغّل الكبير = التسجيل الكامل المُرسَل للمعلم.</div>`
                     : '');
 
             audio.src = greenUrl;
