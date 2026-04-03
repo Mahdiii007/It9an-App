@@ -7920,6 +7920,27 @@
             }
             return new Blob([buffer], { type: 'audio/wav' });
         }
+        async function getDecodedAudioSampleRateFromBlob(blob) {
+            if (!blob || !blob.size) return 48000;
+            const AC = window.AudioContext || window.webkitAudioContext;
+            const ctx = new AC();
+            try {
+                const ab = await blob.arrayBuffer();
+                const buf = await ctx.decodeAudioData(ab.slice(0));
+                return buf.sampleRate;
+            } catch (e) {
+                return 48000;
+            } finally {
+                try { await ctx.close(); } catch (e2) {}
+            }
+        }
+        async function appendTailRowToEchoReviewStrips(verseArr, studentArr, tailBlob) {
+            if (!tailBlob || tailBlob.size === 0 || !verseArr.length) return;
+            const sr = await getDecodedAudioSampleRateFromBlob(verseArr[0]);
+            const nSilent = Math.max(1, Math.round(sr * 0.06));
+            verseArr.push(encodeWavFloat32Mono(new Float32Array(nSilent), sr));
+            studentArr.push(tailBlob);
+        }
         function resampleFloat32Linear(input, fromRate, toRate) {
             if (fromRate === toRate || !input || !input.length) return input;
             const ratio = toRate / fromRate;
@@ -8111,6 +8132,9 @@
                 }
                 reviewEchoStripVerseBlobs = verseStrips;
                 reviewEchoStripStudentBlobs = studentPartsForStripBuild.slice();
+                if (hasTail && tailB && tailB.size > 0) {
+                    await appendTailRowToEchoReviewStrips(reviewEchoStripVerseBlobs, reviewEchoStripStudentBlobs, tailB);
+                }
                 reviewStripSegmentBlobs = segsOnly.slice();
                 currentBlob = greenBlob;
                 showReviewModal();
@@ -8320,6 +8344,9 @@
                     if (vStrips.length === studentPartsForStripBuild.length) {
                         reviewEchoStripVerseBlobs = vStrips;
                         reviewEchoStripStudentBlobs = studentPartsForStripBuild.slice();
+                        if (tailPart && tailPart.size > 0) {
+                            await appendTailRowToEchoReviewStrips(reviewEchoStripVerseBlobs, reviewEchoStripStudentBlobs, tailPart);
+                        }
                         if (built.yellowBlob && built.yellowBlob.size > 0) {
                             reviewBlobYellow = built.yellowBlob;
                             reviewYellowEnabled = true;
@@ -9705,7 +9732,7 @@
             _reviewModalObjectUrls.push(greenUrl);
             _reviewMainGreenUrl = greenUrl;
 
-            if (reviewYellowEnabled && reviewBlobYellow && reviewBlobYellow.size > 0) {
+            if (reviewYellowEnabled && reviewBlobYellow && reviewBlobYellow.size > 0 && !reviewOpenedFromEchoPractice) {
                 const yu = URL.createObjectURL(reviewBlobYellow);
                 _reviewModalObjectUrls.push(yu);
                 _reviewMainYellowUrl = yu;
@@ -9730,7 +9757,15 @@
                 const retakeOk = reviewEchoEditableRanges.length > 0
                     && reviewEchoStripVerseBlobs.length === reviewEchoEditableRanges.length
                     && reviewEchoEditableOrderedBlobs.length >= reviewEchoEditableRanges.length;
-                stripsHtml = reviewEchoStripVerseBlobs.map((_, i) => `<div class="review-strip-row"><span>تسجيل جزئي ${i + 1}</span><div class="review-strip-btns"><button type="button" class="review-strip-play review-strip-green" onclick="reviewModalPlayStripVerse(${i})" title="جزء المقطع" aria-label="مقطع">▶</button><button type="button" class="review-strip-play review-strip-yellow" onclick="reviewModalPlayStripStudent(${i})" title="تسجيل الطالب" aria-label="تلميذ">▶</button>${retakeOk && i < reviewEchoEditableRanges.length ? `<button type="button" class="review-strip-retake-btn" onclick="openReviewEchoSegmentRetake(${i})" title="إعادة تسجيل هذا الجزء">🔄 إعادة</button>` : ''}</div></div>`).join('');
+                stripsHtml = reviewEchoStripVerseBlobs.map((_, i) => {
+                    const isTailStripRow = !!(reviewEchoEditableHasTail && i === reviewEchoStripVerseBlobs.length - 1);
+                    const rowLabel = isTailStripRow ? 'بعد انتهاء المقطع' : ('تسجيل جزئي ' + (i + 1));
+                    const greenPart = isTailStripRow ? '' : `<button type="button" class="review-strip-play review-strip-green" onclick="reviewModalPlayStripVerse(${i})" title="جزء المقطع" aria-label="مقطع">▶</button>`;
+                    const retakePart = (!isTailStripRow && retakeOk && i < reviewEchoEditableRanges.length)
+                        ? `<button type="button" class="review-strip-retake-btn" onclick="openReviewEchoSegmentRetake(${i})" title="إعادة تسجيل هذا الجزء">🔄 إعادة</button>`
+                        : '';
+                    return `<div class="review-strip-row"><span>${rowLabel}</span><div class="review-strip-btns">${greenPart}<button type="button" class="review-strip-play review-strip-yellow" onclick="reviewModalPlayStripStudent(${i})" title="تسجيل الطالب" aria-label="تلميذ">▶</button>${retakePart}</div></div>`;
+                }).join('');
             } else if (reviewStripSegmentBlobs.length > 0) {
                 reviewStripSegmentBlobs.forEach((b, i) => {
                     const ug = URL.createObjectURL(b);
@@ -9746,7 +9781,8 @@
                 });
             }
 
-            const hasYellowQuickRow = !!(reviewYellowEnabled && reviewBlobYellow && reviewBlobYellow.size > 0);
+            const hideYellowMixSideBtn = !!reviewOpenedFromEchoPractice;
+            const hasYellowQuickRow = !!(reviewYellowEnabled && reviewBlobYellow && reviewBlobYellow.size > 0 && !hideYellowMixSideBtn);
             const ySideDis = hasYellowQuickRow ? '' : 'disabled';
             const playerWrapClass = hasYellowQuickRow ? 'review-player-wrap review-player-with-echo-side' : 'review-player-wrap';
             const yellowSideBtnHtml = hasYellowQuickRow
@@ -9758,7 +9794,7 @@
                     ? `<div class="review-note">▶ الزر الذهبي بجانب المشغّل: المقطع + تسجيلات الطالب بالتناوب (للاستماع فقط). ▶ المشغّل الكبير: تسجيلات الطالب فقط + فواصل — <strong>يُرسَل للمعلم</strong>. ▶ في كل صف جزئي: أخضر = جزء المقطع، أصفر = تسجيل الطالب.</div>`
                     : `<div class="review-note">▶ الزر الذهبي: المقطع + التسجيلات (للاستماع فقط). ▶ المشغّل الكبير: تسجيلات الطالب فقط — <strong>يُرسَل للمعلم</strong>.</div>`)
                 : (hasEchoStripsNote
-                    ? `<div class="review-note">▶ في كل صف: أخضر = جزء المقطع، أصفر = تسجيلك. 🔄 إعادة = تسجيل الجزء من جديد (نقرتان على الميكروفون: بدء ثم إيقاف) و<strong>تحديث التسجيل الكامل</strong> المُرسَل للمعلم. المشغّل الكبير = التسجيل الكامل.</div>`
+                    ? `<div class="review-note">▶ في كل صف أثناء المقطع: أخضر = جزء المقطع، أصفر = تسجيلك. صف <strong>بعد انتهاء المقطع</strong>: الزر الأصفر فقط (كلامك بعد انتهاء التشغيل). 🔄 إعادة للأجزاء أثناء المقطع فقط. المشغّل الكبير = التسجيل الكامل المُرسَل للمعلم.</div>`
                     : '');
 
             audio.src = greenUrl;
