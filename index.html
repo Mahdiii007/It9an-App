@@ -457,7 +457,7 @@
             .feed-msg .feed-player-wrap, .reply-player-wrap { min-width: 0; }
             .feed-msg .feed-play-remarks .feed-player-wrap, .reply-play-remarks .reply-player-wrap { width: auto !important; }
             .custom-player { padding: 0; }
-            #recording-ui, #sync-reply-ui { width: 95%; padding: 12px 14px; bottom: 180px; }
+            #recording-ui, #sync-reply-ui, #student-echo-sync-ui { width: 95%; padding: 12px 14px; bottom: 180px; }
             .rec-timer { font-size: 22px; }
             .recording-row { gap: 20px; }
             .settings-box { padding: 10px 15px; gap: 10px; flex-wrap: wrap; }
@@ -598,7 +598,7 @@
         .rec-status-text { font-size: 14px; color: var(--red); animation: blink 1.5s infinite; margin-top: 6px; font-weight: bold; }
         .stop-ui-btn { background: var(--red); color: white; border: none; padding: 8px 20px; border-radius: 20px; font-size: 14px; font-weight: bold; cursor: pointer; font-family: 'Amiri'; flex-shrink: 0; }
 
-        #sync-reply-ui { display: none; position: fixed; bottom: 200px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px; background: rgba(255,255,255,0.97); backdrop-filter: blur(6px); border: 2px solid #c62828; border-radius: 20px; padding: 14px 16px; z-index: 1600; flex-direction: column; align-items: stretch; box-shadow: 0 10px 40px rgba(0,0,0,0.2); direction: rtl; }
+        #sync-reply-ui, #student-echo-sync-ui { display: none; position: fixed; bottom: 200px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px; background: rgba(255,255,255,0.97); backdrop-filter: blur(6px); border: 2px solid #c62828; border-radius: 20px; padding: 14px 16px; z-index: 1600; flex-direction: column; align-items: stretch; box-shadow: 0 10px 40px rgba(0,0,0,0.2); direction: rtl; }
         .sync-reply-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; margin-bottom: 8px; }
         .sync-reply-timer { font-size: 24px; font-weight: bold; font-family: monospace; color: var(--text); }
         .sync-reply-status { font-size: 14px; color: #333; font-weight: 600; text-align: center; margin: 6px 0 10px; line-height: 1.45; min-height: 2.8em; }
@@ -647,7 +647,8 @@
         .review-echo-retake-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
         .review-echo-retake-btn { padding: 12px 16px; border-radius: 12px; border: none; font-size: 16px; font-weight: bold; cursor: pointer; font-family: inherit; }
         .review-echo-retake-btn-play { background: #e8f5e9; color: #0f4c3a; }
-        .review-echo-retake-btn-mic { width: 72px; height: 72px; border-radius: 50%; background: linear-gradient(180deg, #f1c40f 0%, #d4ac0d 100%); color: #222; font-size: 28px; margin: 8px auto; touch-action: none; user-select: none; -webkit-user-select: none; box-shadow: 0 4px 14px rgba(212, 172, 13, 0.4); }
+        .review-echo-retake-btn-mic { width: 72px; height: 72px; border-radius: 50%; background: linear-gradient(180deg, #f1c40f 0%, #d4ac0d 100%); color: #222; margin: 8px auto; touch-action: manipulation; user-select: none; -webkit-user-select: none; box-shadow: 0 4px 14px rgba(212, 172, 13, 0.4); display: flex; align-items: center; justify-content: center; padding: 0; }
+        .review-echo-retake-btn-mic .icon-mic { width: 32px; height: 32px; stroke: currentColor; }
         .review-echo-retake-btn-mic.recording { animation: pulse 1s infinite; }
         .review-echo-retake-btn-cancel { background: #eee; color: #444; }
         .r-btn { padding: 15px; border: none; border-radius: 12px; font-size: 18px; font-weight: bold; cursor: pointer; font-family: 'Amiri'; }
@@ -1067,7 +1068,7 @@
                 <span class="verse-mic-label" id="recBtnSubLabel">تسجيل عادي</span>
                 </div>
                 <div class="verse-mic-col" id="studentVersePracticeWrap" style="display:none;">
-                <button type="button" id="studentVersePracticeBtn" class="btn btn-rec-yellow student-hold-rec-btn" title="نقرة: تشغيل المقطع مع المؤقت و«إنهاء». اضغط مطوّلاً أثناء التشغيل للتسجيل" aria-label="تمرين مع المقطع"><svg class="icon-mic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
+                <button type="button" id="studentVersePracticeBtn" class="btn btn-rec-yellow student-hold-rec-btn" title="نقرة واحدة: تشغيل المقطع ونافذة التسجيل المتزامن (مثل رد المعلم). الميكروفون في النافذة: تسجيل الجزء." aria-label="تمرين مع المقطع"><svg class="icon-mic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
                 <span class="verse-mic-label verse-mic-label-sync" id="studentVersePracticeSubLabel">تسجيل متزامن</span>
                 </div>
                 <button id="playBtn" class="btn btn-play" onclick="toggleSmartLoop()">▶</button>
@@ -1108,6 +1109,15 @@
         <button type="button" id="sync-append-done-btn" class="sync-append-done-btn">انتهيت من الإضافة</button>
     </div>
 
+    <div id="student-echo-sync-ui" style="display: none;">
+        <div class="sync-reply-row">
+            <span id="student-echo-sync-timer" class="sync-reply-timer">00:00</span>
+            <button type="button" class="stop-ui-btn" onclick="stopRecordingAndReview()">⏹ إنهاء</button>
+        </div>
+        <div id="student-echo-sync-status" class="sync-reply-status"></div>
+        <button type="button" id="student-echo-sync-mic-btn" class="sync-reply-hold-btn" disabled aria-label="إيقاف مؤقت للمقطع وتسجيل جزء — نقرة ثانية للمتابعة"><svg class="icon-mic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
+    </div>
+
     <div id="review-modal">
         <div class="review-box">
             <button class="review-close-x" onclick="cancelRecord()" title="إغلاق">✕</button>
@@ -1115,11 +1125,11 @@
             <div id="review-echo-retake-overlay" aria-hidden="true">
                 <div class="review-echo-retake-inner">
                     <div id="review-echo-retake-title" class="review-echo-retake-title"></div>
-                    <p id="review-echo-retake-hint" class="review-echo-retake-hint">استمع لجزء المقطع، ثم اضغط مطوّلاً على الزر الأصفر لتسجيل هذا الجزء من جديد.</p>
+                    <p id="review-echo-retake-hint" class="review-echo-retake-hint">استمع لجزء المقطع، ثم انقر زر الميكروفون لبدء التسجيل، وانقر مرة أخرى لإيقافه.</p>
                     <div class="review-echo-retake-actions">
                         <button type="button" id="review-echo-retake-play-verse" class="review-echo-retake-btn review-echo-retake-btn-play">▶ استمع للمقطع</button>
                     </div>
-                    <button type="button" id="review-echo-retake-hold-btn" class="review-echo-retake-btn-mic" title="اضغط مطوّلاً للتسجيل">🎤</button>
+                    <button type="button" id="review-echo-retake-mic-btn" class="review-echo-retake-btn-mic" title="نقرة لبدء التسجيل، نقرة ثانية للإيقاف" aria-label="تسجيل"><svg class="icon-mic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
                     <button type="button" id="review-echo-retake-cancel" class="review-echo-retake-btn review-echo-retake-btn-cancel">إلغاء</button>
                     <audio id="review-echo-retake-verse-audio" playsinline webkit-playsinline preload="metadata" style="display:none;"></audio>
                 </div>
@@ -1988,15 +1998,11 @@
         let lastRecStream = null, lastRecCtx = null;
         /** iPhone/WebKit: Aufnahmen oft leiser als Android — ein Wert für toggleRecord (gainOnly) und رد متزامن (preMic). */
         const IOS_MIC_RECORDER_GAIN = 2.68;
-        /** iOS/PWA: Mikrofon + WebAudio-Kontext zuverlässig freigeben (sonst orangener Punkt, stille Folgeaufnahmen). */
-        async function forceReleaseRecordingPipeline(opts) {
-            const releaseDesktopHeld = !opts || opts.releaseDesktopHeldStream !== false;
-            const isMacDesktop = /Mac|Macintosh/.test(navigator.platform) && !navigator.maxTouchPoints;
+        /** Nach Aufnahme-Ende: alle gehaltenen Mic-Streams + Kontext freigeben (inkl. macOS-Menüleiste). */
+        async function forceReleaseRecordingPipeline() {
             if (lastRecStream) {
-                if (!isMacDesktop || releaseDesktopHeld) {
-                    try { lastRecStream.getTracks().forEach(t => t.stop()); } catch (e) {}
-                    lastRecStream = null;
-                }
+                try { lastRecStream.getTracks().forEach(t => t.stop()); } catch (e) {}
+                lastRecStream = null;
             }
             if (lastRecCtx) {
                 if (lastRecCtx.state !== 'closed') {
@@ -2048,8 +2054,8 @@
         let echoHoldCaptureMode = 'session';
         let echoHoldRetakeResolve = null;
         let reviewEchoRetakeIndex = -1;
-        let reviewEchoRetakeHoldTimer = null;
         let reviewEchoRetakeRecording = false;
+        let reviewEchoRetakeBlobPromise = null;
         let reviewEchoRetakeVerseTimeUpdateHandler = null;
         const ICON_MIC_HTML = '<svg class="icon-mic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>';
 
@@ -6521,6 +6527,58 @@
             const el = document.getElementById('sync-reply-ui');
             if (el) el.style.display = visible ? 'flex' : 'none';
         }
+        function isStudentEchoSyncUiOpen() {
+            const el = document.getElementById('student-echo-sync-ui');
+            return !!(el && el.style.display === 'flex');
+        }
+        function hideStudentEchoSyncPanel() {
+            const pan = document.getElementById('student-echo-sync-ui');
+            if (pan) pan.style.display = 'none';
+            const m = document.getElementById('student-echo-sync-mic-btn');
+            if (m) {
+                m.disabled = true;
+                m.classList.remove('sync-hold-active');
+            }
+        }
+        function isBlockingSyncUiOpenForStudentYellowMic() {
+            const t = document.getElementById('sync-reply-ui');
+            return (t && t.style.display === 'flex') || isStudentEchoSyncUiOpen();
+        }
+        async function studentEchoSyncPanelMicClick() {
+            if (!studentEchoPracticeSessionActive || studentEchoPostVersePhase) return;
+            if (echoHoldMediaRecorder && echoHoldMediaRecorder.state === 'recording') {
+                echoHoldPointerDown = false;
+                practiceBtnHoldRecordingActive = false;
+                _practiceBtnIgnoreClickUntil = Date.now() + 450;
+                playStudentEchoBeep();
+                const syncMic = document.getElementById('student-echo-sync-mic-btn');
+                if (syncMic) syncMic.classList.remove('sync-hold-active');
+                const prBtn = document.getElementById('studentVersePracticeBtn');
+                if (prBtn) prBtn.classList.remove('recording');
+                const st = document.getElementById('student-echo-sync-status');
+                await stopEchoHoldSegmentRecording();
+                if (st) st.textContent = 'استمع للمقطع ثم انقر الميكروفون لتسجيل الجزء التالي.';
+                if (verseWasPlayingBeforeHold) {
+                    isPlaying = true;
+                    isPaused = false;
+                    const pb = document.getElementById('playBtn');
+                    if (pb) pb.innerText = '⏸';
+                    requestWakeLock();
+                    audioEl.onended = function () { handleVerseAudioEnded().catch(() => {}); };
+                    audioEl.play().catch(() => {});
+                }
+                verseWasPlayingBeforeHold = false;
+                return;
+            }
+            if (audioEl.paused) {
+                const st = document.getElementById('student-echo-sync-status');
+                if (st) st.textContent = 'انتظر بدء تشغيل المقطع، أو اضغط «إنهاء».';
+                return;
+            }
+            await beginPracticeBtnHoldRecording();
+            const st2 = document.getElementById('student-echo-sync-status');
+            if (st2) st2.textContent = 'جاري تسجيلك… انقر الميكروفون مرة أخرى لمتابعة الاستماع.';
+        }
 
         window.stopSyncReplySession = function() {
             if (syncReplySessionHandle && typeof syncReplySessionHandle.abort === 'function') syncReplySessionHandle.abort();
@@ -7319,20 +7377,12 @@
                 throw loadErr;
             }
 
-            let rawStream;
+            let rawStream = null;
+            let micSrc = null;
+            let micSplit = null;
+            let preMic = null;
+            let micToStereo = null;
             let teacherRecordingIsIOS = false;
-            try {
-                const mic = await acquireMicStreamForTeacherSync();
-                rawStream = mic.rawStream;
-                teacherRecordingIsIOS = !!mic.isIOS;
-            } catch (micErr) {
-                if (revokeBlobUrl) { try { URL.revokeObjectURL(revokeBlobUrl); } catch (e) {} revokeBlobUrl = null; }
-                if (studentDriver) studentDriver.removeDom();
-                studentDriver = null;
-                try { await ctx.close(); } catch (e) {}
-                restoreAudioSessionAfterSyncReply();
-                throw micErr;
-            }
 
             const dest = ctx.createMediaStreamDestination();
             const monitorRoute = ctx.createGain();
@@ -7349,24 +7399,54 @@
 
             micGain.connect(dest);
 
-            const micSrc = ctx.createMediaStreamSource(rawStream);
-            const preMic = ctx.createGain();
-            preMic.gain.value = teacherRecordingIsIOS ? IOS_MIC_RECORDER_GAIN : SYNC_REPLY_MIC_PRE_NON_IOS;
-            /* Wie normaler الرد: iOS → IOS_MIC_RECORDER_GAIN, sonst 2.3; Stereo → nur Kanal 0. */
-            const tMicSync = rawStream.getAudioTracks()[0];
-            const chMicSync = (tMicSync && tMicSync.getSettings && tMicSync.getSettings().channelCount) || 1;
-            if (chMicSync >= 2) {
-                const micSplit = ctx.createChannelSplitter(2);
-                micSrc.connect(micSplit);
-                micSplit.connect(preMic, 0);
-            } else {
-                micSrc.connect(preMic);
+            function detachTeacherSyncMicPipeline() {
+                try {
+                    if (micToStereo) {
+                        try { micToStereo.disconnect(); } catch (e) {}
+                        micToStereo = null;
+                    }
+                    if (micSplit) {
+                        try { micSplit.disconnect(); } catch (e) {}
+                        micSplit = null;
+                    }
+                    if (preMic) {
+                        try { preMic.disconnect(); } catch (e) {}
+                        preMic = null;
+                    }
+                    if (micSrc) {
+                        try { micSrc.disconnect(); } catch (e) {}
+                        micSrc = null;
+                    }
+                } catch (e) {}
+                if (rawStream) {
+                    try { rawStream.getTracks().forEach(t => t.stop()); } catch (e) {}
+                    rawStream = null;
+                }
+                restoreAudioSessionAfterSyncReply();
             }
-            /* Mono → Stereo: sonst AAC/MP4 nur Kanal 0 → bei Kopfhörern nur links (iOS/Safari). */
-            const micToStereo = ctx.createChannelMerger(2);
-            preMic.connect(micToStereo, 0, 0);
-            preMic.connect(micToStereo, 0, 1);
-            micToStereo.connect(micGain);
+
+            async function attachTeacherSyncMicPipeline() {
+                if (rawStream) return;
+                const mic = await acquireMicStreamForTeacherSync();
+                rawStream = mic.rawStream;
+                teacherRecordingIsIOS = !!mic.isIOS;
+                micSrc = ctx.createMediaStreamSource(rawStream);
+                preMic = ctx.createGain();
+                preMic.gain.value = teacherRecordingIsIOS ? IOS_MIC_RECORDER_GAIN : SYNC_REPLY_MIC_PRE_NON_IOS;
+                const tMicSync = rawStream.getAudioTracks()[0];
+                const chMicSync = (tMicSync && tMicSync.getSettings && tMicSync.getSettings().channelCount) || 1;
+                if (chMicSync >= 2) {
+                    micSplit = ctx.createChannelSplitter(2);
+                    micSrc.connect(micSplit);
+                    micSplit.connect(preMic, 0);
+                } else {
+                    micSrc.connect(preMic);
+                }
+                micToStereo = ctx.createChannelMerger(2);
+                preMic.connect(micToStereo, 0, 0);
+                preMic.connect(micToStereo, 0, 1);
+                micToStereo.connect(micGain);
+            }
 
             let mediaRecorder;
             try {
@@ -7375,7 +7455,7 @@
                 if (revokeBlobUrl) { try { URL.revokeObjectURL(revokeBlobUrl); } catch (e) {} revokeBlobUrl = null; }
                 if (studentDriver) studentDriver.removeDom();
                 studentDriver = null;
-                rawStream.getTracks().forEach(t => t.stop());
+                detachTeacherSyncMicPipeline();
                 try { await ctx.close(); } catch (e) {}
                 restoreAudioSessionAfterSyncReply();
                 throw recCtorErr;
@@ -7407,6 +7487,7 @@
                 sessionFinished = true;
                 stopStudentNode();
                 micGain.gain.setValueAtTime(0, ctx.currentTime);
+                detachTeacherSyncMicPipeline();
                 if (wallTimer) clearInterval(wallTimer);
                 if (holdBtn) { holdBtn.disabled = true; holdBtn.classList.remove('sync-hold-active'); }
                 if (appendDoneBtn) appendDoneBtn.style.display = 'none';
@@ -7417,7 +7498,7 @@
                 mediaRecorder.onstop = async () => {
                     try {
                         releaseWakeLock();
-                        rawStream.getTracks().forEach(t => t.stop());
+                        detachTeacherSyncMicPipeline();
                         if (revokeBlobUrl) { try { URL.revokeObjectURL(revokeBlobUrl); } catch (e) {} revokeBlobUrl = null; }
                         if (studentDriver) studentDriver.removeDom();
                         studentDriver = null;
@@ -7435,6 +7516,7 @@
                     }
                 };
                 mediaRecorder.onerror = () => {
+                    detachTeacherSyncMicPipeline();
                     restoreAudioSessionAfterSyncReply();
                     reject(new Error('recorder'));
                 };
@@ -7470,10 +7552,28 @@
                 resumeFrom = dur > 0 ? Math.min(dur, ct) : ct;
                 isCommenting = true;
                 studentDriver.stopPlayback();
-                micGain.gain.setValueAtTime(1, ctx.currentTime);
-                playSyncTransitionBeep(ctx, true);
-                if (statusEl) statusEl.textContent = 'تسجيل تعليقك — أفلت الزر لمتابعة تسجيل الطالب';
+                if (statusEl) statusEl.textContent = 'جاري تفعيل الميكروفون…';
                 if (holdBtn) holdBtn.classList.add('sync-hold-active');
+                void (async () => {
+                    try {
+                        await attachTeacherSyncMicPipeline();
+                        if (sessionFinished || aborted || !isCommenting) {
+                            detachTeacherSyncMicPipeline();
+                            return;
+                        }
+                        micGain.gain.setValueAtTime(1, ctx.currentTime);
+                        playSyncTransitionBeep(ctx, true);
+                        if (statusEl) statusEl.textContent = 'تسجيل تعليقك — أفلت الزر لمتابعة تسجيل الطالب';
+                    } catch (err) {
+                        console.error('sync reply mic', err);
+                        isCommenting = false;
+                        if (holdBtn) holdBtn.classList.remove('sync-hold-active');
+                        detachTeacherSyncMicPipeline();
+                        if (statusEl) statusEl.textContent = '';
+                        alert('خطأ في الميكروفون');
+                        if (!sessionFinished && !aborted) beginStudent(resumeFrom);
+                    }
+                })();
             }
 
             function onHoldEnd() {
@@ -7481,6 +7581,7 @@
                 isCommenting = false;
                 micGain.gain.setValueAtTime(0, ctx.currentTime);
                 playSyncTransitionBeep(ctx, false);
+                detachTeacherSyncMicPipeline();
                 if (holdBtn) holdBtn.classList.remove('sync-hold-active');
                 if (statusEl) statusEl.textContent = '';
                 beginStudent(resumeFrom);
@@ -7497,7 +7598,7 @@
                     if (revokeBlobUrl) { try { URL.revokeObjectURL(revokeBlobUrl); } catch (e) {} revokeBlobUrl = null; }
                     if (studentDriver) studentDriver.removeDom();
                     studentDriver = null;
-                    rawStream.getTracks().forEach(t => t.stop());
+                    detachTeacherSyncMicPipeline();
                     try { await ctx.close(); } catch (e) {}
                     restoreAudioSessionAfterSyncReply();
                     syncReplySessionHandle = null;
@@ -7541,7 +7642,7 @@
                     if (revokeBlobUrl) { try { URL.revokeObjectURL(revokeBlobUrl); } catch (e) {} revokeBlobUrl = null; }
                     if (studentDriver) studentDriver.removeDom();
                     studentDriver = null;
-                    rawStream.getTracks().forEach(t => t.stop());
+                    detachTeacherSyncMicPipeline();
                     try { await ctx.close(); } catch (e) {}
                     restoreAudioSessionAfterSyncReply();
                     syncReplySessionHandle = null;
@@ -7559,9 +7660,25 @@
                 if (studentDriver) {
                     studentDriver.playFrom(0, () => {
                         if (sessionFinished || aborted) return;
-                        micGain.gain.setValueAtTime(1, ctx.currentTime);
-                        if (statusEl) statusEl.textContent = 'تكلّم الآن — إضافة في نهاية الرد';
-                        if (appendDoneBtn) appendDoneBtn.style.display = 'block';
+                        if (statusEl) statusEl.textContent = 'جاري تفعيل الميكروفون…';
+                        void (async () => {
+                            try {
+                                await attachTeacherSyncMicPipeline();
+                                if (sessionFinished || aborted) {
+                                    detachTeacherSyncMicPipeline();
+                                    return;
+                                }
+                                micGain.gain.setValueAtTime(1, ctx.currentTime);
+                                if (statusEl) statusEl.textContent = 'تكلّم الآن — إضافة في نهاية الرد';
+                                if (appendDoneBtn) appendDoneBtn.style.display = 'block';
+                            } catch (err) {
+                                console.error('sync append mic', err);
+                                if (statusEl) statusEl.textContent = '';
+                                detachTeacherSyncMicPipeline();
+                                alert('خطأ في الميكروفون');
+                                finishSession();
+                            }
+                        })();
                     }).catch(err => { console.warn(err); finishSession(); });
                 }
                 syncReplySessionHandle.abort = () => {
@@ -7571,6 +7688,7 @@
                 if (appendDoneBtn) {
                     appendDoneBtn.onclick = () => {
                         micGain.gain.setValueAtTime(0, ctx.currentTime);
+                        detachTeacherSyncMicPipeline();
                         appendDoneBtn.style.display = 'none';
                         finishSession();
                     };
@@ -7705,6 +7823,7 @@
             echoVerseSliceRanges = [];
             studentEchoPostVersePhase = false;
             studentEchoPracticeSessionActive = false;
+            hideStudentEchoSyncPanel();
         }
         function closeEchoVerseSliceAtVerseEnd() {
             const dur = audioEl.duration;
@@ -7778,7 +7897,7 @@
             } else {
                 prBtn.style.opacity = '';
                 prBtn.style.cursor = '';
-                prBtn.title = 'أول نقرة: بدء التمرين والمؤقت. نقرة أثناء التشغيل: إيقاف مؤقت — ليس للتكرار (ذلك من زر التشغيل الأخضر). ضغط مطوّل: تسجيل';
+                prBtn.title = 'نقرة واحدة: تشغيل المقطع ونافذة التسجيل المتزامن. الميكروفون الأحمر في النافذة: نقرة للتسجيل ونقرة للمتابعة.';
             }
         }
         function writeWavString(view, offset, str) {
@@ -7967,18 +8086,19 @@
         function closeReviewEchoRetakeOverlay() {
             const ov = document.getElementById('review-echo-retake-overlay');
             const va = document.getElementById('review-echo-retake-verse-audio');
-            const mic = document.getElementById('review-echo-retake-hold-btn');
-            if (reviewEchoRetakeHoldTimer) {
-                clearTimeout(reviewEchoRetakeHoldTimer);
-                reviewEchoRetakeHoldTimer = null;
-            }
+            const mic = document.getElementById('review-echo-retake-mic-btn');
+            reviewEchoRetakeBlobPromise = null;
             if (reviewEchoRetakeRecording && echoHoldMediaRecorder && echoHoldMediaRecorder.state === 'recording') {
-                stopEchoHoldSegmentRecording();
+                void stopEchoHoldSegmentRecording();
             } else if (echoHoldCaptureMode === 'retake' && echoHoldRetakeResolve) {
                 const fn = echoHoldRetakeResolve;
                 echoHoldRetakeResolve = null;
                 echoHoldCaptureMode = 'session';
                 fn(null);
+                releaseEchoHoldMicAfterRetake();
+            } else if (echoHoldCaptureMode === 'retake') {
+                echoHoldCaptureMode = 'session';
+                releaseEchoHoldMicAfterRetake();
             }
             reviewEchoRetakeRecording = false;
             reviewEchoRetakeIndex = -1;
@@ -8030,73 +8150,58 @@
         }
         function bindReviewEchoRetakeOverlayOnce() {
             const playBtn = document.getElementById('review-echo-retake-play-verse');
-            const micBtn = document.getElementById('review-echo-retake-hold-btn');
+            const micBtn = document.getElementById('review-echo-retake-mic-btn');
             const cancelBtn = document.getElementById('review-echo-retake-cancel');
             if (!playBtn || !micBtn || !cancelBtn || micBtn.dataset.retakeBound === '1') return;
             micBtn.dataset.retakeBound = '1';
             playBtn.addEventListener('click', () => reviewRetakePlayVerseSlice());
             cancelBtn.addEventListener('click', () => closeReviewEchoRetakeOverlay());
-            micBtn.addEventListener('pointerdown', reviewEchoRetakePointerDown);
-            micBtn.addEventListener('pointerup', reviewEchoRetakePointerUp);
-            micBtn.addEventListener('pointerleave', reviewEchoRetakePointerUp);
-            micBtn.addEventListener('pointercancel', reviewEchoRetakePointerUp);
+            micBtn.addEventListener('click', e => { e.preventDefault(); void reviewEchoRetakeMicToggle(); });
         }
-        function reviewEchoRetakePointerDown(e) {
-            if (typeof e.button === 'number' && e.button !== 0) return;
+        async function reviewEchoRetakeMicToggle() {
             if (reviewEchoRetakeIndex < 0) return;
-            if (reviewEchoRetakeHoldTimer) {
-                clearTimeout(reviewEchoRetakeHoldTimer);
-                reviewEchoRetakeHoldTimer = null;
-            }
-            reviewEchoRetakeHoldTimer = setTimeout(() => {
-                reviewEchoRetakeHoldTimer = null;
-                void (async () => {
-                    const mic = document.getElementById('review-echo-retake-hold-btn');
-                    const va = document.getElementById('review-echo-retake-verse-audio');
-                    if (va) va.pause();
-                    reviewEchoRetakeRecording = true;
-                    if (mic) mic.classList.add('recording');
-                    try {
-                        echoHoldCaptureMode = 'retake';
-                        const blob = await new Promise((resolve, reject) => {
-                            echoHoldRetakeResolve = resolve;
-                            startEchoHoldSegmentRecording().catch(err => {
-                                echoHoldCaptureMode = 'session';
-                                echoHoldRetakeResolve = null;
-                                reject(err);
-                            });
-                        });
-                        const idx = reviewEchoRetakeIndex;
-                        if (blob && blob.size > 0 && idx >= 0 && reviewEchoEditableOrderedBlobs[idx] !== undefined) {
-                            reviewEchoEditableOrderedBlobs[idx] = blob;
-                            closeReviewEchoRetakeOverlay();
-                            await rebuildEchoReviewFromEditableState();
-                        } else if (idx >= 0) {
-                            alert('التسجيل قصير جداً أو فارغ. حاول مرة أخرى.');
-                        }
-                    } catch (err) {
-                        console.warn('retake record', err);
-                        alert('تعذّر تسجيل الجزء. تحقّق من إذن الميكروفون.');
-                    } finally {
-                        reviewEchoRetakeRecording = false;
-                        if (mic) mic.classList.remove('recording');
-                        echoHoldCaptureMode = 'session';
-                        echoHoldRetakeResolve = null;
+            const mic = document.getElementById('review-echo-retake-mic-btn');
+            const va = document.getElementById('review-echo-retake-verse-audio');
+            if (reviewEchoRetakeRecording) {
+                try {
+                    await stopEchoHoldSegmentRecording();
+                    const blob = reviewEchoRetakeBlobPromise ? await reviewEchoRetakeBlobPromise : null;
+                    reviewEchoRetakeBlobPromise = null;
+                    const idx = reviewEchoRetakeIndex;
+                    if (mic) mic.classList.remove('recording');
+                    reviewEchoRetakeRecording = false;
+                    if (blob && blob.size > 0 && idx >= 0 && reviewEchoEditableOrderedBlobs[idx] !== undefined) {
+                        reviewEchoEditableOrderedBlobs[idx] = blob;
+                        closeReviewEchoRetakeOverlay();
+                        await rebuildEchoReviewFromEditableState();
+                    } else if (idx >= 0) {
+                        alert('التسجيل قصير جداً أو فارغ. حاول مرة أخرى.');
                     }
-                })();
-            }, 220);
-        }
-        function reviewEchoRetakePointerUp() {
-            if (reviewEchoRetakeHoldTimer) {
-                clearTimeout(reviewEchoRetakeHoldTimer);
-                reviewEchoRetakeHoldTimer = null;
+                } catch (err) {
+                    console.warn('retake stop', err);
+                    if (mic) mic.classList.remove('recording');
+                    reviewEchoRetakeRecording = false;
+                    reviewEchoRetakeBlobPromise = null;
+                }
                 return;
             }
-            if (!reviewEchoRetakeRecording) return;
-            const mic = document.getElementById('review-echo-retake-hold-btn');
-            if (mic) mic.classList.remove('recording');
-            reviewEchoRetakeRecording = false;
-            stopEchoHoldSegmentRecording();
+            if (va) va.pause();
+            reviewEchoRetakeBlobPromise = new Promise(resolve => { echoHoldRetakeResolve = resolve; });
+            echoHoldCaptureMode = 'retake';
+            try {
+                await startEchoHoldSegmentRecording();
+                reviewEchoRetakeRecording = true;
+                if (mic) mic.classList.add('recording');
+            } catch (err) {
+                console.warn('retake start', err);
+                const fn = echoHoldRetakeResolve;
+                echoHoldRetakeResolve = null;
+                reviewEchoRetakeBlobPromise = null;
+                echoHoldCaptureMode = 'session';
+                if (fn) fn(null);
+                alert('تعذّر تسجيل الجزء. تحقّق من إذن الميكروفون.');
+                releaseEchoHoldMicAfterRetake();
+            }
         }
         window.openReviewEchoSegmentRetake = function(segIndex) {
             if (!reviewOpenedFromEchoPractice) return;
@@ -8121,6 +8226,7 @@
             if (recBtn) recBtn.classList.remove('recording');
             const ui = document.getElementById('recording-ui');
             if (ui) ui.style.display = 'none';
+            hideStudentEchoSyncPanel();
             clearInterval(recInterval);
             const segs = studentEchoSegmentBlobs.slice();
             reviewStripSegmentBlobs = segs.slice();
@@ -8196,6 +8302,7 @@
             echoHoldPointerDown = false;
             const prClear = document.getElementById('studentVersePracticeBtn');
             if (prClear) prClear.classList.remove('recording');
+            hideStudentEchoSyncPanel();
             studentEchoPostVersePhase = true;
             isPlaying = false;
             isPaused = false;
@@ -8414,10 +8521,8 @@
                     releaseWakeLock();
                     const mimeType = mediaRecorder.mimeType || 'audio/mp4';
                     const tailBlob = new Blob(chunks, { type: mimeType });
-                    if (!isMacDesktop) {
-                        try { streamToRelease.getTracks().forEach(track => track.stop()); } catch (e) {}
-                        if (lastRecStream === streamToRelease) lastRecStream = null;
-                    }
+                    try { streamToRelease.getTracks().forEach(track => track.stop()); } catch (e) {}
+                    if (lastRecStream === streamToRelease) lastRecStream = null;
                     if (ctxToRelease) {
                         if (ctxToRelease.state !== 'closed') {
                             try { await ctxToRelease.close(); } catch (e) {}
@@ -8427,7 +8532,7 @@
                     if (navigator.audioSession) {
                         try { navigator.audioSession.type = 'playback'; } catch (e) {}
                     }
-                    await forceReleaseRecordingPipeline({ releaseDesktopHeldStream: !isMacDesktop });
+                    await forceReleaseRecordingPipeline();
                     restoreIosMicPlaybackIfAny();
                     await finalizeStudentEchoRecording(tailBlob);
                 };
@@ -8471,8 +8576,19 @@
             const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
             const isAndroid = /Android/i.test(navigator.userAgent || '');
             const useWebAudioDownmix = !isMacDesktop && !isIOS;
-            const reuseStream = echoHoldStream && echoHoldStream.getTracks().every(t => t.readyState === 'live');
+            const stEchoSyncStatus = document.getElementById('student-echo-sync-status');
+            const retakeHintEl = document.getElementById('review-echo-retake-hint');
+            const retakeHintDefault = 'استمع لجزء المقطع، ثم انقر زر الميكروفون لبدء التسجيل، وانقر مرة أخرى لإيقافه.';
+            const echoSyncShowMicLoading = (studentEchoPracticeSessionActive && !studentEchoPostVersePhase) || isStudentEchoSyncUiOpen();
+            if (stEchoSyncStatus && echoSyncShowMicLoading) {
+                stEchoSyncStatus.textContent = 'جاري تفعيل الميكروفون…';
+            }
+            if (echoHoldCaptureMode === 'retake' && retakeHintEl) {
+                retakeHintEl.textContent = 'جاري تفعيل الميكروفون…';
+            }
+            const reuseStream = !studentEchoPracticeSessionActive && echoHoldCaptureMode !== 'retake' && echoHoldStream && echoHoldStream.getTracks().every(t => t.readyState === 'live');
 
+            try {
             if (!reuseStream) {
                 restoreEchoHoldIosPlaybackIfAny();
                 if (echoHoldRawStream) {
@@ -8620,7 +8736,36 @@
             echoHoldChunks = [];
             echoHoldMediaRecorder = new MediaRecorder(echoHoldStream, options);
             echoHoldMediaRecorder.ondataavailable = e => { if (e.data.size > 0) echoHoldChunks.push(e.data); };
+            if (stEchoSyncStatus && echoSyncShowMicLoading) {
+                stEchoSyncStatus.textContent = '';
+            }
+            if (echoHoldCaptureMode === 'retake' && retakeHintEl) {
+                retakeHintEl.textContent = retakeHintDefault;
+            }
             echoHoldMediaRecorder.start();
+            } catch (err) {
+                if (stEchoSyncStatus && echoSyncShowMicLoading) {
+                    stEchoSyncStatus.textContent = '';
+                }
+                if (echoHoldCaptureMode === 'retake' && retakeHintEl) {
+                    retakeHintEl.textContent = retakeHintDefault;
+                }
+                throw err;
+            }
+        }
+        /** Echo-Hold / إعادة: Mic-Tracks und WebAudio nach jedem Segment-Stopp freigeben (OS-Indikator aus). */
+        function releaseEchoHoldMicAfterRetake() {
+            if (echoHoldRawStream) {
+                try { echoHoldRawStream.getTracks().forEach(t => t.stop()); } catch (e) {}
+                echoHoldRawStream = null;
+            } else if (echoHoldStream) {
+                try { echoHoldStream.getTracks().forEach(t => t.stop()); } catch (e) {}
+            }
+            echoHoldStream = null;
+            if (echoHoldRecCtx) {
+                try { echoHoldRecCtx.close(); } catch (e) {}
+                echoHoldRecCtx = null;
+            }
         }
         function stopEchoHoldSegmentRecording() {
             return new Promise(resolve => {
@@ -8631,6 +8776,7 @@
                         echoHoldCaptureMode = 'session';
                         fn(null);
                     }
+                    releaseEchoHoldMicAfterRetake();
                     resolve();
                     return;
                 }
@@ -8661,6 +8807,7 @@
                     if (navigator.audioSession) {
                         try { navigator.audioSession.type = 'playback'; } catch (e) {}
                     }
+                    releaseEchoHoldMicAfterRetake();
                     resolve();
                 };
                 try { mr.stop(); } catch (e) {
@@ -8674,6 +8821,7 @@
                     if (navigator.audioSession) {
                         try { navigator.audioSession.type = 'playback'; } catch (e2) {}
                     }
+                    releaseEchoHoldMicAfterRetake();
                     resolve();
                 }
             });
@@ -8715,6 +8863,8 @@
             echoHoldPointerDown = false;
             const prBtn = document.getElementById('studentVersePracticeBtn');
             if (prBtn) prBtn.classList.remove('recording');
+            const syncMicFin = document.getElementById('student-echo-sync-mic-btn');
+            if (syncMicFin) syncMicFin.classList.remove('sync-hold-active');
             if (echoHoldMediaRecorder && echoHoldMediaRecorder.state !== 'inactive') {
                 await stopEchoHoldSegmentRecording();
             } else {
@@ -8776,25 +8926,47 @@
             releaseWakeLock();
             const pbClear = document.getElementById('playBtn');
             if (pbClear) pbClear.innerText = '▶';
-            const ui = document.getElementById('recording-ui');
-            const statusText = document.getElementById('recText');
-            const rt = document.getElementById('recTimer');
+            const stPanel = document.getElementById('student-echo-sync-ui');
+            const statusText = document.getElementById('student-echo-sync-status');
+            const rt = document.getElementById('student-echo-sync-timer');
+            const syncMic = document.getElementById('student-echo-sync-mic-btn');
+            if (syncMic) {
+                syncMic.disabled = true;
+                syncMic.classList.remove('sync-hold-active');
+            }
+            const recUi = document.getElementById('recording-ui');
+            if (recUi) recUi.style.display = 'none';
             let dur = audioEl.duration;
             if (!dur || isNaN(dur)) dur = 15;
             maxRecDuration = Math.min(900, Math.ceil(dur * 12));
             clearInterval(recInterval);
             recSeconds = 0;
             if (rt) rt.innerText = '00:00';
-            if (statusText) statusText.innerText = 'تشغيل المقطع… اضغط مطوّلاً على الزر الأصفر أثناء الاستماع للتسجيل، ثم «إنهاء» عند الانتهاء';
-            if (ui) ui.style.display = 'flex';
+            if (statusText) statusText.textContent = 'جاري تشغيل المقطع… ثم استخدم زر الميكروفون الأحمر (نقرة للتسجيل، نقرة للمتابعة).';
+            if (stPanel) stPanel.style.display = 'flex';
             recInterval = setInterval(() => {
                 recSeconds++;
                 let m = Math.floor(recSeconds / 60);
                 let s = recSeconds % 60;
-                if (rt) rt.innerText = (m < 10 ? '0' + m : m) + ':' + (s < 10 ? '0' + s : s);
+                const ts = (m < 10 ? '0' + m : m) + ':' + (s < 10 ? '0' + s : s);
+                if (rt) rt.innerText = ts;
                 if (recSeconds >= maxRecDuration) stopRecordingAndReview();
             }, 1000);
             echoVerseSliceOpenStartSec = audioEl.currentTime || 0;
+            const onStuEchoPlaying = () => {
+                audioEl.removeEventListener('playing', onStuEchoPlaying);
+                const m2 = document.getElementById('student-echo-sync-mic-btn');
+                if (m2 && studentEchoPracticeSessionActive && !studentEchoPostVersePhase) m2.disabled = false;
+                const stEl = document.getElementById('student-echo-sync-status');
+                if (stEl && studentEchoPracticeSessionActive) {
+                    stEl.textContent = 'انقر الميكروفون الأحمر لإيقاف المقطع مؤقتاً وتسجيل جزئك، ثم انقر مرة أخرى لمتابعة الاستماع. «إنهاء» عند انتهاء المقطع.';
+                }
+            };
+            audioEl.addEventListener('playing', onStuEchoPlaying, { once: true });
+            setTimeout(() => {
+                const m3 = document.getElementById('student-echo-sync-mic-btn');
+                if (m3 && studentEchoPracticeSessionActive && !studentEchoPostVersePhase && m3.disabled) m3.disabled = false;
+            }, 1200);
             startVersePlaybackForPracticeSession();
         }
         async function beginPracticeBtnHoldRecording() {
@@ -8820,8 +8992,14 @@
             releaseWakeLock();
             const prBtn = document.getElementById('studentVersePracticeBtn');
             if (prBtn) prBtn.classList.add('recording');
+            const syncMicPanel = document.getElementById('student-echo-sync-mic-btn');
+            if (syncMicPanel && studentEchoPracticeSessionActive && !studentEchoPostVersePhase) syncMicPanel.classList.add('sync-hold-active');
             try {
                 await startEchoHoldSegmentRecording();
+                const stAfter = document.getElementById('student-echo-sync-status');
+                if (stAfter && studentEchoPracticeSessionActive && !studentEchoPostVersePhase) {
+                    stAfter.textContent = 'جاري تسجيلك… حرّر الزر لمتابعة الاستماع.';
+                }
             } catch (err) {
                 console.warn('practice hold start', err);
                 restoreEchoHoldIosPlaybackIfAny();
@@ -8831,6 +9009,7 @@
                 echoHoldPointerDown = false;
                 practiceBtnHoldRecordingActive = false;
                 if (prBtn) prBtn.classList.remove('recording');
+                if (syncMicPanel) syncMicPanel.classList.remove('sync-hold-active');
                 if (verseWasPlayingBeforeHold) {
                     isPlaying = true;
                     isPaused = false;
@@ -8845,8 +9024,7 @@
         }
         function studentPracticeBtnPointerDown(e) {
             if (typeof e.button === 'number' && e.button !== 0) return;
-            const syncUi = document.getElementById('sync-reply-ui');
-            if (syncUi && syncUi.style.display === 'flex') return;
+            if (isBlockingSyncUiOpenForStudentYellowMic()) return;
             if (!shouldUseStudentEchoHoldMode() || studentEchoPostVersePhase) return;
             if (echoHoldPointerDown || practiceBtnHoldRecordingActive) return;
             if (audioEl.paused) return;
@@ -8872,6 +9050,8 @@
             playStudentEchoBeep();
             const prBtn = document.getElementById('studentVersePracticeBtn');
             if (prBtn) prBtn.classList.remove('recording');
+            const syncMicP = document.getElementById('student-echo-sync-mic-btn');
+            if (syncMicP) syncMicP.classList.remove('sync-hold-active');
             stopEchoHoldSegmentRecording().then(() => {
                 if (verseWasPlayingBeforeHold) {
                     isPlaying = true;
@@ -8898,8 +9078,11 @@
                 alert(SYNC_REC_ONLY_STAGES_4_5_MSG);
                 return;
             }
-            const syncUi = document.getElementById('sync-reply-ui');
-            if (syncUi && syncUi.style.display === 'flex') return;
+            if (isBlockingSyncUiOpenForStudentYellowMic()) {
+                e.preventDefault();
+                e.stopPropagation();
+                return;
+            }
             if (studentEchoPracticeSessionActive) {
                 if (studentEchoPostVersePhase) return;
                 if (echoHoldMediaRecorder && echoHoldMediaRecorder.state === 'recording') return;
@@ -8934,10 +9117,20 @@
             prBtn.addEventListener('pointerleave', studentPracticeBtnPointerUp);
             prBtn.addEventListener('pointercancel', studentPracticeBtnPointerUp);
         })();
+        (function bindStudentEchoSyncPanelMic() {
+            const b = document.getElementById('student-echo-sync-mic-btn');
+            if (!b || b.dataset.echoSyncBound === '1') return;
+            b.dataset.echoSyncBound = '1';
+            b.addEventListener('click', e => { e.preventDefault(); void studentEchoSyncPanelMicClick(); });
+        })();
 
         window.toggleRecord = async function() {
             const syncUi = document.getElementById('sync-reply-ui');
             if (syncUi && syncUi.style.display === 'flex') return;
+            if (isStudentEchoSyncUiOpen()) {
+                alert('أنهِ تمرين المقطع بزر «إنهاء» في النافذة أولاً أو أكمِل التسجيل بعد انتهاء المقطع.');
+                return;
+            }
             if (studentEchoPracticeSessionActive) {
                 alert('أنهِ تمرين المقطع بزر «إنهاء» أولاً أو أكمِل التسجيل بعد انتهاء المقطع.');
                 return;
@@ -9156,10 +9349,8 @@
                     const ctxToRelease = recCtx;
                     mediaRecorder.onstop = async () => {
                         releaseWakeLock();
-                        if (!isMacDesktop) {
-                            try { streamToRelease.getTracks().forEach(track => track.stop()); } catch (e) {}
-                            if (lastRecStream === streamToRelease) lastRecStream = null;
-                        }
+                        try { streamToRelease.getTracks().forEach(track => track.stop()); } catch (e) {}
+                        if (lastRecStream === streamToRelease) lastRecStream = null;
                         if (ctxToRelease) {
                             if (ctxToRelease.state !== 'closed') {
                                 try { await ctxToRelease.close(); } catch (e) {}
@@ -9169,7 +9360,7 @@
                         if (navigator.audioSession) {
                             try { navigator.audioSession.type = 'playback'; } catch (e) {}
                         }
-                        await forceReleaseRecordingPipeline({ releaseDesktopHeldStream: !isMacDesktop });
+                        await forceReleaseRecordingPipeline();
                         restoreIosMicPlaybackIfAny();
                         const mimeType = mediaRecorder.mimeType || 'audio/mp4';
                         currentBlob = new Blob(chunks, { type: mimeType });
@@ -9214,6 +9405,8 @@
                     echoHoldPointerDown = false;
                     const prBtn = document.getElementById('studentVersePracticeBtn');
                     if (prBtn) prBtn.classList.remove('recording');
+                    const syncMicStop = document.getElementById('student-echo-sync-mic-btn');
+                    if (syncMicStop) syncMicStop.classList.remove('sync-hold-active');
                     if (endPracticeAfter) {
                         verseWasPlayingBeforeHold = false;
                         finishPracticeSessionWithReviewEarly().catch(err => console.warn(err));
@@ -9441,7 +9634,7 @@
                     ? `<div class="review-note">▶ الزر الذهبي بجانب المشغّل: المقطع + تسجيلات الطالب بالتناوب (للاستماع فقط). ▶ المشغّل الكبير: تسجيلات الطالب فقط + فواصل — <strong>يُرسَل للمعلم</strong>. ▶ في كل صف جزئي: أخضر = جزء المقطع، أصفر = تسجيل الطالب.</div>`
                     : `<div class="review-note">▶ الزر الذهبي: المقطع + التسجيلات (للاستماع فقط). ▶ المشغّل الكبير: تسجيلات الطالب فقط — <strong>يُرسَل للمعلم</strong>.</div>`)
                 : (hasEchoStripsNote
-                    ? `<div class="review-note">▶ في كل صف: أخضر = جزء المقطع، أصفر = تسجيلك. 🔄 إعادة = تسجيل الجزء من جديد و<strong>تحديث التسجيل الكامل</strong> المُرسَل للمعلم. المشغّل الكبير = التسجيل الكامل.</div>`
+                    ? `<div class="review-note">▶ في كل صف: أخضر = جزء المقطع، أصفر = تسجيلك. 🔄 إعادة = تسجيل الجزء من جديد (نقرتان على الميكروفون: بدء ثم إيقاف) و<strong>تحديث التسجيل الكامل</strong> المُرسَل للمعلم. المشغّل الكبير = التسجيل الكامل.</div>`
                     : '');
 
             audio.src = greenUrl;
