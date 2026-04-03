@@ -46,6 +46,15 @@ else
   echo "Nutze npx firebase-tools@${FT_VER} (stabiler als manche globale firepit-Installationen)"
 fi
 
+# npx-Phase: npm warn (EBADENGINE/superstatic, deprecated) unterdrücken — Firebase-Ausgabe unverändert. FIREBASE_NPM_VERBOSE=1 zum Debuggen.
+fb_exec() {
+  if [[ "${FIREBASE_CMD[0]}" == "npx" ]] && [[ "${FIREBASE_NPM_VERBOSE:-0}" != "1" ]]; then
+    NPM_CONFIG_loglevel=error "${FIREBASE_CMD[@]}" "$@"
+  else
+    "${FIREBASE_CMD[@]}" "$@"
+  fi
+}
+
 FB_BASE=(deploy --project "$PROJECT" --non-interactive)
 
 if [[ -n "${GOOGLE_APPLICATION_CREDENTIALS:-}" && -f "${GOOGLE_APPLICATION_CREDENTIALS}" ]]; then
@@ -70,10 +79,10 @@ trap cleanup_deploy_log EXIT
 fb_run_deploy() {
   if [[ -n "${FIREBASE_ONLY:-}" ]]; then
     echo "${FIREBASE_CMD[*]} ${FB_BASE[*]} --only ${FIREBASE_ONLY}"
-    "${FIREBASE_CMD[@]}" "${FB_BASE[@]}" --only "${FIREBASE_ONLY}"
+    fb_exec "${FB_BASE[@]}" --only "${FIREBASE_ONLY}"
   else
     echo "${FIREBASE_CMD[*]} ${FB_BASE[*]}"
-    "${FIREBASE_CMD[@]}" "${FB_BASE[@]}"
+    fb_exec "${FB_BASE[@]}"
   fi
 }
 attempt=1
@@ -90,7 +99,7 @@ while true; do
       sleep 35
       set +e
       echo "${FIREBASE_CMD[*]} ${FB_BASE[*]} --only functions"
-      "${FIREBASE_CMD[@]}" "${FB_BASE[@]}" --only functions 2>&1 | tee -a "$deploy_log"
+      fb_exec "${FB_BASE[@]}" --only functions 2>&1 | tee -a "$deploy_log"
       st409="${PIPESTATUS[0]}"
       set -e
       if [[ "$st409" -ne 0 ]]; then

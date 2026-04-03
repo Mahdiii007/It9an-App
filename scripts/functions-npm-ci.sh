@@ -11,6 +11,10 @@ cd "$FUNCS"
 unset NPM_CONFIG_devdir npm_config_devdir 2>/dev/null || true
 export NPM_CONFIG_AUDIT=false
 # Falls weiter „Unknown env config devdir“: npm config delete devdir -g (veralteter Eintrag in ~/.npmrc)
+# npm 11 + Node 24: ohne loglevel=error viele warn (EBADENGINE, deprecated). Ausgabe: FUNCTIONS_NPM_VERBOSE=1
+if [[ "${FUNCTIONS_NPM_VERBOSE:-0}" != "1" ]]; then
+  export NPM_CONFIG_loglevel=error
+fi
 TRASH=""
 
 run_ci() {
