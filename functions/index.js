@@ -688,7 +688,7 @@ QURAN_REMINDER_SLOTS.forEach((slot, idx) => {
 
 /**
  * Storage: uploads/*.(webm|ogg|mp4|wav) → AAC in MP4-Container (.m4a), Firestore audioUrl + replies.audioUrl auf neue Datei.
- * Ergebnis: audio/mp4, mono 44,1 kHz, 128 kbit/s — einheitlich für Safari/Android/iOS und synchronen Lehrer-Reply.
+ * Ergebnis: audio/mp4, stereo 44,1 kHz, 128 kbit/s (Mono-Quellen werden von FFmpeg auf 2 Kanäle gehoben → L/R, kein „nur links“ am Kopfhörer).
  * Ausgabe *.m4a löst keinen erneuten Lauf aus. Nach erfolgreicher URL-Patch wird die Originaldatei gelöscht.
  * Deploy: firebase deploy --only functions:transcodeUploadAudio (FFmpeg: gcp-build / tools/ensure-ffmpeg-linux.js).
  *
@@ -729,7 +729,7 @@ async function transcodeUploadAudioHandler(event) {
       '-profile:a', 'aac_low',
       '-b:a', '128k',
       '-ar', '44100',
-      '-ac', '1',
+      '-ac', '2',
       '-af', 'aresample=async=1',
       '-movflags', '+faststart',
       tmpOut,

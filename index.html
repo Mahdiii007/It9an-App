@@ -1993,6 +1993,26 @@
         let lastRecStream = null, lastRecCtx = null;
         /** iPhone/WebKit: Aufnahmen oft leiser als Android — ein Wert für toggleRecord (gainOnly) und رد متزامن (preMic). */
         const IOS_MIC_RECORDER_GAIN = 2.68;
+        /** iOS/PWA: Mikrofon + WebAudio-Kontext zuverlässig freigeben (sonst orangener Punkt, stille Folgeaufnahmen). */
+        async function forceReleaseRecordingPipeline(opts) {
+            const releaseDesktopHeld = !opts || opts.releaseDesktopHeldStream !== false;
+            const isMacDesktop = /Mac|Macintosh/.test(navigator.platform) && !navigator.maxTouchPoints;
+            if (lastRecStream) {
+                if (!isMacDesktop || releaseDesktopHeld) {
+                    try { lastRecStream.getTracks().forEach(t => t.stop()); } catch (e) {}
+                    lastRecStream = null;
+                }
+            }
+            if (lastRecCtx) {
+                if (lastRecCtx.state !== 'closed') {
+                    try { await lastRecCtx.close(); } catch (e) {}
+                }
+                lastRecCtx = null;
+            }
+            if (navigator.audioSession) {
+                try { navigator.audioSession.type = 'playback'; } catch (e) {}
+            }
+        }
         let teacherSyncReplyActive = false;
         let syncReplySessionHandle = null;
         let recordingFileId = null, recordingStageId = null; // Beim Aufnahmestart gespeichert, damit die Aufnahme dem richtigen Vers zugeordnet bleibt (auch wenn der Vers während der Aufnahme wechselt)
@@ -7330,7 +7350,11 @@
             } else {
                 micSrc.connect(preMic);
             }
-            preMic.connect(micGain);
+            /* Mono → Stereo: sonst AAC/MP4 nur Kanal 0 → bei Kopfhörern nur links (iOS/Safari). */
+            const micToStereo = ctx.createChannelMerger(2);
+            preMic.connect(micToStereo, 0, 0);
+            preMic.connect(micToStereo, 0, 1);
+            micToStereo.connect(micGain);
 
             let mediaRecorder;
             try {
@@ -8154,7 +8178,10 @@
                         } else {
                             srcIn.connect(gainOnly);
                         }
-                        gainOnly.connect(destOut);
+                        const monoToStereo = recCtx.createChannelMerger(2);
+                        gainOnly.connect(monoToStereo, 0, 0);
+                        gainOnly.connect(monoToStereo, 0, 1);
+                        monoToStereo.connect(destOut);
                         stream = destOut.stream;
                     } catch (e) {
                         console.warn('iOS echo post-verse:', e);
@@ -8212,18 +8239,23 @@
                 const ctxToRelease = recCtx;
                 mediaRecorder.onstop = async () => {
                     releaseWakeLock();
-                    restoreIosMicPlaybackIfAny();
                     const mimeType = mediaRecorder.mimeType || 'audio/mp4';
                     const tailBlob = new Blob(chunks, { type: mimeType });
-                    const doRelease = () => {
-                        if (!isMacDesktop) {
-                            streamToRelease.getTracks().forEach(track => track.stop());
-                            if (lastRecStream === streamToRelease) lastRecStream = null;
+                    if (!isMacDesktop) {
+                        try { streamToRelease.getTracks().forEach(track => track.stop()); } catch (e) {}
+                        if (lastRecStream === streamToRelease) lastRecStream = null;
+                    }
+                    if (ctxToRelease) {
+                        if (ctxToRelease.state !== 'closed') {
+                            try { await ctxToRelease.close(); } catch (e) {}
                         }
-                        if (ctxToRelease) { try { ctxToRelease.close(); } catch(e) {} if (lastRecCtx === ctxToRelease) lastRecCtx = null; }
-                        if (navigator.audioSession) { try { navigator.audioSession.type = 'playback'; } catch(e) {} }
-                    };
-                    doRelease();
+                        if (lastRecCtx === ctxToRelease) lastRecCtx = null;
+                    }
+                    if (navigator.audioSession) {
+                        try { navigator.audioSession.type = 'playback'; } catch (e) {}
+                    }
+                    await forceReleaseRecordingPipeline({ releaseDesktopHeldStream: !isMacDesktop });
+                    restoreIosMicPlaybackIfAny();
                     await finalizeStudentEchoRecording(tailBlob);
                 };
                 mediaRecorder.start();
@@ -8349,7 +8381,10 @@
                         } else {
                             srcIn.connect(gainOnly);
                         }
-                        gainOnly.connect(destOut);
+                        const monoToStereo = recCtx.createChannelMerger(2);
+                        gainOnly.connect(monoToStereo, 0, 0);
+                        gainOnly.connect(monoToStereo, 0, 1);
+                        monoToStereo.connect(destOut);
                         stream = destOut.stream;
                     } catch (e) {
                         console.warn('echo hold iOS WebAudio', e);
@@ -8851,7 +8886,10 @@
                             } else {
                                 srcIn.connect(gainOnly);
                             }
-                            gainOnly.connect(destOut);
+                            const monoToStereo = recCtx.createChannelMerger(2);
+                            gainOnly.connect(monoToStereo, 0, 0);
+                            gainOnly.connect(monoToStereo, 0, 1);
+                            monoToStereo.connect(destOut);
                             stream = destOut.stream;
                         } catch (e) {
                             console.warn('iOS-Aufnahme: WebAudio-Gain fehlgeschlagen, direkter Stream', e);
@@ -8913,6 +8951,20 @@
                     const ctxToRelease = recCtx;
                     mediaRecorder.onstop = async () => {
                         releaseWakeLock();
+                        if (!isMacDesktop) {
+                            try { streamToRelease.getTracks().forEach(track => track.stop()); } catch (e) {}
+                            if (lastRecStream === streamToRelease) lastRecStream = null;
+                        }
+                        if (ctxToRelease) {
+                            if (ctxToRelease.state !== 'closed') {
+                                try { await ctxToRelease.close(); } catch (e) {}
+                            }
+                            if (lastRecCtx === ctxToRelease) lastRecCtx = null;
+                        }
+                        if (navigator.audioSession) {
+                            try { navigator.audioSession.type = 'playback'; } catch (e) {}
+                        }
+                        await forceReleaseRecordingPipeline({ releaseDesktopHeldStream: !isMacDesktop });
                         restoreIosMicPlaybackIfAny();
                         const mimeType = mediaRecorder.mimeType || 'audio/mp4';
                         currentBlob = new Blob(chunks, { type: mimeType });
@@ -8924,15 +8976,6 @@
                         showReviewModal();
                         const recBtn = document.getElementById('recBtn'); if(recBtn) recBtn.classList.remove('recording');
                         clearInterval(recInterval); ui.style.display = 'none';
-                        const doRelease = () => {
-                            if (!isMacDesktop) {
-                                streamToRelease.getTracks().forEach(track => track.stop());
-                                if (lastRecStream === streamToRelease) lastRecStream = null;
-                            }
-                            if (ctxToRelease) { try { ctxToRelease.close(); } catch(e) {} if (lastRecCtx === ctxToRelease) lastRecCtx = null; }
-                            if (navigator.audioSession) { try { navigator.audioSession.type = 'playback'; } catch(e) {} }
-                        };
-                        doRelease();
                     };
                     /* Kein timeslice: ein durchgehender Blob – sonst WebM-Fragmente und Ruckler (v. a. Safari/iOS) */
                     mediaRecorder.start();
@@ -9315,6 +9358,7 @@
             if (ra) { ra.pause(); ra.src = ''; }
             revokeReviewModalObjectUrls();
             document.getElementById('review-modal').style.display = 'none';
+            await forceReleaseRecordingPipeline();
             const name = localStorage.getItem('it9an_name');
             const role = localStorage.getItem('it9an_role');
             const uid = localStorage.getItem('it9an_uid');
@@ -9452,9 +9496,11 @@
                 reviewOpenedFromEchoPractice = false;
                 reviewEchoStripVerseBlobs = [];
                 reviewEchoStripStudentBlobs = [];
-                if (lastRecStream) { lastRecStream.getTracks().forEach(t => t.stop()); lastRecStream = null; }
-                if (navigator.audioSession) { try { navigator.audioSession.type = 'playback'; } catch(e) {} }
-            } catch(e) { alert("خطأ في الإرسال"); }
+                await forceReleaseRecordingPipeline();
+            } catch(e) {
+                await forceReleaseRecordingPipeline();
+                alert("خطأ في الإرسال");
+            }
         }
 
         window.retryRecord = function() {
@@ -9507,8 +9553,7 @@
             reviewOpenedFromEchoPractice = false;
             if (typeof resetStudentEchoSession === 'function') resetStudentEchoSession();
             if (typeof syncStudentVersEchoUi === 'function') syncStudentVersEchoUi();
-            if (lastRecStream) { lastRecStream.getTracks().forEach(t => t.stop()); lastRecStream = null; }
-            if (navigator.audioSession) { try { navigator.audioSession.type = 'playback'; } catch(e) {} }
+            void forceReleaseRecordingPipeline();
         }
 
         window.toggleSmartLoop = function() {
