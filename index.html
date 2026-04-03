@@ -514,6 +514,7 @@
         .feed-reply-wrap .reply-btn { display: inline-flex; align-items: center; min-height: 32px; padding: 4px 10px; border-radius: 16px; font-size: 13px; }
         .reply-btn-sync { border-color: #c62828; color: #c62828; }
         .reply-btn-sync:disabled { opacity: 0.45; cursor: not-allowed; }
+        .reply-btn-sync.reply-btn-sync-stage-disabled { opacity: 0.45; filter: grayscale(1); cursor: pointer; box-shadow: none; }
         .like-btn { display: flex; align-items: center; border-radius: 16px; font-size: 13px; background: #f9f9f9; border: 1px solid #eee; overflow: hidden; min-height: 32px; }
         .like-btn.liked { color: var(--primary); background: #e8f5e9; border-color: var(--primary); font-weight: bold; }
         .like-btn.disabled { opacity: 0.5; filter: grayscale(1); }
@@ -667,6 +668,8 @@
         .verse-mic-col { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 4px; }
         .verse-mic-label { font-size: 11px; color: #555; text-align: center; max-width: 76px; line-height: 1.25; font-family: 'Amiri', serif; }
         .verse-mic-label-sync { color: #9a7b0a; }
+        .btn-rec-yellow.sync-rec-stage-disabled { opacity: 0.45 !important; filter: grayscale(1) !important; cursor: pointer !important; box-shadow: none !important; }
+        .verse-mic-label-sync.sync-rec-label-disabled { color: #888 !important; }
         .student-hold-rec-btn { touch-action: none; user-select: none; -webkit-user-select: none; }
         .setup-step-btn .icon-mic { width: 1.2em; height: 1.2em; }
         .verse-list-title .icon-mic { width: 24px; height: 24px; }
@@ -1572,6 +1575,7 @@
             invalidateCompletedVersesCache();
             if (typeof window.applyNotifStageFilter === 'function') window.applyNotifStageFilter();
             renderMenu();
+            if (typeof syncStudentVersEchoUi === 'function') syncStudentVersEchoUi();
         }
         async function getStageProgressForStudent(studentUid, stageId) {
             const kurs = await loadManifestForStage(stageId);
@@ -6222,8 +6226,11 @@
                 }
                 
                 const hasTeacherReply = d.replies && d.replies.some(r => r.role === 'teacher');
+                const syncReplyStageOk = isStages45SyncFeaturesEnabled();
+                const syncReplyBtnClass = 'reply-btn reply-btn-sync' + (syncReplyStageOk ? '' : ' reply-btn-sync-stage-disabled');
+                const syncReplyTitleAttr = syncReplyStageOk ? '' : ' title="رد متزامن يعمل فقط في المرحلة 4 والمرحلة 5."';
                 const syncReplyBtnHtml = isSyncReplyEnvironmentSupported()
-                    ? `<button type="button" class="reply-btn reply-btn-sync" onclick="startSyncReply('${d.id}')">رد متزامن</button>`
+                    ? `<button type="button" class="${syncReplyBtnClass}" onclick="startSyncReply('${d.id}')"${syncReplyTitleAttr}>رد متزامن</button>`
                     : `<button type="button" class="reply-btn reply-btn-sync" disabled title="غير متاح: متصفح قديم أو اتصال غير آمن (HTTPS)">رد متزامن</button>`;
                 const replyBtnWrap = ((userRole === 'teacher' || isAdmin) && isStudentPost && !hasTeacherReply) ? `<div class="feed-reply-wrap"><button class="reply-btn" onclick="startReply('${d.id}')">↩️ الرد</button>${syncReplyBtnHtml}</div>` : '';
                 let postDateStr = formatDateTime(d.timestamp);
@@ -6590,6 +6597,10 @@
         window.startSyncReply = async function(postId) {
             if (!isSyncReplyEnvironmentSupported()) {
                 alert('الرد المتزامن غير مدعوم على هذا المتصفح أو الاتصال. استخدم «الرد» العادي أو متصفحاً محدّثاً عبر HTTPS.');
+                return;
+            }
+            if (!isStages45SyncFeaturesEnabled()) {
+                alert(SYNC_REPLY_ONLY_STAGES_4_5_MSG);
                 return;
             }
             const uid = localStorage.getItem('it9an_uid');
@@ -7569,11 +7580,23 @@
 
         const REC_BLOCKED_MSG = 'يرجى استخدام إشعارات الجرس لسماع جميع ردود المعلم لهذه المرحلة حتى النهاية. يمكنك التسجيل في هذه المرحلة مرة أخرى فقط عندما تكون جميع ردود المعلم قد سُمعت حتى النهاية. هكذا تتعلم بشكل أفضل.';
         const REC_PENDING_TEACHER_MSG = 'لديك بالفعل تسجيل تحت هذا المقطع لم يُقيِّمه المعلم بعد أو لم يُرَدَّ عليه صوتياً بعد. لا يمكنك بدء تسجيل جديد هنا حتى يُقيَّم كل تسجيلاتك لهذا المقطع ويصلك رد صوتي من المعلم على كل منها.\n\nإن أردت إعادة التسجيل من جديد، احذف أولاً التسجيل القديم غير المكتمل (زر الحذف 🗑️ بجانب تسجيلك في الخلاصة أدناه)، ثم يمكنك استخدام الميكروفون مرة أخرى.';
+        const SYNC_REC_ONLY_STAGES_4_5_MSG = 'تسجيل متزامن (الميكروفون الأصفر) يعمل فقط في المرحلة 4 والمرحلة 5.';
+        const SYNC_REPLY_ONLY_STAGES_4_5_MSG = 'رد متزامن يعمل فقط في المرحلة 4 والمرحلة 5.';
+
+        function isStages45SyncFeaturesEnabled() {
+            const id = Number(currentStageId);
+            return id === 4 || id === 5;
+        }
+
+        function isStudentSyncRecordingStageAllowed() {
+            return isStages45SyncFeaturesEnabled();
+        }
 
         function shouldUseStudentEchoHoldMode() {
             if (localStorage.getItem('it9an_role') !== 'student') return false;
             const uid = localStorage.getItem('it9an_uid');
             if (!uid) return false;
+            if (!isStudentSyncRecordingStageAllowed()) return false;
             if (replyTargetId) return false;
             if (hasUnlistenedNotificationsForStage(currentStageId)) return false;
             if (studentHasUnfinishedRecordingOnCurrentVerse()) return false;
@@ -7683,6 +7706,7 @@
         function syncStudentVersEchoUi() {
             const prBtn = document.getElementById('studentVersePracticeBtn');
             const prWrap = document.getElementById('studentVersePracticeWrap');
+            const prSub = document.getElementById('studentVersePracticeSubLabel');
             const role = localStorage.getItem('it9an_role');
             const uid = localStorage.getItem('it9an_uid');
             if (!prBtn) return;
@@ -7698,7 +7722,16 @@
             const repCount = getMyRepetitionCountForCurrentVerse();
             const minRep = getMinRepetitionsForRecording(currentStageId);
             const repBlocked = repCount < minRep;
+            const syncStageOk = isStudentSyncRecordingStageAllowed();
+            prBtn.classList.toggle('sync-rec-stage-disabled', !syncStageOk);
+            if (prSub) prSub.classList.toggle('sync-rec-label-disabled', !syncStageOk);
             prBtn.style.filter = '';
+            if (!syncStageOk) {
+                prBtn.style.opacity = '';
+                prBtn.style.cursor = 'pointer';
+                prBtn.title = SYNC_REC_ONLY_STAGES_4_5_MSG;
+                return;
+            }
             if (notifBlocked) {
                 prBtn.style.opacity = '0.5';
                 prBtn.style.cursor = 'pointer';
@@ -8450,6 +8483,10 @@
             });
         }
         function studentPracticeSessionGatesOkOrAlert() {
+            if (!isStudentSyncRecordingStageAllowed()) {
+                alert(SYNC_REC_ONLY_STAGES_4_5_MSG);
+                return false;
+            }
             if (hasUnlistenedNotificationsForStage(currentStageId)) {
                 alert(REC_BLOCKED_MSG);
                 return false;
@@ -8521,6 +8558,10 @@
             });
         }
         function beginStudentPracticeSessionFromYellowMic() {
+            if (!isStudentSyncRecordingStageAllowed()) {
+                alert(SYNC_REC_ONLY_STAGES_4_5_MSG);
+                return;
+            }
             if (mediaRecorder && mediaRecorder.state !== 'inactive') {
                 alert('يوجد تسجيل قائم بالميكروفون الأحمر. أوقف التسجيل أولاً.');
                 return;
@@ -8655,6 +8696,12 @@
                 return;
             }
             if (localStorage.getItem('it9an_role') !== 'student') return;
+            if (!isStudentSyncRecordingStageAllowed() && !studentEchoPracticeSessionActive) {
+                e.preventDefault();
+                e.stopPropagation();
+                alert(SYNC_REC_ONLY_STAGES_4_5_MSG);
+                return;
+            }
             const syncUi = document.getElementById('sync-reply-ui');
             if (syncUi && syncUi.style.display === 'flex') return;
             if (studentEchoPracticeSessionActive) {
