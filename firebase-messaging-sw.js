@@ -203,7 +203,7 @@ messaging.onBackgroundMessage((payload) => {
     const body = data.body || 'إشعار جديد';
     const badgeCount = parseInt(data.badge || '1', 10) || 1;
     await setAppBadgeCount(badgeCount);
-    const iconUrl = "data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%20192%20192'%3E%3Crect%20fill%3D'%230f4c3a'%20width%3D'192'%20height%3D'192'%20rx%3D'24'%2F%3E%3Ctext%20x%3D'96'%20y%3D'118'%20font-size%3D'48'%20text-anchor%3D'middle'%20fill%3D'%23d4af37'%20font-family%3D'Amiri%2CNoto%20Naskh%20Arabic%2CNoto%20Sans%20Arabic%2Cserif'%20direction%3D'rtl'%20unicode-bidi%3D'embed'%3E%D8%A5%D8%AA%D9%82%D8%A7%D9%86%3C%2Ftext%3E%3C%2Fsvg%3E";
+    const iconUrl = "data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%20192%20192'%3E%3Crect%20fill%3D'%230f4c3a'%20width%3D'192'%20height%3D'192'%20rx%3D'24'%2F%3E%3Ctext%20x%3D'96'%20y%3D'96'%20font-size%3D'72'%20font-weight%3D'700'%20text-anchor%3D'middle'%20dominant-baseline%3D'central'%20fill%3D'%23d4af37'%20font-family%3D'Amiri%2CNoto%20Naskh%20Arabic%2CNoto%20Sans%20Arabic%2Cserif'%20direction%3D'rtl'%20unicode-bidi%3D'embed'%3E%D8%A5%D8%AA%D9%82%D8%A7%D9%86%3C%2Ftext%3E%3C%2Fsvg%3E";
     const urlParams = new URLSearchParams();
     if (data.openLesson === '1') {
       urlParams.set('openLesson', '1');
