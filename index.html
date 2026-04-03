@@ -6557,7 +6557,7 @@
                 if (prBtn) prBtn.classList.remove('recording');
                 const st = document.getElementById('student-echo-sync-status');
                 await stopEchoHoldSegmentRecording();
-                if (st) st.textContent = 'استمع للمقطع ثم انقر الميكروفون لتسجيل الجزء التالي.';
+                if (st) st.textContent = STUDENT_ECHO_SYNC_TXT_AFTER_SEGMENT;
                 if (verseWasPlayingBeforeHold) {
                     isPlaying = true;
                     isPaused = false;
@@ -6577,7 +6577,7 @@
             }
             await beginPracticeBtnHoldRecording();
             const st2 = document.getElementById('student-echo-sync-status');
-            if (st2) st2.textContent = 'جاري تسجيلك… انقر الميكروفون مرة أخرى لمتابعة الاستماع.';
+            if (st2) st2.textContent = STUDENT_ECHO_SYNC_TXT_RECORDING;
         }
 
         window.stopSyncReplySession = function() {
@@ -7730,6 +7730,12 @@
         const REC_PENDING_TEACHER_MSG = 'لديك بالفعل تسجيل تحت هذا المقطع لم يُقيِّمه المعلم بعد أو لم يُرَدَّ عليه صوتياً بعد. لا يمكنك بدء تسجيل جديد هنا حتى يُقيَّم كل تسجيلاتك لهذا المقطع ويصلك رد صوتي من المعلم على كل منها.\n\nإن أردت إعادة التسجيل من جديد، احذف أولاً التسجيل القديم غير المكتمل (زر الحذف 🗑️ بجانب تسجيلك في الخلاصة أدناه)، ثم يمكنك استخدام الميكروفون مرة أخرى.';
         const SYNC_REC_ONLY_STAGES_4_5_MSG = 'تسجيل متزامن (الميكروفون الأصفر) يعمل فقط في المرحلة 4 والمرحلة 5.';
         const SYNC_REPLY_ONLY_STAGES_4_5_MSG = 'رد متزامن يعمل فقط في المرحلة 4 والمرحلة 5.';
+        /** تسجيل متزامن (Schüler): einheitliche Formulierung — نقرة vs. ضغط مطوّل/إفلات. */
+        const STUDENT_ECHO_SYNC_TXT_BOOT = 'جاري تشغيل المقطع… ثم الميكروفون في النافذة: نقرة للجزء، نقرة لمتابعة الاستماع.';
+        const STUDENT_ECHO_SYNC_TXT_READY = 'الميكروفون في النافذة: نقرة للجزء، نقرة لمتابعة الاستماع. أو ضغط مطوّل على زر المقطع ثم إفلات. «إنهاء» عند انتهاء المقطع.';
+        const STUDENT_ECHO_SYNC_TXT_RECORDING = 'جاري تسجيلك… أكمِل: نقرة على الميكروفون أو إفلات زر المقطع لمتابعة الاستماع.';
+        const STUDENT_ECHO_SYNC_TXT_AFTER_SEGMENT = 'استمع للمقطع، ثم نقرة على الميكروفون للجزء التالي.';
+        const STUDENT_ECHO_SYNC_TITLE_VERSE_BTN = 'نقرة: تشغيل المقطع والنافذة. الميكروفون في النافذة: نقرة للجزء، نقرة للمتابعة؛ أو ضغط مطوّل على زر المقطع ثم إفلات.';
 
         function isStages45SyncFeaturesEnabled() {
             const id = Number(currentStageId);
@@ -7897,7 +7903,7 @@
             } else {
                 prBtn.style.opacity = '';
                 prBtn.style.cursor = '';
-                prBtn.title = 'نقرة واحدة: تشغيل المقطع ونافذة التسجيل المتزامن. الميكروفون الأحمر في النافذة: نقرة للتسجيل ونقرة للمتابعة.';
+                prBtn.title = STUDENT_ECHO_SYNC_TITLE_VERSE_BTN;
             }
         }
         function writeWavString(view, offset, str) {
@@ -8942,7 +8948,7 @@
             clearInterval(recInterval);
             recSeconds = 0;
             if (rt) rt.innerText = '00:00';
-            if (statusText) statusText.textContent = 'جاري تشغيل المقطع… ثم استخدم زر الميكروفون الأحمر (نقرة للتسجيل، نقرة للمتابعة).';
+            if (statusText) statusText.textContent = STUDENT_ECHO_SYNC_TXT_BOOT;
             if (stPanel) stPanel.style.display = 'flex';
             recInterval = setInterval(() => {
                 recSeconds++;
@@ -8959,7 +8965,7 @@
                 if (m2 && studentEchoPracticeSessionActive && !studentEchoPostVersePhase) m2.disabled = false;
                 const stEl = document.getElementById('student-echo-sync-status');
                 if (stEl && studentEchoPracticeSessionActive) {
-                    stEl.textContent = 'انقر الميكروفون الأحمر لإيقاف المقطع مؤقتاً وتسجيل جزئك، ثم انقر مرة أخرى لمتابعة الاستماع. «إنهاء» عند انتهاء المقطع.';
+                    stEl.textContent = STUDENT_ECHO_SYNC_TXT_READY;
                 }
             };
             audioEl.addEventListener('playing', onStuEchoPlaying, { once: true });
@@ -8998,7 +9004,7 @@
                 await startEchoHoldSegmentRecording();
                 const stAfter = document.getElementById('student-echo-sync-status');
                 if (stAfter && studentEchoPracticeSessionActive && !studentEchoPostVersePhase) {
-                    stAfter.textContent = 'جاري تسجيلك… حرّر الزر لمتابعة الاستماع.';
+                    stAfter.textContent = STUDENT_ECHO_SYNC_TXT_RECORDING;
                 }
             } catch (err) {
                 console.warn('practice hold start', err);
