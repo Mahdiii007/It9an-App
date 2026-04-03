@@ -7736,6 +7736,8 @@
         const STUDENT_ECHO_SYNC_TXT_RECORDING = 'جاري تسجيلك… أكمِل: نقرة على الميكروفون أو إفلات زر المقطع لمتابعة الاستماع.';
         const STUDENT_ECHO_SYNC_TXT_AFTER_SEGMENT = 'استمع للمقطع، ثم نقرة على الميكروفون للجزء التالي.';
         const STUDENT_ECHO_SYNC_TITLE_VERSE_BTN = 'نقرة: تشغيل المقطع والنافذة. الميكروفون في النافذة: نقرة للجزء، نقرة للمتابعة؛ أو ضغط مطوّل على زر المقطع ثم إفلات.';
+        /** Nach Versende: durchgehendes Tail-Mikro nur in #student-echo-sync-ui (kein تسجيل عادي). */
+        const STUDENT_ECHO_SYNC_TXT_TAIL_RECORDING = 'انتهى تشغيل المقطع. يستمر التسجيل في هذه النافذة — اضغط «إنهاء» عندما تفرغ من الكلام.';
 
         function isStages45SyncFeaturesEnabled() {
             const id = Number(currentStageId);
@@ -8228,6 +8230,11 @@
         async function finalizeStudentEchoRecording(tailBlob) {
             studentEchoPracticeSessionActive = false;
             studentEchoPostVersePhase = false;
+            releaseEchoHoldMicAfterRetake();
+            restoreEchoHoldIosPlaybackIfAny();
+            await forceReleaseRecordingPipeline();
+            mediaRecorder = null;
+            releaseWakeLock();
             const recBtn = document.getElementById('recBtn');
             if (recBtn) recBtn.classList.remove('recording');
             const ui = document.getElementById('recording-ui');
@@ -8308,7 +8315,30 @@
             echoHoldPointerDown = false;
             const prClear = document.getElementById('studentVersePracticeBtn');
             if (prClear) prClear.classList.remove('recording');
-            hideStudentEchoSyncPanel();
+            const stPanelKeep = document.getElementById('student-echo-sync-ui');
+            if (stPanelKeep) stPanelKeep.style.display = 'flex';
+            const syncMicPost = document.getElementById('student-echo-sync-mic-btn');
+            if (syncMicPost) {
+                syncMicPost.disabled = true;
+                syncMicPost.classList.remove('sync-hold-active');
+            }
+            clearInterval(recInterval);
+            recSeconds = 0;
+            const rtPost = document.getElementById('student-echo-sync-timer');
+            if (rtPost) rtPost.innerText = '00:00';
+            let durPv = audioEl.duration || 0;
+            if (!durPv || isNaN(durPv)) durPv = 15;
+            maxRecDuration = Math.min(900, Math.ceil(durPv * 12));
+            recInterval = setInterval(() => {
+                recSeconds++;
+                let m = Math.floor(recSeconds / 60);
+                let s = recSeconds % 60;
+                const ts = (m < 10 ? '0' + m : m) + ':' + (s < 10 ? '0' + s : s);
+                if (rtPost) rtPost.innerText = ts;
+                if (recSeconds >= maxRecDuration) stopRecordingAndReview();
+            }, 1000);
+            const stPostVers = document.getElementById('student-echo-sync-status');
+            if (stPostVers) stPostVers.textContent = STUDENT_ECHO_SYNC_TXT_TAIL_RECORDING;
             studentEchoPostVersePhase = true;
             isPlaying = false;
             isPaused = false;
@@ -8520,7 +8550,10 @@
                 mediaRecorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
                 recordingFileId = currentGlobalFileId;
                 recordingStageId = currentStageId;
-                if (statusText) statusText.innerText = 'تسجيل بعد انتهاء المقطع… اضغط إنهاء عند الانتهاء';
+                if (ui && studentEchoPracticeSessionActive) ui.style.display = 'none';
+                if (statusText && !studentEchoPracticeSessionActive) statusText.innerText = 'تسجيل بعد انتهاء المقطع… اضغط إنهاء عند الانتهاء';
+                const syncStTail = document.getElementById('student-echo-sync-status');
+                if (syncStTail && studentEchoPracticeSessionActive) syncStTail.textContent = STUDENT_ECHO_SYNC_TXT_TAIL_RECORDING;
                 const streamToRelease = rawStream;
                 const ctxToRelease = recCtx;
                 mediaRecorder.onstop = async () => {
@@ -8540,12 +8573,16 @@
                     }
                     await forceReleaseRecordingPipeline();
                     restoreIosMicPlaybackIfAny();
+                    mediaRecorder = null;
+                    chunks = [];
                     await finalizeStudentEchoRecording(tailBlob);
                 };
                 mediaRecorder.start();
                 requestWakeLock();
                 const recBtn = document.getElementById('recBtn');
-                if (recBtn && recBtn.style.display !== 'none') recBtn.classList.add('recording');
+                if (recBtn && recBtn.style.display !== 'none' && !(studentEchoPracticeSessionActive && studentEchoPostVersePhase)) {
+                    recBtn.classList.add('recording');
+                }
                 const rt = document.getElementById('recTimer');
                 if (!studentEchoPracticeSessionActive) {
                     if (ui) ui.style.display = 'flex';
@@ -8568,6 +8605,7 @@
                     if (uix) uix.style.display = 'none';
                     const recBtnErr = document.getElementById('recBtn');
                     if (recBtnErr) recBtnErr.classList.remove('recording');
+                    hideStudentEchoSyncPanel();
                 }
                 restoreIosMicPlaybackIfAny();
                 console.error('Student echo post-verse:', e);
@@ -8575,6 +8613,9 @@
                 if (rawStream) { rawStream.getTracks().forEach(t => t.stop()); if (lastRecStream === rawStream) lastRecStream = null; }
                 if (recCtx) { try { recCtx.close(); } catch(e2) {} if (lastRecCtx === recCtx) lastRecCtx = null; }
                 if (navigator.audioSession) { try { navigator.audioSession.type = 'playback'; } catch(e3) {} }
+                void forceReleaseRecordingPipeline();
+                releaseEchoHoldMicAfterRetake();
+                mediaRecorder = null;
             }
         }
         async function startEchoHoldSegmentRecording() {
