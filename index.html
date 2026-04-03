@@ -1068,7 +1068,7 @@
                 <span class="verse-mic-label" id="recBtnSubLabel">تسجيل عادي</span>
                 </div>
                 <div class="verse-mic-col" id="studentVersePracticeWrap" style="display:none;">
-                <button type="button" id="studentVersePracticeBtn" class="btn btn-rec-yellow student-hold-rec-btn" title="نقرة واحدة: تشغيل المقطع ونافذة التسجيل المتزامن (مثل رد المعلم). الميكروفون في النافذة: تسجيل الجزء." aria-label="تمرين مع المقطع"><svg class="icon-mic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
+                <button type="button" id="studentVersePracticeBtn" class="btn btn-rec-yellow student-hold-rec-btn" title="نقرة: تشغيل المقطع والنافذة. الميكروفون الأحمر في النافذة: اضغط مع الاستمرار للتسجيل وأفلِت للمتابعة." aria-label="تمرين مع المقطع"><svg class="icon-mic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
                 <span class="verse-mic-label verse-mic-label-sync" id="studentVersePracticeSubLabel">تسجيل متزامن</span>
                 </div>
                 <button id="playBtn" class="btn btn-play" onclick="toggleSmartLoop()">▶</button>
@@ -1115,7 +1115,7 @@
             <button type="button" class="stop-ui-btn" onclick="stopRecordingAndReview()">⏹ إنهاء</button>
         </div>
         <div id="student-echo-sync-status" class="sync-reply-status"></div>
-        <button type="button" id="student-echo-sync-mic-btn" class="sync-reply-hold-btn" disabled aria-label="إيقاف مؤقت للمقطع وتسجيل جزء — نقرة ثانية للمتابعة"><svg class="icon-mic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
+        <button type="button" id="student-echo-sync-mic-btn" class="sync-reply-hold-btn" disabled aria-label="اضغط مع الاستمرار لتسجيل جزءك، وأفلِت لمتابعة الاستماع"><svg class="icon-mic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
     </div>
 
     <div id="review-modal">
@@ -6544,40 +6544,23 @@
             const t = document.getElementById('sync-reply-ui');
             return (t && t.style.display === 'flex') || isStudentEchoSyncUiOpen();
         }
-        async function studentEchoSyncPanelMicClick() {
+        function studentEchoSyncPanelHoldPointerDown(e) {
+            if (typeof e.button === 'number' && e.button !== 0) return;
             if (!studentEchoPracticeSessionActive || studentEchoPostVersePhase) return;
-            if (echoHoldMediaRecorder && echoHoldMediaRecorder.state === 'recording') {
-                echoHoldPointerDown = false;
-                practiceBtnHoldRecordingActive = false;
-                _practiceBtnIgnoreClickUntil = Date.now() + 450;
-                playStudentEchoBeep();
-                const syncMic = document.getElementById('student-echo-sync-mic-btn');
-                if (syncMic) syncMic.classList.remove('sync-hold-active');
-                const prBtn = document.getElementById('studentVersePracticeBtn');
-                if (prBtn) prBtn.classList.remove('recording');
-                const st = document.getElementById('student-echo-sync-status');
-                await stopEchoHoldSegmentRecording();
-                if (st) st.textContent = STUDENT_ECHO_SYNC_TXT_AFTER_SEGMENT;
-                if (verseWasPlayingBeforeHold) {
-                    isPlaying = true;
-                    isPaused = false;
-                    const pb = document.getElementById('playBtn');
-                    if (pb) pb.innerText = '⏸';
-                    requestWakeLock();
-                    audioEl.onended = function () { handleVerseAudioEnded().catch(() => {}); };
-                    audioEl.play().catch(() => {});
-                }
-                verseWasPlayingBeforeHold = false;
-                return;
-            }
+            if (echoHoldPointerDown || practiceBtnHoldRecordingActive) return;
             if (audioEl.paused) {
                 const st = document.getElementById('student-echo-sync-status');
                 if (st) st.textContent = 'انتظر بدء تشغيل المقطع، أو اضغط «إنهاء».';
                 return;
             }
-            await beginPracticeBtnHoldRecording();
-            const st2 = document.getElementById('student-echo-sync-status');
-            if (st2) st2.textContent = STUDENT_ECHO_SYNC_TXT_RECORDING;
+            if (practiceBtnHoldDelayTimer) {
+                clearTimeout(practiceBtnHoldDelayTimer);
+                practiceBtnHoldDelayTimer = null;
+            }
+            practiceBtnHoldDelayTimer = setTimeout(() => {
+                practiceBtnHoldDelayTimer = null;
+                void beginPracticeBtnHoldRecording();
+            }, 220);
         }
 
         window.stopSyncReplySession = function() {
@@ -7580,8 +7563,8 @@
                 if (!isCommenting || sessionFinished || aborted) return;
                 isCommenting = false;
                 micGain.gain.setValueAtTime(0, ctx.currentTime);
-                playSyncTransitionBeep(ctx, false);
                 detachTeacherSyncMicPipeline();
+                playSyncTransitionBeep(ctx, false);
                 if (holdBtn) holdBtn.classList.remove('sync-hold-active');
                 if (statusEl) statusEl.textContent = '';
                 beginStudent(resumeFrom);
@@ -7669,6 +7652,7 @@
                                     return;
                                 }
                                 micGain.gain.setValueAtTime(1, ctx.currentTime);
+                                playSyncTransitionBeep(ctx, true);
                                 if (statusEl) statusEl.textContent = 'تكلّم الآن — إضافة في نهاية الرد';
                                 if (appendDoneBtn) appendDoneBtn.style.display = 'block';
                             } catch (err) {
@@ -7731,11 +7715,11 @@
         const SYNC_REC_ONLY_STAGES_4_5_MSG = 'تسجيل متزامن (الميكروفون الأصفر) يعمل فقط في المرحلة 4 والمرحلة 5.';
         const SYNC_REPLY_ONLY_STAGES_4_5_MSG = 'رد متزامن يعمل فقط في المرحلة 4 والمرحلة 5.';
         /** تسجيل متزامن (Schüler): einheitliche Formulierung — نقرة vs. ضغط مطوّل/إفلات. */
-        const STUDENT_ECHO_SYNC_TXT_BOOT = 'جاري تشغيل المقطع… ثم الميكروفون في النافذة: نقرة للجزء، نقرة لمتابعة الاستماع.';
-        const STUDENT_ECHO_SYNC_TXT_READY = 'الميكروفون في النافذة: نقرة للجزء، نقرة لمتابعة الاستماع. أو ضغط مطوّل على زر المقطع ثم إفلات. «إنهاء» عند انتهاء المقطع.';
-        const STUDENT_ECHO_SYNC_TXT_RECORDING = 'جاري تسجيلك… أكمِل: نقرة على الميكروفون أو إفلات زر المقطع لمتابعة الاستماع.';
-        const STUDENT_ECHO_SYNC_TXT_AFTER_SEGMENT = 'استمع للمقطع، ثم نقرة على الميكروفون للجزء التالي.';
-        const STUDENT_ECHO_SYNC_TITLE_VERSE_BTN = 'نقرة: تشغيل المقطع والنافذة. الميكروفون في النافذة: نقرة للجزء، نقرة للمتابعة؛ أو ضغط مطوّل على زر المقطع ثم إفلات.';
+        const STUDENT_ECHO_SYNC_TXT_BOOT = 'جاري تشغيل المقطع… ثم اضغط الميكروفون في النافذة مع الاستمرار للتسجيل، وأفلِت لمتابعة الاستماع.';
+        const STUDENT_ECHO_SYNC_TXT_READY = 'الميكروفون الأحمر: اضغط مع الاستمرار لتسجيل جزئك، وأفلِت لمتابعة الاستماع. «إنهاء» عند انتهاء المقطع.';
+        const STUDENT_ECHO_SYNC_TXT_RECORDING = 'جاري تسجيلك… أفلِت الزر أو الإصبع عن الميكروفون لمتابعة الاستماع.';
+        const STUDENT_ECHO_SYNC_TXT_AFTER_SEGMENT = 'استمع للمقطع، ثم اضغط الميكروفون مع الاستمرار للجزء التالي.';
+        const STUDENT_ECHO_SYNC_TITLE_VERSE_BTN = 'نقرة: تشغيل المقطع والنافذة. الميكروفون في النافذة: اضغط مع الاستمرار للتسجيل وأفلِت للمتابعة.';
         /** Nach Versende: durchgehendes Tail-Mikro nur in #student-echo-sync-ui (kein تسجيل عادي). */
         const STUDENT_ECHO_SYNC_TXT_TAIL_RECORDING = 'انتهى تشغيل المقطع. يستمر التسجيل في هذه النافذة — اضغط «إنهاء» عندما تفرغ من الكلام.';
 
@@ -8052,6 +8036,35 @@
                 try { await ctx.close(); } catch (e) {}
             }
         }
+        /** Nur Vers-Ausschnitte als WAV (Fallback wenn Schüler-Decode im vollen Build scheitert). */
+        async function buildVerseOnlyWavStrips(fid, ranges) {
+            if (!fid || !ranges || !ranges.length) return [];
+            const verseUrl = getAssetUrl(getVerseAssetPath(fid) + '.mp3');
+            let verseAb;
+            try {
+                const r = await fetch(verseUrl);
+                if (!r.ok) return [];
+                verseAb = await r.arrayBuffer();
+            } catch (e) {
+                return [];
+            }
+            const AC = window.AudioContext || window.webkitAudioContext;
+            const ctx = new AC();
+            const strips = [];
+            try {
+                const verseBuf = await ctx.decodeAudioData(verseAb.slice(0));
+                const verseSr = verseBuf.sampleRate;
+                const verseCh = verseBuf.getChannelData(0);
+                for (let i = 0; i < ranges.length; i++) {
+                    let vs = sliceVerseSamplesCopy(verseCh, verseSr, ranges[i].startSec, ranges[i].endSec);
+                    if (vs.length === 0) vs = new Float32Array(Math.max(1, Math.round(0.04 * verseSr)));
+                    strips.push(encodeWavFloat32Mono(vs, verseSr));
+                }
+                return strips;
+            } finally {
+                try { await ctx.close(); } catch (e) {}
+            }
+        }
         function clearReviewEchoEditableState() {
             reviewEchoEditableOrderedBlobs = [];
             reviewEchoEditableRanges = [];
@@ -8074,8 +8087,12 @@
                     alert('تعذّر تحديث معاينة أجزاء المقطع.');
                     return;
                 }
-                const built = await buildEchoPracticeYellowAndVerseStrips(fid, ranges, studentPartsForStripBuild, 1);
-                const verseStrips = built.verseStripWavs || [];
+                let built = await buildEchoPracticeYellowAndVerseStrips(fid, ranges, studentPartsForStripBuild, 1);
+                let verseStrips = built.verseStripWavs || [];
+                if (verseStrips.length !== ranges.length) {
+                    verseStrips = await buildVerseOnlyWavStrips(fid, ranges);
+                    built = { yellowBlob: null, verseStripWavs: verseStrips };
+                }
                 if (!greenBlob || greenBlob.size === 0) {
                     alert('تعذّر دمج التسجيل بعد التعديل.');
                     return;
@@ -8085,8 +8102,13 @@
                     return;
                 }
                 reviewBlobGreen = greenBlob;
-                reviewBlobYellow = null;
-                reviewYellowEnabled = false;
+                if (built.yellowBlob && built.yellowBlob.size > 0) {
+                    reviewBlobYellow = built.yellowBlob;
+                    reviewYellowEnabled = true;
+                } else {
+                    reviewBlobYellow = null;
+                    reviewYellowEnabled = false;
+                }
                 reviewEchoStripVerseBlobs = verseStrips;
                 reviewEchoStripStudentBlobs = studentPartsForStripBuild.slice();
                 reviewStripSegmentBlobs = segsOnly.slice();
@@ -8262,29 +8284,57 @@
                 greenBlob = await mergeStudentEchoSegmentsAndTailWav(segs, 1, tailPart);
                 if (!greenBlob && tailPart) greenBlob = tailPart;
                 const nSeg = segs.length;
-                const nRng = rangesSnapshot.length;
+                let rangesForStrips = rangesSnapshot.map(r => ({ startSec: r.startSec, endSec: r.endSec }));
+                if (rangesForStrips.length > nSeg) {
+                    rangesForStrips = rangesForStrips.slice(0, nSeg);
+                }
+                const durCap = (audioEl.duration && !isNaN(audioEl.duration) && audioEl.duration > 0) ? audioEl.duration : null;
+                while (rangesForStrips.length < nSeg) {
+                    const last = rangesForStrips.length ? rangesForStrips[rangesForStrips.length - 1] : { startSec: 0, endSec: 0.12 };
+                    let startSec = last.endSec;
+                    let endSec = startSec + Math.max(0.08, (last.endSec - last.startSec) || 0.12);
+                    if (durCap != null) endSec = Math.min(endSec, durCap);
+                    if (endSec <= startSec + 0.02) endSec = startSec + 0.08;
+                    rangesForStrips.push({ startSec, endSec });
+                }
+                if (rangesForStrips.length > nSeg) {
+                    rangesForStrips = rangesForStrips.slice(0, nSeg);
+                }
+                const nRngAdj = rangesForStrips.length;
                 const studentPartsForStripBuild = tailPart ? orderedForBuild.slice(0, -1) : orderedForBuild.slice();
-                const useSliced = fid != null && nSeg > 0 && nRng === nSeg && (
+                const useSliced = fid != null && nSeg > 0 && nRngAdj === nSeg && (
                     (!tailPart && orderedForBuild.length === nSeg) ||
                     (!!tailPart && orderedForBuild.length === nSeg + 1)
                 );
                 if (useSliced) {
                     reviewEchoEditableFileId = fid;
-                    reviewEchoEditableRanges = rangesSnapshot.map(r => ({ startSec: r.startSec, endSec: r.endSec }));
+                    reviewEchoEditableRanges = rangesForStrips.map(r => ({ startSec: r.startSec, endSec: r.endSec }));
                     reviewEchoEditableHasTail = !!tailPart;
                     reviewEchoEditableOrderedBlobs = orderedForBuild.slice();
-                    const built = await buildEchoPracticeYellowAndVerseStrips(fid, reviewEchoEditableRanges, studentPartsForStripBuild, 1);
-                    const vStrips = built.verseStripWavs || [];
+                    let built = await buildEchoPracticeYellowAndVerseStrips(fid, reviewEchoEditableRanges, studentPartsForStripBuild, 1);
+                    let vStrips = built.verseStripWavs || [];
+                    if (vStrips.length !== studentPartsForStripBuild.length) {
+                        vStrips = await buildVerseOnlyWavStrips(fid, reviewEchoEditableRanges);
+                        built = { yellowBlob: null, verseStripWavs: vStrips };
+                    }
                     if (vStrips.length === studentPartsForStripBuild.length) {
                         reviewEchoStripVerseBlobs = vStrips;
                         reviewEchoStripStudentBlobs = studentPartsForStripBuild.slice();
+                        if (built.yellowBlob && built.yellowBlob.size > 0) {
+                            reviewBlobYellow = built.yellowBlob;
+                            reviewYellowEnabled = true;
+                        } else {
+                            reviewBlobYellow = null;
+                            reviewYellowEnabled = false;
+                        }
                     } else {
                         clearReviewEchoEditableState();
                     }
+                } else {
+                    reviewBlobYellow = null;
+                    reviewYellowEnabled = false;
                 }
                 reviewBlobGreen = greenBlob;
-                reviewBlobYellow = null;
-                reviewYellowEnabled = false;
                 if (greenBlob && greenBlob.size > 0) {
                     currentBlob = greenBlob;
                 } else if (tailPart) {
@@ -9041,7 +9091,6 @@
             }
             echoHoldPointerDown = true;
             practiceBtnHoldRecordingActive = true;
-            playStudentEchoBeep();
             verseWasPlayingBeforeHold = true;
             audioEl.pause();
             isPlaying = false;
@@ -9055,6 +9104,7 @@
             if (syncMicPanel && studentEchoPracticeSessionActive && !studentEchoPostVersePhase) syncMicPanel.classList.add('sync-hold-active');
             try {
                 await startEchoHoldSegmentRecording();
+                playStudentEchoBeep();
                 const stAfter = document.getElementById('student-echo-sync-status');
                 if (stAfter && studentEchoPracticeSessionActive && !studentEchoPostVersePhase) {
                     stAfter.textContent = STUDENT_ECHO_SYNC_TXT_RECORDING;
@@ -9096,7 +9146,7 @@
                 beginPracticeBtnHoldRecording();
             }, 220);
         }
-        function studentPracticeBtnPointerUp() {
+        function studentEchoHoldWindowPointerUp() {
             if (practiceBtnHoldDelayTimer) {
                 clearTimeout(practiceBtnHoldDelayTimer);
                 practiceBtnHoldDelayTimer = null;
@@ -9106,12 +9156,16 @@
             echoHoldPointerDown = false;
             practiceBtnHoldRecordingActive = false;
             _practiceBtnIgnoreClickUntil = Date.now() + 450;
-            playStudentEchoBeep();
             const prBtn = document.getElementById('studentVersePracticeBtn');
             if (prBtn) prBtn.classList.remove('recording');
             const syncMicP = document.getElementById('student-echo-sync-mic-btn');
             if (syncMicP) syncMicP.classList.remove('sync-hold-active');
             stopEchoHoldSegmentRecording().then(() => {
+                playStudentEchoBeep();
+                const st = document.getElementById('student-echo-sync-status');
+                if (st && studentEchoPracticeSessionActive && !studentEchoPostVersePhase) {
+                    st.textContent = STUDENT_ECHO_SYNC_TXT_AFTER_SEGMENT;
+                }
                 if (verseWasPlayingBeforeHold) {
                     isPlaying = true;
                     isPaused = false;
@@ -9172,15 +9226,22 @@
             if (!prBtn) return;
             prBtn.addEventListener('click', studentPracticeBtnClick, true);
             prBtn.addEventListener('pointerdown', studentPracticeBtnPointerDown);
-            prBtn.addEventListener('pointerup', studentPracticeBtnPointerUp);
-            prBtn.addEventListener('pointerleave', studentPracticeBtnPointerUp);
-            prBtn.addEventListener('pointercancel', studentPracticeBtnPointerUp);
+        })();
+        (function bindStudentEchoHoldWindowRelease() {
+            if (window.__it9anStudentEchoHoldWindow) return;
+            window.__it9anStudentEchoHoldWindow = true;
+            window.addEventListener('pointerup', () => { void studentEchoHoldWindowPointerUp(); });
+            window.addEventListener('pointercancel', () => { void studentEchoHoldWindowPointerUp(); });
         })();
         (function bindStudentEchoSyncPanelMic() {
             const b = document.getElementById('student-echo-sync-mic-btn');
             if (!b || b.dataset.echoSyncBound === '1') return;
             b.dataset.echoSyncBound = '1';
-            b.addEventListener('click', e => { e.preventDefault(); void studentEchoSyncPanelMicClick(); });
+            b.addEventListener('pointerdown', e => {
+                if (e.button !== 0) return;
+                e.preventDefault();
+                studentEchoSyncPanelHoldPointerDown(e);
+            });
         })();
 
         window.toggleRecord = async function() {
@@ -9457,9 +9518,11 @@
                     clearTimeout(practiceBtnHoldDelayTimer);
                     practiceBtnHoldDelayTimer = null;
                 }
+                const playBeepAfterMicFromStopBtn = practiceBtnHoldRecordingActive || echoHoldPointerDown;
                 const needResumeVerse = verseWasPlayingBeforeHold;
                 const endPracticeAfter = studentEchoPracticeSessionActive && !studentEchoPostVersePhase;
                 stopEchoHoldSegmentRecording().then(() => {
+                    if (playBeepAfterMicFromStopBtn) playStudentEchoBeep();
                     practiceBtnHoldRecordingActive = false;
                     echoHoldPointerDown = false;
                     const prBtn = document.getElementById('studentVersePracticeBtn');
@@ -9797,6 +9860,11 @@
                     audio.load();
                     _reviewReviewPlayingYellow = false;
                     reviewModalResetYellowSideBtn();
+                } else if (audio.src && audio.src !== _reviewMainGreenUrl) {
+                    /* Nach Teilstück-Play wieder vollständige Schüler-Aufnahme (grün) laden */
+                    audio.pause();
+                    audio.src = _reviewMainGreenUrl;
+                    audio.load();
                 }
                 if (audio.paused) {
                     audio.play().catch(() => {});
