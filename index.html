@@ -836,17 +836,6 @@
         </div>
     </div>
 
-    <div id="guest-register-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:5001; overflow-y:auto; padding:15px; box-sizing:border-box;" onclick="if(event.target===this) hideGuestRegisterModal()">
-        <div class="verse-list-content" onclick="event.stopPropagation()" style="max-width:420px; margin:40px auto;">
-            <div class="verse-list-title" style="margin-bottom:15px;display:flex;align-items:center;justify-content:center;gap:10px;"><svg class="icon-mic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg><span>التسجيل الصوتي</span></div>
-            <div style="text-align:right; line-height:1.7; font-size:15px; color:#333; margin-bottom:20px;">
-                <p style="margin:0 0 12px 0;">يجب عليك التسجيل كطالب للتسجيل الصوتي.</p>
-                <p style="margin:0;">إذا رغبت، <a href="#" onclick="hideGuestRegisterModal(); showGuestRegistrationFlow(); return false;" style="color:var(--primary); font-weight:bold; text-decoration:underline;">انقر هنا</a> للتسجيل كطالب والحصول على رمز شخصي.</p>
-            </div>
-            <button class="verse-list-btn" onclick="hideGuestRegisterModal()">إغلاق</button>
-        </div>
-    </div>
-
     <div id="install-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:5001; overflow-y:auto; padding:15px; box-sizing:border-box;" onclick="if(event.target===this) hideInstallModal()">
         <div class="verse-list-content" onclick="event.stopPropagation()" style="max-width:400px; margin:20px auto;">
             <div class="verse-list-title">📱 إضافة إلى الشاشة الرئيسية</div>
@@ -948,7 +937,6 @@
             <button class="btn-admin-reset" onclick="resetAllLikes()">👍 تصفير كل الإعجابات</button>
             <button class="btn-admin-reset" onclick="deleteAllTeacherReplies()">↩️ حذف كل ردود المعلمين</button>
             <button class="btn-admin-reset btn-admin-delete-all" onclick="deleteAllPostsGlobal()">🗑️ حذف كل التسجيلات</button>
-            <button class="btn-admin-reset btn-admin-delete-all" onclick="deleteAllGuestData()" title="حذف تسجيلات الضيف وإعجاباته ومشاهداته وقائمة الحفظ">🗑️ حذف كل بيانات الضيف</button>
         </div>
     </div>
 
@@ -1060,13 +1048,13 @@
                     <div class="setting-group view-count-in-settings" onclick="showViewers()" title="مشاهدة"><span>تكرار</span><span id="viewCount">0</span></div>
                 </div>
                 <div class="verse-rec-buttons-wrap" id="verseRecButtonsWrap">
-                <div class="verse-mic-col">
+                <div class="verse-mic-col" id="recBtnColumnWrap">
                 <button type="button" id="recBtn" class="btn btn-rec" onclick="toggleRecord()" title="تسجيل تلاوة كاملة" aria-label="تسجيل"><svg class="icon-mic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
-                <span class="verse-mic-label" id="recBtnSubLabel">رد عادي</span>
+                <span class="verse-mic-label" id="recBtnSubLabel">تسجيل عادي</span>
                 </div>
                 <div class="verse-mic-col" id="studentVersePracticeWrap" style="display:none;">
                 <button type="button" id="studentVersePracticeBtn" class="btn btn-rec-yellow student-hold-rec-btn" title="نقرة: تشغيل المقطع مع المؤقت و«إنهاء». اضغط مطوّلاً أثناء التشغيل للتسجيل" aria-label="تمرين مع المقطع"><svg class="icon-mic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
-                <span class="verse-mic-label verse-mic-label-sync" id="studentVersePracticeSubLabel">رد متزامن</span>
+                <span class="verse-mic-label verse-mic-label-sync" id="studentVersePracticeSubLabel">تسجيل متزامن</span>
                 </div>
                 <button id="playBtn" class="btn btn-play" onclick="toggleSmartLoop()">▶</button>
                 </div>
@@ -1134,14 +1122,7 @@
         const TEACHER_FATHIA_PIN = "9797";
         const TEACHER_MAHDI_PIN = "9696";
         const MAINTENANCE_EXEMPT_STUDENT_PIN = "0860";
-        const RESERVED_PINS = ["9898", "1879", "9797", "9696", "0000"];
-        function isBlockedGuestAccount(uid, role, userData) {
-            if (uid === 'guest') return true;
-            const r = role != null ? role : (userData && userData.role);
-            if (r === 'guest') return true;
-            if (userData && userData.uid === 'guest') return true;
-            return false;
-        }
+        const RESERVED_PINS = ["9898", "1879", "9797", "9696"];
         function isPinExemptFromMaintenance(pin) {
             const p = pin != null ? String(pin).trim() : '';
             if (p.length !== 4) return false;
@@ -1377,25 +1358,9 @@
             document.getElementById('login-classic-mode').style.display = 'block';
             document.getElementById('pinInput').value = '';
         }
-        window.hideGuestRegisterModal = function() {
-            const m = document.getElementById('guest-register-modal');
-            if (m) m.style.display = 'none';
-        }
-        window.showGuestRegisterModal = function() {
-            const m = document.getElementById('guest-register-modal');
-            if (m) m.style.display = 'block';
-        }
-        window.showGuestRegistrationFlow = function() {
-            localStorage.removeItem('it9an_uid');
-            localStorage.removeItem('it9an_role');
-            localStorage.removeItem('it9an_name');
-            localStorage.removeItem('it9an_pin');
-            document.getElementById('login-screen').style.display = 'flex';
-            showClassicLogin();
-        }
         window.doLogout = async function() {
             const uid = localStorage.getItem('it9an_uid');
-            if (uid && uid !== 'admin_super' && uid !== 'guest') {
+            if (uid && uid !== 'admin_super') {
                 if (notifUnsubscribe) { try { notifUnsubscribe(); } catch(e){} notifUnsubscribe = null; }
                 if (window.db) {
                     try {
@@ -1665,7 +1630,7 @@
             if (addToHomeBtn) addToHomeBtn.style.display = (showPermBtns && !isStandalone) ? 'block' : 'none';
             if (pushBtn) pushBtn.style.display = showPermBtns ? 'block' : 'none';
             if (microBtn) microBtn.style.display = showPermBtns ? 'block' : 'none';
-            if (contactBtn) contactBtn.style.display = (myUid && myUid !== 'admin_super' && myUid !== 'guest') ? 'block' : 'none';
+            if (contactBtn) contactBtn.style.display = (myUid && myUid !== 'admin_super') ? 'block' : 'none';
             const grid = document.getElementById('stages-grid');
             if (!grid) return;
             grid.innerHTML = '';
@@ -1677,7 +1642,7 @@
                     const div = document.createElement('div');
                     div.className = 'stage-card stage-card-' + stage.id + (hasLessons ? '' : ' stage-card-disabled');
                     let progressHtml = '';
-                    if (hasLessons && myUid && myUid !== 'admin_super' && myUid !== 'guest' && userRole === 'student') {
+                    if (hasLessons && myUid && myUid !== 'admin_super' && userRole === 'student') {
                         try {
                             const prog = await getStageProgressForStudent(myUid, stage.id);
                             progressHtml = `<div class="stage-progress-wrap"><div class="stage-progress-bar"><div class="stage-progress-fill" style="width:${prog.percent}%"></div></div><div class="stage-progress-text">${prog.completed}/${prog.total} (${prog.percent}%)</div></div>`;
@@ -1827,7 +1792,7 @@
             invalidateCompletedVersesCache();
             const uid = localStorage.getItem('it9an_uid');
             const userRole = localStorage.getItem('it9an_role');
-            if (!uid || uid === 'admin_super' || uid === 'guest' || userRole !== 'student') return;
+            if (!uid || uid === 'admin_super' || userRole !== 'student') return;
             const verseBadge = document.getElementById('verseStatusBadge');
             if (verseBadge && verseBadge.style.display !== 'none') {
                 const completed = await fetchCompletedVersesForStudent(uid);
@@ -2260,7 +2225,7 @@
             const uid = localStorage.getItem('it9an_uid');
             const myName = localStorage.getItem('it9an_name');
             const isHidden = localStorage.getItem('it9an_hidden') === 'true';
-            if (uid && uid !== 'admin_super' && uid !== 'guest') {
+            if (uid && uid !== 'admin_super') {
                 try { await window.updateDoc(window.doc(window.db, "users", uid), { totalVerseViews: window.increment(1) }); } catch (e) {}
                 try {
                     const sRef = window.doc(window.db, "stats", getStatsDocId(currentStageId, currentGlobalFileId));
@@ -2400,7 +2365,7 @@
             if (!uid || !name || !role) return;
             if (!window.db) return;
             sessionRestoreAttempted = true;
-            if (isBlockedGuestAccount(uid, role, null)) {
+            if (uid === 'guest' || role === 'guest') {
                 try {
                     localStorage.removeItem('it9an_uid');
                     localStorage.removeItem('it9an_role');
@@ -2572,10 +2537,6 @@
             const btn = document.getElementById('pinLoginBtn');
             const pin = (pinInput && pinInput.value) ? pinInput.value.trim() : '';
             if (!pin || pin.length !== 4) { alert("الرجاء إدخال رمز من 4 أرقام"); return; }
-            if (pin === '0000') {
-                alert('تم إيقاف الدخول كضيف. سجّل كطالب من «إذا لم يكن لديك رمز» أو استخدم رمزك الشخصي.');
-                return;
-            }
             if (btn) { btn.disabled = true; btn.innerText = "جاري..."; }
             try {
             const isExemptFromMaintenance = isPinExemptFromMaintenance(pin);
@@ -2659,8 +2620,8 @@
             if (snap.empty) { alert("الرمز غير موجود"); if (btn) { btn.disabled = false; btn.innerText = "دخول"; } return; }
             const doc = snap.docs[0];
             const data = doc.data();
-            if (isBlockedGuestAccount(doc.id, data.role, data)) {
-                alert('تم إيقاف حساب الضيف. سجّل كطالب من الرابط أسفل شاشة الدخول.');
+            if (doc.id === 'guest' || data.role === 'guest') {
+                alert('هذا النوع من الحساب لم يعد متاحاً. سجّل كطالب من الرابط أسفل شاشة الدخول.');
                 if (btn) { btn.disabled = false; btn.innerText = "دخول"; }
                 return;
             }
@@ -2693,10 +2654,6 @@
         }
 
         function doLoginSuccess(uid, name, role, hideScreen, personalPin) {
-            if (isBlockedGuestAccount(uid, role, null)) {
-                alert('تم إيقاف وضع الضيف. استخدم التسجيل كطالب.');
-                return;
-            }
             localStorage.setItem('it9an_uid', uid);
             localStorage.setItem('it9an_auth', 'true');
             localStorage.setItem('it9an_name', name);
@@ -2707,7 +2664,7 @@
             document.dispatchEvent(new CustomEvent('it9an_session_restored'));
             syncLogoutGenerationAfterLogin();
             updateUIForRole();
-            if (uid !== 'guest') listenForNotifications();
+            listenForNotifications();
             setupForegroundPushHandler();
             showStagesView();
             (function runPushOpenInBackground() {
@@ -2727,7 +2684,7 @@
                 setTimeout(tryOpen, 400);
             })();
             window.scrollTo({ top: 0, behavior: 'smooth' });
-            if (uid && uid !== 'admin_super' && uid !== 'guest') requestPushPermissionAndSaveToken(uid, role, false, true);
+            if (uid && uid !== 'admin_super') requestPushPermissionAndSaveToken(uid, role, false, true);
             if (!_tokenRefreshListenerAdded) {
                 _tokenRefreshListenerAdded = true;
                 let pageHiddenAt = 0;
@@ -2741,7 +2698,7 @@
                     if (document.visibilityState !== 'visible') return;
                     const u = localStorage.getItem('it9an_uid');
                     const r = localStorage.getItem('it9an_role');
-                    if (!u || u === 'admin_super' || u === 'guest') return;
+                    if (!u || u === 'admin_super') return;
                     if (Notification.permission !== 'granted') return;
                     const hiddenMs = pageHiddenAt ? (Date.now() - pageHiddenAt) : 0;
                     const lastFcm = parseInt(localStorage.getItem('it9an_fcm_last_refresh') || '0', 10);
@@ -2762,7 +2719,7 @@
                     if (document.visibilityState !== 'visible') return;
                     const u = localStorage.getItem('it9an_uid');
                     const r = localStorage.getItem('it9an_role');
-                    if (!u || u === 'admin_super' || u === 'guest') return;
+                    if (!u || u === 'admin_super') return;
                     if (Notification.permission !== 'granted') return;
                     requestPushPermissionAndSaveToken(u, r, false, true).then(function() { syncBadgeFromCache(); }).catch(function() { syncBadgeFromCache(); });
                 });
@@ -2778,7 +2735,7 @@
                     if (document.visibilityState !== 'visible') return;
                     const u = localStorage.getItem('it9an_uid');
                     const r = localStorage.getItem('it9an_role');
-                    if (!u || u === 'admin_super' || u === 'guest') return;
+                    if (!u || u === 'admin_super') return;
                     if (Notification.permission !== 'granted') return;
                     requestPushPermissionAndSaveToken(u, r, false, true).catch(function() {});
                 }, 15 * 60 * 1000);
@@ -2957,8 +2914,8 @@
                     showMaintenanceScreen();
                     return;
                 }
-                if (isBlockedGuestAccount(actualUid, role, urData)) {
-                    alert('تم إيقاف حساب الضيف.');
+                if (actualUid === 'guest' || role === 'guest' || (urData && urData.role === 'guest')) {
+                    alert('هذا النوع من الحساب لم يعد متاحاً. سجّل كطالب.');
                     return;
                 }
                 localStorage.removeItem('it9an_hidden');
@@ -2971,29 +2928,24 @@
             const role = localStorage.getItem('it9an_role');
             const uid = localStorage.getItem('it9an_uid');
             const recBtn = document.getElementById('recBtn');
+            const recCol = document.getElementById('recBtnColumnWrap');
             const adminMenuPanel = document.getElementById('adminMenuPanel');
             const adminPlayerPanel = document.getElementById('adminPlayerPanel');
             const notifContainer = document.querySelector('.notif-container');
+            function setRecColumnVisible(visible) {
+                if (recCol) recCol.style.display = visible ? 'flex' : 'none';
+                if (recBtn) recBtn.style.display = visible ? 'flex' : 'none';
+            }
 
             if (uid === 'admin_super') {
                 if(notifContainer) notifContainer.style.display = 'none';
-                recBtn.style.display = 'flex';
+                setRecColumnVisible(true);
                 recBtn.style.filter = '';
                 recBtn.style.opacity = '';
                 recBtn.style.cursor = '';
                 recBtn.title = '';
                 updateAppIconBadge(0);
                 getMaintenanceMode().then(on => updateMaintenanceButtonState(on));
-            } else if (uid === 'guest' || role === 'guest') {
-                if(notifContainer) notifContainer.style.display = 'none';
-                recBtn.style.display = 'flex';
-                recBtn.style.filter = '';
-                recBtn.style.opacity = '0.5';
-                recBtn.style.cursor = 'pointer';
-                recBtn.title = 'التسجيل مطلوب للتسجيل الصوتي - انقر للتفاصيل';
-                updateAppIconBadge(0);
-                if(adminMenuPanel) adminMenuPanel.style.display = 'none';
-                if(adminPlayerPanel) adminPlayerPanel.style.display = 'none';
             } else {
                 if(notifContainer) notifContainer.style.display = 'flex';
                 recBtn.style.filter = '';
@@ -3001,11 +2953,11 @@
                 recBtn.style.cursor = '';
                 recBtn.title = '';
                 if (role === 'student') {
-                    recBtn.style.display = 'flex';
+                    setRecColumnVisible(true);
                     if(adminMenuPanel) adminMenuPanel.style.display = 'none';
                     if(adminPlayerPanel) adminPlayerPanel.style.display = 'none';
                 } else {
-                    recBtn.style.display = 'none'; 
+                    setRecColumnVisible(false);
                     if(adminMenuPanel) adminMenuPanel.style.display = 'none';
                     if(adminPlayerPanel) adminPlayerPanel.style.display = 'none';
                 }
@@ -4616,7 +4568,7 @@
             if (_foregroundPushSetup) return;
             if (!('Notification' in window) || Notification.permission !== 'granted') return;
             const uid = localStorage.getItem('it9an_uid');
-            if (!uid || uid === 'guest') return;
+            if (!uid) return;
             try {
                 const messaging = window.getMessaging(window.firebaseApp);
                 window.onMessage(messaging, (payload) => {
@@ -4752,14 +4704,14 @@
         window.enablePushNotifications = function() {
             const uid = localStorage.getItem('it9an_uid');
             const role = localStorage.getItem('it9an_role');
-            if (!uid || uid === 'admin_super' || uid === 'guest') return;
+            if (!uid || uid === 'admin_super') return;
             requestPushPermissionAndSaveToken(uid, role, true);
         };
 
         window.it9anRefreshFcmTokenSilent = function(optForce) {
             const uid = localStorage.getItem('it9an_uid');
             const role = localStorage.getItem('it9an_role');
-            if (!uid || uid === 'admin_super' || uid === 'guest') return Promise.resolve(false);
+            if (!uid || uid === 'admin_super') return Promise.resolve(false);
             return requestPushPermissionAndSaveToken(uid, role, false, optForce === true);
         };
 
@@ -4885,7 +4837,7 @@
         function hasUnlistenedNotificationsForStage(stageId) {
             const uid = localStorage.getItem('it9an_uid');
             const role = localStorage.getItem('it9an_role');
-            if (!uid || uid === 'guest' || role !== 'student') return false;
+            if (!uid || role !== 'student') return false;
             const raw = lastRawNotifsGlobal || [];
             const sid = stageId != null ? stageId : 4;
             return raw.some(n => {
@@ -4899,7 +4851,7 @@
 
         function getMyRepetitionCountForCurrentVerse() {
             const uid = localStorage.getItem('it9an_uid');
-            if (!uid || uid === 'guest') return 0;
+            if (!uid) return 0;
             const data = window.currentViewersData || { viewers: {} };
             const v = data.viewers && data.viewers[uid];
             return (v && v.count) || 0;
@@ -4932,7 +4884,7 @@
             const role = localStorage.getItem('it9an_role');
             const uid = localStorage.getItem('it9an_uid');
             let count;
-            if (role === 'student' && uid && uid !== 'guest') {
+            if (role === 'student' && uid) {
                 count = getMyRepetitionCountForCurrentVerse();
                 el.style.color = '#fff';
                 el.style.padding = '2px 8px';
@@ -4975,7 +4927,7 @@
         function studentHasUnfinishedRecordingOnCurrentVerse() {
             const myUid = localStorage.getItem('it9an_uid');
             const role = localStorage.getItem('it9an_role');
-            if (role !== 'student' || !myUid || myUid === 'guest') return false;
+            if (role !== 'student' || !myUid) return false;
             return studentHasUnfinishedAmongPosts(allLoadedPosts, myUid, currentGlobalFileId, currentStageId);
         }
         async function studentHasUnfinishedRecordingForVerseServer(fileIdStr, stageIdNum, studentUid) {
@@ -4993,7 +4945,7 @@
             if (!recBtn || !playerView || playerView.style.display !== 'block') return;
             const role = localStorage.getItem('it9an_role');
             const uid = localStorage.getItem('it9an_uid');
-            if (role !== 'student' || !uid || uid === 'guest') return;
+            if (role !== 'student' || !uid) return;
             const notifBlocked = hasUnlistenedNotificationsForStage(currentStageId);
             const pendingTeacher = studentHasUnfinishedRecordingOnCurrentVerse();
             const repCount = getMyRepetitionCountForCurrentVerse();
@@ -5124,7 +5076,7 @@
         window.updateStageNotifBadges = function() {
             const uid = localStorage.getItem('it9an_uid');
             const role = localStorage.getItem('it9an_role');
-            if (!uid || uid === 'admin_super' || uid === 'guest') return;
+            if (!uid || uid === 'admin_super') return;
             const raw = lastRawNotifsGlobal || [];
             for (const stage of (typeof STAGES_CONFIG !== 'undefined' ? STAGES_CONFIG : [])) {
                 const count = raw.filter(n => {
@@ -5325,7 +5277,7 @@
         function renderAdminMessageContent(d, isAdmin, myUid) {
             document.getElementById('adminMessageContent').innerText = d.text || '';
             const isPrivate = d.to && d.to !== 'teachers';
-            const canReply = isPrivate && (d.to === myUid || d.senderUid === myUid || isAdmin) && myUid !== 'guest';
+            const canReply = isPrivate && (d.to === myUid || d.senderUid === myUid || isAdmin);
             document.getElementById('adminMsgReplyForm').style.display = canReply ? 'block' : 'none';
             const replies = d.replies || [];
             const repliesDiv = document.getElementById('adminMsgReplies');
@@ -5348,7 +5300,7 @@
             document.getElementById('adminMsgLikeCount').style.cursor = (isAdmin && likesCount > 0) ? 'pointer' : 'default';
             document.getElementById('adminMsgLikeCount').onclick = (isAdmin && likesCount > 0) ? () => showAdminMessageLikersById(currentAdminMessageId) : null;
             document.getElementById('adminMsgLikeBtn').innerText = isLiked ? '👍 تم الإعجاب' : '👍 أعجبني';
-            document.getElementById('adminMsgLikeBtn').style.display = (isAdmin || myUid === 'guest' ? 'none' : 'block');
+            document.getElementById('adminMsgLikeBtn').style.display = (isAdmin ? 'none' : 'block');
         }
         window.sendPrivateMessageToUser = async function(userUid) {
             if (localStorage.getItem('it9an_uid') !== 'admin_super') return;
@@ -5370,7 +5322,7 @@
             if (!currentAdminMessageId) return;
             const uid = localStorage.getItem('it9an_uid');
             const myName = (uid === 'admin_super') ? 'المسؤول' : (localStorage.getItem('it9an_name') || '');
-            if (!uid || uid === 'guest') return;
+            if (!uid) return;
             const textEl = document.getElementById('adminMsgReplyText');
             const txt = (textEl && textEl.value || '').trim();
             if (!txt) { alert('اكتب الرد أولاً'); return; }
@@ -5429,7 +5381,7 @@
         window.closeAdminMessageView = function() { if (adminMessageViewUnsub) adminMessageViewUnsub(); adminMessageViewUnsub = null; currentAdminMessageId = null; showView('menu-view'); renderMenu(); }
         window.showContactAdminView = async function() {
             const myUid = localStorage.getItem('it9an_uid');
-            if (!myUid || myUid === 'admin_super' || myUid === 'guest') return;
+            if (!myUid || myUid === 'admin_super') return;
             document.getElementById('menu-view').style.display = 'none';
             document.getElementById('player-view').style.display = 'none';
             document.getElementById('notifications-view').style.display = 'none';
@@ -5458,7 +5410,7 @@
         window.sendContactAdminFirstMessage = async function() {
             const myUid = localStorage.getItem('it9an_uid');
             const myName = localStorage.getItem('it9an_name') || '';
-            if (!myUid || myUid === 'admin_super' || myUid === 'guest') return;
+            if (!myUid || myUid === 'admin_super') return;
             const ta = document.getElementById('contactAdminFirstMsg');
             const text = (ta && ta.value || '').trim();
             if (!text) { alert('اكتب رسالتك أولاً'); return; }
@@ -5480,7 +5432,7 @@
             if (!currentAdminMessageId) return;
             const uid = localStorage.getItem('it9an_uid');
             const myName = localStorage.getItem('it9an_name');
-            if (!uid || uid === 'admin_super' || uid === 'guest') return;
+            if (!uid || uid === 'admin_super') return;
             const msgRef = window.doc(window.db, "adminMessages", currentAdminMessageId);
             const snap = await window.getDoc(msgRef);
             if (!snap.exists()) return;
@@ -5719,7 +5671,7 @@
             const myUid = localStorage.getItem('it9an_uid');
             const userRole = localStorage.getItem('it9an_role');
             let completedVerses = new Set();
-            if (myUid && myUid !== 'admin_super' && myUid !== 'guest' && userRole === 'student') {
+            if (myUid && myUid !== 'admin_super' && userRole === 'student') {
                 completedVerses = await fetchCompletedVersesForStudent(myUid);
             }
             KURS_DATEN.forEach((lek, index) => {
@@ -5821,7 +5773,7 @@
             const uid = localStorage.getItem('it9an_uid');
             const userRole = localStorage.getItem('it9an_role');
             let completedVerses = new Set();
-            if (uid && uid !== 'admin_super' && uid !== 'guest' && userRole === 'student') {
+            if (uid && uid !== 'admin_super' && userRole === 'student') {
                 completedVerses = await fetchCompletedVersesForStudent(uid);
             }
             for(let v = 1; v <= lesson.verse; v++) {
@@ -5898,8 +5850,8 @@
             const verseBadge = document.getElementById('verseStatusBadge');
             const userRole = localStorage.getItem('it9an_role');
             const navRow = document.querySelector('.nav-buttons-row');
-            if (navRow) navRow.classList.toggle('nav-buttons-center', userRole === 'teacher' || uid === 'admin_super' || uid === 'guest');
-            if (verseBadge && uid && uid !== 'admin_super' && uid !== 'guest' && userRole === 'student') {
+            if (navRow) navRow.classList.toggle('nav-buttons-center', userRole === 'teacher' || uid === 'admin_super');
+            if (verseBadge && uid && uid !== 'admin_super' && userRole === 'student') {
                 const completed = await fetchCompletedVersesForStudent(uid);
                 const isCompleted = completed.has(String(globalId));
                 verseBadge.style.display = 'block';
@@ -6144,7 +6096,7 @@
             let htmlContent = "";
             const isAdmin = (myUid === 'admin_super');
             const isTeacher = (userRole === 'teacher');
-            const isStudentView = userRole === 'student' && myUid && myUid !== 'admin_super' && myUid !== 'guest';
+            const isStudentView = userRole === 'student' && myUid && myUid !== 'admin_super';
             
             if (activePostFilter) {
                 htmlContent += `<button class="reset-filter-btn" onclick="clearFilter()">عرض الكل</button>`;
@@ -6185,12 +6137,11 @@
                     mainLikerNames = d.likes.map(l => stripYearFromName(typeof l === 'object' ? (l.name || 'مستخدم') : 'مستخدم'));
                 }
                 const isMyMainPost = (d.uid === myUid);
-                const isGuest = (myUid === 'guest');
                 let mainLikeClass = mainIsLikedByMe ? 'liked' : '';
                 let mainLikeAction = `likePost('${d.id}', '${d.uid}')`; // Pass owner UID
                 let mainCursor = 'pointer';
                 let mainLockedClass = '';
-                if (isMyMainPost || isGuest) { mainLikeAction = ''; mainLockedClass = 'locked'; mainCursor = 'not-allowed'; mainLikeClass += ' disabled'; }
+                if (isMyMainPost) { mainLikeAction = ''; mainLockedClass = 'locked'; mainCursor = 'not-allowed'; mainLikeClass += ' disabled'; }
 
                 const canTeacherRate = (isTeacher || isAdmin) && isStudentPost;
                 const ratingByOtherTeacher = teacherRating && teacherRating.uid !== myUid;
@@ -6235,7 +6186,7 @@
                         let rLikeAction = `likeReply('${d.id}', ${r.timestamp}, '${r.uid}')`;
                         let rNamesStr = rLikerNames.join('|||');
                         let rLockedClass = '';
-                        if (isMyReply || isGuest) { rLikeAction = ''; rLockedClass = 'locked'; rLikeClass += ' disabled'; }
+                        if (isMyReply) { rLikeAction = ''; rLockedClass = 'locked'; rLikeClass += ' disabled'; }
 
                         let rDeleteBtn = "";
                         if (isAdmin || isTeacher) {
@@ -6277,7 +6228,7 @@
                 const replyBtnWrap = ((userRole === 'teacher' || isAdmin) && isStudentPost && !hasTeacherReply) ? `<div class="feed-reply-wrap"><button class="reply-btn" onclick="startReply('${d.id}')">↩️ الرد</button>${syncReplyBtnHtml}</div>` : '';
                 let postDateStr = formatDateTime(d.timestamp);
                 const isSaved = savedIds.has(d.id);
-                const saveBtnHtml = (myUid && myUid !== 'admin_super' && myUid !== 'guest') ? `<button class="save-btn ${isSaved ? 'saved' : ''}" onclick="toggleSaveForLater('${d.id}', ${isSaved})" title="${isSaved ? 'إزالة من القائمة' : 'حفظ للمشاهدة لاحقاً'}"><svg class="save-icon" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></button>` : '';
+                const saveBtnHtml = (myUid && myUid !== 'admin_super') ? `<button class="save-btn ${isSaved ? 'saved' : ''}" onclick="toggleSaveForLater('${d.id}', ${isSaved})" title="${isSaved ? 'إزالة من القائمة' : 'حفظ للمشاهدة لاحقاً'}"><svg class="save-icon" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></button>` : '';
 
                 let mainActionHtml = '';
                 if (showRatingButtons) {
@@ -6370,7 +6321,7 @@
 
         window.toggleSaveForLater = async function(postId, isSaved) {
             const myUid = localStorage.getItem('it9an_uid');
-            if (!myUid || myUid === 'admin_super' || myUid === 'guest') return;
+            if (!myUid || myUid === 'admin_super') return;
             if (isSaved && !confirm("هل أنت متأكد؟ إزالة هذه التسجيل من قائمة «للمشاهدة لاحقاً»؟")) return;
             try {
                 const col = window.collection(window.db, "savedRecordings");
@@ -6637,10 +6588,6 @@
         }
 
         window.startSyncReply = async function(postId) {
-            if (localStorage.getItem('it9an_uid') === 'guest') {
-                showGuestRegisterModal();
-                return;
-            }
             if (!isSyncReplyEnvironmentSupported()) {
                 alert('الرد المتزامن غير مدعوم على هذا المتصفح أو الاتصال. استخدم «الرد» العادي أو متصفحاً محدّثاً عبر HTTPS.');
                 return;
@@ -7626,7 +7573,7 @@
         function shouldUseStudentEchoHoldMode() {
             if (localStorage.getItem('it9an_role') !== 'student') return false;
             const uid = localStorage.getItem('it9an_uid');
-            if (!uid || uid === 'guest') return false;
+            if (!uid) return false;
             if (replyTargetId) return false;
             if (hasUnlistenedNotificationsForStage(currentStageId)) return false;
             if (studentHasUnfinishedRecordingOnCurrentVerse()) return false;
@@ -7739,7 +7686,7 @@
             const role = localStorage.getItem('it9an_role');
             const uid = localStorage.getItem('it9an_uid');
             if (!prBtn) return;
-            if (role !== 'student' || !uid || uid === 'guest') {
+            if (role !== 'student' || !uid) {
                 if (prWrap) prWrap.style.display = 'none';
                 else prBtn.style.display = 'none';
                 return;
@@ -8034,7 +7981,7 @@
         async function maybeStartStudentEchoPostVerse() {
             const role = localStorage.getItem('it9an_role');
             const uid = localStorage.getItem('it9an_uid');
-            if (role !== 'student' || !uid || uid === 'guest') return false;
+            if (role !== 'student' || !uid) return false;
             if (replyTargetId) return false;
             if (!shouldUseStudentEchoHoldMode()) return false;
             if (studentEchoPostVersePhase) return false;
@@ -8707,10 +8654,6 @@
                 e.stopPropagation();
                 return;
             }
-            if (localStorage.getItem('it9an_uid') === 'guest') {
-                showGuestRegisterModal();
-                return;
-            }
             if (localStorage.getItem('it9an_role') !== 'student') return;
             const syncUi = document.getElementById('sync-reply-ui');
             if (syncUi && syncUi.style.display === 'flex') return;
@@ -8752,10 +8695,6 @@
         window.toggleRecord = async function() {
             const syncUi = document.getElementById('sync-reply-ui');
             if (syncUi && syncUi.style.display === 'flex') return;
-            if (localStorage.getItem('it9an_uid') === 'guest') {
-                showGuestRegisterModal();
-                return;
-            }
             if (studentEchoPracticeSessionActive) {
                 alert('أنهِ تمرين المقطع بزر «إنهاء» أولاً أو أكمِل التسجيل بعد انتهاء المقطع.');
                 return;
@@ -9638,13 +9577,13 @@
             }
             lbReturnSource = null; lbReturnToUid = null; lbReturnOffset = 0; lbReturnScrollToId = null; showView('menu-view'); renderMenu(); updateLbBackButton();
         } 
-        function showView(id) { document.getElementById('stages-view').style.display = 'none'; document.getElementById('menu-view').style.display = 'none'; document.getElementById('player-view').style.display = 'none'; document.getElementById('notifications-view').style.display = 'none'; document.getElementById('saved-list-view').style.display = 'none'; document.getElementById('lessons-view').style.display = 'none'; document.getElementById('admin-message-view').style.display = 'none'; const cn = document.getElementById('contact-admin-new-view'); if(cn) cn.style.display = 'none'; document.getElementById(id).style.display = (id === 'menu-view') ? 'grid' : 'block'; const logoutBtn = document.getElementById('logoutBtn'); if(logoutBtn) logoutBtn.style.display = 'none'; const menuBtn = document.getElementById('menuBtn'); if(menuBtn) menuBtn.style.display = (id === 'menu-view' || id === 'player-view') ? 'none' : 'flex'; const stagesBackBtn = document.getElementById('stagesBackBtn'); if(stagesBackBtn) stagesBackBtn.style.display = (id === 'menu-view') ? 'flex' : 'none'; const lessonsBackBtn = document.getElementById('lessonsBackBtn'); if(lessonsBackBtn) lessonsBackBtn.style.display = (id === 'player-view') ? 'flex' : 'none'; const uid = localStorage.getItem('it9an_uid'); const role = localStorage.getItem('it9an_role'); const notifContainer = document.querySelector('.notif-container'); if (notifContainer && uid !== 'admin_super' && uid !== 'guest' && role !== 'guest') notifContainer.style.display = 'flex'; const skipScroll = (id === 'menu-view' && lbPendingRestore) || (id === 'player-view' && activePostFilter); if (!skipScroll) window.scrollTo({ top: 0, behavior: 'smooth' }); }
+        function showView(id) { document.getElementById('stages-view').style.display = 'none'; document.getElementById('menu-view').style.display = 'none'; document.getElementById('player-view').style.display = 'none'; document.getElementById('notifications-view').style.display = 'none'; document.getElementById('saved-list-view').style.display = 'none'; document.getElementById('lessons-view').style.display = 'none'; document.getElementById('admin-message-view').style.display = 'none'; const cn = document.getElementById('contact-admin-new-view'); if(cn) cn.style.display = 'none'; document.getElementById(id).style.display = (id === 'menu-view') ? 'grid' : 'block'; const logoutBtn = document.getElementById('logoutBtn'); if(logoutBtn) logoutBtn.style.display = 'none'; const menuBtn = document.getElementById('menuBtn'); if(menuBtn) menuBtn.style.display = (id === 'menu-view' || id === 'player-view') ? 'none' : 'flex'; const stagesBackBtn = document.getElementById('stagesBackBtn'); if(stagesBackBtn) stagesBackBtn.style.display = (id === 'menu-view') ? 'flex' : 'none'; const lessonsBackBtn = document.getElementById('lessonsBackBtn'); if(lessonsBackBtn) lessonsBackBtn.style.display = (id === 'player-view') ? 'flex' : 'none'; const uid = localStorage.getItem('it9an_uid'); const role = localStorage.getItem('it9an_role'); const notifContainer = document.querySelector('.notif-container'); if (notifContainer && uid !== 'admin_super') notifContainer.style.display = 'flex'; const skipScroll = (id === 'menu-view' && lbPendingRestore) || (id === 'player-view' && activePostFilter); if (!skipScroll) window.scrollTo({ top: 0, behavior: 'smooth' }); }
         
         window.rateStudentPost = async function(postId, verdict) {
             const uid = localStorage.getItem('it9an_uid');
             const myName = localStorage.getItem('it9an_name');
             const myRole = localStorage.getItem('it9an_role');
-            if (!uid || uid === 'guest' || (myRole !== 'teacher' && uid !== 'admin_super')) return;
+            if (!uid || (myRole !== 'teacher' && uid !== 'admin_super')) return;
             if (verdict !== 'accepted' && verdict !== 'needs_improvement') return;
             try {
                 const postRef = window.doc(window.db, "posts", postId);
@@ -9691,7 +9630,7 @@
         window.likePost = async (id, ownerUid) => { 
             const uid = localStorage.getItem('it9an_uid'); const myName = localStorage.getItem('it9an_name');
             const myRole = localStorage.getItem('it9an_role');
-            if(!uid || uid === 'guest') return; 
+            if(!uid) return; 
             const postRef = window.doc(window.db, "posts", id);
             const docSnap = await window.getDoc(postRef);
             if (docSnap.exists()) {
@@ -9719,7 +9658,7 @@
 
         window.likeReply = async (postId, replyTimestamp, ownerUid) => {
             const uid = localStorage.getItem('it9an_uid'); const myName = localStorage.getItem('it9an_name');
-            if(!uid || uid === 'guest') return;
+            if(!uid) return;
             const postRef = window.doc(window.db, "posts", postId);
             const docSnap = await window.getDoc(postRef);
             if (docSnap.exists()) {
@@ -9924,82 +9863,6 @@
                 alert("تم حذف " + removed + " رد معلم. تم تصفير أعداد المعلمين.");
             } catch(e) { alert("خطأ: " + (e.message || e)); }
         }
-
-        window.deleteAllGuestData = async function() {
-            if (localStorage.getItem('it9an_uid') !== 'admin_super') return;
-            if (!confirm("هل أنت متأكد من حذف جميع بيانات الضيف؟ (تسجيلات، إعجابات، مشاهدات، قائمة الحفظ)")) return;
-            try {
-                const uid = 'guest';
-                const postsQ = window.query(window.collection(window.db, "posts"));
-                const postsSnap = await window.getDocs(postsQ);
-
-                for (const docSnap of postsSnap.docs) {
-                    const data = docSnap.data();
-                    if (data.uid === uid) {
-                        if (data.replies) {
-                            for (const r of data.replies) {
-                                if (r.uid && r.uid !== uid) {
-                                    try { await window.updateDoc(window.doc(window.db, "users", r.uid), { totalRepliesCount: window.increment(-1), totalLikes: window.increment(-((r.likes && r.likes.length) || 0)) }); } catch(e){}
-                                }
-                            }
-                        }
-                        const notifQ = window.query(window.collection(window.db, "notifications"), window.where("postId", "==", docSnap.id));
-                        const notifSnap = await window.getDocs(notifQ);
-                        for (const nd of notifSnap.docs) await window.deleteDoc(window.doc(window.db, "notifications", nd.id));
-                        await deleteSavedRecordingsForPost(docSnap.id);
-                        if (data.audioUrl) await cleanupAudioFile(data.audioUrl);
-                        if (data.echoMixAudioUrl) await cleanupAudioFile(data.echoMixAudioUrl);
-                        if (data.replies) for (let r of data.replies) if (r.audioUrl) await cleanupAudioFile(r.audioUrl);
-                        await window.deleteDoc(docSnap.ref);
-                    } else {
-                        const likedMain = data.likes && data.likes.some(l => (typeof l === 'object' ? l.uid : l) === uid);
-                        let likedReplies = 0;
-                        if (data.replies) data.replies.forEach(r => { if (r.likes && r.likes.some(l => (typeof l === 'object' ? l.uid : l) === uid)) likedReplies++; });
-                        if (likedMain && data.uid) { try { await window.updateDoc(window.doc(window.db, "users", data.uid), { totalLikes: window.increment(-1) }); } catch(e){} }
-                        if (likedReplies > 0 && data.replies) {
-                            const authorsToDec = {};
-                            data.replies.forEach(r => { if (r.likes && r.likes.some(l => (typeof l === 'object' ? l.uid : l) === uid) && r.uid) authorsToDec[r.uid] = (authorsToDec[r.uid] || 0) + 1; });
-                            for (const [au, c] of Object.entries(authorsToDec)) { try { await window.updateDoc(window.doc(window.db, "users", au), { totalLikes: window.increment(-c) }); } catch(e){} }
-                        }
-                        const newLikes = (data.likes || []).filter(l => (typeof l === 'object' ? l.uid : l) !== uid);
-                        const newReplies = (data.replies || []).map(r => {
-                            if (!r.likes) return r;
-                            const rNewLikes = r.likes.filter(l => (typeof l === 'object' ? l.uid : l) !== uid);
-                            return rNewLikes.length !== r.likes.length ? { ...r, likes: rNewLikes } : r;
-                        });
-                        const updates = {};
-                        if (newLikes.length !== (data.likes || []).length) updates.likes = newLikes;
-                        const hasRepliesLikeChange = newReplies.some((r, i) => (r.likes || []).length !== ((data.replies || [])[i]?.likes || []).length);
-                        if (hasRepliesLikeChange) updates.replies = newReplies;
-                        if (Object.keys(updates).length > 0) await window.updateDoc(docSnap.ref, updates);
-                    }
-                }
-
-                const statsQ = window.query(window.collection(window.db, "stats"));
-                const statsSnap = await window.getDocs(statsQ);
-                for (const sDoc of statsSnap.docs) {
-                    const sData = sDoc.data();
-                    const viewers = sData.viewers && typeof sData.viewers === 'object' && !Array.isArray(sData.viewers) ? sData.viewers : {};
-                    if (viewers[uid]) {
-                        const userCount = (viewers[uid].count || 0);
-                        const updates = { [`viewers.${uid}`]: window.deleteField(), totalRepetitions: window.increment(-userCount), verseViewCount: window.increment(-1) };
-                        try { await window.updateDoc(sDoc.ref, updates); } catch(e){}
-                    }
-                }
-
-                const savedQ = window.query(window.collection(window.db, "savedRecordings"), window.where("uid", "==", uid));
-                const savedSnap = await window.getDocs(savedQ);
-                for (const d of savedSnap.docs) await window.deleteDoc(d.ref);
-
-                const notifToGuestQ = window.query(window.collection(window.db, "notifications"), window.where("to", "==", uid));
-                const notifToGuestSnap = await window.getDocs(notifToGuestQ);
-                for (const nd of notifToGuestSnap.docs) await window.deleteDoc(window.doc(window.db, "notifications", nd.id));
-
-                loadLeaderboard();
-                if (localStorage.getItem('it9an_uid') === 'admin_super') loadTeachersLeaderboard();
-                alert("تم حذف جميع بيانات الضيف");
-            } catch(e) { console.error(e); alert("خطأ: " + (e.message || e)); }
-        };
 
         window.deleteAllPostsGlobal = async function() {
             if(confirm("⚠️ تحذير خطير: هل أنت متأكد من حذف جميع التسجيلات في التطبيق؟ لا يمكن التراجع!")) {
@@ -10268,7 +10131,7 @@
                 });
                 loadFeed(currentGlobalFileId);
                 const userRole = localStorage.getItem('it9an_role');
-                if (uid && uid !== 'admin_super' && uid !== 'guest' && userRole === 'student') {
+                if (uid && uid !== 'admin_super' && userRole === 'student') {
                     if (unsubscribeCompletedVerses) unsubscribeCompletedVerses();
                     const q = window.query(window.collection(window.db, "posts"), window.where("uid", "==", uid));
                     unsubscribeCompletedVerses = window.onSnapshot(q, () => {

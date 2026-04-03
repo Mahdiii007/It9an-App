@@ -581,7 +581,7 @@ async function getStudentFcmTokens(db) {
   for (const doc of allTokensSnap.docs) {
     const d = doc.data();
     const uid = d.uid || doc.id;
-    if (teacherUids.has(uid) || uid === 'admin_super' || uid === 'guest') continue;
+    if (teacherUids.has(uid) || uid === 'admin_super') continue;
     const tok = d.token;
     if (tok && !seenTok.has(tok)) {
       seenTok.add(tok);
@@ -598,7 +598,7 @@ async function getTeacherFcmTokens(db) {
   for (const doc of q.docs) {
     const d = doc.data();
     const uid = d.uid || doc.id;
-    if (uid === 'admin_super' || uid === 'guest') continue;
+    if (uid === 'admin_super') continue;
     const tok = d.token;
     if (tok && !seenTok.has(tok)) {
       seenTok.add(tok);

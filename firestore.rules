@@ -4,6 +4,7 @@ service cloud.firestore {
     // PIN-Login ohne Firebase Auth. Offene Rules, damit die App ohne App-Check-Site-Key funktioniert.
     // Strenger (nur mit gültigem App Check): Inhalt von non Github/firestore.rules.strict hier einfügen
     // und deployen — erst nachdem FIREBASE_APP_CHECK_SITE_KEY in index.html gesetzt ist (APP-CHECK-EINRICHTUNG.txt).
+    // Gastmodus (uid/role "guest") ist entfernt; alte Daten optional: `npm run cleanup-guest -- --yes` in functions/.
 
     match /users/{userId} {
       allow read, write: if true;
