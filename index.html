@@ -8062,19 +8062,25 @@
             const ordered = reviewEchoEditableOrderedBlobs;
             const fid = reviewEchoEditableFileId;
             const ranges = reviewEchoEditableRanges;
-            if (!ordered.length || fid == null || ranges.length !== ordered.length) return;
             const hasTail = reviewEchoEditableHasTail;
+            const expectedOrderedLen = ranges.length + (hasTail ? 1 : 0);
+            if (!ordered.length || fid == null || ranges.length === 0 || ordered.length !== expectedOrderedLen) return;
             const segsOnly = hasTail && ordered.length > 0 ? ordered.slice(0, -1) : ordered.slice();
             const tailB = hasTail && ordered.length > 0 ? ordered[ordered.length - 1] : null;
             try {
                 const greenBlob = await mergeStudentEchoSegmentsAndTailWav(segsOnly, 1, (tailB && tailB.size > 0) ? tailB : null);
-                const built = await buildEchoPracticeYellowAndVerseStrips(fid, ranges, ordered, 1);
+                const studentPartsForStripBuild = hasTail && ordered.length > 0 ? ordered.slice(0, -1) : ordered.slice();
+                if (studentPartsForStripBuild.length !== ranges.length) {
+                    alert('تعذّر تحديث معاينة أجزاء المقطع.');
+                    return;
+                }
+                const built = await buildEchoPracticeYellowAndVerseStrips(fid, ranges, studentPartsForStripBuild, 1);
                 const verseStrips = built.verseStripWavs || [];
                 if (!greenBlob || greenBlob.size === 0) {
                     alert('تعذّر دمج التسجيل بعد التعديل.');
                     return;
                 }
-                if (!verseStrips.length || verseStrips.length !== ordered.length) {
+                if (!verseStrips.length || verseStrips.length !== ranges.length) {
                     alert('تعذّر تحديث معاينة أجزاء المقطع.');
                     return;
                 }
@@ -8082,7 +8088,7 @@
                 reviewBlobYellow = null;
                 reviewYellowEnabled = false;
                 reviewEchoStripVerseBlobs = verseStrips;
-                reviewEchoStripStudentBlobs = ordered;
+                reviewEchoStripStudentBlobs = studentPartsForStripBuild.slice();
                 reviewStripSegmentBlobs = segsOnly.slice();
                 currentBlob = greenBlob;
                 showReviewModal();
@@ -8214,7 +8220,7 @@
         window.openReviewEchoSegmentRetake = function(segIndex) {
             if (!reviewOpenedFromEchoPractice) return;
             if (!reviewEchoEditableOrderedBlobs.length || segIndex < 0 || segIndex >= reviewEchoEditableOrderedBlobs.length) return;
-            if (reviewEchoEditableRanges.length !== reviewEchoEditableOrderedBlobs.length) return;
+            if (segIndex >= reviewEchoEditableRanges.length) return;
             bindReviewEchoRetakeOverlayOnce();
             reviewEchoRetakeIndex = segIndex;
             const ov = document.getElementById('review-echo-retake-overlay');
@@ -8255,17 +8261,23 @@
             try {
                 greenBlob = await mergeStudentEchoSegmentsAndTailWav(segs, 1, tailPart);
                 if (!greenBlob && tailPart) greenBlob = tailPart;
-                const useSliced = fid != null && rangesSnapshot.length === orderedForBuild.length && orderedForBuild.length > 0;
+                const nSeg = segs.length;
+                const nRng = rangesSnapshot.length;
+                const studentPartsForStripBuild = tailPart ? orderedForBuild.slice(0, -1) : orderedForBuild.slice();
+                const useSliced = fid != null && nSeg > 0 && nRng === nSeg && (
+                    (!tailPart && orderedForBuild.length === nSeg) ||
+                    (!!tailPart && orderedForBuild.length === nSeg + 1)
+                );
                 if (useSliced) {
                     reviewEchoEditableFileId = fid;
                     reviewEchoEditableRanges = rangesSnapshot.map(r => ({ startSec: r.startSec, endSec: r.endSec }));
                     reviewEchoEditableHasTail = !!tailPart;
                     reviewEchoEditableOrderedBlobs = orderedForBuild.slice();
-                    const built = await buildEchoPracticeYellowAndVerseStrips(fid, reviewEchoEditableRanges, orderedForBuild, 1);
+                    const built = await buildEchoPracticeYellowAndVerseStrips(fid, reviewEchoEditableRanges, studentPartsForStripBuild, 1);
                     const vStrips = built.verseStripWavs || [];
-                    if (vStrips.length === orderedForBuild.length) {
+                    if (vStrips.length === studentPartsForStripBuild.length) {
                         reviewEchoStripVerseBlobs = vStrips;
-                        reviewEchoStripStudentBlobs = reviewEchoEditableOrderedBlobs;
+                        reviewEchoStripStudentBlobs = studentPartsForStripBuild.slice();
                     } else {
                         clearReviewEchoEditableState();
                     }
@@ -9652,8 +9664,10 @@
                     _reviewStripVerseUrls[i] = vu;
                     _reviewStripStudentUrls[i] = su;
                 });
-                const retakeOk = reviewEchoEditableOrderedBlobs.length === reviewEchoStripVerseBlobs.length && reviewEchoEditableOrderedBlobs.length > 0;
-                stripsHtml = reviewEchoStripVerseBlobs.map((_, i) => `<div class="review-strip-row"><span>تسجيل جزئي ${i + 1}</span><div class="review-strip-btns"><button type="button" class="review-strip-play review-strip-green" onclick="reviewModalPlayStripVerse(${i})" title="جزء المقطع" aria-label="مقطع">▶</button><button type="button" class="review-strip-play review-strip-yellow" onclick="reviewModalPlayStripStudent(${i})" title="تسجيل الطالب" aria-label="تلميذ">▶</button>${retakeOk ? `<button type="button" class="review-strip-retake-btn" onclick="openReviewEchoSegmentRetake(${i})" title="إعادة تسجيل هذا الجزء">🔄 إعادة</button>` : ''}</div></div>`).join('');
+                const retakeOk = reviewEchoEditableRanges.length > 0
+                    && reviewEchoStripVerseBlobs.length === reviewEchoEditableRanges.length
+                    && reviewEchoEditableOrderedBlobs.length >= reviewEchoEditableRanges.length;
+                stripsHtml = reviewEchoStripVerseBlobs.map((_, i) => `<div class="review-strip-row"><span>تسجيل جزئي ${i + 1}</span><div class="review-strip-btns"><button type="button" class="review-strip-play review-strip-green" onclick="reviewModalPlayStripVerse(${i})" title="جزء المقطع" aria-label="مقطع">▶</button><button type="button" class="review-strip-play review-strip-yellow" onclick="reviewModalPlayStripStudent(${i})" title="تسجيل الطالب" aria-label="تلميذ">▶</button>${retakeOk && i < reviewEchoEditableRanges.length ? `<button type="button" class="review-strip-retake-btn" onclick="openReviewEchoSegmentRetake(${i})" title="إعادة تسجيل هذا الجزء">🔄 إعادة</button>` : ''}</div></div>`).join('');
             } else if (reviewStripSegmentBlobs.length > 0) {
                 reviewStripSegmentBlobs.forEach((b, i) => {
                     const ug = URL.createObjectURL(b);
