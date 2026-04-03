@@ -27,8 +27,8 @@
 # „Error: Can't find the storage bucket region“: in onObjectFinalized kein „bucket:“ setzen (Standard-Bucket).
 #   In firebase.json genau EIN Eintrag mit dem echten Default-Bucket (…firebasestorage.app), damit die CLI die Region findet.
 #
-# „Error Precondition failed“ (v. a. sendQuranReminderScheduled*): Cloud Scheduler — Deploy einfach erneut ausführen oder
-#   FIREBASE_DEPLOY_RETRIES=3 ./scripts/deploy-firebase.sh
+# „Error Precondition failed“ / HTTP 409 „unable to queue“: Cloud Scheduler / API — deploy-firebase wiederholt automatisch
+#   (Standard 3 Versuche; 409-Zweitpass nur functions). Manuell: FIREBASE_DEPLOY_RETRIES=5 ./scripts/deploy-firebase.sh
 #
 # GitHub Pages startet nur bei einem Push mit neuem Commit auf main/master.
 #   Keine lokalen Änderungen? FORCE_GITHUB_PAGES=1 ./scripts/deploy-all.sh

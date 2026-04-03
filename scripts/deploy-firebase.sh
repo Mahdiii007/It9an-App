@@ -54,8 +54,12 @@ if [[ "${DEBUG:-0}" == "1" ]] || [[ "${FIREBASE_DEBUG:-0}" == "1" ]]; then
   FB_BASE+=(--debug)
 fi
 
-# Parallele Cloud-Scheduler-Updates können „Precondition failed“ liefern — optional wiederholen (Standard: 2 Versuche).
-FB_RETRIES="${FIREBASE_DEPLOY_RETRIES:-2}"
+# Parallele Cloud-Scheduler-Updates können „Precondition failed“ liefern — optional wiederholen (Standard: 3 Versuche).
+FB_RETRIES="${FIREBASE_DEPLOY_RETRIES:-3}"
+deploy_log="$(mktemp "${TMPDIR:-/tmp}/fb-deploy-log.XXXXXX")"
+cleanup_deploy_log() { rm -f "$deploy_log"; }
+trap cleanup_deploy_log EXIT
+
 fb_run_deploy() {
   if [[ -n "${FIREBASE_ONLY:-}" ]]; then
     echo "${FIREBASE_CMD[*]} ${FB_BASE[*]} --only ${FIREBASE_ONLY}"
@@ -68,10 +72,24 @@ fb_run_deploy() {
 attempt=1
 while true; do
   set +e
-  fb_run_deploy
-  st=$?
+  fb_run_deploy 2>&1 | tee "$deploy_log"
+  st="${PIPESTATUS[0]}"
   set -e
   if [[ "$st" -eq 0 ]]; then
+    # Manche CLI-Versionen beenden mit 0, obwohl einzelne Functions „HTTP 409, unable to queue“ melden.
+    if [[ "${FIREBASE_SKIP_409_FUNCTIONS_RETRY:-0}" != "1" ]] && grep -q "HTTP Error: 409" "$deploy_log" 2>/dev/null && { [[ -z "${FIREBASE_ONLY:-}" ]] || [[ "${FIREBASE_ONLY}" == *"functions"* ]]; }; then
+      echo ""
+      echo "firebase deploy: HTTP 409 bei mindestens einer Function — zweiter Pass nur „functions“ in 35s …"
+      sleep 35
+      set +e
+      echo "${FIREBASE_CMD[*]} ${FB_BASE[*]} --only functions"
+      "${FIREBASE_CMD[@]}" "${FB_BASE[@]}" --only functions 2>&1 | tee -a "$deploy_log"
+      st409="${PIPESTATUS[0]}"
+      set -e
+      if [[ "$st409" -ne 0 ]]; then
+        echo "Hinweis: Zweiter Pass „functions“ endete mit exit $st409 — bei Bedarf Deploy erneut ausführen."
+      fi
+    fi
     break
   fi
   if [[ "$attempt" -ge "$FB_RETRIES" ]]; then

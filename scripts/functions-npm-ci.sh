@@ -9,6 +9,7 @@ FUNCS="${ROOT}/functions"
 cd "$FUNCS"
 
 export NPM_CONFIG_AUDIT=false
+# npm 11: „Unknown env config devdir“ kommt oft aus ~/.npmrc — dort veralteten Eintrag entfernen: npm config delete devdir -g
 TRASH=""
 
 run_ci() {

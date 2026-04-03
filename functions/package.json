@@ -10,7 +10,7 @@
     "gcp-build": "node tools/ensure-ffmpeg-linux.js"
   },
   "engines": {
-    "node": "22"
+    "node": "22 || 24"
   },
   "main": "index.js",
   "dependencies": {
