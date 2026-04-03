@@ -4904,6 +4904,28 @@
             const v = data.viewers && data.viewers[uid];
             return (v && v.count) || 0;
         }
+        /** مراحل 1–3: 30 تكراراً كحد أدنى للتسجيل؛ 4 و5: 20 */
+        function getMinRepetitionsForRecording(stageId) {
+            const id = stageId != null ? Number(stageId) : Number(currentStageId);
+            if (id >= 1 && id <= 3) return 30;
+            return 20;
+        }
+        /** ألوان شارة التكرار: للمراحل 1–3 حدود 0–14 / 15–29 / من 30 فما فوق؛ للمرحلتين 4 و5 كالسابق 0–9 / 10–19 / 20+ */
+        function getRepetitionCountHeatBackground(count, stageId) {
+            const id = stageId != null ? Number(stageId) : Number(currentStageId);
+            if (id >= 1 && id <= 3) {
+                if (count <= 14) return '#c0392b';
+                if (count < 30) return '#c9a227';
+                return 'var(--primary)';
+            }
+            if (count <= 9) return '#c0392b';
+            if (count <= 19) return '#c9a227';
+            return 'var(--primary)';
+        }
+        function getRecRepetitionsAlertMessage(stageId) {
+            const min = getMinRepetitionsForRecording(stageId);
+            return 'معلمو هذه المنصة متفقون على أن الطلاب يُفضّل أن يكرّروا المقاطع ' + min + ' مرة على الأقل قبل البدء بالتسجيل. يُنصح بـ 100 تكرار على الأقل. بعد ' + min + ' تكرار يُفتح الميكروفون لهذا المقطع.';
+        }
         function updateViewCountDisplay(totalRepetitions) {
             const el = document.getElementById('viewCount');
             if (!el) return;
@@ -4915,9 +4937,7 @@
                 el.style.color = '#fff';
                 el.style.padding = '2px 8px';
                 el.style.borderRadius = '6px';
-                if (count <= 9) el.style.background = '#c0392b';
-                else if (count <= 19) el.style.background = '#c9a227';
-                else el.style.background = 'var(--primary)';
+                el.style.background = getRepetitionCountHeatBackground(count, currentStageId);
             } else {
                 count = totalRepetitions;
                 el.style.color = '';
@@ -4977,7 +4997,8 @@
             const notifBlocked = hasUnlistenedNotificationsForStage(currentStageId);
             const pendingTeacher = studentHasUnfinishedRecordingOnCurrentVerse();
             const repCount = getMyRepetitionCountForCurrentVerse();
-            const repBlocked = repCount < MIN_REPETITIONS_FOR_REC;
+            const minRep = getMinRepetitionsForRecording(currentStageId);
+            const repBlocked = repCount < minRep;
             if (notifBlocked) {
                 recBtn.style.filter = '';
                 recBtn.style.opacity = '0.5';
@@ -4993,7 +5014,7 @@
                 if (repBlocked) {
                     recBtn.style.opacity = '0.5';
                     recBtn.style.cursor = 'pointer';
-                    recBtn.title = `مطلوب ${MIN_REPETITIONS_FOR_REC} تكرار على الأقل - انقر للتفاصيل`;
+                    recBtn.title = `مطلوب ${minRep} تكرار على الأقل - انقر للتفاصيل`;
                 } else {
                     recBtn.style.opacity = '';
                     recBtn.style.cursor = '';
@@ -7601,8 +7622,6 @@
 
         const REC_BLOCKED_MSG = 'يرجى استخدام إشعارات الجرس لسماع جميع ردود المعلم لهذه المرحلة حتى النهاية. يمكنك التسجيل في هذه المرحلة مرة أخرى فقط عندما تكون جميع ردود المعلم قد سُمعت حتى النهاية. هكذا تتعلم بشكل أفضل.';
         const REC_PENDING_TEACHER_MSG = 'لديك بالفعل تسجيل تحت هذا المقطع لم يُقيِّمه المعلم بعد أو لم يُرَدَّ عليه صوتياً بعد. لا يمكنك بدء تسجيل جديد هنا حتى يُقيَّم كل تسجيلاتك لهذا المقطع ويصلك رد صوتي من المعلم على كل منها.\n\nإن أردت إعادة التسجيل من جديد، احذف أولاً التسجيل القديم غير المكتمل (زر الحذف 🗑️ بجانب تسجيلك في الخلاصة أدناه)، ثم يمكنك استخدام الميكروفون مرة أخرى.';
-        const MIN_REPETITIONS_FOR_REC = 20;
-        const REC_REPETITIONS_MSG = 'معلمو هذه المنصة متفقون على أن الطلاب يُفضّل أن يكرّروا المقاطع 20 مرة على الأقل قبل البدء بالتسجيل. يُنصح بـ 100 تكرار على الأقل. بعد 20 تكرار يُفتح الميكروفون لهذا المقطع.';
 
         function shouldUseStudentEchoHoldMode() {
             if (localStorage.getItem('it9an_role') !== 'student') return false;
@@ -7611,7 +7630,7 @@
             if (replyTargetId) return false;
             if (hasUnlistenedNotificationsForStage(currentStageId)) return false;
             if (studentHasUnfinishedRecordingOnCurrentVerse()) return false;
-            if (getMyRepetitionCountForCurrentVerse() < MIN_REPETITIONS_FOR_REC) return false;
+            if (getMyRepetitionCountForCurrentVerse() < getMinRepetitionsForRecording(currentStageId)) return false;
             return true;
         }
         function restoreEchoHoldIosPlaybackIfAny() {
@@ -7730,7 +7749,8 @@
             const notifBlocked = hasUnlistenedNotificationsForStage(currentStageId);
             const pendingTeacher = studentHasUnfinishedRecordingOnCurrentVerse();
             const repCount = getMyRepetitionCountForCurrentVerse();
-            const repBlocked = repCount < MIN_REPETITIONS_FOR_REC;
+            const minRep = getMinRepetitionsForRecording(currentStageId);
+            const repBlocked = repCount < minRep;
             prBtn.style.filter = '';
             if (notifBlocked) {
                 prBtn.style.opacity = '0.5';
@@ -7744,7 +7764,7 @@
             } else if (repBlocked) {
                 prBtn.style.opacity = '0.5';
                 prBtn.style.cursor = 'pointer';
-                prBtn.title = `مطلوب ${MIN_REPETITIONS_FOR_REC} تكرار على الأقل`;
+                prBtn.title = `مطلوب ${minRep} تكرار على الأقل`;
             } else {
                 prBtn.style.opacity = '';
                 prBtn.style.cursor = '';
@@ -8491,8 +8511,8 @@
                 alert(REC_PENDING_TEACHER_MSG);
                 return false;
             }
-            if (getMyRepetitionCountForCurrentVerse() < MIN_REPETITIONS_FOR_REC) {
-                alert(REC_REPETITIONS_MSG);
+            if (getMyRepetitionCountForCurrentVerse() < getMinRepetitionsForRecording(currentStageId)) {
+                alert(getRecRepetitionsAlertMessage(currentStageId));
                 return false;
             }
             return true;
@@ -8749,8 +8769,8 @@
                     alert(REC_PENDING_TEACHER_MSG);
                     return;
                 }
-                if (getMyRepetitionCountForCurrentVerse() < MIN_REPETITIONS_FOR_REC) {
-                    alert(REC_REPETITIONS_MSG);
+                if (getMyRepetitionCountForCurrentVerse() < getMinRepetitionsForRecording(currentStageId)) {
+                    alert(getRecRepetitionsAlertMessage(currentStageId));
                     return;
                 }
             }
