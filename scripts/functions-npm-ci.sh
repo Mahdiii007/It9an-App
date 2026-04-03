@@ -8,8 +8,9 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 FUNCS="${ROOT}/functions"
 cd "$FUNCS"
 
+unset NPM_CONFIG_devdir npm_config_devdir 2>/dev/null || true
 export NPM_CONFIG_AUDIT=false
-# npm 11: „Unknown env config devdir“ kommt oft aus ~/.npmrc — dort veralteten Eintrag entfernen: npm config delete devdir -g
+# Falls weiter „Unknown env config devdir“: npm config delete devdir -g (veralteter Eintrag in ~/.npmrc)
 TRASH=""
 
 run_ci() {

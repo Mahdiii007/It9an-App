@@ -65,7 +65,6 @@ on:
       - "firestore.rules"
       - "firestore.indexes.json"
       - "storage.rules"
-      - ".npmrc"
       - ".github/workflows/deploy-firebase.yml"
 
 permissions:

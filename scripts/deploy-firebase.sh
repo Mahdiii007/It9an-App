@@ -17,6 +17,13 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
+# npm 11: veraltete globale/npmrc-Keys (z. B. devdir) → „Unknown env config“
+unset NPM_CONFIG_devdir npm_config_devdir 2>/dev/null || true
+# firebase-tools → punycode (DEP0040) unter Node 20+
+if [[ " ${NODE_OPTIONS:-} " != *" --disable-warning=DEP0040 "* ]]; then
+  export NODE_OPTIONS="${NODE_OPTIONS:+${NODE_OPTIONS} }--disable-warning=DEP0040"
+fi
+
 PROJECT="${FIREBASE_PROJECT:-it9an-neu}"
 
 # Copy-Paste / .env-Zeilen: Zeilenumbruch im Token → „Bearer … is not a legal HTTP header value“
