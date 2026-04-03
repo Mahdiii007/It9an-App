@@ -151,22 +151,24 @@
         .stage-card-2:hover { box-shadow: 0 8px 24px rgba(15, 76, 58, 0.22); }
         .stage-card-3 { background: linear-gradient(145deg, #66bb6a 0%, #2e7d32 100%); box-shadow: 0 4px 16px rgba(15, 76, 58, 0.2); }
         .stage-card-3:hover { box-shadow: 0 8px 24px rgba(15, 76, 58, 0.28); }
-        .stage-card-4 { background: linear-gradient(145deg, #1a6b54 0%, #0f4c3a 100%); box-shadow: 0 4px 16px rgba(15, 76, 58, 0.25); margin-bottom: 30px; }
+        .stage-card-4 { background: linear-gradient(145deg, #1a6b54 0%, #0f4c3a 100%); box-shadow: 0 4px 16px rgba(15, 76, 58, 0.25); }
         .stage-card-4:hover { box-shadow: 0 8px 24px rgba(15, 76, 58, 0.35); }
+        .stage-card-5 { background: linear-gradient(145deg, #2d4a5c 0%, #1a2f3d 100%); box-shadow: 0 4px 16px rgba(26, 47, 61, 0.28); margin-bottom: 30px; }
+        .stage-card-5:hover { box-shadow: 0 8px 24px rgba(26, 47, 61, 0.38); }
         .stage-card-title { font-size: 20px; font-weight: bold; margin-bottom: 6px; text-align: center; }
         .stage-card-1 .stage-card-title, .stage-card-2 .stage-card-title { color: #0f4c3a; }
-        .stage-card-3 .stage-card-title, .stage-card-4 .stage-card-title { color: #ffffff; }
+        .stage-card-3 .stage-card-title, .stage-card-4 .stage-card-title, .stage-card-5 .stage-card-title { color: #ffffff; }
         .stage-card-name { font-size: 17px; margin-bottom: 14px; text-align: center; line-height: 1.4; }
         .stage-card-1 .stage-card-name, .stage-card-2 .stage-card-name { color: #1a3a2e; }
-        .stage-card-3 .stage-card-name, .stage-card-4 .stage-card-name { color: rgba(255,255,255,0.95); }
+        .stage-card-3 .stage-card-name, .stage-card-4 .stage-card-name, .stage-card-5 .stage-card-name { color: rgba(255,255,255,0.95); }
         .stage-progress-wrap { margin-top: 12px; text-align: center; }
         .stage-progress-bar { height: 8px; background: rgba(0,0,0,0.12); border-radius: 4px; overflow: hidden; }
         .stage-progress-fill { height: 100%; border-radius: 4px; transition: width 0.3s ease; background: var(--primary); }
         .stage-card-1 .stage-progress-fill, .stage-card-2 .stage-progress-fill { background: linear-gradient(90deg, #1a6b54, #0f4c3a); }
-        .stage-card-3 .stage-progress-fill, .stage-card-4 .stage-progress-fill { background: linear-gradient(90deg, rgba(255,255,255,0.9), rgba(255,255,255,0.6)); }
+        .stage-card-3 .stage-progress-fill, .stage-card-4 .stage-progress-fill, .stage-card-5 .stage-progress-fill { background: linear-gradient(90deg, rgba(255,255,255,0.9), rgba(255,255,255,0.6)); }
         .stage-progress-text { font-size: 14px; margin-top: 6px; font-weight: 600; text-align: center; }
         .stage-card-1 .stage-progress-text, .stage-card-2 .stage-progress-text { color: #0f4c3a; }
-        .stage-card-3 .stage-progress-text, .stage-card-4 .stage-progress-text { color: #ffffff; }
+        .stage-card-3 .stage-progress-text, .stage-card-4 .stage-progress-text, .stage-card-5 .stage-progress-text { color: #ffffff; }
         .stage-card { position: relative; }
         .stage-notif-bell { position: absolute; top: 12px; left: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.4); font-size: 22px; z-index: 2; }
         .stage-notif-bell:hover { background: rgba(255,255,255,0.6); }
@@ -1547,7 +1549,8 @@
             { id: 1, name: 'هندسة الحروف', assetsBase: 'assets-v1' },
             { id: 2, name: 'فن الإدغام', assetsBase: 'assets-v2' },
             { id: 3, name: 'أسرار الإخفاء', assetsBase: 'assets-v3' },
-            { id: 4, name: 'أساليب التلاوة', assetsBase: 'assets-v4' }
+            { id: 4, name: 'أساليب التلاوة', assetsBase: 'assets-v4' },
+            { id: 5, name: 'الختمة التعليمية', assetsBase: 'assets-v5' }
         ];
         const VERS_PRO_LEKTION_FALLBACK = [ 8, 15, 9, 15, 16 ];
         const VERS_PRO_LEKTION_FALLBACK_STAGE4 = [ 8, 15, 9, 15, 16, 10, 12, 6, 4, 8, 3, 27, 4, 4, 10, 4 ];
@@ -4771,7 +4774,7 @@
                 if (userSnap.exists() && userSnap.data().notifStages) notifStages = userSnap.data().notifStages;
             } catch (e) { console.warn('loadTeacherNotifStages:', e); }
             if (!Array.isArray(notifStages)) notifStages = [];
-            const stages = typeof STAGES_CONFIG !== 'undefined' ? STAGES_CONFIG : [{ id: 1, name: 'هندسة الحروف' }, { id: 2, name: 'فن الإدغام' }, { id: 3, name: 'أسرار الإخفاء' }, { id: 4, name: 'أساليب التلاوة' }];
+            const stages = typeof STAGES_CONFIG !== 'undefined' ? STAGES_CONFIG : [{ id: 1, name: 'هندسة الحروف' }, { id: 2, name: 'فن الإدغام' }, { id: 3, name: 'أسرار الإخفاء' }, { id: 4, name: 'أساليب التلاوة' }, { id: 5, name: 'الختمة التعليمية' }];
             container.innerHTML = stages.map(s => {
                 const checked = notifStages.length === 0 || notifStages.includes(s.id);
                 return `<label style="display:flex; align-items:center; gap:6px; cursor:pointer;"><input type="checkbox" data-stage-id="${s.id}" ${checked ? 'checked' : ''}> مرحلة ${s.id}: ${s.name}</label>`;
