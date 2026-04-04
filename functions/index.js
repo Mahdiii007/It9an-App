@@ -586,8 +586,7 @@ exports.restoreStudentRecordingNotificationsScheduled = onSchedule(
           }
         }
 
-        /* 2) Schüler: reply-Benachrichtigungen für jede Lehrer-Antwort
-         *    Kein == auf replyTimestamp in Firestore: Typ-/Rundungs-Unterschiede würden zweite Docs erzeugen → doppelte Push. */
+        /* 2) Schüler: reply — fehlende Docs anlegen; bestehende nur clearedBy leeren, listenedByStudent unverändert (bereits angehört = weiter unsichtbar). */
         const teacherReplies = (d.replies || []).filter(r => r.role === 'teacher');
         const postOwnerUid = d.uid;
         if (postOwnerUid && postOwnerUid !== 'admin_super' && teacherReplies.length > 0) {
@@ -626,8 +625,8 @@ exports.restoreStudentRecordingNotificationsScheduled = onSchedule(
               }
               const nd = matches[0];
               const data = nd.data();
-              if (data.listenedByStudent || (data.clearedBy && data.clearedBy.length > 0)) {
-                await db.collection('notifications').doc(nd.id).update({ listenedByStudent: false, clearedBy: [] });
+              if (data.clearedBy && data.clearedBy.length > 0) {
+                await db.collection('notifications').doc(nd.id).update({ clearedBy: [] });
                 updated++;
               }
             }

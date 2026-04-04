@@ -949,7 +949,7 @@
         <div class="admin-actions">
             <button id="maintenanceModeBtn" class="btn-admin-reset" onclick="toggleMaintenanceMode()" title="إصلاح التطبيق: إظهار رسالة للجميع ما عدا المعلم 9898 والطالب 0860">🔧 وضع الإصلاح</button>
             <button class="btn-admin-reset btn-admin-delete-all" onclick="adminForceLogoutAllUsers()" title="إجبار الطلاب والمعلمين على إعادة تسجيل الدخول (المسؤول يبقى متصلاً)">🚪 تسجيل خروج الجميع</button>
-            <button class="btn-admin-reset" onclick="restoreStudentRecordingNotifications()" title="إعادة إشعارات التسجيلات والردود لجميع المستخدمين في جميع المراحل (يتم تشغيله تلقائياً يومياً الساعة 6 صباحاً)">🔔 استعادة إشعارات التسجيلات</button>
+            <button type="button" class="btn-admin-reset" onclick="restoreStudentRecordingNotifications(this)" title="إعادة إشعارات التسجيلات والردود لجميع المستخدمين في جميع المراحل (يتم تشغيله تلقائياً يومياً الساعة 6 صباحاً)">🔔 استعادة إشعارات التسجيلات</button>
             <button class="btn-admin-reset" onclick="resetAllNotifications()">🔔 تصفير كل الإشعارات</button>
             <button class="btn-admin-reset" onclick="resetAllViews()">👂 تصفير كل المشاهدات</button>
             <button class="btn-admin-reset" onclick="resetAllLikes()">👍 تصفير كل الإعجابات</button>
@@ -1158,12 +1158,25 @@
         var forceLogoutUnsub = null;
         var forceLogoutKickScheduled = false;
         const STUDENT_PIN = "1234";
+        /** Ein einziger App-Administrator; Login nur mit diesem PIN. Interne Sitzungs-UID: `admin_super` (nicht die PIN). */
         const ADMIN_PIN = "1879";
         const TEACHER_LOTFI_PIN = "9898";
         const TEACHER_FATHIA_PIN = "9797";
         const TEACHER_MAHDI_PIN = "9696";
         const MAINTENANCE_EXEMPT_STUDENT_PIN = "0860";
         const RESERVED_PINS = ["9898", "1879", "9797", "9696"];
+        /** Letzter erfolgreicher Login war Admin-PIN → UID muss admin_super sein (repariert alte/kaputte localStorage-Zustände). */
+        function normalizeAdminLocalSession() {
+            try {
+                if (localStorage.getItem('it9an_saved_pin') === ADMIN_PIN) {
+                    localStorage.setItem('it9an_uid', 'admin_super');
+                }
+            } catch (e) { /* ignore */ }
+        }
+        function isSingleAppAdminLoggedIn() {
+            normalizeAdminLocalSession();
+            return localStorage.getItem('it9an_uid') === 'admin_super';
+        }
         function isPinExemptFromMaintenance(pin) {
             const p = pin != null ? String(pin).trim() : '';
             if (p.length !== 4) return false;
@@ -2638,6 +2651,7 @@
         var sessionRestoreAttempted = false;
         function runTryRestoreSession() {
             if (sessionRestoreAttempted) return;
+            normalizeAdminLocalSession();
             const uid = localStorage.getItem('it9an_uid');
             const name = localStorage.getItem('it9an_name');
             const role = localStorage.getItem('it9an_role');
@@ -11163,11 +11177,21 @@
         /**
          * Admin: fehlende/widerrufene Benachrichtigungen rekonstruieren.
          * Schüleraufnahmen: UI تسجيل عادي (weiß) und تسجيل متزامن (gelb) → gleiches posts-Schema + ggf. uploads/echo_*; Lehrerantworten: رد عادي und رد متزامن → gleiches replies[].role==='teacher' + type reply.
-         * Keine getrennte Restore-Pfade nötig.
+         * Keine getrennte Restore-Pfade nötig. Bei Schüler-reply: listenedByStudent bleibt erhalten (bis zum Ende Gehörtes erscheint nicht wieder).
          */
-        window.restoreStudentRecordingNotifications = async function() {
-            if (localStorage.getItem('it9an_uid') !== 'admin_super') return;
+        window.restoreStudentRecordingNotifications = async function(triggerBtn) {
+            if (!isSingleAppAdminLoggedIn()) {
+                alert('هذه العملية للمسؤول فقط (رمز الدخول: ' + ADMIN_PIN + '). جرّب تسجيل الخروج ثم الدخول من جديد.');
+                return;
+            }
             if (!confirm("إعادة إشعارات التسجيلات والردود لجميع المستخدمين (معلمين وطلاب) في جميع المراحل والدروس والمقاطع؟")) return;
+            const btn = triggerBtn && triggerBtn.closest ? triggerBtn.closest('button') : null;
+            const prevHtml = btn ? btn.innerHTML : '';
+            const prevDisabled = btn ? btn.disabled : false;
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '⏳ جاري الاستعادة…';
+            }
             try {
                 function notifReplyTsMs(val) {
                     if (val == null || val === '') return 0;
@@ -11179,12 +11203,35 @@
                     const n = Number(val);
                     return Number.isNaN(n) ? 0 : n;
                 }
+                const kursByStage = new Map();
+                async function ensureKursForStage(sid) {
+                    const id = sid != null ? Number(sid) : 4;
+                    if (kursByStage.has(id)) return kursByStage.get(id);
+                    let kurs = await loadManifestForStage(id);
+                    if (kurs.length === 0 && id === 4) {
+                        kurs = buildKursFromVerses(VERS_PRO_LEKTION_FALLBACK_STAGE4, LESSON_TITLES_FALLBACK_STAGE4);
+                    }
+                    kursByStage.set(id, kurs);
+                    return kurs;
+                }
+                function lessonVerseFromKurs(kurs, fileId) {
+                    const fid = parseInt(fileId, 10);
+                    for (let i = 0; i < kurs.length; i++) {
+                        const start = kurs[i].startGlobalId;
+                        const end = start + kurs[i].verse - 1;
+                        if (fid >= start && fid <= end) {
+                            return { lesson: i + 1, verse: fid - start + 1, lessonTitle: kurs[i].title || '' };
+                        }
+                    }
+                    return { lesson: 0, verse: Number.isNaN(fid) ? 0 : fid, lessonTitle: '' };
+                }
                 const postsSnap = await window.getDocs(window.collection(window.db, "posts"));
                 let created = 0, updated = 0;
                 for (const doc of postsSnap.docs) {
                     const d = doc.data();
                     const stageId = d.stageId != null ? d.stageId : 4;
-                    const lv = await getLessonVerseForStageFile(stageId, d.fileId || '1');
+                    const kurs = await ensureKursForStage(stageId);
+                    const lv = lessonVerseFromKurs(kurs, d.fileId || '1');
                     const stageCfg = getStageConfig(stageId);
 
                     /* 1) Lehrer: new_recording für Schüleraufnahmen ohne Bewertung/Antwort */
@@ -11219,7 +11266,7 @@
                         }
                     }
 
-                    /* 2) Schüler: reply — Abfrage ohne replyTimestamp (== scheitert bei Typ-Mix), Zuordnung per ms-Vergleich; listenedByStudent zurücksetzen damit die Glocke wieder zeigt */
+                    /* 2) Schüler: reply — fehlende Docs anlegen; bestehende: nur clearedBy leeren, listenedByStudent nie überschreiben (sonst erscheinen bereits angehörte Rückmeldungen wieder) */
                     const teacherReplies = (d.replies || []).filter(r => r.role === 'teacher');
                     const postOwnerUid = d.uid;
                     if (postOwnerUid && postOwnerUid !== 'admin_super' && teacherReplies.length > 0) {
@@ -11253,8 +11300,8 @@
                                 }
                                 const nd = matches[0];
                                 const data = nd.data();
-                                if (data.listenedByStudent || (data.clearedBy && data.clearedBy.length > 0)) {
-                                    await window.updateDoc(window.doc(window.db, "notifications", nd.id), { listenedByStudent: false, clearedBy: [] });
+                                if (data.clearedBy && data.clearedBy.length > 0) {
+                                    await window.updateDoc(window.doc(window.db, "notifications", nd.id), { clearedBy: [] });
                                     updated++;
                                 }
                             }
@@ -11263,6 +11310,12 @@
                 }
                 alert("تم: " + created + " إشعار جديد، " + updated + " إشعار تم إعادة تفعيله");
             } catch(e) { console.error(e); alert("خطأ: " + (e.message || "")); }
+            finally {
+                if (btn) {
+                    btn.disabled = prevDisabled;
+                    btn.innerHTML = prevHtml;
+                }
+            }
         };
 
         window.resetAllNotifications = async function() {
