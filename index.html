@@ -2031,7 +2031,8 @@
                 try {
                     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
                     if (studentEchoPracticeSessionActive && !studentEchoPostVersePhase) {
-                        navigator.audioSession.type = isIOS ? 'auto' : 'play-and-record';
+                        if (isIOS) it9anAudioSessionPreferPlaybackForSpeaker();
+                        else navigator.audioSession.type = 'play-and-record';
                     } else {
                         navigator.audioSession.type = 'playback';
                     }
@@ -2044,7 +2045,8 @@
             try {
                 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
                 if (studentEchoPracticeSessionActive && !studentEchoPostVersePhase) {
-                    navigator.audioSession.type = isIOS ? 'auto' : 'play-and-record';
+                    if (isIOS) it9anAudioSessionPreferPlaybackForSpeaker();
+                    else navigator.audioSession.type = 'play-and-record';
                 } else {
                     navigator.audioSession.type = 'playback';
                 }
@@ -2353,16 +2355,62 @@
             }
         }
 
+        /** Bildschirm wachhalten solange Aufnahmen/Feed/Review/Verse laufen oder Mikro aktiv ist. */
+        function screenPlaybackShouldHoldWakeLock() {
+            try {
+                const ra = document.getElementById('reviewAudio');
+                if (ra && !ra.paused && !ra.ended) {
+                    const srcHas = (ra.src && String(ra.src).length > 0) || (ra.currentSrc && String(ra.currentSrc).length > 0);
+                    if (srcHas) return true;
+                }
+            } catch (e) {}
+            try {
+                const rva = document.getElementById('review-echo-retake-verse-audio');
+                if (rva && !rva.paused && !rva.ended) {
+                    const sh = (rva.src && String(rva.src).length > 0) || (rva.currentSrc && String(rva.currentSrc).length > 0);
+                    if (sh) return true;
+                }
+            } catch (e2) {}
+            try {
+                if (typeof currentFeedAudioId !== 'undefined' && currentFeedAudioId && typeof feedAudioEl !== 'undefined' && feedAudioEl && !feedAudioEl.paused) return true;
+            } catch (e3) {}
+            try {
+                if (typeof audioEl !== 'undefined' && audioEl && !audioEl.paused && !audioEl.ended) {
+                    const sh = (audioEl.src && String(audioEl.src).length > 0) || (audioEl.currentSrc && String(audioEl.currentSrc).length > 0);
+                    if (sh) return true;
+                }
+            } catch (e4b) {}
+            try {
+                if (typeof mediaRecorder !== 'undefined' && mediaRecorder && mediaRecorder.state === 'recording') return true;
+            } catch (e5) {}
+            try {
+                if (typeof echoHoldMediaRecorder !== 'undefined' && echoHoldMediaRecorder && echoHoldMediaRecorder.state === 'recording') return true;
+            } catch (e6) {}
+            try {
+                if (typeof teacherSyncReplyActive !== 'undefined' && teacherSyncReplyActive) return true;
+            } catch (e7) {}
+            return false;
+        }
+
         let wakeLockSentinel = null;
         async function requestWakeLock() {
+            try { it9anIosKickAudioRouteToSpeakerAfterHeavyOp(); } catch (eKick) {}
             if (!navigator.wakeLock) return;
             try {
                 if (wakeLockSentinel) return;
                 wakeLockSentinel = await navigator.wakeLock.request('screen');
-                wakeLockSentinel.addEventListener('release', () => { wakeLockSentinel = null; });
+                wakeLockSentinel.addEventListener('release', () => {
+                    wakeLockSentinel = null;
+                    try {
+                        if (document.visibilityState === 'visible' && screenPlaybackShouldHoldWakeLock()) {
+                            void requestWakeLock();
+                        }
+                    } catch (re) {}
+                });
             } catch (e) { console.warn('Wake Lock:', e); }
         }
         async function releaseWakeLock() {
+            if (screenPlaybackShouldHoldWakeLock()) return;
             if (!wakeLockSentinel) return;
             const sentinel = wakeLockSentinel;
             wakeLockSentinel = null;
@@ -2386,7 +2434,8 @@
                 return;
             }
             if (document.visibilityState === 'visible') {
-                if (isPlaying) requestWakeLock();
+                if (screenPlaybackShouldHoldWakeLock()) requestWakeLock();
+                try { it9anIosKickAudioRouteToSpeakerAfterHeavyOp(); } catch (eIosVis) {}
                 try {
                     const pv = document.getElementById('player-view');
                     if (pv && pv.style.display === 'block' && audioEl && currentGlobalFileId != null && !audioEl.getAttribute('src')) {
@@ -6648,11 +6697,39 @@
             });
         })();
 
+        function it9anIsIosWebKitUA() {
+            return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        }
+
+        /**
+         * iOS/WKWebKit: navigator.audioSession.type === 'play-and-record' entspricht oft AVAudioSession „VoiceChat“
+         * und routet die Wiedergabe zur Ohrmuschel (sehr leise). 'playback' bevorzugt den Medien-Lautsprecher (vgl. MDN AudioSession).
+         */
+        function it9anAudioSessionPreferPlaybackForSpeaker() {
+            if (!navigator.audioSession) return;
+            try {
+                navigator.audioSession.type = 'playback';
+            } catch (e) {
+                try { navigator.audioSession.type = 'auto'; } catch (e2) {}
+            }
+        }
+
+        /** Nach MediaRecorder/getUserMedia setzt iOS die Route oft zurück — playback erneut anstoßen (rAF + kurze Delays). */
+        function it9anIosKickAudioRouteToSpeakerAfterHeavyOp() {
+            if (!it9anIsIosWebKitUA() || !navigator.audioSession) return;
+            it9anAudioSessionPreferPlaybackForSpeaker();
+            try {
+                requestAnimationFrame(function() { it9anAudioSessionPreferPlaybackForSpeaker(); });
+            } catch (r) {}
+            try {
+                setTimeout(function() { it9anAudioSessionPreferPlaybackForSpeaker(); }, 50);
+                setTimeout(function() { it9anAudioSessionPreferPlaybackForSpeaker(); }, 200);
+            } catch (t) {}
+        }
+
         /** Nach رد متزامن: wie toggleRecord — sonst bleibt iOS/WKWebKit oft auf play-and-record → Feed + normaler الرد klingen gedämpft/schlecht. */
         function restoreAudioSessionAfterSyncReply() {
-            if (navigator.audioSession) {
-                try { navigator.audioSession.type = 'playback'; } catch (e) {}
-            }
+            it9anAudioSessionPreferPlaybackForSpeaker();
         }
 
         /** Nach abgebrochener Aufnahme bleiben audioEl/feed oft stumm+0 — das nicht als legitimen Restore-Zustand speichern. */
@@ -6678,22 +6755,22 @@
             return tracks.length > 0 && tracks.every(t => t.readyState === 'live');
         }
 
-        /** Wie acquireMicStreamForTeacherSync: auf iOS zuerst play-and-record (auto nur Fallback) — zuverlässiger für PWA/الرد العادي. */
+        /**
+         * Mikrofon-Session: auf iOS bewusst nicht 'play-and-record' (Ohrmuschel-Routing), sondern 'playback' für Lautsprecher.
+         * getUserMedia + WebAudio funktionieren damit weiter; bei Problemen Fallback auto → play-and-record.
+         */
         function it9anSetAudioSessionForMicCapture(isIOS) {
             if (!navigator.audioSession) return;
             try {
                 if (isIOS) {
-                    try {
-                        navigator.audioSession.type = 'play-and-record';
-                    } catch (e) {
-                        try { navigator.audioSession.type = 'auto'; } catch (e2) {}
-                    }
+                    it9anAudioSessionPreferPlaybackForSpeaker();
                 } else {
                     navigator.audioSession.type = 'play-and-record';
                 }
             } catch (e3) {
                 if (isIOS) {
-                    try { navigator.audioSession.type = 'play-and-record'; } catch (e4) {}
+                    try { navigator.audioSession.type = 'auto'; } catch (e4) {}
+                    try { navigator.audioSession.type = 'play-and-record'; } catch (e5) {}
                 }
             }
         }
@@ -6707,13 +6784,12 @@
             } catch (e2) {}
         }
 
-        /** Nach Hintergrund kann iOS die Session zurück auf playback drehen — während Aufnahme wieder an play-and-record hängen. */
+        /** Nach Hintergrund: Session erneut setzen (iOS: playback/Lautsprecher statt Voice/Receiver). */
         function it9anReapplyAudioSessionDuringActiveMicCapture() {
             const mainRec = typeof mediaRecorder !== 'undefined' && mediaRecorder && mediaRecorder.state === 'recording';
             const echoRec = echoHoldMediaRecorder && echoHoldMediaRecorder.state === 'recording';
             if (!mainRec && !echoRec && !teacherSyncReplyActive) return;
-            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-            it9anSetAudioSessionForMicCapture(isIOS);
+            it9anSetAudioSessionForMicCapture(it9anIsIosWebKitUA());
         }
 
         async function it9anAcquireIosMicStreamWithLiveRetry(iosCandidates) {
@@ -7507,6 +7583,7 @@
             if (ctx.state === 'suspended') await ctx.resume();
 
             const isIOSSyncReply = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+            if (isIOSSyncReply) it9anAudioSessionPreferPlaybackForSpeaker();
             /* Schüler: studentGain→dest (Aufnahme konstant). Monitor: studentMonitorOnlyGain → [iOS: L→beide Kanäle] → monitorRoute — iPhone routet oft nur einen Lautsprecher für „Sprach“-Mix; Stereo kann eine Seite leiser wirken. Nach erstem Mic + optional Checkbox-Speaker-Boost. */
             const SYNC_REPLY_MIC_PRE_NON_IOS = 2.3;
             const SYNC_REPLY_MONITOR_ONLY = 1.3;
@@ -7623,6 +7700,7 @@
                     rawStream = null;
                 }
                 if (fullRelease) restoreAudioSessionAfterSyncReply();
+                else it9anIosKickAudioRouteToSpeakerAfterHeavyOp();
             }
 
             async function attachTeacherSyncMicPipeline() {
@@ -7667,6 +7745,7 @@
                         };
                     });
                 } catch (e) {}
+                if (isIOSSyncReply) it9anIosKickAudioRouteToSpeakerAfterHeavyOp();
             }
 
             let mediaRecorder;
@@ -7868,6 +7947,7 @@
                     syncReplySessionHandle = null;
                     throw startErr;
                 }
+                if (isIOSSyncReply) it9anIosKickAudioRouteToSpeakerAfterHeavyOp();
                 wallTimer = setInterval(() => {
                     wallSeconds++;
                     if (timerEl) {
@@ -10261,8 +10341,10 @@
                     btn.textContent = '▶';
                     seek.value = 0;
                     timeEl.textContent = '00:00';
+                    void releaseWakeLock();
                 },
                 play: () => {
+                    void requestWakeLock();
                     const yBtn = document.getElementById('review-yellow-side-btn');
                     if (_reviewReviewPlayingYellow) {
                         btn.textContent = '▶';
@@ -10279,6 +10361,7 @@
                     } else {
                         btn.textContent = '▶';
                     }
+                    void releaseWakeLock();
                 }
             };
             audio.addEventListener('timeupdate', _reviewAudioHandlers.timeupdate);
@@ -11193,6 +11276,10 @@
         }
         window.addEventListener('pageshow', function() {
             it9anResumeSuspendedRecordingAudioContexts();
+            try {
+                if (screenPlaybackShouldHoldWakeLock()) requestWakeLock();
+            } catch (eWl) {}
+            try { it9anIosKickAudioRouteToSpeakerAfterHeavyOp(); } catch (eIosPs) {}
         });
         document.addEventListener('visibilitychange', () => {
             if (document.hidden) {
@@ -11203,6 +11290,10 @@
                 applyGlobalForceLogoutIfNeeded().then(function(kicked) {
                     if (kicked) return;
                     it9anResumeSuspendedRecordingAudioContexts();
+                    try {
+                        if (screenPlaybackShouldHoldWakeLock()) requestWakeLock();
+                    } catch (eWl2) {}
+                    try { it9anIosKickAudioRouteToSpeakerAfterHeavyOp(); } catch (eIosVis2) {}
                     restoreListenersOnVisible();
                     if (typeof window.applyNotifStageFilter === 'function') {
                         setTimeout(window.applyNotifStageFilter, 100);
