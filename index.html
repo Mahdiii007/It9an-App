@@ -2157,6 +2157,38 @@
                 it9anUpdateUserRecordingPlaybackBoostGains();
             } catch (e) {}
         }
+        /** #feedAudio + #reviewAudio: sichtbare Clips dürfen nie stumm bleiben (iOS-Mikro-Pfad setzt muted/volume). */
+        function it9anNormalizeUserClipMediaElement(el) {
+            if (!el) return;
+            try {
+                el.muted = false;
+                el.volume = Math.min(1, Math.max(0, it9anAudioProfile.mediaElementVolume));
+            } catch (e) {}
+        }
+        /**
+         * MediaElementSource leitet den Ton nur über den WebAudio-Kontext: state === 'suspended' → stilles Abspielen
+         * trotz laufendem Element (iOS/Android/Chrome/PWA). Im User-Gesture synchron aufrufen; nach await erneut.
+         */
+        function it9anKickUserRecPlaybackContextSync() {
+            try {
+                it9anWireUserRecordingPlaybackBoostIfNeeded();
+                it9anUpdateUserRecordingPlaybackBoostGains();
+                const ctx = it9anUserRecPbCtx;
+                if (ctx && ctx.state === 'suspended') void ctx.resume();
+            } catch (e) {}
+        }
+        async function it9anEnsureUserRecPlaybackContextRunning() {
+            it9anKickUserRecPlaybackContextSync();
+            const ctx = it9anUserRecPbCtx;
+            if (!ctx || ctx.state === 'closed') return;
+            if (ctx.state === 'suspended') {
+                try { await ctx.resume(); } catch (e) {}
+            }
+        }
+        function it9anPrepareReviewAudioPlayback() {
+            it9anKickUserRecPlaybackContextSync();
+            it9anNormalizeUserClipMediaElement(document.getElementById('reviewAudio'));
+        }
         /** Nach Aufnahme-Ende: alle gehaltenen Mic-Streams + Kontext freigeben (inkl. macOS-Menüleiste). */
         async function forceReleaseRecordingPipeline() {
             if (lastRecStream) {
@@ -2405,9 +2437,14 @@
 
         window.playFeedAudio = async function(url, id) {
             if (!url) return;
+            it9anKickUserRecPlaybackContextSync();
+            it9anNormalizeUserClipMediaElement(feedAudioEl);
+            try { it9anIosKickAudioRouteToSpeakerAfterHeavyOp(); } catch (eKickFeed) {}
 
             if (currentFeedAudioId === id) {
                 if (feedAudioEl.paused) {
+                    await it9anEnsureUserRecPlaybackContextRunning();
+                    it9anNormalizeUserClipMediaElement(feedAudioEl);
                     feedAudioEl.play();
                     document.getElementById('btn-' + id).innerText = "⏸";
                     requestWakeLock();
@@ -2439,10 +2476,13 @@
                     console.warn('Feed-Audio-Puffer:', e);
                     playUrl = url;
                 }
+                await it9anEnsureUserRecPlaybackContextRunning();
+                it9anNormalizeUserClipMediaElement(feedAudioEl);
                 feedAudioEl.preload = 'auto';
                 feedAudioEl.src = playUrl;
                 feedAudioEl.play().then(() => {
                     newBtn.innerText = "⏸";
+                    void it9anEnsureUserRecPlaybackContextRunning();
                 }).catch(e => {
                     newBtn.innerText = "⚠️";
                     console.log(e);
@@ -2467,6 +2507,8 @@
                 el._it9anUserRecPbResumeHooked = true;
                 el.addEventListener('play', function() {
                     try {
+                        it9anNormalizeUserClipMediaElement(el);
+                        it9anKickUserRecPlaybackContextSync();
                         if (it9anUserRecPbCtx && it9anUserRecPbCtx.state === 'suspended') void it9anUserRecPbCtx.resume();
                     } catch (e) {}
                 });
@@ -10466,17 +10508,25 @@
             const yBtn = document.getElementById('review-yellow-side-btn');
             if (!audio || !_reviewMainYellowUrl || !reviewYellowEnabled) return;
             if (!_reviewReviewPlayingYellow) {
+                it9anPrepareReviewAudioPlayback();
                 audio.pause();
                 audio.src = _reviewMainYellowUrl;
                 audio.load();
                 _reviewReviewPlayingYellow = true;
                 const mainBtn = document.getElementById('review-play-btn');
                 if (mainBtn) mainBtn.textContent = '▶';
-                audio.play().catch(() => {});
+                void it9anEnsureUserRecPlaybackContextRunning().then(function() {
+                    it9anNormalizeUserClipMediaElement(audio);
+                    return audio.play();
+                }).catch(function() {});
                 return;
             }
             if (audio.paused) {
-                audio.play().catch(() => {});
+                it9anPrepareReviewAudioPlayback();
+                void it9anEnsureUserRecPlaybackContextRunning().then(function() {
+                    it9anNormalizeUserClipMediaElement(audio);
+                    return audio.play();
+                }).catch(function() {});
             } else {
                 audio.pause();
             }
@@ -10485,12 +10535,16 @@
             const audio = document.getElementById('reviewAudio');
             const btn = document.getElementById('review-play-btn');
             if (!audio || !_reviewMainGreenUrl) return;
+            it9anPrepareReviewAudioPlayback();
             _reviewReviewPlayingYellow = false;
             reviewModalResetYellowSideBtn();
             audio.pause();
             audio.src = _reviewMainGreenUrl;
             audio.load();
-            audio.play().catch(() => {});
+            void it9anEnsureUserRecPlaybackContextRunning().then(function() {
+                it9anNormalizeUserClipMediaElement(audio);
+                return audio.play();
+            }).catch(function() {});
             if (btn) btn.textContent = '⏸';
         };
         window.reviewModalPlayMainYellow = function() {
@@ -10498,12 +10552,16 @@
             const audio = document.getElementById('reviewAudio');
             const btn = document.getElementById('review-play-btn');
             if (!audio) return;
+            it9anPrepareReviewAudioPlayback();
             audio.pause();
             audio.src = _reviewMainYellowUrl;
             audio.load();
             _reviewReviewPlayingYellow = true;
             if (btn) btn.textContent = '▶';
-            audio.play().catch(() => {});
+            void it9anEnsureUserRecPlaybackContextRunning().then(function() {
+                it9anNormalizeUserClipMediaElement(audio);
+                return audio.play();
+            }).catch(function() {});
         };
         window.reviewModalPlayStripGreen = function(i) {
             const url = _reviewStripGreenUrls[i];
@@ -10511,12 +10569,16 @@
             const audio = document.getElementById('reviewAudio');
             const btn = document.getElementById('review-play-btn');
             if (!audio) return;
+            it9anPrepareReviewAudioPlayback();
             _reviewReviewPlayingYellow = false;
             reviewModalResetYellowSideBtn();
             audio.pause();
             audio.src = url;
             audio.load();
-            audio.play().catch(() => {});
+            void it9anEnsureUserRecPlaybackContextRunning().then(function() {
+                it9anNormalizeUserClipMediaElement(audio);
+                return audio.play();
+            }).catch(function() {});
             if (btn) btn.textContent = '⏸';
         };
         window.reviewModalPlayStripYellow = function(i) {
@@ -10524,12 +10586,16 @@
                 const audio = document.getElementById('reviewAudio');
                 const btn = document.getElementById('review-play-btn');
                 if (!audio) return;
+                it9anPrepareReviewAudioPlayback();
                 _reviewReviewPlayingYellow = false;
                 reviewModalResetYellowSideBtn();
                 audio.pause();
                 audio.src = _reviewStripStudentUrls[i];
                 audio.load();
-                audio.play().catch(() => {});
+                void it9anEnsureUserRecPlaybackContextRunning().then(function() {
+                    it9anNormalizeUserClipMediaElement(audio);
+                    return audio.play();
+                }).catch(function() {});
                 if (btn) btn.textContent = '⏸';
                 return;
             }
@@ -10542,12 +10608,16 @@
             const audio = document.getElementById('reviewAudio');
             const btn = document.getElementById('review-play-btn');
             if (!audio) return;
+            it9anPrepareReviewAudioPlayback();
             _reviewReviewPlayingYellow = false;
             reviewModalResetYellowSideBtn();
             audio.pause();
             audio.src = url;
             audio.load();
-            audio.play().catch(() => {});
+            void it9anEnsureUserRecPlaybackContextRunning().then(function() {
+                it9anNormalizeUserClipMediaElement(audio);
+                return audio.play();
+            }).catch(function() {});
             if (btn) btn.textContent = '⏸';
         };
         window.reviewModalPlayStripStudent = function(i) {
@@ -10772,7 +10842,11 @@
                     audio.load();
                 }
                 if (audio.paused) {
-                    audio.play().catch(() => {});
+                    it9anPrepareReviewAudioPlayback();
+                    void it9anEnsureUserRecPlaybackContextRunning().then(function() {
+                        it9anNormalizeUserClipMediaElement(audio);
+                        return audio.play();
+                    }).catch(function() {});
                     btn.textContent = '⏸';
                 } else {
                     audio.pause();
@@ -10780,7 +10854,11 @@
                 }
             } else {
                 if (audio.paused) {
-                    audio.play().catch(() => {});
+                    it9anPrepareReviewAudioPlayback();
+                    void it9anEnsureUserRecPlaybackContextRunning().then(function() {
+                        it9anNormalizeUserClipMediaElement(audio);
+                        return audio.play();
+                    }).catch(function() {});
                     btn.textContent = '⏸';
                 } else {
                     audio.pause();
@@ -11758,6 +11836,11 @@
                     void lastRecCtx.resume().catch(function() {});
                 }
             } catch (e2) {}
+            try {
+                if (it9anUserRecPbCtx && it9anUserRecPbCtx.state === 'suspended') {
+                    void it9anUserRecPbCtx.resume().catch(function() {});
+                }
+            } catch (e3) {}
             it9anReapplyAudioSessionDuringActiveMicCapture();
             it9anEnsureToggleRecordIntervalRunning();
         }
