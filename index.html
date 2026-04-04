@@ -638,11 +638,12 @@
         .review-strip-play.review-btn-muted { background: #95a5a6 !important; color: #ecf0f1 !important; cursor: not-allowed; opacity: 0.55; }
         .review-strip-retake-btn { padding: 8px 12px; border-radius: 10px; border: 1px solid var(--primary); background: #fff; color: var(--primary); font-size: 14px; font-weight: bold; cursor: pointer; font-family: inherit; flex-shrink: 0; }
         .review-strip-retake-btn:active { opacity: 0.85; }
-        #review-echo-retake-overlay { display: none; position: absolute; inset: 0; background: rgba(255,255,255,0.97); z-index: 10; flex-direction: column; align-items: stretch; justify-content: flex-start; padding: 16px 14px; border-radius: 16px; overflow-y: auto; direction: rtl; text-align: center; }
+        #review-echo-retake-overlay { display: none; position: absolute; inset: 0; background: #fff; z-index: 10; flex-direction: column; align-items: stretch; justify-content: flex-start; padding: 16px 14px; border-radius: 16px; overflow-y: auto; direction: rtl; text-align: center; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.06); }
         .review-box { position: relative; }
         .review-echo-retake-inner { display: flex; flex-direction: column; gap: 12px; align-items: stretch; max-width: 100%; }
         .review-echo-retake-title { font-size: 17px; font-weight: bold; color: var(--primary); }
         .review-echo-retake-hint { font-size: 14px; color: #555; line-height: 1.5; margin: 0; }
+        .review-echo-retake-hint-below-mic { margin-top: 4px; align-self: center; max-width: 100%; }
         .review-echo-retake-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
         .review-echo-retake-btn { padding: 12px 16px; border-radius: 12px; border: none; font-size: 16px; font-weight: bold; cursor: pointer; font-family: inherit; }
         .review-echo-retake-btn-play { background: #e8f5e9; color: #0f4c3a; }
@@ -1126,12 +1127,12 @@
             <div id="review-echo-retake-overlay" aria-hidden="true">
                 <div class="review-echo-retake-inner">
                     <div id="review-echo-retake-title" class="review-echo-retake-title"></div>
-                    <p id="review-echo-retake-hint" class="review-echo-retake-hint">استمع لجزء المقطع، ثم اضغط مع الاستمرار على الميكروفون الأحمر للتسجيل، وأفلِت للإيقاف.</p>
                     <div class="review-echo-retake-actions">
                         <button type="button" id="review-echo-retake-play-verse" class="review-echo-retake-btn review-echo-retake-btn-play">▶ استمع للمقطع</button>
                     </div>
                     <div id="review-echo-retake-timer" class="review-echo-retake-timer review-echo-retake-timer-idle" aria-live="polite">00:00</div>
                     <button type="button" id="review-echo-retake-mic-btn" class="review-echo-retake-btn-mic" title="اضغط مع الاستمرار للتسجيل، أفلِت للإيقاف" aria-label="اضغط مع الاستمرار للتسجيل"><svg class="icon-mic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
+                    <p id="review-echo-retake-hint" class="review-echo-retake-hint review-echo-retake-hint-below-mic"></p>
                     <button type="button" id="review-echo-retake-cancel" class="review-echo-retake-btn review-echo-retake-btn-cancel">إلغاء</button>
                     <audio id="review-echo-retake-verse-audio" playsinline webkit-playsinline preload="metadata" style="display:none;"></audio>
                 </div>
@@ -2186,7 +2187,7 @@
         let reviewEchoRetakeHoldStarting = false;
         let reviewEchoRetakeTimerInterval = null;
         let reviewEchoRetakeRecSeconds = 0;
-        const REVIEW_ECHO_RETAKE_HINT_HOLD = 'استمع لجزء المقطع، ثم اضغط مع الاستمرار على الميكروفون الأحمر للتسجيل، وأفلِت للإيقاف.';
+        const REVIEW_ECHO_RETAKE_HINT_HOLD = '';
         const REVIEW_ECHO_RETAKE_HINT_TAIL_HOLD = 'استمع لباقي المقطع (حتى النهاية)، ثم اضغط مع الاستمرار على الميكروفون الأحمر للتسجيل، وأفلِت للإيقاف.';
         const ICON_MIC_HTML = '<svg class="icon-mic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>';
 
@@ -8034,7 +8035,7 @@
                     holdBtn.setAttribute('aria-hidden', 'true');
                 }
                 stopStudentNode();
-                if (statusEl) statusEl.textContent = 'جاري تفعيل الميكروفون…';
+                if (statusEl) statusEl.textContent = 'إنتظر قليلاً..';
                 void (async () => {
                     try {
                         await attachTeacherSyncMicPipeline();
@@ -8089,7 +8090,7 @@
                 resumeFrom = dur > 0 ? Math.min(dur, ct) : ct;
                 isCommenting = true;
                 studentDriver.stopPlayback();
-                if (statusEl) statusEl.textContent = 'جاري تفعيل الميكروفون…';
+                if (statusEl) statusEl.textContent = 'إنتظر قليلاً..';
                 if (holdBtn) holdBtn.classList.add('sync-hold-active');
                 void (async () => {
                     try {
@@ -9369,10 +9370,10 @@
             const retakeHintDefault = reviewEchoRetakeIsTailPhase ? REVIEW_ECHO_RETAKE_HINT_TAIL_HOLD : REVIEW_ECHO_RETAKE_HINT_HOLD;
             const echoSyncShowMicLoading = (studentEchoPracticeSessionActive && !studentEchoPostVersePhase) || isStudentEchoSyncUiOpen();
             if (stEchoSyncStatus && echoSyncShowMicLoading) {
-                stEchoSyncStatus.textContent = 'جاري تفعيل الميكروفون…';
+                stEchoSyncStatus.textContent = 'إنتظر قليلاً..';
             }
             if (echoHoldCaptureMode === 'retake' && retakeHintEl) {
-                retakeHintEl.textContent = 'جاري تفعيل الميكروفون…';
+                retakeHintEl.textContent = 'إنتظر قليلاً..';
             }
             const reuseStream = !studentEchoPracticeSessionActive && echoHoldCaptureMode !== 'retake' && echoHoldStream && echoHoldStream.getTracks().every(t => t.readyState === 'live');
 
