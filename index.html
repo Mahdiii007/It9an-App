@@ -2066,8 +2066,8 @@
                 micSyncReplyPre: kind === 'android' ? 2.12 : kind === 'mac' ? 1.72 : 2.38,
                 /** Stereo-Mic → Mono: je Kanal (Summe ≈ 1 bei gleichem Pegel) */
                 stereoDownmixChannel: 0.5,
-                /** Schüler in Sync-Aufnahme (dest): leicht angehoben, wenn Lehrer-Mic im Mix dominiert */
-                syncReplyStudentRec: 1.18,
+                /** Schüler in Sync-Aufnahme (dest): 1.0 — Originalpegel, kein künstlicher Lift (Mix vs. Lehrer-Mic). Hörpfad: studentMonitorOnlyGain. */
+                syncReplyStudentRec: 1.0,
                 syncMonitorBase: 1.38,
                 syncMonitorIosExtra: kind === 'ios' ? 1.66 : 1,
                 syncMonitorPostMicIos: 2.45,
@@ -8212,11 +8212,11 @@
         /** تسجيل متزامن (Schüler): einheitliche Formulierung — نقرة vs. ضغط مطوّل/إفلات. */
         const STUDENT_ECHO_SYNC_TXT_BOOT = 'جاري تشغيل المقطع… ثم اضغط الميكروفون في النافذة مع الاستمرار للتسجيل، وأفلِت لمتابعة الاستماع.';
         const STUDENT_ECHO_SYNC_TXT_READY = 'اضغط مع الاستمرار';
-        const STUDENT_ECHO_SYNC_TXT_RECORDING = 'جاري تسجيلك… أفلِت الزر أو الإصبع عن الميكروفون لمتابعة الاستماع.';
-        const STUDENT_ECHO_SYNC_TXT_AFTER_SEGMENT = 'استمع للمقطع، ثم اضغط الميكروفون مع الاستمرار للجزء التالي.';
+        const STUDENT_ECHO_SYNC_TXT_RECORDING = 'سجّل الآن..';
+        const STUDENT_ECHO_SYNC_TXT_AFTER_SEGMENT = 'استمع الآن..';
         const STUDENT_ECHO_SYNC_TITLE_VERSE_BTN = 'نقرة: تشغيل المقطع والنافذة. الميكروفون في النافذة: اضغط مع الاستمرار للتسجيل وأفلِت للمتابعة.';
         /** Nach Versende: durchgehendes Tail-Mikro nur in #student-echo-sync-ui (kein تسجيل عادي). */
-        const STUDENT_ECHO_SYNC_TXT_TAIL_RECORDING = 'انتهى تشغيل المقطع. يستمر التسجيل في هذه النافذة — اضغط «إنهاء» عندما تفرغ من الكلام.';
+        const STUDENT_ECHO_SYNC_TXT_TAIL_RECORDING = 'واصل التسجيل..';
 
         function isStages45SyncFeaturesEnabled() {
             const id = Number(currentStageId);
