@@ -2044,7 +2044,7 @@
         /**
          * Client: WebAudio vor MediaRecorder gleicht Geräte-Unterpegel aus. Hochgeladene clips: Cloud Function transcodeUploadAudio
          * nutzt FFmpeg zweiphasig loudnorm (EBU R128-Ziel I≈-16 LUFS nach Encoding zu .m4a).
-         * Wiedergabe: HTMLMediaElement.volume max 1; Kurs-MP3 o. Ä. sind nicht durch dieselbe Pipeline gelaufen.
+         * Wiedergabe: Feed/Review-Nutzerclips über WebAudio-Gain (userRecordingPlaybackBoost); Kurs bleibt #mainAudio ohne diesen Boost.
          */
         const it9anAudioProfile = (function () {
             const ua = navigator.userAgent || '';
@@ -2063,13 +2063,15 @@
                 micSyncReplyPre: kind === 'android' ? 2.12 : kind === 'mac' ? 1.72 : 2.38,
                 /** Stereo-Mic → Mono: je Kanal (Summe ≈ 1 bei gleichem Pegel) */
                 stereoDownmixChannel: 0.5,
-                /** Schüler in Sync-Aufnahme (dest): 1.0 — Originalpegel, kein künstlicher Lift (Mix vs. Lehrer-Mic). Hörpfad: studentMonitorOnlyGain. */
-                syncReplyStudentRec: 1.0,
-                syncMonitorBase: 1.38,
-                syncMonitorIosExtra: kind === 'ios' ? 1.66 : 1,
-                syncMonitorPostMicIos: 2.45,
-                syncMonitorPostMicOther: 1.14,
-                syncMonitorCap: 3.9,
+                /** Schüler in Sync-Aufnahme (dest + Monitor): angehoben — Nutzerclips wirken sonst deutlich leiser als Kurs-Audio. */
+                syncReplyStudentRec: 2.2,
+                syncMonitorBase: 1.78,
+                syncMonitorIosExtra: kind === 'ios' ? 2.05 : 1,
+                syncMonitorPostMicIos: 3.2,
+                syncMonitorPostMicOther: 1.52,
+                syncMonitorCap: 5.25,
+                /** Feed + Review: WebAudio-Gain nach MediaElementSource (kann >1; Kurs bleibt über #mainAudio ohne Boost). */
+                userRecordingPlaybackBoost: 2.35,
                 /** HTML-Audio: nur 0…1; hier zentral zum späteren Feintuning */
                 mediaElementVolume: 1,
                 /** Kurz-Töne nach Mic (WebAudio): Mobile oft kaum hörbar ohne resume + höheren Peak */
@@ -2078,6 +2080,39 @@
                 beepEchoPeak: kind === 'ios' || kind === 'android' ? 0.62 : 0.48
             };
         })();
+        let it9anUserRecPbCtx = null;
+        let it9anUserRecPbFeedGain = null;
+        let it9anUserRecPbReviewGain = null;
+        let it9anUserRecPbFeedHooked = false;
+        let it9anUserRecPbReviewHooked = false;
+        function it9anWireUserRecordingPlaybackBoostIfNeeded() {
+            const Ctx = window.AudioContext || window.webkitAudioContext;
+            if (!Ctx) return;
+            if (!it9anUserRecPbCtx) it9anUserRecPbCtx = new Ctx();
+            const ctx = it9anUserRecPbCtx;
+            if (!it9anUserRecPbFeedHooked && feedAudioEl) {
+                try {
+                    const src = ctx.createMediaElementSource(feedAudioEl);
+                    it9anUserRecPbFeedGain = ctx.createGain();
+                    src.connect(it9anUserRecPbFeedGain).connect(ctx.destination);
+                    it9anUserRecPbFeedHooked = true;
+                } catch (e) {}
+            }
+            const rev = document.getElementById('reviewAudio');
+            if (!it9anUserRecPbReviewHooked && rev) {
+                try {
+                    const src = ctx.createMediaElementSource(rev);
+                    it9anUserRecPbReviewGain = ctx.createGain();
+                    src.connect(it9anUserRecPbReviewGain).connect(ctx.destination);
+                    it9anUserRecPbReviewHooked = true;
+                } catch (e) {}
+            }
+        }
+        function it9anUpdateUserRecordingPlaybackBoostGains() {
+            const b = it9anAudioProfile.userRecordingPlaybackBoost;
+            if (it9anUserRecPbFeedGain) it9anUserRecPbFeedGain.gain.value = b;
+            if (it9anUserRecPbReviewGain) it9anUserRecPbReviewGain.gain.value = b;
+        }
         function it9anApplyDefaultPlaybackVolumes() {
             const v = Math.min(1, Math.max(0, it9anAudioProfile.mediaElementVolume));
             try {
@@ -2087,6 +2122,8 @@
                 if (m) m.volume = v;
                 if (f) f.volume = v;
                 if (r) r.volume = v;
+                it9anWireUserRecordingPlaybackBoostIfNeeded();
+                it9anUpdateUserRecordingPlaybackBoostGains();
             } catch (e) {}
         }
         /** Nach Aufnahme-Ende: alle gehaltenen Mic-Streams + Kontext freigeben (inkl. macOS-Menüleiste). */
@@ -2392,6 +2429,19 @@
 
         const audioEl = document.getElementById('mainAudio');
         it9anApplyDefaultPlaybackVolumes();
+        (function it9anHookUserRecPlaybackContextResume() {
+            function hook(el) {
+                if (!el || el._it9anUserRecPbResumeHooked) return;
+                el._it9anUserRecPbResumeHooked = true;
+                el.addEventListener('play', function() {
+                    try {
+                        if (it9anUserRecPbCtx && it9anUserRecPbCtx.state === 'suspended') void it9anUserRecPbCtx.resume();
+                    } catch (e) {}
+                });
+            }
+            hook(feedAudioEl);
+            hook(document.getElementById('reviewAudio'));
+        })();
         const pBar = document.getElementById('progressBar');
         const cTime = document.getElementById('currentTime');
         const dTime = document.getElementById('durationTime');
