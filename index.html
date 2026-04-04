@@ -2069,7 +2069,7 @@
         /**
          * Client: WebAudio vor MediaRecorder gleicht Geräte-Unterpegel aus. Hochgeladene clips: Cloud Function transcodeUploadAudio
          * nutzt FFmpeg zweiphasig loudnorm (EBU R128-Ziel I≈-16 LUFS nach Encoding zu .m4a).
-         * Wiedergabe: Feed/Review-Nutzerclips über WebAudio-Gain (userRecordingPlaybackBoost); Kurs bleibt #mainAudio ohne diesen Boost.
+         * Wiedergabe: Feed/Review-Nutzerclips über WebAudio-Gain (userRecordingPlaybackBoost), außer Android (natives <audio>); Kurs bleibt #mainAudio ohne diesen Boost.
          */
         const it9anAudioProfile = (function () {
             const ua = navigator.userAgent || '';
@@ -2103,6 +2103,10 @@
                 syncMonitorCap: 5.25,
                 /** Feed + Review: WebAudio-Gain nach MediaElementSource (kann >1; Kurs bleibt über #mainAudio ohne Boost). */
                 userRecordingPlaybackBoost: 2.35,
+                /**
+                 * Android: MediaElementSource + AudioContext oft ohne hörbaren Output (Fortschritt läuft). Natives <audio> nutzen; Clips sind loudnorm.
+                 */
+                skipWebAudioUserClipRouting: kind === 'android',
                 /** HTML-Audio: nur 0…1; hier zentral zum späteren Feintuning */
                 mediaElementVolume: 1,
                 /** Kurz-Töne nach Mic (WebAudio): Mobile oft kaum hörbar ohne resume + höheren Peak */
@@ -2117,6 +2121,7 @@
         let it9anUserRecPbFeedHooked = false;
         let it9anUserRecPbReviewHooked = false;
         function it9anWireUserRecordingPlaybackBoostIfNeeded() {
+            if (it9anAudioProfile.skipWebAudioUserClipRouting) return;
             const Ctx = window.AudioContext || window.webkitAudioContext;
             if (!Ctx) return;
             if (!it9anUserRecPbCtx) it9anUserRecPbCtx = new Ctx();
