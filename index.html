@@ -7467,15 +7467,17 @@
             if (ctx.state === 'suspended') await ctx.resume();
 
             const isIOSSyncReply = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-            /* studentGain→MediaStreamDestination (Aufnahme); parallel monitorRoute→ctx.destination (nur Live-Hören).
-               In der Lehrer-Aufnahmephase duckt WebKit/iOS typisch die *Lautsprecher-/Kopfhörer-Ausgabe* sobald das Mikro aktiv ist; der digitale Mix für MediaRecorder ist oft weniger betroffen — daher klingt Review & Wiedergabe nach dem Senden wieder „normal“.
-               Kompensation: leichter iOS-Basispegel in die Datei + stärkerer Monitor-Boost; nach erstem Mic-Open nur noch Monitor nachziehen (kein studentGain→dest, sonst Sprung in der hochgeladenen Datei). */
+            /* Schüler: studentGain→dest (Aufnahme, Pegel konstant = kein Sprung in der Datei). Nur für Live-Hören: studentMonitorOnlyGain→monitorRoute→…
+               iOS duckt nach erstem Mic typisch die *Hardware-Ausgabe*; der digitale Pegel vor destination ändert sich oft kaum — daher Kompensation nur im Monitorzweig, Faktor auf ~„inverse Ducking“ abgestimmt. */
             const SYNC_REPLY_MIC_PRE_NON_IOS = 2.3;
             const SYNC_REPLY_MONITOR_ONLY = 1.3;
             const SYNC_REPLY_MONITOR_IOS_EXTRA = isIOSSyncReply ? 1.75 : 1;
-            const SYNC_REPLY_STUDENT_REC_GAIN_IOS = isIOSSyncReply ? 1.12 : 1;
+            const SYNC_REPLY_STUDENT_REC_GAIN = 1;
+            /** Zusätzlicher Gain nur zwischen studentGain und monitorRoute (nicht in dest). iOS ≈1/0,52 bis ~1/0,58 typ. Voice-Ducking. */
+            const SYNC_REPLY_MONITOR_ONLY_POST_FIRST_MIC_IOS = 1.91;
+            const SYNC_REPLY_MONITOR_ONLY_POST_FIRST_MIC_OTHER = 1.06;
             const studentGain = ctx.createGain();
-            studentGain.gain.value = SYNC_REPLY_STUDENT_REC_GAIN_IOS;
+            studentGain.gain.value = SYNC_REPLY_STUDENT_REC_GAIN;
 
             let revokeBlobUrl = null;
             let studentDriver = null;
@@ -7504,12 +7506,15 @@
             let teacherRecordingIsIOS = false;
 
             const dest = ctx.createMediaStreamDestination();
+            const studentMonitorOnlyGain = ctx.createGain();
+            studentMonitorOnlyGain.gain.value = 1;
             const monitorRoute = ctx.createGain();
             monitorRoute.gain.value = SYNC_REPLY_MONITOR_ONLY * SYNC_REPLY_MONITOR_IOS_EXTRA;
             const monitorGain = ctx.createGain();
             monitorGain.gain.value = 1;
             studentGain.connect(dest);
-            studentGain.connect(monitorRoute);
+            studentGain.connect(studentMonitorOnlyGain);
+            studentMonitorOnlyGain.connect(monitorRoute);
             monitorRoute.connect(monitorGain);
             monitorGain.connect(ctx.destination);
 
@@ -7519,20 +7524,18 @@
             micGain.connect(dest);
 
             let syncReplyFirstMicBoostApplied = false;
-            /** Nach erstem aktiven Lehrer-Mikro: nur Live-Monitor anheben (monitorRoute). Review/Blob nutzen anderen Pfad — dort entfällt WebKit-Ducking, daher kein studentGain→dest anfassen. */
+            /** Nach erstem Mic: nur studentMonitorOnlyGain (Hörpfad). dest unverändert → Datei ohne Pegelbruch; Live-Schüler wirkt wieder wie vor dem Mic. */
             function bumpSyncReplyStudentLevelAfterFirstMicOpen() {
                 if (syncReplyFirstMicBoostApplied) return;
                 syncReplyFirstMicBoostApplied = true;
-                if (!isIOSSyncReply) return;
                 const t0 = ctx.currentTime;
-                const curM = monitorRoute.gain.value;
-                const targetMon = Math.min(curM * 1.72, 4.55);
+                const target = isIOSSyncReply ? SYNC_REPLY_MONITOR_ONLY_POST_FIRST_MIC_IOS : SYNC_REPLY_MONITOR_ONLY_POST_FIRST_MIC_OTHER;
                 try {
-                    monitorRoute.gain.cancelScheduledValues(t0);
-                    monitorRoute.gain.setValueAtTime(curM, t0);
-                    monitorRoute.gain.linearRampToValueAtTime(targetMon, t0 + 0.07);
-                } catch (e2) {
-                    monitorRoute.gain.value = targetMon;
+                    studentMonitorOnlyGain.gain.cancelScheduledValues(t0);
+                    studentMonitorOnlyGain.gain.setValueAtTime(studentMonitorOnlyGain.gain.value, t0);
+                    studentMonitorOnlyGain.gain.linearRampToValueAtTime(target, t0 + 0.09);
+                } catch (e) {
+                    studentMonitorOnlyGain.gain.value = target;
                 }
             }
 
