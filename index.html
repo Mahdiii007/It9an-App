@@ -2202,7 +2202,7 @@
         let activePostFilter = null;
         let activePostFilterNotifId = null;
 
-        /* Audio: Uploads uploads/*.(webm|ogg|mp4|wav) → Cloud Function transcodeUploadAudio → .m4a (AAC/MP4), Firestore-URLs werden ersetzt */
+        /* Audio: uploads/* → transcodeUploadAudio → .m4a; uploads/echo_* (تسجيل متزامن, grüner Mix) ohne loudnorm — Originalpegel */
 
         // --- GLOBAL FEED PLAYER LOGIC ---
         let currentFeedAudioId = null;
@@ -10686,11 +10686,12 @@
                 const blobToUpload = (role === 'student' && !replyTargetId && reviewBlobGreen && reviewBlobGreen.size > 0)
                     ? reviewBlobGreen
                     : currentBlob;
+                const echoSyncStudentUpload = role === 'student' && !replyTargetId && reviewBlobGreen && reviewBlobGreen.size > 0;
                 let ext = 'webm';
                 if (blobToUpload.type.includes('mp4')) ext = 'mp4';
                 else if (blobToUpload.type.includes('ogg')) ext = 'ogg';
                 else if (blobToUpload.type.includes('wav')) ext = 'wav';
-                const refS = window.ref(window.storage, `uploads/${Date.now()}_${uid}.${ext}`);
+                const refS = window.ref(window.storage, (echoSyncStudentUpload ? 'uploads/echo_' : 'uploads/') + Date.now() + '_' + uid + '.' + ext);
                 await window.uploadBytes(refS, blobToUpload);
                 const url = await window.getDownloadURL(refS);
                 if (replyTargetId) {
