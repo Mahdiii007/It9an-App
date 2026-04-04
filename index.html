@@ -8,6 +8,8 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="إتقان">
+    <!-- Wird von scripts/bump-app-version.sh mit derselben version wie app-version.json gesetzt (synchroner Deploy-Check, kein fetch → zuverlässig in Safari/PWA). -->
+    <meta name="it9an-deploy-version" content="it9an-1775343189-local-5546-dd1d172">
     <link rel="manifest" href="manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap" rel="stylesheet">
     
@@ -1311,6 +1313,39 @@
                 } catch (e7) { /* ignore */ }
             }
         }
+        /** Synchron beim Parsen von index.html: neue Meta-Version ⇒ Session weg (Safari cached app-version.json oft; fetch kommt zu spät vs. runTryRestoreSession). */
+        (function it9anEmbeddedDeployGate() {
+            const KEY_EMB = 'it9an_embedded_deploy_version';
+            const KEY_FETCH = 'it9an_app_deploy_version';
+            var embedded = '';
+            try {
+                var m = document.querySelector('meta[name="it9an-deploy-version"]');
+                embedded = (m && m.getAttribute('content') || '').trim();
+            } catch (e0) { return; }
+            if (!embedded || /pending|PLACEHOLDER/i.test(embedded)) return;
+            var prevEmb = null;
+            var prevFetch = null;
+            try { prevEmb = localStorage.getItem(KEY_EMB); } catch (e1) { return; }
+            try { prevFetch = localStorage.getItem(KEY_FETCH); } catch (e2) { /* ignore */ }
+            var needKick = false;
+            if (prevEmb !== null && prevEmb !== embedded) needKick = true;
+            else if (prevEmb === null && prevFetch !== null && prevFetch !== embedded) needKick = true;
+            if (needKick) {
+                it9anClearSessionForNewAppDeploy();
+                try {
+                    localStorage.setItem(KEY_EMB, embedded);
+                    localStorage.setItem(KEY_FETCH, embedded);
+                } catch (e3) { /* ignore */ }
+                void it9anPurgeWebCachesAndUnregisterSw().then(function() {
+                    try { window.location.reload(); } catch (r) {}
+                });
+                return;
+            }
+            try {
+                if (prevEmb === null) localStorage.setItem(KEY_EMB, embedded);
+                if (prevFetch === null || prevFetch === '') localStorage.setItem(KEY_FETCH, embedded);
+            } catch (e4) { /* ignore */ }
+        })();
         if (typeof navigator.serviceWorker !== 'undefined') {
             navigator.serviceWorker.addEventListener('message', (e) => {
                 const m = e.data;
