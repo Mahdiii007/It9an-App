@@ -2051,6 +2051,8 @@
             } catch (e) {}
         }
         let teacherSyncReplyActive = false;
+        /** رد متزامن (Lehrer): true nur wenn getUserMedia-Mic wirklich aktiv — für iOS audioSession playback vs. capture. */
+        let teacherSyncReplyMicCapturing = false;
         /** Während runTeacherSyncReplySession: für visibilitychange → resume (PWA/iOS). */
         let teacherSyncReplyWebAudioCtx = null;
         let syncReplySessionHandle = null;
@@ -4897,6 +4899,9 @@
                 const isIOSMic = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
                 let stream = null;
                 if (isIOSMic) {
+                    if (navigator.audioSession) {
+                        try { it9anSetAudioSessionForMicCapture(true, { iosTeacherSyncPreferAuto: true }); } catch (eS) {}
+                    }
                     /* Wie toggleRecord: kein Echo-/Rauschfilter (explizit false); { audio: true } nur letzter Fallback. */
                     const micCandidates = [
                         { audio: { echoCancellation: false, noiseSuppression: false, channelCount: { ideal: 1 } } },
@@ -4919,6 +4924,9 @@
                 }
                 if (!stream) throw new Error('getUserMedia');
                 stream.getTracks().forEach(t => t.stop());
+                if (navigator.audioSession) {
+                    try { navigator.audioSession.type = 'playback'; } catch (ePb) {}
+                }
                 alert('تم تفعيل الميكروفون بنجاح. يمكنك التسجيل الآن.');
             } catch (e) {
                 console.warn('Microphone:', e);
@@ -6640,7 +6648,7 @@
             }
             if (!checked) return 1;
             const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-            return isIOS ? 1.4 : 1.12;
+            return isIOS ? 1.52 : 1.12;
         }
         function syncReplyUiSetVisible(visible) {
             const el = document.getElementById('sync-reply-ui');
@@ -6714,8 +6722,7 @@
 
         /**
          * playback auf iOS bricht aktives Mikrofon (WebKit: „not compatible with audio capture”).
-         * رد متزامن: globaler mediaRecorder ist nicht die Sync-Instanz — solange syncReplySessionHandle gesetzt ist, läuft die Session.
-         * Nach onstop: syncReplySessionHandle = null → Review darf wieder playback (teacherSyncReplyActive kann für «إعادة» true bleiben).
+         * رد متزامن nutzt einen lokalen MediaRecorder — nur bei teacherSyncReplyMicCapturing Lautsprecher-Kick blockieren.
          */
         function it9anIosPlaybackSessionSafeWrtCapture() {
             try {
@@ -6725,7 +6732,7 @@
                 if (typeof mediaRecorder !== 'undefined' && mediaRecorder && mediaRecorder.state === 'recording') return false;
             } catch (e2) {}
             try {
-                if (typeof teacherSyncReplyActive !== 'undefined' && teacherSyncReplyActive && typeof syncReplySessionHandle !== 'undefined' && syncReplySessionHandle) return false;
+                if (typeof teacherSyncReplyMicCapturing !== 'undefined' && teacherSyncReplyMicCapturing) return false;
             } catch (e3) {}
             return true;
         }
@@ -6750,8 +6757,25 @@
             } catch (t) {}
         }
 
+        /** Nach geöffnetem Mic (iOS): Session „auto“ anstoßen — weniger Ohrmuschel-Route bei play-and-record/VoiceChat. */
+        function it9anIosNudgeAudioSessionAfterMicOpen() {
+            if (!it9anIsIosWebKitUA() || !navigator.audioSession) return;
+            function nudge() {
+                try { navigator.audioSession.type = 'auto'; } catch (e) {}
+            }
+            nudge();
+            try {
+                requestAnimationFrame(function() { nudge(); });
+            } catch (r) {}
+            try {
+                setTimeout(nudge, 30);
+                setTimeout(nudge, 120);
+            } catch (t) {}
+        }
+
         /** Nach رد متزامن: wie toggleRecord — sonst bleibt iOS/WKWebKit oft auf play-and-record → Feed + normaler الرد klingen gedämpft/schlecht. */
         function restoreAudioSessionAfterSyncReply() {
+            teacherSyncReplyMicCapturing = false;
             it9anAudioSessionPreferPlaybackForSpeaker();
         }
 
@@ -6780,16 +6804,26 @@
 
         /**
          * Vor getUserMedia: iOS/WebKit verlangt eine Capture-kompatible Session (playback → „not compatible with audio capture”).
-         * play-and-record kann zur Ohrmuschel routen; alternativ gibt es im Web keine zuverlässige „nur Lautsprecher“-API.
+         * play-and-record routet oft zur Ohrmuschel; mit iosTeacherSyncPreferAuto zuerst „auto“ (alle iOS-Pfade mit gleichzeitigem Abspielen + Mic).
          */
-        function it9anSetAudioSessionForMicCapture(isIOS) {
+        function it9anSetAudioSessionForMicCapture(isIOS, opts) {
             if (!navigator.audioSession) return;
+            opts = opts || {};
+            const teacherSyncPreferAuto = opts.iosTeacherSyncPreferAuto === true;
             try {
                 if (isIOS) {
-                    try {
-                        navigator.audioSession.type = 'play-and-record';
-                    } catch (e) {
-                        try { navigator.audioSession.type = 'auto'; } catch (e2) {}
+                    if (teacherSyncPreferAuto) {
+                        try {
+                            navigator.audioSession.type = 'auto';
+                        } catch (e) {
+                            try { navigator.audioSession.type = 'play-and-record'; } catch (e2) {}
+                        }
+                    } else {
+                        try {
+                            navigator.audioSession.type = 'play-and-record';
+                        } catch (e) {
+                            try { navigator.audioSession.type = 'auto'; } catch (e2) {}
+                        }
                     }
                 } else {
                     navigator.audioSession.type = 'play-and-record';
@@ -6810,12 +6844,44 @@
             } catch (e2) {}
         }
 
-        /** Nach Hintergrund: Capture-Session wieder anwenden (iOS: play-and-record). */
+        /**
+         * Nach pageshow/visibility: Session passend zur *tatsächlichen* Capture-Situation (globaler mediaRecorder ≠ رد متزامن-Recorder).
+         * iOS: Echo-Übung zwischen Haltesegmenten „auto“ (wie applyAudioSessionAfterEchoHoldSegmentStop; „playback“ → oft Stille).
+         */
         function it9anReapplyAudioSessionDuringActiveMicCapture() {
+            if (!navigator.audioSession) return;
+            const isIOS = it9anIsIosWebKitUA();
             const mainRec = typeof mediaRecorder !== 'undefined' && mediaRecorder && mediaRecorder.state === 'recording';
             const echoRec = echoHoldMediaRecorder && echoHoldMediaRecorder.state === 'recording';
-            if (!mainRec && !echoRec && !teacherSyncReplyActive) return;
-            it9anSetAudioSessionForMicCapture(it9anIsIosWebKitUA());
+            const syncActive = typeof teacherSyncReplyActive !== 'undefined' && teacherSyncReplyActive;
+            const syncMic = typeof teacherSyncReplyMicCapturing !== 'undefined' && teacherSyncReplyMicCapturing;
+            const echoPractice = typeof studentEchoPracticeSessionActive !== 'undefined' && studentEchoPracticeSessionActive && !studentEchoPostVersePhase;
+            if (!mainRec && !echoRec && !syncActive && !echoPractice) return;
+            if (!isIOS) {
+                if (!mainRec && !echoRec && !syncActive) return;
+                it9anSetAudioSessionForMicCapture(false, {});
+                return;
+            }
+            if (syncActive) {
+                if (!syncMic && !echoRec) {
+                    try { navigator.audioSession.type = 'playback'; } catch (e) {}
+                    return;
+                }
+                it9anSetAudioSessionForMicCapture(true, { iosTeacherSyncPreferAuto: true });
+                it9anIosNudgeAudioSessionAfterMicOpen();
+                return;
+            }
+            if (echoPractice && !echoRec) {
+                try { navigator.audioSession.type = 'auto'; } catch (e) {}
+                return;
+            }
+            if (echoRec) {
+                it9anSetAudioSessionForMicCapture(true, { iosTeacherSyncPreferAuto: true });
+                it9anIosNudgeAudioSessionAfterMicOpen();
+                return;
+            }
+            if (!mainRec) return;
+            it9anSetAudioSessionForMicCapture(true, {});
         }
 
         async function it9anAcquireIosMicStreamWithLiveRetry(iosCandidates) {
@@ -6859,7 +6925,11 @@
                 if (lastRecCtx && lastRecCtx.state !== 'closed') { try { await lastRecCtx.close(); } catch (e) {} lastRecCtx = null; }
                 await new Promise(r => setTimeout(r, 100));
             }
-            it9anSetAudioSessionForMicCapture(isIOS);
+            if (isIOS) {
+                it9anSetAudioSessionForMicCapture(true, { iosTeacherSyncPreferAuto: true });
+            } else {
+                it9anSetAudioSessionForMicCapture(false);
+            }
             let rawStream = null;
             if (isIOS) {
                 /* Wie toggleRecord: Mono bevorzugen (Stereo-Memos auf manchen iPhones = schlechte / falsche Kapsel auf Kanal 0). */
@@ -6882,6 +6952,16 @@
                         lastErr = null;
                         break;
                     } catch (e) { lastErr = e; }
+                }
+                if (!rawStream) {
+                    it9anSetAudioSessionForMicCapture(true, {});
+                    for (const c of iosCandidates) {
+                        try {
+                            rawStream = await navigator.mediaDevices.getUserMedia(c);
+                            lastErr = null;
+                            break;
+                        } catch (e) { lastErr = e; }
+                    }
                 }
                 if (!rawStream) throw lastErr || new Error('mic');
             } else {
@@ -7609,15 +7689,19 @@
             if (ctx.state === 'suspended') await ctx.resume();
 
             const isIOSSyncReply = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+            /* Vor erstem Mic: Medien-Lautsprecher (nicht play-and-record → Ohrmuschel). Mic-Phasen setzen Session in acquireMicStream separat. */
+            if (isIOSSyncReply && navigator.audioSession) {
+                try { navigator.audioSession.type = 'playback'; } catch (ePlaySync0) {}
+            }
             /* Schüler: studentGain→dest (Aufnahme konstant). Monitor: studentMonitorOnlyGain → [iOS: L→beide Kanäle] → monitorRoute — iPhone routet oft nur einen Lautsprecher für „Sprach“-Mix; Stereo kann eine Seite leiser wirken. Nach erstem Mic + optional Checkbox-Speaker-Boost. */
             const SYNC_REPLY_MIC_PRE_NON_IOS = 2.3;
             const SYNC_REPLY_MONITOR_ONLY = 1.3;
             const SYNC_REPLY_MONITOR_IOS_EXTRA = isIOSSyncReply ? 1.75 : 1;
             const SYNC_REPLY_STUDENT_REC_GAIN = 1;
-            /** Monitor nur; nach Mic + ggf. syncReplyGetSpeakerBoostMult() für eingebaute Lautsprecher. */
-            const SYNC_REPLY_MONITOR_ONLY_POST_FIRST_MIC_IOS = 2.02;
+            /** Monitor nur; nach Mic + ggf. syncReplyGetSpeakerBoostMult() für eingebaute Lautsprecher (Fallback wenn Route noch leise). */
+            const SYNC_REPLY_MONITOR_ONLY_POST_FIRST_MIC_IOS = 2.38;
             const SYNC_REPLY_MONITOR_ONLY_POST_FIRST_MIC_OTHER = 1.06;
-            const SYNC_REPLY_MONITOR_POST_MIC_CAP = 3.35;
+            const SYNC_REPLY_MONITOR_POST_MIC_CAP = 3.75;
             const studentGain = ctx.createGain();
             studentGain.gain.value = SYNC_REPLY_STUDENT_REC_GAIN;
 
@@ -7697,6 +7781,7 @@
 
             /** fullRelease: nur true wenn die gesamte Sync-Session endet — nicht bei jedem Halte-Loslassen (iOS/PWA: sonst playback↔play-and-record-Flattern → stummes Mikro). */
             function detachTeacherSyncMicPipeline(fullRelease) {
+                teacherSyncReplyMicCapturing = false;
                 try {
                     if (micToStereo) {
                         try { micToStereo.disconnect(); } catch (e) {}
@@ -7725,10 +7810,17 @@
                     rawStream = null;
                 }
                 if (fullRelease) restoreAudioSessionAfterSyncReply();
+                else if (it9anIsIosWebKitUA() && navigator.audioSession) {
+                    try { navigator.audioSession.type = 'playback'; } catch (ePbSync) {}
+                }
             }
 
             async function attachTeacherSyncMicPipeline() {
-                if (it9anMicStreamTracksAllLive(rawStream)) return;
+                if (it9anMicStreamTracksAllLive(rawStream)) {
+                    teacherSyncReplyMicCapturing = true;
+                    it9anIosNudgeAudioSessionAfterMicOpen();
+                    return;
+                }
                 if (rawStream) detachTeacherSyncMicPipeline(false);
                 const mic = await acquireMicStreamForTeacherSync();
                 rawStream = mic.rawStream;
@@ -7769,6 +7861,8 @@
                         };
                     });
                 } catch (e) {}
+                teacherSyncReplyMicCapturing = true;
+                it9anIosNudgeAudioSessionAfterMicOpen();
             }
 
             let mediaRecorder;
@@ -8971,7 +9065,11 @@
                         feedAudioEl.volume = 0;
                         await new Promise(r => setTimeout(r, 500));
                     }
-                    it9anSetAudioSessionForMicCapture(isIOS);
+                    if (isIOS) {
+                        it9anSetAudioSessionForMicCapture(true, { iosTeacherSyncPreferAuto: true });
+                    } else {
+                        it9anSetAudioSessionForMicCapture(false);
+                    }
                     let dur = audioEl.duration; if (!dur || isNaN(dur)) dur = 15;
                     maxRecDuration = Math.min(900, Math.ceil(dur * 12));
                     const canReuse = isMacDesktop && it9anMicStreamTracksAllLive(lastRecStream);
@@ -9001,6 +9099,18 @@
                                 break;
                             } catch (e) {
                                 lastGumErr = e;
+                            }
+                        }
+                        if (!rawStream) {
+                            it9anSetAudioSessionForMicCapture(true, {});
+                            for (const c of iosCandidates) {
+                                try {
+                                    rawStream = await navigator.mediaDevices.getUserMedia(c);
+                                    lastGumErr = null;
+                                    break;
+                                } catch (e) {
+                                    lastGumErr = e;
+                                }
                             }
                         }
                         if (!rawStream) throw lastGumErr || new Error('getUserMedia');
@@ -9114,6 +9224,7 @@
                 /* Ton wie bei Halte-Segmenten: gleicher WebAudio-Kontext wie die Aufnahme (iOS). */
                 playStudentEchoBeep(recCtx);
                 mediaRecorder.start();
+                if (isIOS) it9anIosNudgeAudioSessionAfterMicOpen();
                 requestWakeLock();
                 const recBtn = document.getElementById('recBtn');
                 if (recBtn && recBtn.style.display !== 'none' && !(studentEchoPracticeSessionActive && studentEchoPostVersePhase)) {
@@ -9189,7 +9300,11 @@
                     await new Promise(r => setTimeout(r, 100));
                 }
                 await prepareIosEchoHoldMicSession();
-                it9anSetAudioSessionForMicCapture(isIOS);
+                if (isIOS) {
+                    it9anSetAudioSessionForMicCapture(true, { iosTeacherSyncPreferAuto: true });
+                } else {
+                    it9anSetAudioSessionForMicCapture(false);
+                }
                 let rawStream = null;
                 let recCtx = null;
                 if (isIOS) {
@@ -9213,6 +9328,18 @@
                             break;
                         } catch (e) {
                             lastGumErr = e;
+                        }
+                    }
+                    if (!rawStream) {
+                        it9anSetAudioSessionForMicCapture(true, {});
+                        for (const c of iosCandidates) {
+                            try {
+                                rawStream = await navigator.mediaDevices.getUserMedia(c);
+                                lastGumErr = null;
+                                break;
+                            } catch (e) {
+                                lastGumErr = e;
+                            }
                         }
                     }
                     if (!rawStream) throw lastGumErr || new Error('getUserMedia');
@@ -9294,7 +9421,11 @@
                 echoHoldStream = stream;
             } else {
                 await prepareIosEchoHoldMicSession();
-                it9anSetAudioSessionForMicCapture(isIOS);
+                if (isIOS) {
+                    it9anSetAudioSessionForMicCapture(true, { iosTeacherSyncPreferAuto: true });
+                } else {
+                    it9anSetAudioSessionForMicCapture(false);
+                }
             }
             let options = { audioBitsPerSecond: (isAndroid && MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) ? 192000 : 128000 };
             if (MediaRecorder.isTypeSupported('audio/mp4;codecs=mp4a.40.2')) options.mimeType = 'audio/mp4;codecs=mp4a.40.2';
@@ -9310,6 +9441,7 @@
                 retakeHintEl.textContent = retakeHintDefault;
             }
             echoHoldMediaRecorder.start();
+            if (isIOS) it9anIosNudgeAudioSessionAfterMicOpen();
             } catch (err) {
                 if (stEchoSyncStatus && echoSyncShowMicLoading) {
                     stEchoSyncStatus.textContent = '';
@@ -9795,7 +9927,11 @@
                         feedAudioEl.volume = 0;
                         await new Promise(r => setTimeout(r, 500));
                     }
-                    it9anSetAudioSessionForMicCapture(isIOS);
+                    if (isIOS) {
+                        it9anSetAudioSessionForMicCapture(true, { iosTeacherSyncPreferAuto: true });
+                    } else {
+                        it9anSetAudioSessionForMicCapture(false);
+                    }
                     let dur = audioEl.duration; if (!dur || isNaN(dur)) dur = 15;
                     const role = localStorage.getItem('it9an_role');
                     maxRecDuration = (replyTargetId && role === 'teacher') ? 600 : Math.ceil(dur * 3);
@@ -9826,7 +9962,8 @@
                     lastRecStream = rawStream;
                     it9anEnableAllAudioTracks(rawStream);
                     if (isIOS && rawStream) {
-                        it9anSetAudioSessionForMicCapture(true);
+                        it9anSetAudioSessionForMicCapture(true, { iosTeacherSyncPreferAuto: true });
+                        it9anIosNudgeAudioSessionAfterMicOpen();
                         await new Promise(r => setTimeout(r, 60));
                     }
                     if (!it9anMicStreamTracksAllLive(rawStream)) {
@@ -9932,7 +10069,8 @@
                                 muteTimer = setTimeout(function() {
                                     muteTimer = null;
                                     if (!mediaRecorder || mediaRecorder.state !== 'recording') return;
-                                    it9anSetAudioSessionForMicCapture(isIOS);
+                                    it9anSetAudioSessionForMicCapture(isIOS, isIOS ? { iosTeacherSyncPreferAuto: true } : {});
+                                    if (isIOS) it9anIosNudgeAudioSessionAfterMicOpen();
                                     void (async function() {
                                         try {
                                             if (ctxToRelease && ctxToRelease.state === 'suspended') await ctxToRelease.resume();
@@ -10026,6 +10164,7 @@
                     };
                     /* Kein timeslice: ein durchgehender Blob – sonst WebM-Fragmente und Ruckler (v. a. Safari/iOS) */
                     mediaRecorder.start();
+                    if (isIOS) it9anIosNudgeAudioSessionAfterMicOpen();
                     requestWakeLock(); 
                     const recBtn = document.getElementById('recBtn'); if(recBtn && recBtn.style.display !== 'none') recBtn.classList.add('recording');
                     ui.style.display = 'flex'; recSeconds = 0; document.getElementById('recTimer').innerText = "00:00";
