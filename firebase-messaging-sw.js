@@ -1,6 +1,6 @@
 /* PWA Service Worker: Push (Ton+Vibration) + Offline-Caching
  * CACHE_NAME bei größeren Strategie-Änderungen erhöhen (alte Caches werden in activate entfernt). */
-const CACHE_NAME = 'it9an-v10';
+const CACHE_NAME = 'it9an-v11';
 const META_CACHE = 'it9an-sw-meta';
 const FORCE_LOGOUT_META_URL = 'https://it9an-sw-meta.local/force-logout-v';
 const CACHE_MAX_AGE = 24 * 60 * 60 * 1000;

@@ -1158,6 +1158,8 @@
 
     <script>
         var notifUnsubscribe = null;
+        var forceLogoutUnsub = null;
+        var forceLogoutKickScheduled = false;
         const STUDENT_PIN = "1234";
         const ADMIN_PIN = "1879";
         const TEACHER_LOTFI_PIN = "9898";
@@ -1222,26 +1224,7 @@
                     window.it9anRefreshFcmTokenSilent(true);
                 }
                 if (m && m.type === 'IT9AN_FORCE_LOGOUT') {
-                    const v = parseInt(m.version, 10) || 0;
-                    try { localStorage.setItem('it9an_logout_gen', String(v)); } catch (e) {}
-                    if (localStorage.getItem('it9an_uid') === 'admin_super') return;
-                    function hardReloadSoon() {
-                        setTimeout(function() { try { window.location.reload(); } catch (e2) {} }, 200);
-                    }
-                    if (typeof window.doLogout === 'function') {
-                        try {
-                            var p = window.doLogout();
-                            if (p && typeof p.then === 'function') p.then(hardReloadSoon).catch(hardReloadSoon);
-                            else hardReloadSoon();
-                        } catch (e3) { hardReloadSoon(); }
-                    } else {
-                        try {
-                            ['it9an_uid', 'it9an_role', 'it9an_name', 'it9an_pin', 'it9an_saved_pin', 'it9an_hidden'].forEach(function(k) {
-                                try { localStorage.removeItem(k); } catch (e4) {}
-                            });
-                        } catch (e5) {}
-                        hardReloadSoon();
-                    }
+                    it9anNotifyForceLogoutKick(m.version);
                 }
             });
         }
@@ -1401,6 +1384,7 @@
             document.getElementById('pinInput').value = '';
         }
         window.doLogout = async function() {
+            detachForceLogoutRealtimeListener();
             const uid = localStorage.getItem('it9an_uid');
             if (uid && uid !== 'admin_super') {
                 if (notifUnsubscribe) { try { notifUnsubscribe(); } catch(e){} notifUnsubscribe = null; }
@@ -1424,6 +1408,64 @@
             localStorage.removeItem('it9an_pin');
             document.getElementById('login-screen').style.display = 'flex';
             showPinLogin();
+            forceLogoutKickScheduled = false;
+        }
+        /** Erzwungener Logout (Version aus Firestore oder SW); idempotent, Admin nur it9an_logout_gen aktualisieren. */
+        function it9anNotifyForceLogoutKick(version) {
+            const v = parseInt(version, 10) || 0;
+            if (!v) return;
+            if (localStorage.getItem('it9an_uid') === 'admin_super') {
+                try { localStorage.setItem('it9an_logout_gen', String(v)); } catch (e) {}
+                return;
+            }
+            const uid = localStorage.getItem('it9an_uid');
+            if (!uid) return;
+            const localV = parseInt(localStorage.getItem('it9an_logout_gen') || '0', 10) || 0;
+            if (v <= localV) return;
+            try { localStorage.setItem('it9an_logout_gen', String(v)); } catch (e) {}
+            if (forceLogoutKickScheduled) return;
+            forceLogoutKickScheduled = true;
+            function hardReloadSoon() {
+                setTimeout(function() { try { window.location.reload(); } catch (e2) {} }, 200);
+            }
+            if (typeof window.doLogout === 'function') {
+                try {
+                    var p = window.doLogout();
+                    if (p && typeof p.then === 'function') p.then(hardReloadSoon).catch(hardReloadSoon);
+                    else hardReloadSoon();
+                } catch (e3) { hardReloadSoon(); }
+            } else {
+                try {
+                    ['it9an_uid', 'it9an_role', 'it9an_name', 'it9an_pin', 'it9an_saved_pin', 'it9an_hidden'].forEach(function(k) {
+                        try { localStorage.removeItem(k); } catch (e4) {}
+                    });
+                } catch (e5) {}
+                hardReloadSoon();
+            }
+        }
+        const APP_SETTINGS_DOC = 'appSettings';
+        function detachForceLogoutRealtimeListener() {
+            if (forceLogoutUnsub) {
+                try { forceLogoutUnsub(); } catch (e) {}
+                forceLogoutUnsub = null;
+            }
+        }
+        function attachForceLogoutRealtimeListener() {
+            detachForceLogoutRealtimeListener();
+            if (!window.db || typeof window.onSnapshot !== 'function') return;
+            const uid = localStorage.getItem('it9an_uid');
+            if (!uid || uid === 'admin_super') return;
+            try {
+                const ref = window.doc(window.db, APP_SETTINGS_DOC, 'forceLogout');
+                forceLogoutUnsub = window.onSnapshot(ref, function(snap) {
+                    const serverV = snap.exists() ? (Number(snap.data().version) || 0) : 0;
+                    it9anNotifyForceLogoutKick(serverV);
+                }, function(err) {
+                    console.warn('forceLogout onSnapshot:', err);
+                });
+            } catch (e) {
+                console.warn('attachForceLogoutRealtimeListener:', e);
+            }
         }
         window.showPinLogin = function() {
             document.getElementById('login-classic-mode').style.display = 'none';
@@ -1437,7 +1479,6 @@
             if (pinEl) pinEl.value = (saved && saved.length === 4) ? saved : '';
         }
 
-        const APP_SETTINGS_DOC = 'appSettings';
         async function getMaintenanceMode() {
             try {
                 const ref = window.doc(window.db, APP_SETTINGS_DOC, 'maintenance');
@@ -1502,6 +1543,7 @@
                     const serverV = snap.exists() ? (Number(snap.data().version) || 0) : 0;
                     const localV = parseInt(localStorage.getItem('it9an_logout_gen') || '0', 10) || 0;
                     if (serverV > localV) {
+                        try { localStorage.setItem('it9an_logout_gen', String(serverV)); } catch (e) {}
                         await window.doLogout();
                         return true;
                     }
@@ -1510,8 +1552,8 @@
             })();
         }
         function syncLogoutGenerationAfterLogin() {
-            if (!window.db) return;
-            (async function() {
+            if (!window.db) return Promise.resolve();
+            return (async function() {
                 try {
                     const ref = window.doc(window.db, APP_SETTINGS_DOC, 'forceLogout');
                     let snap;
@@ -2846,7 +2888,9 @@
             else localStorage.removeItem('it9an_pin');
             document.getElementById('login-screen').style.display = 'none';
             document.dispatchEvent(new CustomEvent('it9an_session_restored'));
-            syncLogoutGenerationAfterLogin();
+            syncLogoutGenerationAfterLogin().then(function() {
+                attachForceLogoutRealtimeListener();
+            });
             updateUIForRole();
             listenForNotifications();
             setupForegroundPushHandler();
@@ -2923,6 +2967,12 @@
                     if (Notification.permission !== 'granted') return;
                     requestPushPermissionAndSaveToken(u, r, false, true).catch(function() {});
                 }, 15 * 60 * 1000);
+                setInterval(function() {
+                    if (document.visibilityState !== 'visible') return;
+                    const u = localStorage.getItem('it9an_uid');
+                    if (!u || u === 'admin_super') return;
+                    applyGlobalForceLogoutIfNeeded();
+                }, 2 * 60 * 1000);
             }
         }
 
