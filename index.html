@@ -606,7 +606,6 @@
         .sync-reply-hold-btn .icon-mic { width: 30px; height: 30px; }
         .sync-reply-hold-btn:active, .sync-reply-hold-btn.sync-hold-active { background: linear-gradient(180deg, #b71c1c 0%, #8e0000 100%); transform: scale(0.96); }
         .sync-reply-hold-btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
-        .sync-append-done-btn { width: 100%; margin-top: 8px; padding: 12px; border-radius: 14px; border: none; background: var(--primary); color: #fff; font-size: 16px; font-weight: bold; font-family: 'Amiri'; cursor: pointer; display: none; }
 
         #review-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(3px); z-index: 6000; justify-content: center; align-items: center; }
         .review-box { background: white; padding: 30px; padding-right: 50px; border-radius: 25px; width: 85%; max-width: 380px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.3); border: 2px solid var(--primary); position: relative; }
@@ -1106,7 +1105,6 @@
         </div>
         <div id="sync-reply-status" class="sync-reply-status"></div>
         <button type="button" id="sync-reply-hold-btn" class="sync-reply-hold-btn" disabled aria-label="اضغط مع الاستمرار للتعليق على التسجيل"><svg class="icon-mic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
-        <button type="button" id="sync-append-done-btn" class="sync-append-done-btn">انتهيت من الإضافة</button>
     </div>
 
     <div id="student-echo-sync-ui" style="display: none;">
@@ -6694,11 +6692,15 @@
             pauseFeedAudio();
             syncReplyUiSetVisible(true);
             const holdBtn = document.getElementById('sync-reply-hold-btn');
-            const appendDoneBtn = document.getElementById('sync-append-done-btn');
             const statusEl = document.getElementById('sync-reply-status');
             const timerEl = document.getElementById('sync-reply-timer');
-            if (holdBtn) { holdBtn.style.display = ''; holdBtn.disabled = true; holdBtn.classList.remove('sync-hold-active'); }
-            if (appendDoneBtn) { appendDoneBtn.style.display = 'none'; }
+            if (holdBtn) {
+                holdBtn.style.display = '';
+                holdBtn.style.visibility = '';
+                holdBtn.removeAttribute('aria-hidden');
+                holdBtn.disabled = true;
+                holdBtn.classList.remove('sync-hold-active');
+            }
             if (statusEl) statusEl.textContent = 'جاري التحضير...';
             try {
                 let audioUrl = await getFreshPostAudioUrl(postId) || post.audioUrl;
@@ -6720,7 +6722,7 @@
                         return;
                     }
                 }
-                await runTeacherSyncReplySession(audioUrl, { mode: 'student', postId, statusEl, timerEl, holdBtn, appendDoneBtn });
+                await runTeacherSyncReplySession(audioUrl, { mode: 'student', postId, statusEl, timerEl, holdBtn });
             } catch (e) {
                 console.error('sync reply', e);
                 restoreAudioSessionAfterSyncReply();
@@ -6741,7 +6743,11 @@
                 recordingStageId = null;
             }
             syncReplyUiSetVisible(false);
-            if (holdBtn) holdBtn.classList.remove('sync-hold-active');
+            if (holdBtn) {
+                holdBtn.classList.remove('sync-hold-active');
+                holdBtn.style.visibility = '';
+                holdBtn.removeAttribute('aria-hidden');
+            }
         };
 
         async function getFreshPostAudioUrl(postId) {
@@ -7322,7 +7328,6 @@
             const statusEl = opts.statusEl;
             const timerEl = opts.timerEl;
             const holdBtn = opts.holdBtn;
-            const appendDoneBtn = opts.appendDoneBtn;
             let aborted = false;
             syncReplySessionHandle = { abort: () => {} };
 
@@ -7449,6 +7454,7 @@
 
             let resumeFrom = 0;
             let isCommenting = false;
+            let teacherPostStudentTailPhase = false;
             let sessionFinished = false;
             let wallSeconds = 0;
             let wallTimer = null;
@@ -7473,8 +7479,12 @@
                 micGain.gain.setValueAtTime(0, ctx.currentTime);
                 detachTeacherSyncMicPipeline();
                 if (wallTimer) clearInterval(wallTimer);
-                if (holdBtn) { holdBtn.disabled = true; holdBtn.classList.remove('sync-hold-active'); }
-                if (appendDoneBtn) appendDoneBtn.style.display = 'none';
+                if (holdBtn) {
+                    holdBtn.disabled = true;
+                    holdBtn.classList.remove('sync-hold-active');
+                    holdBtn.style.visibility = '';
+                    holdBtn.removeAttribute('aria-hidden');
+                }
                 if (mediaRecorder.state !== 'inactive') mediaRecorder.stop();
             }
 
@@ -7506,18 +7516,53 @@
                 };
             });
 
+            function beginTeacherAutoTailAfterStudent() {
+                if (sessionFinished || aborted || teacherPostStudentTailPhase || mode !== 'student') return;
+                teacherPostStudentTailPhase = true;
+                if (syncReplySessionHandle && syncReplySessionHandle._removePtr) {
+                    syncReplySessionHandle._removePtr();
+                    syncReplySessionHandle._removePtr = null;
+                }
+                if (holdBtn) {
+                    holdBtn.disabled = true;
+                    holdBtn.classList.remove('sync-hold-active');
+                    holdBtn.style.visibility = 'hidden';
+                    holdBtn.setAttribute('aria-hidden', 'true');
+                }
+                stopStudentNode();
+                if (statusEl) statusEl.textContent = 'جاري تفعيل الميكروفون…';
+                void (async () => {
+                    try {
+                        await attachTeacherSyncMicPipeline();
+                        if (sessionFinished || aborted) {
+                            detachTeacherSyncMicPipeline();
+                            return;
+                        }
+                        micGain.gain.setValueAtTime(1, ctx.currentTime);
+                        playSyncTransitionBeep(ctx, true);
+                        if (statusEl) statusEl.textContent = 'تسجيل تلقائي بعد انتهاء تسجيل الطالب — اضغط «إنهاء» عند الانتهاء';
+                    } catch (err) {
+                        console.error('sync reply tail mic', err);
+                        if (statusEl) statusEl.textContent = '';
+                        detachTeacherSyncMicPipeline();
+                        alert('خطأ في الميكروفون');
+                        if (!sessionFinished && !aborted) finishSession();
+                    }
+                })();
+            }
+
             function beginStudent(fromOff) {
                 if (sessionFinished || aborted || !studentDriver) return;
                 stopStudentNode();
                 const dur = getStudentDuration();
                 if (dur > 0 && fromOff >= dur - 0.04) {
-                    finishSession();
+                    beginTeacherAutoTailAfterStudent();
                     return;
                 }
                 const onEnd = () => {
                     if (sessionFinished || aborted) return;
                     if (isCommenting) return;
-                    finishSession();
+                    beginTeacherAutoTailAfterStudent();
                 };
                 studentDriver.playFrom(Math.max(0, fromOff), onEnd).then(() => {
                     if (holdBtn && mode === 'student') holdBtn.disabled = false;
@@ -7529,6 +7574,7 @@
 
             function onHoldStart(e) {
                 if (e) { e.preventDefault(); if (e.button === 2) return; }
+                if (teacherPostStudentTailPhase) return;
                 if (!isStudentActivelyPlaying() || isCommenting || sessionFinished || aborted) return;
                 if (!studentDriver) return;
                 const dur = getStudentDuration();
@@ -7615,101 +7661,11 @@
                     if (syncReplySessionHandle._removePtr) syncReplySessionHandle._removePtr();
                     finishSession();
                 };
-            } else {
-                if (statusEl) statusEl.textContent = 'تشغيل المسودة...';
-                requestWakeLock();
-                try {
-                    mediaRecorder.start();
-                } catch (startErr) {
-                    sessionFinished = true;
-                    if (wallTimer) clearInterval(wallTimer);
-                    if (revokeBlobUrl) { try { URL.revokeObjectURL(revokeBlobUrl); } catch (e) {} revokeBlobUrl = null; }
-                    if (studentDriver) studentDriver.removeDom();
-                    studentDriver = null;
-                    detachTeacherSyncMicPipeline();
-                    try { await ctx.close(); } catch (e) {}
-                    restoreAudioSessionAfterSyncReply();
-                    syncReplySessionHandle = null;
-                    throw startErr;
-                }
-                wallTimer = setInterval(() => {
-                    wallSeconds++;
-                    if (timerEl) {
-                        const m = Math.floor(wallSeconds / 60), s = wallSeconds % 60;
-                        timerEl.textContent = (m < 10 ? '0' + m : m) + ':' + (s < 10 ? '0' + s : s);
-                    }
-                    if (wallSeconds >= maxWall) finishSession();
-                }, 1000);
-                stopStudentNode();
-                if (studentDriver) {
-                    studentDriver.playFrom(0, () => {
-                        if (sessionFinished || aborted) return;
-                        if (statusEl) statusEl.textContent = 'جاري تفعيل الميكروفون…';
-                        void (async () => {
-                            try {
-                                await attachTeacherSyncMicPipeline();
-                                if (sessionFinished || aborted) {
-                                    detachTeacherSyncMicPipeline();
-                                    return;
-                                }
-                                micGain.gain.setValueAtTime(1, ctx.currentTime);
-                                playSyncTransitionBeep(ctx, true);
-                                if (statusEl) statusEl.textContent = 'تكلّم الآن — إضافة في نهاية الرد';
-                                if (appendDoneBtn) appendDoneBtn.style.display = 'block';
-                            } catch (err) {
-                                console.error('sync append mic', err);
-                                if (statusEl) statusEl.textContent = '';
-                                detachTeacherSyncMicPipeline();
-                                alert('خطأ في الميكروفون');
-                                finishSession();
-                            }
-                        })();
-                    }).catch(err => { console.warn(err); finishSession(); });
-                }
-                syncReplySessionHandle.abort = () => {
-                    aborted = true;
-                    finishSession();
-                };
-                if (appendDoneBtn) {
-                    appendDoneBtn.onclick = () => {
-                        micGain.gain.setValueAtTime(0, ctx.currentTime);
-                        detachTeacherSyncMicPipeline();
-                        appendDoneBtn.style.display = 'none';
-                        finishSession();
-                    };
-                }
             }
 
             await sessionDone;
             if (syncReplySessionHandle && syncReplySessionHandle._removePtr) syncReplySessionHandle._removePtr();
         }
-
-        window.appendSyncReplyAtEnd = async function() {
-            if (!teacherSyncReplyActive || !currentBlob) return;
-            if (!isSyncReplyEnvironmentSupported()) {
-                alert('تعذر إضافة الصوت على هذا الجهاز. أرسل الرد كما هو أو استخدم «الرد» العادي.');
-                return;
-            }
-            const ra = document.getElementById('reviewAudio');
-            if (ra) { ra.pause(); ra.src = ''; }
-            document.getElementById('review-modal').style.display = 'none';
-            syncReplyUiSetVisible(true);
-            const holdBtn = document.getElementById('sync-reply-hold-btn');
-            const appendDoneBtn = document.getElementById('sync-append-done-btn');
-            const statusEl = document.getElementById('sync-reply-status');
-            const timerEl = document.getElementById('sync-reply-timer');
-            if (holdBtn) holdBtn.style.display = 'none';
-            if (timerEl) timerEl.textContent = '00:00';
-            try {
-                await runTeacherSyncReplySession(currentBlob, { mode: 'append', statusEl, timerEl, holdBtn, appendDoneBtn });
-            } catch (e) {
-                console.error('append sync', e);
-                restoreAudioSessionAfterSyncReply();
-                alert('تعذر إكمال الإضافة.');
-            }
-            syncReplyUiSetVisible(false);
-            if (holdBtn) holdBtn.style.display = '';
-        };
 
         const REC_BLOCKED_MSG = 'يرجى استخدام إشعارات الجرس لسماع جميع ردود المعلم لهذه المرحلة حتى النهاية. يمكنك التسجيل في هذه المرحلة مرة أخرى فقط عندما تكون جميع ردود المعلم قد سُمعت حتى النهاية. هكذا تتعلم بشكل أفضل.';
         const REC_PENDING_TEACHER_MSG = 'لديك بالفعل تسجيل تحت هذا المقطع لم يُقيِّمه المعلم بعد أو لم يُرَدَّ عليه صوتياً بعد. لا يمكنك بدء تسجيل جديد هنا حتى يُقيَّم كل تسجيلاتك لهذا المقطع ويصلك رد صوتي من المعلم على كل منها.\n\nإن أردت إعادة التسجيل من جديد، احذف أولاً التسجيل القديم غير المكتمل (زر الحذف 🗑️ بجانب تسجيلك في الخلاصة أدناه)، ثم يمكنك استخدام الميكروفون مرة أخرى.';
@@ -9790,8 +9746,6 @@
             revokeReviewModalObjectUrls();
             const isReply = !!replyTargetId;
             const verseImgHtml = !isReply && currentGlobalFileId != null ? `<img class="review-verse-img" src="${getAssetUrl(getVerseAssetPath(currentGlobalFileId) + '.png')}" alt="المقطع" onerror="verseImgFallback(this)">` : '';
-            const appendHtml = (teacherSyncReplyActive && isReply) ? `<button type="button" class="r-btn btn-append" onclick="appendSyncReplyAtEnd()">➕ إضافة في نهاية الرد</button>` : '';
-
             if (isReply) {
                 const u = URL.createObjectURL(currentBlob);
                 _reviewModalObjectUrls.push(u);
@@ -9809,7 +9763,6 @@
                 </div>
                 <div class="review-btns">
                     <button type="button" class="r-btn btn-retry" onclick="retryRecord()">🔄 إعادة</button>
-                    ${appendHtml}
                     <button type="button" class="r-btn btn-send" onclick="confirmSend()">✅ إرسال</button>
                 </div>`;
                 modal.style.display = 'flex';
