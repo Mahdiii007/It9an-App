@@ -39,6 +39,90 @@ function runFfmpegArgs(args) {
   });
 }
 
+/** Beendet mit code 0 → gesamtes stderr (für loudnorm JSON). */
+function runFfmpegCollectStderr(args) {
+  return new Promise((resolve, reject) => {
+    if (!_ffmpegPath) {
+      reject(new Error('FFmpeg binary nicht verfügbar'));
+      return;
+    }
+    const ff = spawn(_ffmpegPath, args, { stdio: ['ignore', 'pipe', 'pipe'] });
+    let err = '';
+    ff.stderr.on('data', (d) => { err += String(d); });
+    ff.on('error', reject);
+    ff.on('close', (code) => {
+      if (code === 0) resolve(err);
+      else reject(new Error(`ffmpeg exit ${code}: ${err.slice(-3000)}`));
+    });
+  });
+}
+
+/**
+ * EBU R128-kompatible Ziele (FFmpeg loudnorm, zweiphasig linear=true).
+ * I=-16 LUFS: gängig für Sprach-/Mobile/Podcast (näher an Plattform-Erwartung als Broadcast -23).
+ * TP in dBTP (True Peak), LRA in LU.
+ */
+const LOUDNORM_I = -16;
+const LOUDNORM_TP = -1.5;
+const LOUDNORM_LRA = 11;
+
+function loudnormFilterBase() {
+  return `I=${LOUDNORM_I}:TP=${LOUDNORM_TP}:LRA=${LOUDNORM_LRA}`;
+}
+
+/** Extrahiert das JSON-Objekt mit "input_i" aus FFmpeg-stderr (print_format=json). */
+function parseLoudnormMeasureJson(stderr) {
+  if (!stderr || typeof stderr !== 'string') {
+    throw new Error('loudnorm: leeres stderr');
+  }
+  const keyIdx = stderr.indexOf('"input_i"');
+  if (keyIdx < 0) throw new Error('loudnorm: kein input_i im stderr');
+  let start = keyIdx;
+  while (start > 0 && stderr[start] !== '{') start -= 1;
+  if (stderr[start] !== '{') throw new Error('loudnorm: JSON-{ nicht gefunden');
+  let depth = 0;
+  for (let j = start; j < stderr.length; j += 1) {
+    const c = stderr[j];
+    if (c === '{') depth += 1;
+    else if (c === '}') {
+      depth -= 1;
+      if (depth === 0) {
+        const raw = stderr.slice(start, j + 1);
+        try {
+          return JSON.parse(raw);
+        } catch (e) {
+          throw new Error(`loudnorm: JSON.parse: ${e.message || e}`);
+        }
+      }
+    }
+  }
+  throw new Error('loudnorm: JSON abgeschnitten');
+}
+
+/** Gemeinsame Vorstufe: feste Abtastrate wie Encoder, dann Messung/Anwendung. */
+function loudnormAfChainAnalyze() {
+  return `aresample=44100:async=1,loudnorm=${loudnormFilterBase()}:print_format=json`;
+}
+
+function loudnormAfChainEncode(metrics) {
+  const {
+    input_i: measuredI,
+    input_lra: measuredLra,
+    input_tp: measuredTp,
+    input_thresh: measuredThresh,
+    target_offset: offset,
+  } = metrics;
+  if ([measuredI, measuredLra, measuredTp, measuredThresh, offset].some((v) => v === undefined || v === null)) {
+    throw new Error('loudnorm: unvollständige Messwerte');
+  }
+  return (
+    'aresample=44100:async=1,'
+    + `loudnorm=I=${LOUDNORM_I}:TP=${LOUDNORM_TP}:LRA=${LOUDNORM_LRA}:linear=true:`
+    + `measured_I=${measuredI}:measured_LRA=${measuredLra}:measured_TP=${measuredTp}:`
+    + `measured_thresh=${measuredThresh}:offset=${offset}:print_format=summary`
+  );
+}
+
 function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
@@ -688,7 +772,8 @@ QURAN_REMINDER_SLOTS.forEach((slot, idx) => {
 
 /**
  * Storage: uploads/*.(webm|ogg|mp4|wav) → AAC in MP4-Container (.m4a), Firestore audioUrl + replies.audioUrl auf neue Datei.
- * Ergebnis: audio/mp4, stereo 44,1 kHz, 128 kbit/s (Mono-Quellen werden von FFmpeg auf 2 Kanäle gehoben → L/R, kein „nur links“ am Kopfhörer).
+ * Lautheit: zweiphasig FFmpeg loudnorm (EBU R128-Zielpegel, linear=true / True Peak) — I=-16 LUFS, TP=-1.5 dBTP, LRA=11 LU.
+ * Ergebnis: audio/mp4, stereo 44,1 kHz, 128 kbit/s (Mono-Quellen werden von FFmpeg auf 2 Kanäle gehoben → L/R).
  * Ausgabe *.m4a löst keinen erneuten Lauf aus. Nach erfolgreicher URL-Patch wird die Originaldatei gelöscht.
  * Deploy: firebase deploy --only functions:transcodeUploadAudio (FFmpeg: gcp-build / tools/ensure-ffmpeg-linux.js).
  *
@@ -719,18 +804,36 @@ async function transcodeUploadAudioHandler(event) {
   if (destPath === filePath) return;
   try {
     await bucket.file(filePath).download({ destination: tmpIn });
+    let afEncode = 'aresample=44100:async=1';
+    try {
+      const pass1Stderr = await runFfmpegCollectStderr([
+        '-y',
+        '-fflags', '+genpts+discardcorrupt',
+        '-err_detect', 'ignore_err',
+        '-i', tmpIn,
+        '-vn',
+        '-af', loudnormAfChainAnalyze(),
+        '-f', 'null',
+        '-',
+      ]);
+      const metrics = parseLoudnormMeasureJson(pass1Stderr);
+      afEncode = loudnormAfChainEncode(metrics);
+      console.log('transcodeUploadAudio loudnorm', destPath, 'input_i', metrics.input_i, '→ target', LOUDNORM_I, 'LUFS');
+    } catch (lnErr) {
+      console.warn('transcodeUploadAudio loudnorm übersprungen, nur Resample', filePath, lnErr.message || lnErr);
+    }
     await runFfmpegArgs([
       '-y',
       '-fflags', '+genpts+discardcorrupt',
       '-err_detect', 'ignore_err',
       '-i', tmpIn,
       '-vn',
+      '-af', afEncode,
       '-c:a', 'aac',
       '-profile:a', 'aac_low',
       '-b:a', '128k',
       '-ar', '44100',
       '-ac', '2',
-      '-af', 'aresample=async=1',
       '-movflags', '+faststart',
       tmpOut,
     ]);

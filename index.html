@@ -2003,8 +2003,9 @@
         let currentBlob = null, replyTargetId = null, maxRecDuration = 0;
         let lastRecStream = null, lastRecCtx = null;
         /**
-         * Einheitliche Ziel-Pegel (so gut wie möglich ohne pro-Datei-LUFS): WebAudio vor MediaRecorder + Sync-Monitor.
-         * Wiedergabe: HTMLMediaElement.volume max 1 — echte Normalisierung bräuchte WebAudio-Master oder Server-Analyse.
+         * Client: WebAudio vor MediaRecorder gleicht Geräte-Unterpegel aus. Hochgeladene clips: Cloud Function transcodeUploadAudio
+         * nutzt FFmpeg zweiphasig loudnorm (EBU R128-Ziel I≈-16 LUFS nach Encoding zu .m4a).
+         * Wiedergabe: HTMLMediaElement.volume max 1; Kurs-MP3 o. Ä. sind nicht durch dieselbe Pipeline gelaufen.
          */
         const it9anAudioProfile = (function () {
             const ua = navigator.userAgent || '';
