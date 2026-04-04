@@ -11160,10 +11160,25 @@
             }
         }
 
+        /**
+         * Admin: fehlende/widerrufene Benachrichtigungen rekonstruieren.
+         * Schüleraufnahmen: UI تسجيل عادي (weiß) und تسجيل متزامن (gelb) → gleiches posts-Schema + ggf. uploads/echo_*; Lehrerantworten: رد عادي und رد متزامن → gleiches replies[].role==='teacher' + type reply.
+         * Keine getrennte Restore-Pfade nötig.
+         */
         window.restoreStudentRecordingNotifications = async function() {
             if (localStorage.getItem('it9an_uid') !== 'admin_super') return;
             if (!confirm("إعادة إشعارات التسجيلات والردود لجميع المستخدمين (معلمين وطلاب) في جميع المراحل والدروس والمقاطع؟")) return;
             try {
+                function notifReplyTsMs(val) {
+                    if (val == null || val === '') return 0;
+                    if (typeof val === 'number' && !Number.isNaN(val)) return val;
+                    if (val && typeof val.toMillis === 'function') return val.toMillis();
+                    if (typeof val === 'object' && typeof val.seconds === 'number') {
+                        return val.seconds * 1000 + Math.floor((val.nanoseconds || 0) / 1e6);
+                    }
+                    const n = Number(val);
+                    return Number.isNaN(n) ? 0 : n;
+                }
                 const postsSnap = await window.getDocs(window.collection(window.db, "posts"));
                 let created = 0, updated = 0;
                 for (const doc of postsSnap.docs) {
@@ -11204,15 +11219,16 @@
                         }
                     }
 
-                    /* 2) Schüler: reply-Benachrichtigungen für jede Lehrer-Antwort */
+                    /* 2) Schüler: reply — Abfrage ohne replyTimestamp (== scheitert bei Typ-Mix), Zuordnung per ms-Vergleich; listenedByStudent zurücksetzen damit die Glocke wieder zeigt */
                     const teacherReplies = (d.replies || []).filter(r => r.role === 'teacher');
                     const postOwnerUid = d.uid;
                     if (postOwnerUid && postOwnerUid !== 'admin_super' && teacherReplies.length > 0) {
                         for (const r of teacherReplies) {
-                            const replyTs = r.timestamp || 0;
-                            const nq = window.query(window.collection(window.db, "notifications"), window.where("to", "==", postOwnerUid), window.where("postId", "==", doc.id), window.where("type", "==", "reply"), window.where("replyTimestamp", "==", replyTs));
+                            const replyTs = notifReplyTsMs(r.timestamp);
+                            const nq = window.query(window.collection(window.db, "notifications"), window.where("to", "==", postOwnerUid), window.where("postId", "==", doc.id), window.where("type", "==", "reply"));
                             const nsnap = await window.getDocs(nq);
-                            if (nsnap.empty) {
+                            const matches = nsnap.docs.filter((nd) => notifReplyTsMs(nd.data().replyTimestamp) === replyTs);
+                            if (matches.length === 0) {
                                 await window.addDoc(window.collection(window.db, "notifications"), {
                                     to: postOwnerUid,
                                     senderName: stripYearFromName(r.name || 'المعلم'),
@@ -11230,13 +11246,16 @@
                                 });
                                 created++;
                             } else {
-                                for (const nd of nsnap.docs) {
-                                    const data = nd.data();
-                                    if (data.listenedByStudent) continue;
-                                    if (data.clearedBy && data.clearedBy.length > 0) {
-                                        await window.updateDoc(window.doc(window.db, "notifications", nd.id), { clearedBy: [] });
-                                        updated++;
+                                if (matches.length > 1) {
+                                    for (let i = 1; i < matches.length; i++) {
+                                        try { await window.deleteDoc(window.doc(window.db, "notifications", matches[i].id)); } catch (e) { /* ignore */ }
                                     }
+                                }
+                                const nd = matches[0];
+                                const data = nd.data();
+                                if (data.listenedByStudent || (data.clearedBy && data.clearedBy.length > 0)) {
+                                    await window.updateDoc(window.doc(window.db, "notifications", nd.id), { listenedByStudent: false, clearedBy: [] });
+                                    updated++;
                                 }
                             }
                         }

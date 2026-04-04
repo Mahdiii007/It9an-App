@@ -235,6 +235,23 @@ function stripYearFromName(name) {
   return name.replace(/\s*\(\d{4}\)\s*$/, '').trim();
 }
 
+/** replyTimestamp aus Zahl, Firestore Timestamp oder Admin-Serialisierung → ms (für Restore-Matching). */
+function notifReplyTsMs(val) {
+  if (val == null || val === '') return 0;
+  if (typeof val === 'number' && !Number.isNaN(val)) return val;
+  if (typeof val === 'object') {
+    if (typeof val.toMillis === 'function') return val.toMillis();
+    if (typeof val.seconds === 'number') {
+      return val.seconds * 1000 + Math.floor((val.nanoseconds || 0) / 1e6);
+    }
+    if (typeof val._seconds === 'number') {
+      return val._seconds * 1000 + Math.floor((val._nanoseconds || 0) / 1e6);
+    }
+  }
+  const n = Number(val);
+  return Number.isNaN(n) ? 0 : n;
+}
+
 async function getNotifCountForUser(db, to, uid) {
   if (to === 'teachers') {
     const q = db.collection('notifications').where('to', '==', 'teachers');
@@ -514,7 +531,8 @@ exports.sendPushOnNotif = functions
     }
   });
 
-/** Alle 24h: fehlende Benachrichtigungen für alle Nutzer wiederherstellen (Lehrer: new_recording, Schüler: reply) */
+/** Alle 24h: fehlende Benachrichtigungen wiederherstellen (Lehrer: new_recording, Schüler: reply).
+ *  تسجيل عادي/متزامن und رد عادي/متزامن teilen dasselbe Firestore-Modell — ein gemeinsamer Restore. */
 exports.restoreStudentRecordingNotificationsScheduled = onSchedule(
   {
     schedule: '0 6 * * *',
@@ -574,13 +592,13 @@ exports.restoreStudentRecordingNotificationsScheduled = onSchedule(
         const postOwnerUid = d.uid;
         if (postOwnerUid && postOwnerUid !== 'admin_super' && teacherReplies.length > 0) {
           for (const r of teacherReplies) {
-            const replyTs = Number(r.timestamp || 0);
+            const replyTs = notifReplyTsMs(r.timestamp);
             const nq = db.collection('notifications')
               .where('to', '==', postOwnerUid)
               .where('postId', '==', doc.id)
               .where('type', '==', 'reply');
             const nsnap = await nq.get();
-            const matches = nsnap.docs.filter((nd) => Number((nd.data().replyTimestamp != null ? nd.data().replyTimestamp : 0)) === replyTs);
+            const matches = nsnap.docs.filter((nd) => notifReplyTsMs(nd.data().replyTimestamp) === replyTs);
             if (matches.length === 0) {
               await db.collection('notifications').add({
                 to: postOwnerUid,
@@ -608,8 +626,8 @@ exports.restoreStudentRecordingNotificationsScheduled = onSchedule(
               }
               const nd = matches[0];
               const data = nd.data();
-              if (!data.listenedByStudent && data.clearedBy && data.clearedBy.length > 0) {
-                await db.collection('notifications').doc(nd.id).update({ clearedBy: [] });
+              if (data.listenedByStudent || (data.clearedBy && data.clearedBy.length > 0)) {
+                await db.collection('notifications').doc(nd.id).update({ listenedByStudent: false, clearedBy: [] });
                 updated++;
               }
             }
