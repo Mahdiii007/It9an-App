@@ -2031,8 +2031,7 @@
                 try {
                     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
                     if (studentEchoPracticeSessionActive && !studentEchoPostVersePhase) {
-                        if (isIOS) it9anAudioSessionPreferPlaybackForSpeaker();
-                        else navigator.audioSession.type = 'play-and-record';
+                        navigator.audioSession.type = isIOS ? 'auto' : 'play-and-record';
                     } else {
                         navigator.audioSession.type = 'playback';
                     }
@@ -2045,8 +2044,7 @@
             try {
                 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
                 if (studentEchoPracticeSessionActive && !studentEchoPostVersePhase) {
-                    if (isIOS) it9anAudioSessionPreferPlaybackForSpeaker();
-                    else navigator.audioSession.type = 'play-and-record';
+                    navigator.audioSession.type = isIOS ? 'auto' : 'play-and-record';
                 } else {
                     navigator.audioSession.type = 'playback';
                 }
@@ -6714,16 +6712,41 @@
             }
         }
 
-        /** Nach MediaRecorder/getUserMedia setzt iOS die Route oft zurück — playback erneut anstoßen (rAF + kurze Delays). */
+        /**
+         * playback auf iOS bricht aktives Mikrofon (WebKit: „not compatible with audio capture”).
+         * رد متزامن: globaler mediaRecorder ist nicht die Sync-Instanz — solange syncReplySessionHandle gesetzt ist, läuft die Session.
+         * Nach onstop: syncReplySessionHandle = null → Review darf wieder playback (teacherSyncReplyActive kann für «إعادة» true bleiben).
+         */
+        function it9anIosPlaybackSessionSafeWrtCapture() {
+            try {
+                if (echoHoldMediaRecorder && echoHoldMediaRecorder.state === 'recording') return false;
+            } catch (e) {}
+            try {
+                if (typeof mediaRecorder !== 'undefined' && mediaRecorder && mediaRecorder.state === 'recording') return false;
+            } catch (e2) {}
+            try {
+                if (typeof teacherSyncReplyActive !== 'undefined' && teacherSyncReplyActive && typeof syncReplySessionHandle !== 'undefined' && syncReplySessionHandle) return false;
+            } catch (e3) {}
+            return true;
+        }
+
+        /** Nach reinem Abspielen: Route zum Lautsprecher anstoßen (nicht während Mikro-Aufnahme). */
         function it9anIosKickAudioRouteToSpeakerAfterHeavyOp() {
             if (!it9anIsIosWebKitUA() || !navigator.audioSession) return;
+            if (!it9anIosPlaybackSessionSafeWrtCapture()) return;
             it9anAudioSessionPreferPlaybackForSpeaker();
             try {
-                requestAnimationFrame(function() { it9anAudioSessionPreferPlaybackForSpeaker(); });
+                requestAnimationFrame(function() {
+                    if (it9anIosPlaybackSessionSafeWrtCapture()) it9anAudioSessionPreferPlaybackForSpeaker();
+                });
             } catch (r) {}
             try {
-                setTimeout(function() { it9anAudioSessionPreferPlaybackForSpeaker(); }, 50);
-                setTimeout(function() { it9anAudioSessionPreferPlaybackForSpeaker(); }, 200);
+                setTimeout(function() {
+                    if (it9anIosPlaybackSessionSafeWrtCapture()) it9anAudioSessionPreferPlaybackForSpeaker();
+                }, 50);
+                setTimeout(function() {
+                    if (it9anIosPlaybackSessionSafeWrtCapture()) it9anAudioSessionPreferPlaybackForSpeaker();
+                }, 200);
             } catch (t) {}
         }
 
@@ -6756,21 +6779,24 @@
         }
 
         /**
-         * Mikrofon-Session: auf iOS bewusst nicht 'play-and-record' (Ohrmuschel-Routing), sondern 'playback' für Lautsprecher.
-         * getUserMedia + WebAudio funktionieren damit weiter; bei Problemen Fallback auto → play-and-record.
+         * Vor getUserMedia: iOS/WebKit verlangt eine Capture-kompatible Session (playback → „not compatible with audio capture”).
+         * play-and-record kann zur Ohrmuschel routen; alternativ gibt es im Web keine zuverlässige „nur Lautsprecher“-API.
          */
         function it9anSetAudioSessionForMicCapture(isIOS) {
             if (!navigator.audioSession) return;
             try {
                 if (isIOS) {
-                    it9anAudioSessionPreferPlaybackForSpeaker();
+                    try {
+                        navigator.audioSession.type = 'play-and-record';
+                    } catch (e) {
+                        try { navigator.audioSession.type = 'auto'; } catch (e2) {}
+                    }
                 } else {
                     navigator.audioSession.type = 'play-and-record';
                 }
             } catch (e3) {
                 if (isIOS) {
-                    try { navigator.audioSession.type = 'auto'; } catch (e4) {}
-                    try { navigator.audioSession.type = 'play-and-record'; } catch (e5) {}
+                    try { navigator.audioSession.type = 'play-and-record'; } catch (e4) {}
                 }
             }
         }
@@ -6784,7 +6810,7 @@
             } catch (e2) {}
         }
 
-        /** Nach Hintergrund: Session erneut setzen (iOS: playback/Lautsprecher statt Voice/Receiver). */
+        /** Nach Hintergrund: Capture-Session wieder anwenden (iOS: play-and-record). */
         function it9anReapplyAudioSessionDuringActiveMicCapture() {
             const mainRec = typeof mediaRecorder !== 'undefined' && mediaRecorder && mediaRecorder.state === 'recording';
             const echoRec = echoHoldMediaRecorder && echoHoldMediaRecorder.state === 'recording';
@@ -7583,7 +7609,6 @@
             if (ctx.state === 'suspended') await ctx.resume();
 
             const isIOSSyncReply = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-            if (isIOSSyncReply) it9anAudioSessionPreferPlaybackForSpeaker();
             /* Schüler: studentGain→dest (Aufnahme konstant). Monitor: studentMonitorOnlyGain → [iOS: L→beide Kanäle] → monitorRoute — iPhone routet oft nur einen Lautsprecher für „Sprach“-Mix; Stereo kann eine Seite leiser wirken. Nach erstem Mic + optional Checkbox-Speaker-Boost. */
             const SYNC_REPLY_MIC_PRE_NON_IOS = 2.3;
             const SYNC_REPLY_MONITOR_ONLY = 1.3;
@@ -7700,7 +7725,6 @@
                     rawStream = null;
                 }
                 if (fullRelease) restoreAudioSessionAfterSyncReply();
-                else it9anIosKickAudioRouteToSpeakerAfterHeavyOp();
             }
 
             async function attachTeacherSyncMicPipeline() {
@@ -7745,7 +7769,6 @@
                         };
                     });
                 } catch (e) {}
-                if (isIOSSyncReply) it9anIosKickAudioRouteToSpeakerAfterHeavyOp();
             }
 
             let mediaRecorder;
@@ -7947,7 +7970,6 @@
                     syncReplySessionHandle = null;
                     throw startErr;
                 }
-                if (isIOSSyncReply) it9anIosKickAudioRouteToSpeakerAfterHeavyOp();
                 wallTimer = setInterval(() => {
                     wallSeconds++;
                     if (timerEl) {
