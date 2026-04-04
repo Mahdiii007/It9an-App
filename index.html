@@ -7579,7 +7579,7 @@
                             return;
                         }
                         micGain.gain.setValueAtTime(1, ctx.currentTime);
-                        playSyncTransitionBeep(ctx, true);
+                        playStudentEchoBeep(ctx);
                         if (statusEl) statusEl.textContent = 'تسجيل تلقائي بعد انتهاء تسجيل الطالب — اضغط «إنهاء» عند الانتهاء';
                     } catch (err) {
                         console.error('sync reply tail mic', err);
@@ -8837,6 +8837,8 @@
                     chunks = [];
                     await finalizeStudentEchoRecording(tailBlob);
                 };
+                /* Ton wie bei Halte-Segmenten: gleicher WebAudio-Kontext wie die Aufnahme (iOS). */
+                playStudentEchoBeep(recCtx);
                 mediaRecorder.start();
                 requestWakeLock();
                 const recBtn = document.getElementById('recBtn');
