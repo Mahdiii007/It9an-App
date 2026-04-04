@@ -2002,7 +2002,49 @@
         let mediaRecorder, chunks = [], recInterval = null, recSeconds = 0;
         let currentBlob = null, replyTargetId = null, maxRecDuration = 0;
         let lastRecStream = null, lastRecCtx = null;
-        const IOS_MIC_RECORDER_GAIN = 1;
+        /**
+         * Einheitliche Ziel-Pegel (so gut wie möglich ohne pro-Datei-LUFS): WebAudio vor MediaRecorder + Sync-Monitor.
+         * Wiedergabe: HTMLMediaElement.volume max 1 — echte Normalisierung bräuchte WebAudio-Master oder Server-Analyse.
+         */
+        const it9anAudioProfile = (function () {
+            const ua = navigator.userAgent || '';
+            const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+            const isAndroid = /Android/i.test(ua);
+            const isMacDesktop = /Mac|Macintosh/.test(navigator.platform) && !navigator.maxTouchPoints;
+            let kind = 'other';
+            if (isIOS) kind = 'ios';
+            else if (isAndroid) kind = 'android';
+            else if (isMacDesktop) kind = 'mac';
+            return {
+                kind,
+                /** Mic → WebAudio → MediaRecorder (WebKit/iOS stark unterpegelt) */
+                micCaptureGain: kind === 'ios' ? 2.78 : kind === 'android' ? 1.95 : kind === 'mac' ? 1.42 : 1.58,
+                /** رد متزامن: Lehrer-Mic (nicht-iOS), Abgleich zum Schüler-Branch */
+                micSyncReplyPre: kind === 'android' ? 2.12 : kind === 'mac' ? 1.72 : 2.38,
+                /** Stereo-Mic → Mono: je Kanal (Summe ≈ 1 bei gleichem Pegel) */
+                stereoDownmixChannel: 0.5,
+                /** Schüler in Sync-Aufnahme (dest): leicht angehoben, wenn Lehrer-Mic im Mix dominiert */
+                syncReplyStudentRec: 1.18,
+                syncMonitorBase: 1.38,
+                syncMonitorIosExtra: kind === 'ios' ? 1.66 : 1,
+                syncMonitorPostMicIos: 2.45,
+                syncMonitorPostMicOther: 1.14,
+                syncMonitorCap: 3.9,
+                /** HTML-Audio: nur 0…1; hier zentral zum späteren Feintuning */
+                mediaElementVolume: 1
+            };
+        })();
+        function it9anApplyDefaultPlaybackVolumes() {
+            const v = Math.min(1, Math.max(0, it9anAudioProfile.mediaElementVolume));
+            try {
+                const m = document.getElementById('mainAudio');
+                const f = document.getElementById('feedAudio');
+                const r = document.getElementById('reviewAudio');
+                if (m) m.volume = v;
+                if (f) f.volume = v;
+                if (r) r.volume = v;
+            } catch (e) {}
+        }
         /** Nach Aufnahme-Ende: alle gehaltenen Mic-Streams + Kontext freigeben (inkl. macOS-Menüleiste). */
         async function forceReleaseRecordingPipeline() {
             if (lastRecStream) {
@@ -2305,6 +2347,7 @@
         }
 
         const audioEl = document.getElementById('mainAudio');
+        it9anApplyDefaultPlaybackVolumes();
         const pBar = document.getElementById('progressBar');
         const cTime = document.getElementById('currentTime');
         const dTime = document.getElementById('durationTime');
@@ -6615,7 +6658,7 @@
                 osc.connect(g);
                 g.connect(audioCtx.destination);
                 const t0 = audioCtx.currentTime;
-                g.gain.exponentialRampToValueAtTime(1, t0 + 0.02);
+                g.gain.exponentialRampToValueAtTime(0.16, t0 + 0.02);
                 g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.14);
                 osc.start(t0);
                 osc.stop(t0 + 0.15);
@@ -6636,7 +6679,16 @@
             }
         }
         function syncReplyGetSpeakerBoostMult() {
-            return 1;
+            const cb = document.getElementById('sync-reply-speaker-boost');
+            let checked = false;
+            try {
+                if (cb) checked = cb.checked;
+                else checked = localStorage.getItem(SYNC_REPLY_LS_SPEAKER_BOOST) !== '0';
+            } catch (e) {
+                checked = it9anAudioProfile.kind === 'ios';
+            }
+            if (!checked) return 1;
+            return it9anAudioProfile.kind === 'ios' ? 1.5 : 1.12;
         }
         function syncReplyUiSetVisible(visible) {
             const el = document.getElementById('sync-reply-ui');
@@ -7681,13 +7733,13 @@
             if (isIOSSyncReply && navigator.audioSession) {
                 try { navigator.audioSession.type = 'playback'; } catch (ePlaySync0) {}
             }
-            const SYNC_REPLY_MIC_PRE_NON_IOS = 1;
-            const SYNC_REPLY_MONITOR_ONLY = 1;
-            const SYNC_REPLY_MONITOR_IOS_EXTRA = 1;
-            const SYNC_REPLY_STUDENT_REC_GAIN = 1;
-            const SYNC_REPLY_MONITOR_ONLY_POST_FIRST_MIC_IOS = 1;
-            const SYNC_REPLY_MONITOR_ONLY_POST_FIRST_MIC_OTHER = 1;
-            const SYNC_REPLY_MONITOR_POST_MIC_CAP = 1;
+            const SYNC_REPLY_MIC_PRE_NON_IOS = it9anAudioProfile.micSyncReplyPre;
+            const SYNC_REPLY_MONITOR_ONLY = it9anAudioProfile.syncMonitorBase;
+            const SYNC_REPLY_MONITOR_IOS_EXTRA = it9anAudioProfile.syncMonitorIosExtra;
+            const SYNC_REPLY_STUDENT_REC_GAIN = it9anAudioProfile.syncReplyStudentRec;
+            const SYNC_REPLY_MONITOR_ONLY_POST_FIRST_MIC_IOS = it9anAudioProfile.syncMonitorPostMicIos;
+            const SYNC_REPLY_MONITOR_ONLY_POST_FIRST_MIC_OTHER = it9anAudioProfile.syncMonitorPostMicOther;
+            const SYNC_REPLY_MONITOR_POST_MIC_CAP = it9anAudioProfile.syncMonitorCap;
             const studentGain = ctx.createGain();
             studentGain.gain.value = SYNC_REPLY_STUDENT_REC_GAIN;
 
@@ -7813,7 +7865,7 @@
                 teacherRecordingIsIOS = !!mic.isIOS;
                 micSrc = ctx.createMediaStreamSource(rawStream);
                 preMic = ctx.createGain();
-                preMic.gain.value = teacherRecordingIsIOS ? IOS_MIC_RECORDER_GAIN : SYNC_REPLY_MIC_PRE_NON_IOS;
+                preMic.gain.value = teacherRecordingIsIOS ? it9anAudioProfile.micCaptureGain : SYNC_REPLY_MIC_PRE_NON_IOS;
                 const tMicSync = rawStream.getAudioTracks()[0];
                 const chMicSync = (tMicSync && tMicSync.getSettings && tMicSync.getSettings().channelCount) || 1;
                 if (chMicSync >= 2) {
@@ -8209,7 +8261,7 @@
                 g.connect(ctx.destination);
                 const t0 = ctx.currentTime;
                 g.gain.setValueAtTime(0.0001, t0);
-                g.gain.exponentialRampToValueAtTime(1, t0 + 0.02);
+                g.gain.exponentialRampToValueAtTime(0.08, t0 + 0.02);
                 g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.07);
                 o.start(t0);
                 o.stop(t0 + 0.08);
@@ -9114,7 +9166,7 @@
                         const srcIn = recCtx.createMediaStreamSource(rawStream);
                         const destOut = recCtx.createMediaStreamDestination();
                         const gainOnly = recCtx.createGain();
-                        gainOnly.gain.value = IOS_MIC_RECORDER_GAIN;
+                        gainOnly.gain.value = it9anAudioProfile.micCaptureGain;
                         const tMic = rawStream.getAudioTracks()[0];
                         const chMic = (tMic && tMic.getSettings && tMic.getSettings().channelCount) || 1;
                         if (chMic >= 2) {
@@ -9155,8 +9207,9 @@
                             const merger = recCtx.createChannelMerger(1);
                             const gainL = recCtx.createGain();
                             const gainR = recCtx.createGain();
-                            gainL.gain.value = 1;
-                            gainR.gain.value = 1;
+                            const dch = it9anAudioProfile.stereoDownmixChannel;
+                            gainL.gain.value = dch;
+                            gainR.gain.value = dch;
                             sourceNode.connect(splitter);
                             splitter.connect(gainL, 0);
                             splitter.connect(gainR, 1);
@@ -9348,7 +9401,7 @@
                         const srcIn = recCtx.createMediaStreamSource(rawStream);
                         const destOut = recCtx.createMediaStreamDestination();
                         const gainOnly = recCtx.createGain();
-                        gainOnly.gain.value = IOS_MIC_RECORDER_GAIN;
+                        gainOnly.gain.value = it9anAudioProfile.micCaptureGain;
                         const tMic = rawStream.getAudioTracks()[0];
                         const chMic = (tMic && tMic.getSettings && tMic.getSettings().channelCount) || 1;
                         if (chMic >= 2) {
@@ -9388,8 +9441,9 @@
                             const merger = recCtx.createChannelMerger(1);
                             const gainL = recCtx.createGain();
                             const gainR = recCtx.createGain();
-                            gainL.gain.value = 1;
-                            gainR.gain.value = 1;
+                            const dchEh = it9anAudioProfile.stereoDownmixChannel;
+                            gainL.gain.value = dchEh;
+                            gainR.gain.value = dchEh;
                             sourceNode.connect(splitter);
                             splitter.connect(gainL, 0);
                             splitter.connect(gainR, 1);
@@ -9967,7 +10021,7 @@
                             const srcIn = recCtx.createMediaStreamSource(rawStream);
                             const destOut = recCtx.createMediaStreamDestination();
                             const gainOnly = recCtx.createGain();
-                            gainOnly.gain.value = IOS_MIC_RECORDER_GAIN;
+                            gainOnly.gain.value = it9anAudioProfile.micCaptureGain;
                             const tMic = rawStream.getAudioTracks()[0];
                             const chMic = (tMic && tMic.getSettings && tMic.getSettings().channelCount) || 1;
                             if (chMic >= 2) {
@@ -10009,8 +10063,9 @@
                                 const merger = recCtx.createChannelMerger(1);
                                 const gainL = recCtx.createGain();
                                 const gainR = recCtx.createGain();
-                                gainL.gain.value = 1;
-                                gainR.gain.value = 1;
+                                const dchTr = it9anAudioProfile.stereoDownmixChannel;
+                                gainL.gain.value = dchTr;
+                                gainR.gain.value = dchTr;
                                 sourceNode.connect(splitter);
                                 splitter.connect(gainL, 0);
                                 splitter.connect(gainR, 1);
@@ -10330,7 +10385,7 @@
                 _reviewModalObjectUrls.push(u);
                 audio.src = u;
                 audio.muted = false;
-                audio.volume = 1;
+                audio.volume = it9anAudioProfile.mediaElementVolume;
                 content.innerHTML = `
                 <div class="review-title">مراجعة الرد</div>
                 <div class="review-player-wrap">
@@ -10429,7 +10484,7 @@
 
             audio.src = greenUrl;
             audio.muted = false;
-            audio.volume = 1;
+            audio.volume = it9anAudioProfile.mediaElementVolume;
             _reviewReviewPlayingYellow = false;
 
             content.innerHTML = `
