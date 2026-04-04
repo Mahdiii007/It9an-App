@@ -1107,6 +1107,10 @@
             <button type="button" class="stop-ui-btn" onclick="stopSyncReplySession()">⏹ إنهاء</button>
         </div>
         <div id="sync-reply-status" class="sync-reply-status"></div>
+        <label class="sync-reply-speaker-boost-label" style="display:flex;align-items:flex-start;gap:8px;font-size:12px;color:#444;margin:4px 0 8px;cursor:pointer;line-height:1.35;text-align:right;">
+            <input type="checkbox" id="sync-reply-speaker-boost" style="margin-top:3px;flex-shrink:0;" />
+            <span>تعزيز الصوت عند الاستماع من <strong>السماعة الداخلية</strong> (آيفون/آيباد). عطّله عند استخدام <strong>سماعات الأذن</strong> إذا بدا الصوت عالياً.</span>
+        </label>
         <button type="button" id="sync-reply-hold-btn" class="sync-reply-hold-btn" disabled aria-label="اضغط مع الاستمرار للتعليق على التسجيل"><svg class="icon-mic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
     </div>
 
@@ -6564,9 +6568,37 @@
             } catch (e) {}
         }
 
+        const SYNC_REPLY_LS_SPEAKER_BOOST = 'it9an_sync_reply_speaker_boost';
+        function syncReplyInitSpeakerBoostCheckbox() {
+            const cb = document.getElementById('sync-reply-speaker-boost');
+            if (!cb) return;
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+            try {
+                let v = localStorage.getItem(SYNC_REPLY_LS_SPEAKER_BOOST);
+                if (v === null) v = isIOS ? '1' : '0';
+                cb.checked = v === '1';
+            } catch (e) {
+                cb.checked = !!isIOS;
+            }
+        }
+        /** Nach erstem Mic: zusätzlicher Faktor auf Monitor-Gain wenn eingebaute Lautsprecher (Kopfhörer: Checkbox aus). */
+        function syncReplyGetSpeakerBoostMult() {
+            const cb = document.getElementById('sync-reply-speaker-boost');
+            let checked = false;
+            try {
+                if (cb) checked = cb.checked;
+                else checked = localStorage.getItem(SYNC_REPLY_LS_SPEAKER_BOOST) !== '0';
+            } catch (e) {
+                checked = true;
+            }
+            if (!checked) return 1;
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+            return isIOS ? 1.4 : 1.12;
+        }
         function syncReplyUiSetVisible(visible) {
             const el = document.getElementById('sync-reply-ui');
             if (el) el.style.display = visible ? 'flex' : 'none';
+            if (visible) syncReplyInitSpeakerBoostCheckbox();
         }
         function isStudentEchoSyncUiOpen() {
             const el = document.getElementById('student-echo-sync-ui');
@@ -6607,6 +6639,14 @@
         window.stopSyncReplySession = function() {
             if (syncReplySessionHandle && typeof syncReplySessionHandle.abort === 'function') syncReplySessionHandle.abort();
         };
+        (function bindSyncReplySpeakerBoostCheckbox() {
+            const cb = document.getElementById('sync-reply-speaker-boost');
+            if (!cb || cb.dataset.bound === '1') return;
+            cb.dataset.bound = '1';
+            cb.addEventListener('change', function() {
+                try { localStorage.setItem(SYNC_REPLY_LS_SPEAKER_BOOST, this.checked ? '1' : '0'); } catch (e) {}
+            });
+        })();
 
         /** Nach رد متزامن: wie toggleRecord — sonst bleibt iOS/WKWebKit oft auf play-and-record → Feed + normaler الرد klingen gedämpft/schlecht. */
         function restoreAudioSessionAfterSyncReply() {
@@ -7467,15 +7507,15 @@
             if (ctx.state === 'suspended') await ctx.resume();
 
             const isIOSSyncReply = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-            /* Schüler: studentGain→dest (Aufnahme, Pegel konstant = kein Sprung in der Datei). Nur für Live-Hören: studentMonitorOnlyGain→monitorRoute→…
-               iOS duckt nach erstem Mic typisch die *Hardware-Ausgabe*; der digitale Pegel vor destination ändert sich oft kaum — daher Kompensation nur im Monitorzweig, Faktor auf ~„inverse Ducking“ abgestimmt. */
+            /* Schüler: studentGain→dest (Aufnahme konstant). Monitor: studentMonitorOnlyGain → [iOS: L→beide Kanäle] → monitorRoute — iPhone routet oft nur einen Lautsprecher für „Sprach“-Mix; Stereo kann eine Seite leiser wirken. Nach erstem Mic + optional Checkbox-Speaker-Boost. */
             const SYNC_REPLY_MIC_PRE_NON_IOS = 2.3;
             const SYNC_REPLY_MONITOR_ONLY = 1.3;
             const SYNC_REPLY_MONITOR_IOS_EXTRA = isIOSSyncReply ? 1.75 : 1;
             const SYNC_REPLY_STUDENT_REC_GAIN = 1;
-            /** Zusätzlicher Gain nur zwischen studentGain und monitorRoute (nicht in dest). iOS ≈1/0,52 bis ~1/0,58 typ. Voice-Ducking. */
-            const SYNC_REPLY_MONITOR_ONLY_POST_FIRST_MIC_IOS = 1.91;
+            /** Monitor nur; nach Mic + ggf. syncReplyGetSpeakerBoostMult() für eingebaute Lautsprecher. */
+            const SYNC_REPLY_MONITOR_ONLY_POST_FIRST_MIC_IOS = 2.02;
             const SYNC_REPLY_MONITOR_ONLY_POST_FIRST_MIC_OTHER = 1.06;
+            const SYNC_REPLY_MONITOR_POST_MIC_CAP = 3.35;
             const studentGain = ctx.createGain();
             studentGain.gain.value = SYNC_REPLY_STUDENT_REC_GAIN;
 
@@ -7514,7 +7554,20 @@
             monitorGain.gain.value = 1;
             studentGain.connect(dest);
             studentGain.connect(studentMonitorOnlyGain);
-            studentMonitorOnlyGain.connect(monitorRoute);
+            if (isIOSSyncReply) {
+                try {
+                    const syncSpSplit = ctx.createChannelSplitter(2);
+                    const syncSpDual = ctx.createChannelMerger(2);
+                    studentMonitorOnlyGain.connect(syncSpSplit);
+                    syncSpSplit.connect(syncSpDual, 0, 0);
+                    syncSpSplit.connect(syncSpDual, 0, 1);
+                    syncSpDual.connect(monitorRoute);
+                } catch (eSp) {
+                    studentMonitorOnlyGain.connect(monitorRoute);
+                }
+            } else {
+                studentMonitorOnlyGain.connect(monitorRoute);
+            }
             monitorRoute.connect(monitorGain);
             monitorGain.connect(ctx.destination);
 
@@ -7529,7 +7582,8 @@
                 if (syncReplyFirstMicBoostApplied) return;
                 syncReplyFirstMicBoostApplied = true;
                 const t0 = ctx.currentTime;
-                const target = isIOSSyncReply ? SYNC_REPLY_MONITOR_ONLY_POST_FIRST_MIC_IOS : SYNC_REPLY_MONITOR_ONLY_POST_FIRST_MIC_OTHER;
+                const base = isIOSSyncReply ? SYNC_REPLY_MONITOR_ONLY_POST_FIRST_MIC_IOS : SYNC_REPLY_MONITOR_ONLY_POST_FIRST_MIC_OTHER;
+                const target = Math.min(base * syncReplyGetSpeakerBoostMult(), SYNC_REPLY_MONITOR_POST_MIC_CAP);
                 try {
                     studentMonitorOnlyGain.gain.cancelScheduledValues(t0);
                     studentMonitorOnlyGain.gain.setValueAtTime(studentMonitorOnlyGain.gain.value, t0);
