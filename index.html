@@ -752,7 +752,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, query, where, orderBy, onSnapshot, serverTimestamp, doc, setDoc, updateDoc, increment, arrayUnion, arrayRemove, deleteDoc, getDoc, getDocFromServer, getDocs, getDocsFromServer, enableIndexedDbPersistence, limit, startAfter, deleteField, writeBatch, runTransaction } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, initializeFirestore, collection, addDoc, query, where, orderBy, onSnapshot, serverTimestamp, doc, setDoc, updateDoc, increment, arrayUnion, arrayRemove, deleteDoc, getDoc, getDocFromServer, getDocs, getDocsFromServer, enableIndexedDbPersistence, limit, startAfter, deleteField, writeBatch, runTransaction } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject, getBytes } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
         import { getMessaging, getToken, onMessage, isSupported } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging.js";
         import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app-check.js";
@@ -778,7 +778,21 @@
             } catch (e) { console.warn('App Check:', e); }
         }
         window.firebaseApp = app;
-        window.db = getFirestore(app);
+        /* Safari/macOS + iOS WebKit: WebSocket-Transport oft unzuverlässig → forceLogout/onSnapshot bleiben hängen. Long-Polling erzwingen. */
+        const _it9anUaFs = typeof navigator !== 'undefined' ? (navigator.userAgent || '') : '';
+        const _it9anWebKitSafariFs = /Safari\//.test(_it9anUaFs) && !/(Chrome|Chromium|CriOS|Edg|OPR)\//.test(_it9anUaFs);
+        let _it9anDb;
+        try {
+            if (_it9anWebKitSafariFs) {
+                _it9anDb = initializeFirestore(app, { experimentalForceLongPolling: true });
+            } else {
+                _it9anDb = getFirestore(app);
+            }
+        } catch (eFs) {
+            console.warn('Firestore init fallback:', eFs);
+            _it9anDb = getFirestore(app);
+        }
+        window.db = _it9anDb;
         /* Expliziter gs://-Bucket vermeidet „Unexpected error when fetching default storage bucket“ (SDK/CLI) */
         window.storage = getStorage(app, 'gs://it9an-neu.firebasestorage.app');
         try {
@@ -12034,12 +12048,16 @@
             it9anReapplyAudioSessionDuringActiveMicCapture();
             it9anEnsureToggleRecordIntervalRunning();
         }
-        window.addEventListener('pageshow', function() {
+        window.addEventListener('pageshow', function(ev) {
             it9anResumeSuspendedRecordingAudioContexts();
             try {
                 if (screenPlaybackShouldHoldWakeLock()) requestWakeLock();
             } catch (eWl) {}
             try { it9anIosKickAudioRouteToSpeakerAfterHeavyOp(); } catch (eIosPs) {}
+            /* Safari/macOS: Back-Forward-Cache (ev.persisted) löst oft kein visibilitychange aus — forceLogout hier prüfen. */
+            if (typeof applyGlobalForceLogoutIfNeeded === 'function') {
+                void applyGlobalForceLogoutIfNeeded();
+            }
         });
         document.addEventListener('visibilitychange', () => {
             if (document.hidden) {
@@ -12067,6 +12085,17 @@
                 });
             }
         });
+
+        setInterval(function() {
+            if (document.visibilityState !== 'visible') return;
+            try {
+                const u = localStorage.getItem('it9an_uid');
+                if (!u || u === 'admin_super') return;
+            } catch (e) { return; }
+            if (typeof applyGlobalForceLogoutIfNeeded === 'function') {
+                void applyGlobalForceLogoutIfNeeded();
+            }
+        }, 45000);
 
         /* CLOUD FUNCTION (Firebase) für Push-Versand - in functions/index.js deployen:
         const functions = require('firebase-functions'); const admin = require('firebase-admin'); admin.initializeApp();
