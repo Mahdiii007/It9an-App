@@ -32,10 +32,10 @@
 #   Zusätzlich braucht das Deploy-Dienstkonto oft Leserechte auf Abrechnung, z. B. „Rechnungskonten-Viewer“
 #   / Billing Account Viewer auf das verknüpfte Rechnungskonto, oder breiter „Projekt“-Rolle mit Billing-Zugriff.
 #
-# „Unhandled error cleaning up build images“ / Workflow Exit 2 nach Deploy:
+# „Unhandled error cleaning up build images“ / firebase Exit 2 nach Deploy:
+#   scripts/deploy-firebase.sh wertet Exit 2 als Erfolg, wenn „Deploy complete“ im Log steht (FIREBASE_STRICT_EXIT=1 deaktiviert das).
 #   Die Warnung betrifft oft nur das Löschen alter Cloud-Build-Images (Artifact Registry / gcf).
-#   Wenn im Log trotzdem „Deploy complete!“ steht, sind Functions meist live — Exit 2 kann von der CLI
-#   oder einem Folgeschritt kommen. Vollständiges Actions-Log prüfen (erste Zeile mit „Error:“).
+#   Wenn im Log trotzdem „Deploy complete!“ steht, sind Functions meist live — sonst Actions-Log prüfen (erste Zeile mit „Error:“).
 #   IAM (optional, für sauberes Aufräumen): Dem Dienstkonto aus FIREBASE_SERVICE_ACCOUNT_KEY zusätzlich z. B.
 #   „Artifact Registry Administrator“ — roles/artifactregistry.admin (projektweit oder auf die Region eu).
 #

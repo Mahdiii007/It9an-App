@@ -30,6 +30,9 @@
 # „Error Precondition failed“ / HTTP 409 „unable to queue“: Cloud Scheduler / API — deploy-firebase wiederholt automatisch
 #   (Standard 3 Versuche; 409-Zweitpass nur functions). Manuell: FIREBASE_DEPLOY_RETRIES=5 ./scripts/deploy-firebase.sh
 #
+# Firebase Exit 2 + „Deploy complete“ (Cleanup alter Build-Images): deploy-firebase.sh zählt das als Erfolg.
+#   Streng fehlschlagen: FIREBASE_STRICT_EXIT=1 ./scripts/deploy-firebase.sh
+#
 # GitHub Pages startet nur bei einem Push mit neuem Commit auf main/master.
 #   Keine lokalen Änderungen? FORCE_GITHUB_PAGES=1 ./scripts/deploy-all.sh
 #   (leerer Commit triggert den Workflow erneut.)

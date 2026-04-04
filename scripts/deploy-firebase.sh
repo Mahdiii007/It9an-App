@@ -13,6 +13,7 @@
 # Debug: DEBUG=1 ./scripts/deploy-firebase.sh
 # System-weites „firebase“ erzwingen: USE_SYSTEM_FIREBASE=1
 # CLI-Version pinnen: FIREBASE_TOOLS_VERSION=13.34.0 (Standard: Major 13)
+# Exit 2 trotz „Deploy complete“ (Image-Cleanup): standardmäßig als Erfolg — strikt: FIREBASE_STRICT_EXIT=1
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
@@ -91,6 +92,14 @@ while true; do
   fb_run_deploy 2>&1 | tee "$deploy_log"
   st="${PIPESTATUS[0]}"
   set -e
+  # Firebase CLI 13+: oft Exit 2 bei „Unhandled error cleaning up build images“, obwohl Deploy durch ist.
+  if [[ "$st" -eq 2 ]] && grep -qE "Deploy complete!|Deploy complete" "$deploy_log" 2>/dev/null; then
+    if [[ "${FIREBASE_STRICT_EXIT:-0}" != "1" ]]; then
+      echo ""
+      echo "Hinweis: firebase deploy meldete Exit 2, das Log enthält „Deploy complete“ — als Erfolg gewertet (Bekanntes Image-Cleanup-Problem)."
+      st=0
+    fi
+  fi
   if [[ "$st" -eq 0 ]]; then
     # Manche CLI-Versionen beenden mit 0, obwohl einzelne Functions „HTTP 409, unable to queue“ melden.
     if [[ "${FIREBASE_SKIP_409_FUNCTIONS_RETRY:-0}" != "1" ]] && grep -q "HTTP Error: 409" "$deploy_log" 2>/dev/null && { [[ -z "${FIREBASE_ONLY:-}" ]] || [[ "${FIREBASE_ONLY}" == *"functions"* ]]; }; then
@@ -102,6 +111,9 @@ while true; do
       fb_exec "${FB_BASE[@]}" --only functions 2>&1 | tee -a "$deploy_log"
       st409="${PIPESTATUS[0]}"
       set -e
+      if [[ "$st409" -eq 2 ]] && grep -qE "Deploy complete!|Deploy complete" "$deploy_log" 2>/dev/null && [[ "${FIREBASE_STRICT_EXIT:-0}" != "1" ]]; then
+        st409=0
+      fi
       if [[ "$st409" -ne 0 ]]; then
         echo "Hinweis: Zweiter Pass „functions“ endete mit exit $st409 — bei Bedarf Deploy erneut ausführen."
       fi
