@@ -1276,6 +1276,41 @@
                 }
             } catch (e2) { /* ignore */ }
         }
+        /**
+         * Neues Release (app-version.json): Session entfernen vor Reload — sonst bleiben Safari/PWA „eingeloggt“
+         * trotz frischer Seite (Firestore-forceLogout allein reicht auf WebKit oft nicht).
+         * Wie forceLogout: admin_super nicht ausloggen.
+         */
+        function it9anClearSessionForNewAppDeploy() {
+            let uidForFcm = null;
+            try {
+                if (localStorage.getItem('it9an_uid') === 'admin_super') return;
+                uidForFcm = localStorage.getItem('it9an_uid');
+            } catch (e) { return; }
+            try {
+                if (typeof detachForceLogoutRealtimeListener === 'function') detachForceLogoutRealtimeListener();
+            } catch (e1) { /* ignore */ }
+            try {
+                if (typeof notifUnsubscribe === 'function' || notifUnsubscribe) {
+                    if (notifUnsubscribe) {
+                        try { notifUnsubscribe(); } catch (e2) {}
+                        notifUnsubscribe = null;
+                    }
+                }
+            } catch (e3) { /* ignore */ }
+            try {
+                ['it9an_uid', 'it9an_role', 'it9an_name', 'it9an_pin', 'it9an_saved_pin', 'it9an_hidden', 'it9an_auth'].forEach(function(k) {
+                    try { localStorage.removeItem(k); } catch (e4) {}
+                });
+                sessionStorage.clear();
+            } catch (e5) { /* ignore */ }
+            try { forceLogoutKickScheduled = false; } catch (e6) { /* ignore */ }
+            if (uidForFcm && uidForFcm !== 'admin_super' && window.db && window.deleteDoc && window.doc) {
+                try {
+                    void window.deleteDoc(window.doc(window.db, 'fcmTokens', uidForFcm));
+                } catch (e7) { /* ignore */ }
+            }
+        }
         if (typeof navigator.serviceWorker !== 'undefined') {
             navigator.serviceWorker.addEventListener('message', (e) => {
                 const m = e.data;
@@ -1313,6 +1348,7 @@
                             let prev = null;
                             try { prev = localStorage.getItem(STORAGE_KEY); } catch (e) { /* ignore */ }
                             if (prev !== null && prev !== v) {
+                                it9anClearSessionForNewAppDeploy();
                                 try { localStorage.setItem(STORAGE_KEY, v); } catch (e) { /* ignore */ }
                                 void it9anPurgeWebCachesAndUnregisterSw().then(function() {
                                     try { window.location.reload(); } catch (r) {}
@@ -1399,6 +1435,7 @@
                     let prev = null;
                     try { prev = localStorage.getItem(VERSION_STORAGE_KEY); } catch (e) { /* ignore */ }
                     if (prev !== null && prev !== v) {
+                        it9anClearSessionForNewAppDeploy();
                         try { localStorage.setItem(VERSION_STORAGE_KEY, v); } catch (e) { /* ignore */ }
                         void it9anPurgeWebCachesAndUnregisterSw().then(function() { scheduleReloadOnce(); });
                         return;
