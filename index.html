@@ -2032,7 +2032,11 @@
                 syncMonitorPostMicOther: 1.14,
                 syncMonitorCap: 3.9,
                 /** HTML-Audio: nur 0…1; hier zentral zum späteren Feintuning */
-                mediaElementVolume: 1
+                mediaElementVolume: 1,
+                /** Kurz-Töne nach Mic (WebAudio): Mobile oft kaum hörbar ohne resume + höheren Peak */
+                beepSyncHoldPeak: kind === 'ios' || kind === 'android' ? 0.66 : 0.52,
+                beepSyncReleasePeak: kind === 'ios' || kind === 'android' ? 0.6 : 0.46,
+                beepEchoPeak: kind === 'ios' || kind === 'android' ? 0.62 : 0.48
             };
         })();
         function it9anApplyDefaultPlaybackVolumes() {
@@ -6650,19 +6654,32 @@
         }
 
         function playSyncTransitionBeep(audioCtx, isCommentStart) {
+            if (!audioCtx || audioCtx.state === 'closed') return;
+            const peak = isCommentStart ? it9anAudioProfile.beepSyncHoldPeak : it9anAudioProfile.beepSyncReleasePeak;
+            const freq = isCommentStart ? 880 : 660;
+            function doPlay() {
+                try {
+                    if (audioCtx.state === 'closed') return;
+                    const osc = audioCtx.createOscillator();
+                    const g = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.value = freq;
+                    g.gain.value = 0.001;
+                    osc.connect(g);
+                    g.connect(audioCtx.destination);
+                    const t0 = audioCtx.currentTime;
+                    g.gain.linearRampToValueAtTime(peak, t0 + 0.014);
+                    g.gain.linearRampToValueAtTime(0.001, t0 + 0.136);
+                    osc.start(t0);
+                    osc.stop(t0 + 0.15);
+                } catch (e2) {}
+            }
             try {
-                const osc = audioCtx.createOscillator();
-                const g = audioCtx.createGain();
-                osc.type = 'sine';
-                osc.frequency.value = isCommentStart ? 880 : 660;
-                g.gain.value = 0.0001;
-                osc.connect(g);
-                g.connect(audioCtx.destination);
-                const t0 = audioCtx.currentTime;
-                g.gain.exponentialRampToValueAtTime(0.16, t0 + 0.02);
-                g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.14);
-                osc.start(t0);
-                osc.stop(t0 + 0.15);
+                if (audioCtx.state === 'suspended') {
+                    void audioCtx.resume().then(doPlay).catch(function() { doPlay(); });
+                } else {
+                    doPlay();
+                }
             } catch (e) {}
         }
 
@@ -8005,6 +8022,7 @@
                             detachTeacherSyncMicPipeline(true);
                             return;
                         }
+                        try { await ctx.resume(); } catch (eRs) {}
                         micGain.gain.setValueAtTime(1, ctx.currentTime);
                         bumpSyncReplyStudentLevelAfterFirstMicOpen();
                         playStudentEchoBeep(ctx);
@@ -8059,6 +8077,7 @@
                             detachTeacherSyncMicPipeline(false);
                             return;
                         }
+                        try { await ctx.resume(); } catch (eRs2) {}
                         micGain.gain.setValueAtTime(1, ctx.currentTime);
                         bumpSyncReplyStudentLevelAfterFirstMicOpen();
                         playSyncTransitionBeep(ctx, true);
@@ -8142,7 +8161,7 @@
         const SYNC_REPLY_ONLY_STAGES_4_5_MSG = 'رد متزامن يعمل فقط في المرحلة 4 والمرحلة 5.';
         /** تسجيل متزامن (Schüler): einheitliche Formulierung — نقرة vs. ضغط مطوّل/إفلات. */
         const STUDENT_ECHO_SYNC_TXT_BOOT = 'جاري تشغيل المقطع… ثم اضغط الميكروفون في النافذة مع الاستمرار للتسجيل، وأفلِت لمتابعة الاستماع.';
-        const STUDENT_ECHO_SYNC_TXT_READY = 'الميكروفون الأحمر: اضغط مع الاستمرار لتسجيل جزئك، وأفلِت لمتابعة الاستماع. «إنهاء» عند انتهاء المقطع.';
+        const STUDENT_ECHO_SYNC_TXT_READY = 'اضغط مع الاستمرار';
         const STUDENT_ECHO_SYNC_TXT_RECORDING = 'جاري تسجيلك… أفلِت الزر أو الإصبع عن الميكروفون لمتابعة الاستماع.';
         const STUDENT_ECHO_SYNC_TXT_AFTER_SEGMENT = 'استمع للمقطع، ثم اضغط الميكروفون مع الاستمرار للجزء التالي.';
         const STUDENT_ECHO_SYNC_TITLE_VERSE_BTN = 'نقرة: تشغيل المقطع والنافذة. الميكروفون في النافذة: اضغط مع الاستمرار للتسجيل وأفلِت للمتابعة.';
@@ -8251,23 +8270,31 @@
                 const useExisting = sharedAudioContext && sharedAudioContext.state !== 'closed';
                 const ctx = useExisting ? sharedAudioContext : new Ctx();
                 const ownCtx = !useExisting;
-                if (ctx.state === 'suspended') {
-                    void ctx.resume().catch(() => {});
+                const peak = it9anAudioProfile.beepEchoPeak;
+                function doPlay() {
+                    try {
+                        if (ctx.state === 'closed') return;
+                        const o = ctx.createOscillator();
+                        const g = ctx.createGain();
+                        o.type = 'sine';
+                        o.frequency.value = 720;
+                        o.connect(g);
+                        g.connect(ctx.destination);
+                        const t0 = ctx.currentTime;
+                        g.gain.setValueAtTime(0.001, t0);
+                        g.gain.linearRampToValueAtTime(peak, t0 + 0.014);
+                        g.gain.linearRampToValueAtTime(0.001, t0 + 0.078);
+                        o.start(t0);
+                        o.stop(t0 + 0.085);
+                        if (ownCtx) {
+                            setTimeout(function() { try { ctx.close(); } catch (e) {} }, 220);
+                        }
+                    } catch (e2) {}
                 }
-                const o = ctx.createOscillator();
-                const g = ctx.createGain();
-                o.type = 'sine';
-                o.frequency.value = 720;
-                o.connect(g);
-                g.connect(ctx.destination);
-                const t0 = ctx.currentTime;
-                g.gain.setValueAtTime(0.0001, t0);
-                g.gain.exponentialRampToValueAtTime(0.08, t0 + 0.02);
-                g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.07);
-                o.start(t0);
-                o.stop(t0 + 0.08);
-                if (ownCtx) {
-                    setTimeout(() => { try { ctx.close(); } catch (e) {} }, 120);
+                if (ctx.state === 'suspended') {
+                    void ctx.resume().then(doPlay).catch(function() { doPlay(); });
+                } else {
+                    doPlay();
                 }
             } catch (e) {}
         }
@@ -8808,6 +8835,9 @@
                 if (mic) mic.classList.remove('sync-hold-active', 'recording');
                 return;
             }
+            if (echoHoldRecCtx && echoHoldRecCtx.state !== 'closed') {
+                try { await echoHoldRecCtx.resume(); } catch (eRb) {}
+            }
             playStudentEchoBeep(echoHoldRecCtx);
             reviewEchoRetakeRecording = true;
             if (mic) mic.classList.add('recording');
@@ -9262,6 +9292,9 @@
                     await finalizeStudentEchoRecording(tailBlob);
                 };
                 /* Ton wie bei Halte-Segmenten: gleicher WebAudio-Kontext wie die Aufnahme (iOS). */
+                if (recCtx && recCtx.state !== 'closed') {
+                    try { await recCtx.resume(); } catch (eRpv) {}
+                }
                 playStudentEchoBeep(recCtx);
                 mediaRecorder.start();
                 if (isIOS) it9anIosNudgeAudioSessionAfterMicOpen();
@@ -9731,6 +9764,9 @@
             if (syncMicPanel && studentEchoPracticeSessionActive && !studentEchoPostVersePhase) syncMicPanel.classList.add('sync-hold-active');
             try {
                 await startEchoHoldSegmentRecording();
+                if (echoHoldRecCtx && echoHoldRecCtx.state !== 'closed') {
+                    try { await echoHoldRecCtx.resume(); } catch (eRpr) {}
+                }
                 playStudentEchoBeep(echoHoldRecCtx);
                 const stAfter = document.getElementById('student-echo-sync-status');
                 if (stAfter && studentEchoPracticeSessionActive && !studentEchoPostVersePhase) {
