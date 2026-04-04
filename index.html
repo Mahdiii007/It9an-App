@@ -1309,7 +1309,14 @@
                         } catch (e) { /* offline */ }
                         finally { checking = false; }
                     }
-                    function tick() { checkDeployVersion(); }
+                    function tick() {
+                        checkDeployVersion();
+                        try {
+                            if (typeof applyGlobalForceLogoutIfNeeded === 'function') {
+                                void applyGlobalForceLogoutIfNeeded();
+                            }
+                        } catch (eFl) { /* ignore */ }
+                    }
                     tick();
                     setTimeout(tick, 4000);
                     setTimeout(tick, 20000);
@@ -1390,6 +1397,11 @@
             async function runAllUpdateChecks() {
                 await registerAndUpdateSw();
                 checkDeployVersion();
+                try {
+                    if (typeof applyGlobalForceLogoutIfNeeded === 'function') {
+                        void applyGlobalForceLogoutIfNeeded();
+                    }
+                } catch (eFl) { /* ignore */ }
             }
 
             function startPolling() {
@@ -1516,6 +1528,62 @@
             void it9anApplyForcedLogoutClientReset(v);
         }
         const APP_SETTINGS_DOC = 'appSettings';
+        /** Firestore-Zahl / Long / String — zuverlässig für forceLogout.version */
+        function it9anExtractForceLogoutVersion(data) {
+            if (!data || data.version == null) return 0;
+            const v = data.version;
+            if (typeof v === 'number' && !Number.isNaN(v)) return v;
+            if (typeof v === 'string') return parseInt(v, 10) || 0;
+            if (v && typeof v === 'object' && typeof v.toNumber === 'function') {
+                try { return v.toNumber(); } catch (e) { return 0; }
+            }
+            return parseInt(String(v), 10) || 0;
+        }
+        /** Niemals gecachtes getDoc für Logout-Entscheid — sonst bleibt alte version in IndexedDB und niemand wird ausgeloggt. */
+        async function it9anFetchForceLogoutVersionFromServerOnly() {
+            if (!window.db || typeof window.getDocFromServer !== 'function') return null;
+            const ref = window.doc(window.db, APP_SETTINGS_DOC, 'forceLogout');
+            for (let attempt = 0; attempt < 4; attempt++) {
+                try {
+                    const snap = await window.getDocFromServer(ref);
+                    return snap.exists() ? it9anExtractForceLogoutVersion(snap.data()) : 0;
+                } catch (e) {
+                    await new Promise(function(r) { setTimeout(r, 280 + attempt * 220); });
+                }
+            }
+            return null;
+        }
+        /** Fallback: erster Snapshot vom Server (nicht aus Persistence-Cache). */
+        function it9anFetchForceLogoutVersionViaServerSnapshot(timeoutMs) {
+            timeoutMs = timeoutMs || 14000;
+            if (!window.db) return Promise.resolve(null);
+            const ref = window.doc(window.db, APP_SETTINGS_DOC, 'forceLogout');
+            return new Promise(function(resolve) {
+                let settled = false;
+                let unsub = null;
+                const to = setTimeout(function() {
+                    if (settled) return;
+                    settled = true;
+                    try { if (unsub) unsub(); } catch (e) {}
+                    resolve(null);
+                }, timeoutMs);
+                function done(v) {
+                    if (settled) return;
+                    settled = true;
+                    clearTimeout(to);
+                    try { if (unsub) unsub(); } catch (e2) {}
+                    resolve(v);
+                }
+                unsub = window.onSnapshot(ref, { includeMetadataChanges: true }, function(snap) {
+                    if (snap.metadata.fromCache) return;
+                    const v = snap.exists() ? it9anExtractForceLogoutVersion(snap.data()) : 0;
+                    done(v);
+                }, function(err) {
+                    console.warn('forceLogout server snapshot:', err);
+                    done(null);
+                });
+            });
+        }
         function detachForceLogoutRealtimeListener() {
             if (forceLogoutUnsub) {
                 try { forceLogoutUnsub(); } catch (e) {}
@@ -1529,8 +1597,9 @@
             if (!uid || uid === 'admin_super') return;
             try {
                 const ref = window.doc(window.db, APP_SETTINGS_DOC, 'forceLogout');
-                forceLogoutUnsub = window.onSnapshot(ref, function(snap) {
-                    const serverV = snap.exists() ? (Number(snap.data().version) || 0) : 0;
+                forceLogoutUnsub = window.onSnapshot(ref, { includeMetadataChanges: true }, function(snap) {
+                    if (snap.metadata.fromCache) return;
+                    const serverV = snap.exists() ? it9anExtractForceLogoutVersion(snap.data()) : 0;
                     it9anNotifyForceLogoutKick(serverV);
                 }, function(err) {
                     console.warn('forceLogout onSnapshot:', err);
@@ -1605,14 +1674,14 @@
                 const uid = localStorage.getItem('it9an_uid');
                 if (!uid || uid === 'admin_super') return false;
                 try {
-                    const ref = window.doc(window.db, APP_SETTINGS_DOC, 'forceLogout');
-                    let snap;
-                    if (typeof window.getDocFromServer === 'function') {
-                        try { snap = await window.getDocFromServer(ref); } catch (e) { snap = await window.getDoc(ref); }
-                    } else {
-                        snap = await window.getDoc(ref);
+                    let serverV = await it9anFetchForceLogoutVersionFromServerOnly();
+                    if (serverV === null) {
+                        serverV = await it9anFetchForceLogoutVersionViaServerSnapshot(14000);
                     }
-                    const serverV = snap.exists() ? (Number(snap.data().version) || 0) : 0;
+                    if (serverV === null) {
+                        console.warn('applyGlobalForceLogoutIfNeeded: keine Server-Antwort für forceLogout');
+                        return false;
+                    }
                     const localV = parseInt(localStorage.getItem('it9an_logout_gen') || '0', 10) || 0;
                     if (serverV > localV) {
                         await it9anApplyForcedLogoutClientReset(serverV);
@@ -1626,15 +1695,10 @@
             if (!window.db) return Promise.resolve();
             return (async function() {
                 try {
-                    const ref = window.doc(window.db, APP_SETTINGS_DOC, 'forceLogout');
-                    let snap;
-                    if (typeof window.getDocFromServer === 'function') {
-                        try { snap = await window.getDocFromServer(ref); } catch (e) { snap = await window.getDoc(ref); }
-                    } else {
-                        snap = await window.getDoc(ref);
+                    const serverV = await it9anFetchForceLogoutVersionFromServerOnly();
+                    if (serverV !== null) {
+                        localStorage.setItem('it9an_logout_gen', String(serverV));
                     }
-                    const serverV = snap.exists() ? (Number(snap.data().version) || 0) : 0;
-                    localStorage.setItem('it9an_logout_gen', String(serverV));
                 } catch (e) { /* ignore */ }
             })();
         }
@@ -1649,14 +1713,10 @@
                     await window.setDoc(ref, { version: 1, updatedAt: window.serverTimestamp() });
                 }
                 try {
-                    let snap;
-                    if (typeof window.getDocFromServer === 'function') {
-                        try { snap = await window.getDocFromServer(ref); } catch (e2) { snap = await window.getDoc(ref); }
-                    } else {
-                        snap = await window.getDoc(ref);
+                    const serverV = await it9anFetchForceLogoutVersionFromServerOnly();
+                    if (serverV !== null) {
+                        localStorage.setItem('it9an_logout_gen', String(serverV));
                     }
-                    const serverV = snap.exists() ? (Number(snap.data().version) || 0) : 0;
-                    localStorage.setItem('it9an_logout_gen', String(serverV));
                 } catch (e3) { /* ignore */ }
                 alert('تم. سيُسجّل خروج الطلاب والمعلمين عند التحديث أو العودة للتطبيق، مع مسح ذاكرة التخزين المؤقت للتطبيق (PWA) قدر الإمكان وتحميل نسخة جديدة من الصفحة.');
             } catch (e) {
