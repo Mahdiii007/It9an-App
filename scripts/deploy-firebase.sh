@@ -130,3 +130,13 @@ done
 
 bash "${ROOT}/scripts/bump-app-version.sh"
 echo "app-version.json nach erfolgreichem firebase deploy (bitte bei Bedarf committen/pushen — GitHub Pages nutzt den Bump im Pages-Workflow)."
+
+set +e
+bash "${ROOT}/scripts/bump-force-logout.sh"
+_fl_st=$?
+set -euo pipefail
+if [[ "$_fl_st" -eq 0 ]]; then
+  echo "forceLogout.version erhöht — alle eingeloggten Nutzer werden ausgeloggt (wie Admin-Button)."
+else
+  echo "WARNUNG: bump-force-logout fehlgeschlagen (lokal oft ohne GOOGLE_APPLICATION_CREDENTIALS). In CI oder mit Dienstkonto erneut versuchen bzw. Admin-Button nutzen."
+fi
