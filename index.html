@@ -2024,8 +2024,27 @@
                 releaseEchoHoldMicAfterRetake();
             }
             if (navigator.audioSession) {
-                try { navigator.audioSession.type = 'playback'; } catch (e) {}
+                try {
+                    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+                    if (studentEchoPracticeSessionActive && !studentEchoPostVersePhase) {
+                        navigator.audioSession.type = isIOS ? 'auto' : 'play-and-record';
+                    } else {
+                        navigator.audioSession.type = 'playback';
+                    }
+                } catch (e) {}
             }
+        }
+        /** Nach Echo-Hold-Segment: Session für weiteres Abspielen des Verses (nicht „playback“, sonst oft Stille auf iOS). */
+        function applyAudioSessionAfterEchoHoldSegmentStop() {
+            if (!navigator.audioSession) return;
+            try {
+                const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+                if (studentEchoPracticeSessionActive && !studentEchoPostVersePhase) {
+                    navigator.audioSession.type = isIOS ? 'auto' : 'play-and-record';
+                } else {
+                    navigator.audioSession.type = 'playback';
+                }
+            } catch (e) {}
         }
         let teacherSyncReplyActive = false;
         let syncReplySessionHandle = null;
@@ -7803,10 +7822,16 @@
             }
             echoVerseSliceOpenStartSec = dur;
         }
-        function playStudentEchoBeep() {
+        /** sharedAudioContext: z. B. echoHoldRecCtx während تسجيل متزامن — kein zweites AudioContext (iOS/WebKit sonst oft stumm für Vers-Wiedergabe). */
+        function playStudentEchoBeep(sharedAudioContext) {
             try {
                 const Ctx = window.AudioContext || window.webkitAudioContext;
-                const ctx = new Ctx();
+                const useExisting = sharedAudioContext && sharedAudioContext.state !== 'closed';
+                const ctx = useExisting ? sharedAudioContext : new Ctx();
+                const ownCtx = !useExisting;
+                if (ctx.state === 'suspended') {
+                    void ctx.resume().catch(() => {});
+                }
                 const o = ctx.createOscillator();
                 const g = ctx.createGain();
                 o.type = 'sine';
@@ -7819,7 +7844,9 @@
                 g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.07);
                 o.start(t0);
                 o.stop(t0 + 0.08);
-                setTimeout(() => { try { ctx.close(); } catch (e) {} }, 120);
+                if (ownCtx) {
+                    setTimeout(() => { try { ctx.close(); } catch (e) {} }, 120);
+                }
             } catch (e) {}
         }
         function syncStudentVersEchoUi() {
@@ -8359,7 +8386,7 @@
                 if (mic) mic.classList.remove('sync-hold-active', 'recording');
                 return;
             }
-            playStudentEchoBeep();
+            playStudentEchoBeep(echoHoldRecCtx);
             reviewEchoRetakeRecording = true;
             if (mic) mic.classList.add('recording');
             startReviewEchoRetakeTimer();
@@ -9084,9 +9111,7 @@
                     echoHoldMediaRecorder = null;
                     echoHoldChunks = [];
                     restoreEchoHoldIosPlaybackIfAny();
-                    if (navigator.audioSession) {
-                        try { navigator.audioSession.type = 'playback'; } catch (e) {}
-                    }
+                    applyAudioSessionAfterEchoHoldSegmentStop();
                     releaseEchoHoldMicAfterRetake();
                     resolve();
                 };
@@ -9098,9 +9123,7 @@
                         if (fn) fn(null);
                     }
                     restoreEchoHoldIosPlaybackIfAny();
-                    if (navigator.audioSession) {
-                        try { navigator.audioSession.type = 'playback'; } catch (e2) {}
-                    }
+                    applyAudioSessionAfterEchoHoldSegmentStop();
                     releaseEchoHoldMicAfterRetake();
                     resolve();
                 }
@@ -9275,7 +9298,7 @@
             if (syncMicPanel && studentEchoPracticeSessionActive && !studentEchoPostVersePhase) syncMicPanel.classList.add('sync-hold-active');
             try {
                 await startEchoHoldSegmentRecording();
-                playStudentEchoBeep();
+                playStudentEchoBeep(echoHoldRecCtx);
                 const stAfter = document.getElementById('student-echo-sync-status');
                 if (stAfter && studentEchoPracticeSessionActive && !studentEchoPostVersePhase) {
                     stAfter.textContent = STUDENT_ECHO_SYNC_TXT_RECORDING;
@@ -9283,9 +9306,7 @@
             } catch (err) {
                 console.warn('practice hold start', err);
                 restoreEchoHoldIosPlaybackIfAny();
-                if (navigator.audioSession) {
-                    try { navigator.audioSession.type = 'playback'; } catch (e) {}
-                }
+                applyAudioSessionAfterEchoHoldSegmentStop();
                 echoHoldPointerDown = false;
                 practiceBtnHoldRecordingActive = false;
                 if (prBtn) prBtn.classList.remove('recording');
