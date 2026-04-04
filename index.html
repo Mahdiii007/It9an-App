@@ -7467,13 +7467,13 @@
             if (ctx.state === 'suspended') await ctx.resume();
 
             const isIOSSyncReply = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-            /* Aufnahme: studentGain→dest. Monitoring: separater Pfad (monitorRoute).
-               Seit stabiler play-and-record-Session ohne playback-Zwischenschritte duckt iOS/WebKit oft die Ausgabe nach ctx.destination — Schüler klingt viel leiser als zuvor.
-               Kompensation: iOS moderater Boost in die Aufnahme + stärkerer nur für Monitoring (verhindert Übersteuerung in der Datei). */
+            /* studentGain→MediaStreamDestination (Aufnahme); parallel monitorRoute→ctx.destination (nur Live-Hören).
+               In der Lehrer-Aufnahmephase duckt WebKit/iOS typisch die *Lautsprecher-/Kopfhörer-Ausgabe* sobald das Mikro aktiv ist; der digitale Mix für MediaRecorder ist oft weniger betroffen — daher klingt Review & Wiedergabe nach dem Senden wieder „normal“.
+               Kompensation: leichter iOS-Basispegel in die Datei + stärkerer Monitor-Boost; nach erstem Mic-Open nur noch Monitor nachziehen (kein studentGain→dest, sonst Sprung in der hochgeladenen Datei). */
             const SYNC_REPLY_MIC_PRE_NON_IOS = 2.3;
             const SYNC_REPLY_MONITOR_ONLY = 1.3;
             const SYNC_REPLY_MONITOR_IOS_EXTRA = isIOSSyncReply ? 1.75 : 1;
-            const SYNC_REPLY_STUDENT_REC_GAIN_IOS = isIOSSyncReply ? 1.22 : 1;
+            const SYNC_REPLY_STUDENT_REC_GAIN_IOS = isIOSSyncReply ? 1.12 : 1;
             const studentGain = ctx.createGain();
             studentGain.gain.value = SYNC_REPLY_STUDENT_REC_GAIN_IOS;
 
@@ -7517,6 +7517,24 @@
             micGain.gain.value = 0;
 
             micGain.connect(dest);
+
+            let syncReplyFirstMicBoostApplied = false;
+            /** Nach erstem aktiven Lehrer-Mikro: nur Live-Monitor anheben (monitorRoute). Review/Blob nutzen anderen Pfad — dort entfällt WebKit-Ducking, daher kein studentGain→dest anfassen. */
+            function bumpSyncReplyStudentLevelAfterFirstMicOpen() {
+                if (syncReplyFirstMicBoostApplied) return;
+                syncReplyFirstMicBoostApplied = true;
+                if (!isIOSSyncReply) return;
+                const t0 = ctx.currentTime;
+                const curM = monitorRoute.gain.value;
+                const targetMon = Math.min(curM * 1.72, 4.55);
+                try {
+                    monitorRoute.gain.cancelScheduledValues(t0);
+                    monitorRoute.gain.setValueAtTime(curM, t0);
+                    monitorRoute.gain.linearRampToValueAtTime(targetMon, t0 + 0.07);
+                } catch (e2) {
+                    monitorRoute.gain.value = targetMon;
+                }
+            }
 
             /** fullRelease: nur true wenn die gesamte Sync-Session endet — nicht bei jedem Halte-Loslassen (iOS/PWA: sonst playback↔play-and-record-Flattern → stummes Mikro). */
             function detachTeacherSyncMicPipeline(fullRelease) {
@@ -7696,6 +7714,7 @@
                             return;
                         }
                         micGain.gain.setValueAtTime(1, ctx.currentTime);
+                        bumpSyncReplyStudentLevelAfterFirstMicOpen();
                         playStudentEchoBeep(ctx);
                         if (statusEl) statusEl.textContent = 'تسجيل تلقائي بعد انتهاء تسجيل الطالب — اضغط «إنهاء» عند الانتهاء';
                     } catch (err) {
@@ -7749,6 +7768,7 @@
                             return;
                         }
                         micGain.gain.setValueAtTime(1, ctx.currentTime);
+                        bumpSyncReplyStudentLevelAfterFirstMicOpen();
                         playSyncTransitionBeep(ctx, true);
                         if (statusEl) statusEl.textContent = 'تسجيل تعليقك — أفلت الزر لمتابعة تسجيل الطالب';
                     } catch (err) {
