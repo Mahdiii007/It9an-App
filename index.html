@@ -950,6 +950,7 @@
             <button id="maintenanceModeBtn" class="btn-admin-reset" onclick="toggleMaintenanceMode()" title="إصلاح التطبيق: إظهار رسالة للجميع ما عدا المعلم 9898 والطالب 0860">🔧 وضع الإصلاح</button>
             <button class="btn-admin-reset btn-admin-delete-all" onclick="adminForceLogoutAllUsers()" title="إجبار الطلاب والمعلمين على إعادة تسجيل الدخول (المسؤول يبقى متصلاً)">🚪 تسجيل خروج الجميع</button>
             <button type="button" class="btn-admin-reset" onclick="restoreStudentRecordingNotifications(this)" title="إعادة إشعارات التسجيلات والردود لجميع المستخدمين في جميع المراحل (يتم تشغيله تلقائياً يومياً الساعة 6 صباحاً)">🔔 استعادة إشعارات التسجيلات</button>
+            <button type="button" class="btn-admin-reset" onclick="syncStudentReplyNotificationsListenedFromPosts(this)" title="إخفاء من جرس الطلاب الردود المعلَّمة «تم الاستماع» في المنشور (إصلاح بعد استعادة الإشعارات أو اختلاف نوع الطابع الزمني)">🔕 مزامنة الاستماع — إخفاء الردود المستمع لها</button>
             <button class="btn-admin-reset" onclick="resetAllNotifications()">🔔 تصفير كل الإشعارات</button>
             <button class="btn-admin-reset" onclick="resetAllViews()">👂 تصفير كل المشاهدات</button>
             <button class="btn-admin-reset" onclick="resetAllLikes()">👍 تصفير كل الإعجابات</button>
@@ -1176,6 +1177,17 @@
         function isSingleAppAdminLoggedIn() {
             normalizeAdminLocalSession();
             return localStorage.getItem('it9an_uid') === 'admin_super';
+        }
+        /** replyTimestamp / reply.timestamp einheitlich in ms (Zahl, Firestore Timestamp, …) — für Abgleich Benachrichtigung ↔ Post. */
+        function notifReplyTimestampMs(val) {
+            if (val == null || val === '') return 0;
+            if (typeof val === 'number' && !Number.isNaN(val)) return val;
+            if (val && typeof val.toMillis === 'function') return val.toMillis();
+            if (typeof val === 'object' && typeof val.seconds === 'number') {
+                return val.seconds * 1000 + Math.floor((val.nanoseconds || 0) / 1e6);
+            }
+            const n = Number(val);
+            return Number.isNaN(n) ? 0 : n;
         }
         function isPinExemptFromMaintenance(pin) {
             const p = pin != null ? String(pin).trim() : '';
@@ -2369,8 +2381,9 @@
                         try {
                             const nq = window.query(window.collection(window.db, "notifications"), window.where("to", "==", myUid), window.where("postId", "==", postId), window.where("type", "==", "reply"));
                             const ns = await window.getDocs(nq);
+                            const replyTsMs = notifReplyTimestampMs(replyTs);
                             for (const nd of ns.docs) {
-                                if (nd.data().replyTimestamp === replyTs) {
+                                if (notifReplyTimestampMs(nd.data().replyTimestamp) === replyTsMs) {
                                     await window.updateDoc(window.doc(window.db, "notifications", nd.id), { listenedByStudent: true });
                                     break;
                                 }
@@ -3337,7 +3350,13 @@
                             if(r.audioUrl) await cleanupAudioFile(r.audioUrl);
                             const nq = window.query(window.collection(window.db, "notifications"), window.where("postId", "==", doc.id), window.where("type", "==", "reply"));
                             const ns = await window.getDocs(nq);
-                            for(const nd of ns.docs) { if(nd.data().replyTimestamp === r.timestamp) { await window.deleteDoc(window.doc(window.db, "notifications", nd.id)); break; } }
+                            const rTsMs = notifReplyTimestampMs(r.timestamp);
+                            for (const nd of ns.docs) {
+                                if (notifReplyTimestampMs(nd.data().replyTimestamp) === rTsMs) {
+                                    await window.deleteDoc(window.doc(window.db, "notifications", nd.id));
+                                    break;
+                                }
+                            }
                         }
                         const newReplies = data.replies.filter(r => r.uid !== uid);
                         await window.updateDoc(doc.ref, { replies: newReplies });
@@ -11193,16 +11212,6 @@
                 btn.innerHTML = '⏳ جاري الاستعادة…';
             }
             try {
-                function notifReplyTsMs(val) {
-                    if (val == null || val === '') return 0;
-                    if (typeof val === 'number' && !Number.isNaN(val)) return val;
-                    if (val && typeof val.toMillis === 'function') return val.toMillis();
-                    if (typeof val === 'object' && typeof val.seconds === 'number') {
-                        return val.seconds * 1000 + Math.floor((val.nanoseconds || 0) / 1e6);
-                    }
-                    const n = Number(val);
-                    return Number.isNaN(n) ? 0 : n;
-                }
                 const kursByStage = new Map();
                 async function ensureKursForStage(sid) {
                     const id = sid != null ? Number(sid) : 4;
@@ -11271,10 +11280,10 @@
                     const postOwnerUid = d.uid;
                     if (postOwnerUid && postOwnerUid !== 'admin_super' && teacherReplies.length > 0) {
                         for (const r of teacherReplies) {
-                            const replyTs = notifReplyTsMs(r.timestamp);
+                            const replyTs = notifReplyTimestampMs(r.timestamp);
                             const nq = window.query(window.collection(window.db, "notifications"), window.where("to", "==", postOwnerUid), window.where("postId", "==", doc.id), window.where("type", "==", "reply"));
                             const nsnap = await window.getDocs(nq);
-                            const matches = nsnap.docs.filter((nd) => notifReplyTsMs(nd.data().replyTimestamp) === replyTs);
+                            const matches = nsnap.docs.filter((nd) => notifReplyTimestampMs(nd.data().replyTimestamp) === replyTs);
                             if (matches.length === 0) {
                                 await window.addDoc(window.collection(window.db, "notifications"), {
                                     to: postOwnerUid,
@@ -11311,6 +11320,57 @@
                 alert("تم: " + created + " إشعار جديد، " + updated + " إشعار تم إعادة تفعيله");
             } catch(e) { console.error(e); alert("خطأ: " + (e.message || "")); }
             finally {
+                if (btn) {
+                    btn.disabled = prevDisabled;
+                    btn.innerHTML = prevHtml;
+                }
+            }
+        };
+
+        /**
+         * Admin: Für jeden Post — wenn eine Lehrer-Antwort im Post bereits listenedByStudent hat, passende reply-Notification auf listenedByStudent: true setzen (Glocke leert sich).
+         */
+        window.syncStudentReplyNotificationsListenedFromPosts = async function(triggerBtn) {
+            if (!isSingleAppAdminLoggedIn()) {
+                alert('هذه العملية للمسؤول فقط (رمز الدخول: ' + ADMIN_PIN + ').');
+                return;
+            }
+            if (!confirm('مزامنة جرس الطلاب مع «تم الاستماع» في المنشورات؟\n\nسيتم إخفاء إشعارات الردود التي عُلِّمت في التسجيل كمستمع لها للنهاية (ولم تُحدَّث الإشعار في الجرس بسبب اختلاف نوع الطابع الزمني أو غيره).')) return;
+            const btn = triggerBtn && triggerBtn.closest ? triggerBtn.closest('button') : null;
+            const prevHtml = btn ? btn.innerHTML : '';
+            const prevDisabled = btn ? btn.disabled : false;
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '⏳ جاري المزامنة…';
+            }
+            let updated = 0;
+            try {
+                const postsSnap = await window.getDocs(window.collection(window.db, "posts"));
+                for (const doc of postsSnap.docs) {
+                    const d = doc.data();
+                    if (d.uid === 'admin_super' || d.role === 'teacher') continue;
+                    const owner = d.uid;
+                    if (!owner) continue;
+                    const replies = d.replies || [];
+                    for (const r of replies) {
+                        if (r.role !== 'teacher' || !r.listenedByStudent) continue;
+                        const tsMs = notifReplyTimestampMs(r.timestamp);
+                        const nq = window.query(window.collection(window.db, "notifications"), window.where("to", "==", owner), window.where("postId", "==", doc.id), window.where("type", "==", "reply"));
+                        const nsnap = await window.getDocs(nq);
+                        for (const nd of nsnap.docs) {
+                            if (notifReplyTimestampMs(nd.data().replyTimestamp) !== tsMs) continue;
+                            if (nd.data().listenedByStudent) break;
+                            await window.updateDoc(window.doc(window.db, "notifications", nd.id), { listenedByStudent: true });
+                            updated++;
+                            break;
+                        }
+                    }
+                }
+                alert('تم: تم تحديث ' + updated + ' إشعار رد (لن تظهر في جرس الطالب بعد الاستماع).');
+            } catch (e) {
+                console.error(e);
+                alert('خطأ: ' + (e.message || ''));
+            } finally {
                 if (btn) {
                     btn.disabled = prevDisabled;
                     btn.innerHTML = prevHtml;
