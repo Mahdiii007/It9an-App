@@ -532,6 +532,7 @@ exports.sendPushOnNotif = functions
   });
 
 /** Alle 24h: fehlende Benachrichtigungen wiederherstellen (Lehrer: new_recording, Schüler: reply).
+ *  Schüler-reply: listenedByStudent aus Post (erledigt → nicht in Glocke); nie auf ungehört zurücksetzen.
  *  تسجيل عادي/متزامن und رد عادي/متزامن teilen dasselbe Firestore-Modell — ein gemeinsamer Restore. */
 exports.restoreStudentRecordingNotificationsScheduled = onSchedule(
   {
@@ -586,12 +587,13 @@ exports.restoreStudentRecordingNotificationsScheduled = onSchedule(
           }
         }
 
-        /* 2) Schüler: reply — fehlende Docs anlegen; bestehende nur clearedBy leeren, listenedByStudent unverändert (bereits angehört = weiter unsichtbar). */
+        /* 2) Schüler: reply — neues Doc: listenedByStudent aus Post (erledigt → Glocke leer); bestehend: clearedBy + ggf. listenedByStudent true (nie false). */
         const teacherReplies = (d.replies || []).filter(r => r.role === 'teacher');
         const postOwnerUid = d.uid;
         if (postOwnerUid && postOwnerUid !== 'admin_super' && teacherReplies.length > 0) {
           for (const r of teacherReplies) {
             const replyTs = notifReplyTsMs(r.timestamp);
+            const replyAlreadyListened = r.listenedByStudent === true;
             const nq = db.collection('notifications')
               .where('to', '==', postOwnerUid)
               .where('postId', '==', doc.id)
@@ -603,7 +605,7 @@ exports.restoreStudentRecordingNotificationsScheduled = onSchedule(
                 to: postOwnerUid,
                 senderName: stripYearFromName(r.name || 'المعلم'),
                 type: 'reply',
-                listenedByStudent: false,
+                listenedByStudent: replyAlreadyListened,
                 fileId,
                 postId: doc.id,
                 replyTimestamp: replyTs,
@@ -625,8 +627,11 @@ exports.restoreStudentRecordingNotificationsScheduled = onSchedule(
               }
               const nd = matches[0];
               const data = nd.data();
-              if (data.clearedBy && data.clearedBy.length > 0) {
-                await db.collection('notifications').doc(nd.id).update({ clearedBy: [] });
+              const patch = {};
+              if (data.clearedBy && data.clearedBy.length > 0) patch.clearedBy = [];
+              if (replyAlreadyListened && data.listenedByStudent !== true) patch.listenedByStudent = true;
+              if (Object.keys(patch).length > 0) {
+                await db.collection('notifications').doc(nd.id).update(patch);
                 updated++;
               }
             }

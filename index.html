@@ -11196,7 +11196,7 @@
         /**
          * Admin: fehlende/widerrufene Benachrichtigungen rekonstruieren.
          * Schüleraufnahmen: UI تسجيل عادي (weiß) und تسجيل متزامن (gelb) → gleiches posts-Schema + ggf. uploads/echo_*; Lehrerantworten: رد عادي und رد متزامن → gleiches replies[].role==='teacher' + type reply.
-         * Keine getrennte Restore-Pfade nötig. Bei Schüler-reply: listenedByStudent bleibt erhalten (bis zum Ende Gehörtes erscheint nicht wieder).
+         * Keine getrennte Restore-Pfade nötig. Schüler-reply: neues Doc übernimmt listenedByStudent aus dem Post; bestehende Docs werden nur auf «angehört» gehoben, nie auf ungehört.
          */
         window.restoreStudentRecordingNotifications = async function(triggerBtn) {
             if (!isSingleAppAdminLoggedIn()) {
@@ -11275,7 +11275,7 @@
                         }
                     }
 
-                    /* 2) Schüler: reply — fehlende Docs anlegen; bestehende: nur clearedBy leeren, listenedByStudent nie überschreiben (sonst erscheinen bereits angehörte Rückmeldungen wieder) */
+                    /* 2) Schüler: reply — fehlende Docs anlegen mit listenedByStudent wie im Post (erledigt = nicht in Glocke); bestehende: clearedBy leeren, bei Post «angehört» Notification auf true setzen (nie zurück auf false) */
                     const teacherReplies = (d.replies || []).filter(r => r.role === 'teacher');
                     const postOwnerUid = d.uid;
                     if (postOwnerUid && postOwnerUid !== 'admin_super' && teacherReplies.length > 0) {
@@ -11284,12 +11284,13 @@
                             const nq = window.query(window.collection(window.db, "notifications"), window.where("to", "==", postOwnerUid), window.where("postId", "==", doc.id), window.where("type", "==", "reply"));
                             const nsnap = await window.getDocs(nq);
                             const matches = nsnap.docs.filter((nd) => notifReplyTimestampMs(nd.data().replyTimestamp) === replyTs);
+                            const replyAlreadyListened = r.listenedByStudent === true;
                             if (matches.length === 0) {
                                 await window.addDoc(window.collection(window.db, "notifications"), {
                                     to: postOwnerUid,
                                     senderName: stripYearFromName(r.name || 'المعلم'),
                                     type: 'reply',
-                                    listenedByStudent: false,
+                                    listenedByStudent: replyAlreadyListened,
                                     fileId: String(d.fileId || '1'),
                                     postId: doc.id,
                                     replyTimestamp: replyTs,
@@ -11309,8 +11310,11 @@
                                 }
                                 const nd = matches[0];
                                 const data = nd.data();
-                                if (data.clearedBy && data.clearedBy.length > 0) {
-                                    await window.updateDoc(window.doc(window.db, "notifications", nd.id), { clearedBy: [] });
+                                const patch = {};
+                                if (data.clearedBy && data.clearedBy.length > 0) patch.clearedBy = [];
+                                if (replyAlreadyListened && data.listenedByStudent !== true) patch.listenedByStudent = true;
+                                if (Object.keys(patch).length > 0) {
+                                    await window.updateDoc(window.doc(window.db, "notifications", nd.id), patch);
                                     updated++;
                                 }
                             }
