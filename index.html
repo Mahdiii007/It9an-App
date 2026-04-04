@@ -752,7 +752,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, query, where, orderBy, onSnapshot, serverTimestamp, doc, setDoc, updateDoc, increment, arrayUnion, arrayRemove, deleteDoc, getDoc, getDocFromServer, getDocs, getDocsFromServer, enableIndexedDbPersistence, limit, startAfter, deleteField, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, query, where, orderBy, onSnapshot, serverTimestamp, doc, setDoc, updateDoc, increment, arrayUnion, arrayRemove, deleteDoc, getDoc, getDocFromServer, getDocs, getDocsFromServer, enableIndexedDbPersistence, limit, startAfter, deleteField, writeBatch, runTransaction } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject, getBytes } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
         import { getMessaging, getToken, onMessage, isSupported } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging.js";
         import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app-check.js";
@@ -794,7 +794,7 @@
         window.where = where; window.orderBy = orderBy; window.onSnapshot = onSnapshot; 
         window.serverTimestamp = serverTimestamp; window.ref = ref; 
         window.uploadBytes = uploadBytes; window.getDownloadURL = getDownloadURL; window.getBytes = getBytes;
-        window.doc = doc; window.setDoc = setDoc; window.updateDoc = updateDoc; window.increment = increment; window.arrayUnion = arrayUnion; window.arrayRemove = arrayRemove; window.deleteDoc = deleteDoc; window.getDoc = getDoc; window.getDocFromServer = getDocFromServer; window.getDocs = getDocs; window.getDocsFromServer = getDocsFromServer; window.deleteField = deleteField; window.writeBatch = writeBatch; 
+        window.doc = doc; window.setDoc = setDoc; window.updateDoc = updateDoc; window.increment = increment; window.arrayUnion = arrayUnion; window.arrayRemove = arrayRemove; window.deleteDoc = deleteDoc; window.getDoc = getDoc; window.getDocFromServer = getDocFromServer; window.getDocs = getDocs; window.getDocsFromServer = getDocsFromServer; window.deleteField = deleteField; window.writeBatch = writeBatch; window.runTransaction = runTransaction; 
         window.deleteObject = deleteObject; window.limit = limit; window.startAfter = startAfter;
         window.getMessaging = getMessaging; window.getToken = getToken; window.onMessage = onMessage; window.isSupportedFcm = isSupported;
     </script>
@@ -2174,18 +2174,44 @@
                 it9anWireUserRecordingPlaybackBoostIfNeeded();
                 it9anUpdateUserRecordingPlaybackBoostGains();
                 const ctx = it9anUserRecPbCtx;
-                if (ctx && ctx.state === 'suspended') void ctx.resume();
+                if (ctx && ctx.state === 'suspended') {
+                    try {
+                        const pr = ctx.resume();
+                        if (pr && typeof pr.then === 'function') pr.catch(function() {});
+                    } catch (e) {}
+                }
+                try {
+                    if (ctx && ctx.state === 'suspended') {
+                        requestAnimationFrame(function() {
+                            try {
+                                const c2 = it9anUserRecPbCtx;
+                                if (c2 && c2.state === 'suspended') {
+                                    const pr2 = c2.resume();
+                                    if (pr2 && typeof pr2.then === 'function') pr2.catch(function() {});
+                                }
+                            } catch (e2) {}
+                        });
+                    }
+                } catch (r) {}
             } catch (e) {}
         }
         async function it9anEnsureUserRecPlaybackContextRunning() {
             it9anKickUserRecPlaybackContextSync();
             const ctx = it9anUserRecPbCtx;
             if (!ctx || ctx.state === 'closed') return;
-            if (ctx.state === 'suspended') {
-                try { await ctx.resume(); } catch (e) {}
+            for (let attempt = 0; attempt < 4 && ctx.state === 'suspended'; attempt++) {
+                try {
+                    await ctx.resume();
+                } catch (e) {}
+                if (ctx.state === 'suspended') {
+                    await new Promise(function(resolve) {
+                        requestAnimationFrame(function() { resolve(); });
+                    });
+                }
             }
         }
         function it9anPrepareReviewAudioPlayback() {
+            try { it9anIosKickAudioRouteToSpeakerAfterHeavyOp(); } catch (eS) {}
             it9anKickUserRecPlaybackContextSync();
             it9anNormalizeUserClipMediaElement(document.getElementById('reviewAudio'));
         }
@@ -2420,9 +2446,21 @@
                                     break;
                                 }
                             }
-                            const updatedReplies = post.replies.map(r => (r.timestamp === replyTs && r.role === 'teacher') ? { ...r, listenedByStudent: true } : r);
-                            await window.updateDoc(window.doc(window.db, "posts", postId), { replies: updatedReplies });
-                            post.replies = updatedReplies;
+                            const postRef = window.doc(window.db, "posts", postId);
+                            await window.runTransaction(window.db, async (transaction) => {
+                                const ps = await transaction.get(postRef);
+                                if (!ps.exists()) return;
+                                const pd = ps.data();
+                                const cur = pd.replies || [];
+                                const updatedReplies = cur.map(r => (r.timestamp === replyTs && r.role === 'teacher') ? { ...r, listenedByStudent: true } : r);
+                                transaction.update(postRef, { replies: updatedReplies });
+                            });
+                            const fresh = await window.getDoc(postRef);
+                            if (fresh.exists()) {
+                                const fp = fresh.data();
+                                const pi = allLoadedPosts.findIndex(p => p.id === postId);
+                                if (pi >= 0) allLoadedPosts[pi].replies = fp.replies || [];
+                            }
                             const feedDiv = document.getElementById('community-feed');
                             if (feedDiv && typeof renderPosts === 'function') { renderPosts(feedDiv, localStorage.getItem('it9an_role'), localStorage.getItem('it9an_uid'), savedIdsForFeed || new Set()); updateParticipationsCount(); }
                         } catch(e) {}
@@ -2476,12 +2514,17 @@
                     console.warn('Feed-Audio-Puffer:', e);
                     playUrl = url;
                 }
+                /* Nach async fetch (iOS/PWA voller Puffer): Kontext + Session erneut — sonst bleibt WebAudio oft suspended / falsche Route. */
+                it9anKickUserRecPlaybackContextSync();
+                try { it9anIosKickAudioRouteToSpeakerAfterHeavyOp(); } catch (eKickAfterBuf) {}
                 await it9anEnsureUserRecPlaybackContextRunning();
                 it9anNormalizeUserClipMediaElement(feedAudioEl);
                 feedAudioEl.preload = 'auto';
                 feedAudioEl.src = playUrl;
                 feedAudioEl.play().then(() => {
                     newBtn.innerText = "⏸";
+                    it9anKickUserRecPlaybackContextSync();
+                    try { it9anIosKickAudioRouteToSpeakerAfterHeavyOp(); } catch (eKickAfterPlay) {}
                     void it9anEnsureUserRecPlaybackContextRunning();
                 }).catch(e => {
                     newBtn.innerText = "⚠️";
@@ -2502,16 +2545,22 @@
         const audioEl = document.getElementById('mainAudio');
         it9anApplyDefaultPlaybackVolumes();
         (function it9anHookUserRecPlaybackContextResume() {
+            function onPlayOrPlaying(el) {
+                try {
+                    it9anNormalizeUserClipMediaElement(el);
+                    it9anKickUserRecPlaybackContextSync();
+                    try { it9anIosKickAudioRouteToSpeakerAfterHeavyOp(); } catch (eR) {}
+                    if (it9anUserRecPbCtx && it9anUserRecPbCtx.state === 'suspended') {
+                        const pr = it9anUserRecPbCtx.resume();
+                        if (pr && typeof pr.then === 'function') pr.catch(function() {});
+                    }
+                } catch (e) {}
+            }
             function hook(el) {
                 if (!el || el._it9anUserRecPbResumeHooked) return;
                 el._it9anUserRecPbResumeHooked = true;
-                el.addEventListener('play', function() {
-                    try {
-                        it9anNormalizeUserClipMediaElement(el);
-                        it9anKickUserRecPlaybackContextSync();
-                        if (it9anUserRecPbCtx && it9anUserRecPbCtx.state === 'suspended') void it9anUserRecPbCtx.resume();
-                    } catch (e) {}
-                });
+                el.addEventListener('play', function() { onPlayOrPlaying(el); });
+                el.addEventListener('playing', function() { onPlayOrPlaying(el); });
             }
             hook(feedAudioEl);
             hook(document.getElementById('reviewAudio'));
@@ -6942,9 +6991,9 @@
             return true;
         }
 
-        /** Nach reinem Abspielen: Route zum Lautsprecher anstoßen (nicht während Mikro-Aufnahme). */
+        /** Nach reinem Abspielen: Route zum Lautsprecher anstoßen (iOS Ohrmuschel, Android/PWA mit AudioSession API — nie während Mikro-Aufnahme). */
         function it9anIosKickAudioRouteToSpeakerAfterHeavyOp() {
-            if (!it9anIsIosWebKitUA() || !navigator.audioSession) return;
+            if (!navigator.audioSession) return;
             if (!it9anIosPlaybackSessionSafeWrtCapture()) return;
             it9anAudioSessionPreferPlaybackForSpeaker();
             try {
@@ -10828,6 +10877,7 @@
             const audio = document.getElementById('reviewAudio');
             const btn = document.getElementById('review-play-btn');
             if (!audio || !btn) return;
+            try { it9anIosKickAudioRouteToSpeakerAfterHeavyOp(); } catch (eRevKick) {}
             if (_reviewMainGreenUrl) {
                 if (_reviewReviewPlayingYellow) {
                     audio.pause();
@@ -10896,14 +10946,21 @@
                 await window.uploadBytes(refS, blobToUpload);
                 const url = await window.getDownloadURL(refS);
                 if (replyTargetId) {
-                    const targetPost = allLoadedPosts.find(p => p.id === replyTargetId);
-                    if (role === 'teacher' && targetPost && targetPost.role === 'student' && targetPost.replies && targetPost.replies.some(r => r.role === 'teacher')) {
-                        alert('يُسمح برد واحد فقط من المعلم لكل تسجيل طالب.');
-                        return;
-                    }
+                    let targetPost = allLoadedPosts.find(p => p.id === replyTargetId);
+                    try {
+                        const ps = await window.getDocFromServer(window.doc(window.db, "posts", replyTargetId));
+                        if (ps.exists()) {
+                            const d = ps.data();
+                            if (role === 'teacher' && d.role === 'student' && d.replies && d.replies.some(r => r.role === 'teacher')) {
+                                alert('يُسمح برد واحد فقط من المعلم لكل تسجيل طالب.');
+                                return;
+                            }
+                            targetPost = { id: replyTargetId, ...d };
+                        }
+                    } catch (e) {}
                     const replyTs = Date.now();
                     const newReply = { name: name, role: role, uid: uid, audioUrl: url, timestamp: replyTs, likes: [] };
-                    if (targetPost) {
+                    if (targetPost && targetPost.uid) {
                         const replyFid = (recordingFileId != null ? recordingFileId : targetPost.fileId) || currentGlobalFileId;
                         const replySid = (recordingStageId != null ? recordingStageId : currentStageId);
                         const lv = getLessonVerseFromFileId(replyFid) || { lesson: 0, verse: 0, lessonTitle: '' };
@@ -10930,25 +10987,37 @@
                     }
                     if(role === 'teacher') {
                         try { await window.updateDoc(window.doc(window.db, "users", uid), { totalRepliesCount: window.increment(1) }); } catch(e){}
+                        lbRecordingsCache = {}; lbLikesCache = {};
+                        if (lbRecordingsOpenUid) {
+                            const cont = document.getElementById('lb-recordings-' + lbRecordingsOpenUid);
+                            if (cont) fetchUserRecordings(lbRecordingsOpenUid, lbRecordingsOpenRole, true).then(items => { lbRecordingsCache[lbRecordingsOpenUid] = items; renderLbRecordingsList(cont, lbRecordingsOpenUid, lbRecordingsOpenOffset); });
+                        }
                     }
-                    if(targetPost) {
-                       if (role === 'teacher' && targetPost.role === 'student') {
-                           try {
-                               const postAfter = (await window.getDocFromServer(window.doc(window.db, "posts", replyTargetId))).data();
-                               const hasTeacherReply = postAfter && postAfter.replies && postAfter.replies.some(r => r.role === 'teacher');
-                               const hasTeacherRating = postAfter && postAfter.teacherRating;
-                               if (hasTeacherReply && hasTeacherRating) {
-                                   const nq = window.query(window.collection(window.db, "notifications"), window.where("to", "==", "teachers"), window.where("postId", "==", replyTargetId));
-                                   const ns = await window.getDocs(nq);
-                                   for (const nd of ns.docs) await window.deleteDoc(window.doc(window.db, "notifications", nd.id));
-                               }
-                           } catch(e) {}
-                       }
-                       lbRecordingsCache = {}; lbLikesCache = {};
-                       if (lbRecordingsOpenUid) {
-                           const cont = document.getElementById('lb-recordings-' + lbRecordingsOpenUid);
-                           if (cont) fetchUserRecordings(lbRecordingsOpenUid, lbRecordingsOpenRole, true).then(items => { lbRecordingsCache[lbRecordingsOpenUid] = items; renderLbRecordingsList(cont, lbRecordingsOpenUid, lbRecordingsOpenOffset); });
-                       }
+                    /* Lehrer-Glocke: „neue Aufnahme“ nur entfernen wenn Sprachantwort UND Bewertung (قبول / يحتاج تحسين) auf dem Post sind. */
+                    if (role === 'teacher' && replyTargetId) {
+                        try {
+                            const postRefAfter = window.doc(window.db, "posts", replyTargetId);
+                            let postAfter = null;
+                            try {
+                                const s = await window.getDocFromServer(postRefAfter);
+                                if (s.exists()) postAfter = s.data();
+                            } catch (e1) {
+                                try {
+                                    const s2 = await window.getDoc(postRefAfter);
+                                    if (s2.exists()) postAfter = s2.data();
+                                } catch (e2) {}
+                            }
+                            const tr = postAfter && postAfter.teacherRating;
+                            const hasTeacherRating = tr && (tr.verdict === 'accepted' || tr.verdict === 'needs_improvement');
+                            const hasTeacherReply = postAfter && postAfter.replies && postAfter.replies.some(r => r.role === 'teacher');
+                            if (hasTeacherReply && hasTeacherRating) {
+                                const nq = window.query(window.collection(window.db, "notifications"), window.where("to", "==", "teachers"), window.where("postId", "==", replyTargetId));
+                                const ns = await window.getDocs(nq);
+                                for (const nd of ns.docs) {
+                                    if ((nd.data().type || '') === 'new_recording') await window.deleteDoc(window.doc(window.db, "notifications", nd.id));
+                                }
+                            }
+                        } catch(e) {}
                     }
                     teacherSyncReplyActive = false;
                     replyTargetId = null; 
@@ -11156,7 +11225,9 @@
                     try {
                         const nq = window.query(window.collection(window.db, "notifications"), window.where("to", "==", "teachers"), window.where("postId", "==", postId));
                         const ns = await window.getDocs(nq);
-                        for (const nd of ns.docs) await window.deleteDoc(window.doc(window.db, "notifications", nd.id));
+                        for (const nd of ns.docs) {
+                            if ((nd.data().type || '') === 'new_recording') await window.deleteDoc(window.doc(window.db, "notifications", nd.id));
+                        }
                     } catch(e) {}
                 }
                 lbRecordingsCache = {}; lbLikesCache = {};
@@ -11212,33 +11283,32 @@
             const uid = localStorage.getItem('it9an_uid'); const myName = localStorage.getItem('it9an_name');
             if(!uid) return;
             const postRef = window.doc(window.db, "posts", postId);
-            const docSnap = await window.getDoc(postRef);
-            if (docSnap.exists()) {
-                let post = docSnap.data(); if(!post.replies) return;
-                let change = 0;
-
-                let updatedReplies = post.replies.map(r => {
-                    if (r.timestamp === replyTimestamp) {
-                        if (!r.likes) r.likes = [];
-                        let isLiked = r.likes.some(l => (typeof l === 'object' ? l.uid === uid : l === uid));
-                        if (isLiked) { 
-                            r.likes = r.likes.filter(l => (typeof l === 'object' ? l.uid !== uid : l !== uid)); 
+            let change = 0;
+            try {
+                await window.runTransaction(window.db, async (transaction) => {
+                    const docSnap = await transaction.get(postRef);
+                    if (!docSnap.exists()) return;
+                    const post = docSnap.data();
+                    if (!post.replies || !post.replies.length) return;
+                    if (!post.replies.some(r => r.timestamp === replyTimestamp)) return;
+                    const updatedReplies = post.replies.map(r => {
+                        if (r.timestamp !== replyTimestamp) return r;
+                        const likes = Array.isArray(r.likes) ? r.likes.slice() : [];
+                        const isLiked = likes.some(l => (typeof l === 'object' ? l.uid === uid : l === uid));
+                        if (isLiked) {
                             change = -1;
-                        } 
-                        else { 
-                            r.likes.push({ uid: uid, name: myName, timestamp: Date.now() }); 
-                            change = 1;
+                            return { ...r, likes: likes.filter(l => (typeof l === 'object' ? l.uid !== uid : l !== uid)) };
                         }
-                    }
-                    return r;
+                        change = 1;
+                        likes.push({ uid: uid, name: myName, timestamp: Date.now() });
+                        return { ...r, likes };
+                    });
+                    transaction.update(postRef, { replies: updatedReplies });
                 });
-                await window.updateDoc(postRef, { replies: updatedReplies });
-                
-                // UPDATE USER TOTAL LIKES
-                if(ownerUid && change !== 0) {
-                    const userRef = window.doc(window.db, "users", ownerUid);
-                    try { await window.updateDoc(userRef, { totalLikes: window.increment(change) }); } catch(e){}
-                }
+            } catch (e) { console.warn('likeReply transaction', e); return; }
+            if (ownerUid && change !== 0) {
+                const userRef = window.doc(window.db, "users", ownerUid);
+                try { await window.updateDoc(userRef, { totalLikes: window.increment(change) }); } catch(e){}
             }
         }
 
@@ -11321,14 +11391,15 @@
                     const lv = lessonVerseFromKurs(kurs, d.fileId || '1');
                     const stageCfg = getStageConfig(stageId);
 
-                    /* 1) Lehrer: new_recording für Schüleraufnahmen ohne Bewertung/Antwort */
+                    /* 1) Lehrer: new_recording solange weder Sprachantwort noch gültige Bewertung vollständig — beides nötig zum „Erledigt“ in der Glocke. */
                     if (d.uid !== 'admin_super' && d.role !== 'teacher') {
                         const hasTeacherReply = d.replies && d.replies.some(r => r.role === 'teacher');
                         const hasTeacherRating = d.teacherRating && (d.teacherRating.verdict === 'accepted' || d.teacherRating.verdict === 'needs_improvement');
+                        const nqRec = window.query(window.collection(window.db, "notifications"), window.where("to", "==", "teachers"), window.where("postId", "==", doc.id));
                         if (!hasTeacherReply || !hasTeacherRating) {
-                            const nq = window.query(window.collection(window.db, "notifications"), window.where("to", "==", "teachers"), window.where("postId", "==", doc.id), window.where("type", "==", "new_recording"));
-                            const nsnap = await window.getDocs(nq);
-                            if (nsnap.empty) {
+                            const nsnap = await window.getDocs(nqRec);
+                            const existingNewRec = nsnap.docs.filter(dn => (dn.data().type || '') === 'new_recording');
+                            if (existingNewRec.length === 0) {
                                 await window.addDoc(window.collection(window.db, "notifications"), {
                                     to: "teachers",
                                     senderName: stripYearFromName(d.name || 'طالب'),
@@ -11345,7 +11416,7 @@
                                 });
                                 created++;
                             } else {
-                                for (const nd of nsnap.docs) {
+                                for (const nd of existingNewRec) {
                                     await window.updateDoc(window.doc(window.db, "notifications", nd.id), { clearedBy: [] });
                                     updated++;
                                 }
@@ -11702,31 +11773,36 @@
             if(confirm("هل أنت متأكد؟ حذف هذا الرد؟")) {
                 try {
                     const postRef = window.doc(window.db, "posts", postId);
-                    const docSnap = await window.getDoc(postRef);
-                    if (docSnap.exists()) {
-                        let post = docSnap.data();
-                        const replyToDelete = post.replies.find(r => r.timestamp === replyTimestamp);
-                        if (replyToDelete && replyToDelete.audioUrl) {
-                            await cleanupAudioFile(replyToDelete.audioUrl);
-                        }
-                        var replyLikes = (replyToDelete && replyToDelete.likes && replyToDelete.likes.length) ? replyToDelete.likes.length : 0;
-                        let newReplies = post.replies.filter(r => r.timestamp !== replyTimestamp);
-                        await window.updateDoc(postRef, { replies: newReplies });
-                        if(authorUid && replyLikes > 0) { try { await window.updateDoc(window.doc(window.db, "users", authorUid), { totalLikes: window.increment(-replyLikes) }); } catch(e){} }
-                        if(authorUid) { try { await window.updateDoc(window.doc(window.db, "users", authorUid), { totalRepliesCount: window.increment(-1) }); } catch(e){} }
-                        loadLeaderboard();
-                        if(localStorage.getItem('it9an_uid')==='admin_super') loadTeachersLeaderboard();
-                        const div = document.getElementById('community-feed');
-                        if (div && currentGlobalFileId != null) {
-                            const post = (allLoadedPosts || []).find(p => p.id === postId);
-                            if (post && post.replies) {
-                                post.replies = post.replies.filter(r => r.timestamp !== replyTimestamp);
-                                renderPosts(div, localStorage.getItem('it9an_role'), localStorage.getItem('it9an_uid'), savedIdsForFeed || new Set());
-                                updateParticipationsCount();
-                            }
-                        }
-                        alert("تم الحذف");
+                    let replyToDelete = null;
+                    await window.runTransaction(window.db, async (transaction) => {
+                        const docSnap = await transaction.get(postRef);
+                        if (!docSnap.exists()) return;
+                        const post = docSnap.data();
+                        if (!post.replies) return;
+                        replyToDelete = post.replies.find(r => r.timestamp === replyTimestamp);
+                        if (!replyToDelete) return;
+                        const newReplies = post.replies.filter(r => r.timestamp !== replyTimestamp);
+                        transaction.update(postRef, { replies: newReplies });
+                    });
+                    if (!replyToDelete) { alert("لم يُعثر على الرد"); return; }
+                    if (replyToDelete.audioUrl) {
+                        await cleanupAudioFile(replyToDelete.audioUrl);
                     }
+                    var replyLikes = (replyToDelete.likes && replyToDelete.likes.length) ? replyToDelete.likes.length : 0;
+                    if(authorUid && replyLikes > 0) { try { await window.updateDoc(window.doc(window.db, "users", authorUid), { totalLikes: window.increment(-replyLikes) }); } catch(e){} }
+                    if(authorUid) { try { await window.updateDoc(window.doc(window.db, "users", authorUid), { totalRepliesCount: window.increment(-1) }); } catch(e){} }
+                    loadLeaderboard();
+                    if(localStorage.getItem('it9an_uid')==='admin_super') loadTeachersLeaderboard();
+                    const div = document.getElementById('community-feed');
+                    if (div && currentGlobalFileId != null) {
+                        const post = (allLoadedPosts || []).find(p => p.id === postId);
+                        if (post && post.replies) {
+                            post.replies = post.replies.filter(r => r.timestamp !== replyTimestamp);
+                            renderPosts(div, localStorage.getItem('it9an_role'), localStorage.getItem('it9an_uid'), savedIdsForFeed || new Set());
+                            updateParticipationsCount();
+                        }
+                    }
+                    alert("تم الحذف");
                 } catch(e) { alert("خطأ"); }
             }
         }
