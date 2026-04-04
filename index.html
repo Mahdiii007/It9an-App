@@ -1107,10 +1107,6 @@
             <button type="button" class="stop-ui-btn" onclick="stopSyncReplySession()">⏹ إنهاء</button>
         </div>
         <div id="sync-reply-status" class="sync-reply-status"></div>
-        <label class="sync-reply-speaker-boost-label" style="display:flex;align-items:flex-start;gap:8px;font-size:12px;color:#444;margin:4px 0 8px;cursor:pointer;line-height:1.35;text-align:right;">
-            <input type="checkbox" id="sync-reply-speaker-boost" style="margin-top:3px;flex-shrink:0;" />
-            <span>تعزيز الصوت عند الاستماع من <strong>السماعة الداخلية</strong> (آيفون/آيباد). عطّله عند استخدام <strong>سماعات الأذن</strong> إذا بدا الصوت عالياً.</span>
-        </label>
         <button type="button" id="sync-reply-hold-btn" class="sync-reply-hold-btn" disabled aria-label="اضغط مع الاستمرار للتعليق على التسجيل"><svg class="icon-mic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
     </div>
 
@@ -6733,35 +6729,12 @@
             } catch (e) {}
         }
 
-        const SYNC_REPLY_LS_SPEAKER_BOOST = 'it9an_sync_reply_speaker_boost';
-        function syncReplyInitSpeakerBoostCheckbox() {
-            const cb = document.getElementById('sync-reply-speaker-boost');
-            if (!cb) return;
-            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-            try {
-                let v = localStorage.getItem(SYNC_REPLY_LS_SPEAKER_BOOST);
-                if (v === null) v = isIOS ? '1' : '0';
-                cb.checked = v === '1';
-            } catch (e) {
-                cb.checked = !!isIOS;
-            }
-        }
         function syncReplyGetSpeakerBoostMult() {
-            const cb = document.getElementById('sync-reply-speaker-boost');
-            let checked = false;
-            try {
-                if (cb) checked = cb.checked;
-                else checked = localStorage.getItem(SYNC_REPLY_LS_SPEAKER_BOOST) !== '0';
-            } catch (e) {
-                checked = it9anAudioProfile.kind === 'ios';
-            }
-            if (!checked) return 1;
-            return it9anAudioProfile.kind === 'ios' ? 1.5 : 1.12;
+            return 1;
         }
         function syncReplyUiSetVisible(visible) {
             const el = document.getElementById('sync-reply-ui');
             if (el) el.style.display = visible ? 'flex' : 'none';
-            if (visible) syncReplyInitSpeakerBoostCheckbox();
         }
         function isStudentEchoSyncUiOpen() {
             const el = document.getElementById('student-echo-sync-ui');
@@ -6802,14 +6775,6 @@
         window.stopSyncReplySession = function() {
             if (syncReplySessionHandle && typeof syncReplySessionHandle.abort === 'function') syncReplySessionHandle.abort();
         };
-        (function bindSyncReplySpeakerBoostCheckbox() {
-            const cb = document.getElementById('sync-reply-speaker-boost');
-            if (!cb || cb.dataset.bound === '1') return;
-            cb.dataset.bound = '1';
-            cb.addEventListener('change', function() {
-                try { localStorage.setItem(SYNC_REPLY_LS_SPEAKER_BOOST, this.checked ? '1' : '0'); } catch (e) {}
-            });
-        })();
 
         function it9anIsIosWebKitUA() {
             return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -7777,6 +7742,11 @@
             throw lastErr || new Error('audio load');
         }
 
+        /** رد متزامن: #sync-reply-status — Kurztexte wie تسجيل متزامن. */
+        const SYNC_REPLY_STATUS_LISTEN = 'استمع الآن..';
+        const SYNC_REPLY_STATUS_RECORD = 'سجّل الآن..';
+        const SYNC_REPLY_STATUS_TAIL = 'واصل التسجيل..';
+
         async function runTeacherSyncReplySession(audioInput, opts) {
             const mode = opts.mode || 'student';
             const statusEl = opts.statusEl;
@@ -8076,7 +8046,7 @@
                         micGain.gain.setValueAtTime(1, ctx.currentTime);
                         bumpSyncReplyStudentLevelAfterFirstMicOpen();
                         playStudentEchoBeep(ctx);
-                        if (statusEl) statusEl.textContent = 'تسجيل تلقائي بعد انتهاء تسجيل الطالب — اضغط «إنهاء» عند الانتهاء';
+                        if (statusEl) statusEl.textContent = SYNC_REPLY_STATUS_TAIL;
                     } catch (err) {
                         console.error('sync reply tail mic', err);
                         if (statusEl) statusEl.textContent = '';
@@ -8102,6 +8072,7 @@
                 };
                 studentDriver.playFrom(Math.max(0, fromOff), onEnd).then(() => {
                     if (holdBtn && mode === 'student') holdBtn.disabled = false;
+                    if (statusEl && mode === 'student') statusEl.textContent = SYNC_REPLY_STATUS_LISTEN;
                 }).catch(err => {
                     console.warn('sync reply play', err);
                     finishSession();
@@ -8131,7 +8102,7 @@
                         micGain.gain.setValueAtTime(1, ctx.currentTime);
                         bumpSyncReplyStudentLevelAfterFirstMicOpen();
                         playSyncTransitionBeep(ctx, true);
-                        if (statusEl) statusEl.textContent = 'تسجيل تعليقك — أفلت الزر لمتابعة تسجيل الطالب';
+                        if (statusEl) statusEl.textContent = SYNC_REPLY_STATUS_RECORD;
                     } catch (err) {
                         console.error('sync reply mic', err);
                         isCommenting = false;
