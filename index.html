@@ -2002,8 +2002,7 @@
         let mediaRecorder, chunks = [], recInterval = null, recSeconds = 0;
         let currentBlob = null, replyTargetId = null, maxRecDuration = 0;
         let lastRecStream = null, lastRecCtx = null;
-        /** iPhone/WebKit: Aufnahmen oft leiser als Android — ein Wert für toggleRecord (gainOnly) und رد متزامن (preMic). */
-        const IOS_MIC_RECORDER_GAIN = 2.68;
+        const IOS_MIC_RECORDER_GAIN = 1;
         /** Nach Aufnahme-Ende: alle gehaltenen Mic-Streams + Kontext freigeben (inkl. macOS-Menüleiste). */
         async function forceReleaseRecordingPipeline() {
             if (lastRecStream) {
@@ -6616,7 +6615,7 @@
                 osc.connect(g);
                 g.connect(audioCtx.destination);
                 const t0 = audioCtx.currentTime;
-                g.gain.exponentialRampToValueAtTime(0.18, t0 + 0.02);
+                g.gain.exponentialRampToValueAtTime(1, t0 + 0.02);
                 g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.14);
                 osc.start(t0);
                 osc.stop(t0 + 0.15);
@@ -6636,19 +6635,8 @@
                 cb.checked = !!isIOS;
             }
         }
-        /** Nach erstem Mic: zusätzlicher Faktor auf Monitor-Gain wenn eingebaute Lautsprecher (Kopfhörer: Checkbox aus). */
         function syncReplyGetSpeakerBoostMult() {
-            const cb = document.getElementById('sync-reply-speaker-boost');
-            let checked = false;
-            try {
-                if (cb) checked = cb.checked;
-                else checked = localStorage.getItem(SYNC_REPLY_LS_SPEAKER_BOOST) !== '0';
-            } catch (e) {
-                checked = true;
-            }
-            if (!checked) return 1;
-            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-            return isIOS ? 1.52 : 1.12;
+            return 1;
         }
         function syncReplyUiSetVisible(visible) {
             const el = document.getElementById('sync-reply-ui');
@@ -7693,15 +7681,13 @@
             if (isIOSSyncReply && navigator.audioSession) {
                 try { navigator.audioSession.type = 'playback'; } catch (ePlaySync0) {}
             }
-            /* Schüler: studentGain→dest (Aufnahme konstant). Monitor: studentMonitorOnlyGain → [iOS: L→beide Kanäle] → monitorRoute — iPhone routet oft nur einen Lautsprecher für „Sprach“-Mix; Stereo kann eine Seite leiser wirken. Nach erstem Mic + optional Checkbox-Speaker-Boost. */
-            const SYNC_REPLY_MIC_PRE_NON_IOS = 2.3;
-            const SYNC_REPLY_MONITOR_ONLY = 1.3;
-            const SYNC_REPLY_MONITOR_IOS_EXTRA = isIOSSyncReply ? 1.75 : 1;
+            const SYNC_REPLY_MIC_PRE_NON_IOS = 1;
+            const SYNC_REPLY_MONITOR_ONLY = 1;
+            const SYNC_REPLY_MONITOR_IOS_EXTRA = 1;
             const SYNC_REPLY_STUDENT_REC_GAIN = 1;
-            /** Monitor nur; nach Mic + ggf. syncReplyGetSpeakerBoostMult() für eingebaute Lautsprecher (Fallback wenn Route noch leise). */
-            const SYNC_REPLY_MONITOR_ONLY_POST_FIRST_MIC_IOS = 2.38;
-            const SYNC_REPLY_MONITOR_ONLY_POST_FIRST_MIC_OTHER = 1.06;
-            const SYNC_REPLY_MONITOR_POST_MIC_CAP = 3.75;
+            const SYNC_REPLY_MONITOR_ONLY_POST_FIRST_MIC_IOS = 1;
+            const SYNC_REPLY_MONITOR_ONLY_POST_FIRST_MIC_OTHER = 1;
+            const SYNC_REPLY_MONITOR_POST_MIC_CAP = 1;
             const studentGain = ctx.createGain();
             studentGain.gain.value = SYNC_REPLY_STUDENT_REC_GAIN;
 
@@ -8223,7 +8209,7 @@
                 g.connect(ctx.destination);
                 const t0 = ctx.currentTime;
                 g.gain.setValueAtTime(0.0001, t0);
-                g.gain.exponentialRampToValueAtTime(0.06, t0 + 0.02);
+                g.gain.exponentialRampToValueAtTime(1, t0 + 0.02);
                 g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.07);
                 o.start(t0);
                 o.stop(t0 + 0.08);
@@ -9169,15 +9155,15 @@
                             const merger = recCtx.createChannelMerger(1);
                             const gainL = recCtx.createGain();
                             const gainR = recCtx.createGain();
-                            gainL.gain.value = 0.5;
-                            gainR.gain.value = 0.5;
+                            gainL.gain.value = 1;
+                            gainR.gain.value = 1;
                             sourceNode.connect(splitter);
                             splitter.connect(gainL, 0);
                             splitter.connect(gainR, 1);
                             gainL.connect(merger, 0, 0);
                             gainR.connect(merger, 0, 0);
                             const gainBoost = recCtx.createGain();
-                            gainBoost.gain.value = 1.0;
+                            gainBoost.gain.value = 1;
                             merger.connect(gainBoost);
                             const destNode = recCtx.createMediaStreamDestination();
                             gainBoost.connect(destNode);
@@ -9402,15 +9388,15 @@
                             const merger = recCtx.createChannelMerger(1);
                             const gainL = recCtx.createGain();
                             const gainR = recCtx.createGain();
-                            gainL.gain.value = 0.5;
-                            gainR.gain.value = 0.5;
+                            gainL.gain.value = 1;
+                            gainR.gain.value = 1;
                             sourceNode.connect(splitter);
                             splitter.connect(gainL, 0);
                             splitter.connect(gainR, 1);
                             gainL.connect(merger, 0, 0);
                             gainR.connect(merger, 0, 0);
                             const gainBoost = recCtx.createGain();
-                            gainBoost.gain.value = 1.0;
+                            gainBoost.gain.value = 1;
                             merger.connect(gainBoost);
                             const destNode = recCtx.createMediaStreamDestination();
                             gainBoost.connect(destNode);
@@ -10023,15 +10009,15 @@
                                 const merger = recCtx.createChannelMerger(1);
                                 const gainL = recCtx.createGain();
                                 const gainR = recCtx.createGain();
-                                gainL.gain.value = 0.5;
-                                gainR.gain.value = 0.5;
+                                gainL.gain.value = 1;
+                                gainR.gain.value = 1;
                                 sourceNode.connect(splitter);
                                 splitter.connect(gainL, 0);
                                 splitter.connect(gainR, 1);
                                 gainL.connect(merger, 0, 0);
                                 gainR.connect(merger, 0, 0);
                                 const gainBoost = recCtx.createGain();
-                                gainBoost.gain.value = 1.0;
+                                gainBoost.gain.value = 1;
                                 merger.connect(gainBoost);
                                 const destNode = recCtx.createMediaStreamDestination();
                                 gainBoost.connect(destNode);
