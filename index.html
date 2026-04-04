@@ -1158,6 +1158,7 @@
         var notifUnsubscribe = null;
         var forceLogoutUnsub = null;
         var forceLogoutKickScheduled = false;
+        var it9anForcedLogoutRunning = false;
         const STUDENT_PIN = "1234";
         /** Ein einziger App-Administrator; Login nur mit diesem PIN. Interne Sitzungs-UID: `admin_super` (nicht die PIN). */
         const ADMIN_PIN = "1879";
@@ -1234,6 +1235,33 @@
             const postId = params.get('postId');
             if (postId && fileId) storePushParams(postId, fileId, notifId);
         })();
+        (function it9anStripForceReloadCacheBusterParam() {
+            try {
+                const u = new URL(window.location.href);
+                if (!u.searchParams.has('it9an_rev')) return;
+                u.searchParams.delete('it9an_rev');
+                const qs = u.searchParams.toString();
+                window.history.replaceState({}, '', u.pathname + (qs ? '?' + qs : '') + u.hash);
+            } catch (e) { /* ignore */ }
+        })();
+        /**
+         * Beste Annäherung an „Cache leer“ ohne Nutzerdialog: alle Cache-Storage-Einträge löschen + Service Worker abmelden.
+         * Bei Deploy-Erkennung (app-version.json) und erzwungenem Logout aufrufen.
+         */
+        async function it9anPurgeWebCachesAndUnregisterSw() {
+            try {
+                if (typeof caches !== 'undefined' && caches.keys) {
+                    const keys = await caches.keys();
+                    await Promise.all(keys.map(function(k) { return caches.delete(k); }));
+                }
+            } catch (e) { /* ignore */ }
+            try {
+                if ('serviceWorker' in navigator && navigator.serviceWorker.getRegistrations) {
+                    const regs = await navigator.serviceWorker.getRegistrations();
+                    await Promise.all(regs.map(function(reg) { return reg.unregister(); }));
+                }
+            } catch (e2) { /* ignore */ }
+        }
         if (typeof navigator.serviceWorker !== 'undefined') {
             navigator.serviceWorker.addEventListener('message', (e) => {
                 const m = e.data;
@@ -1251,7 +1279,8 @@
             });
         }
 
-        /** PWA-Deploy: SW neu laden + app-version.json – häufige Prüfung, Tab-Fokus, Netz wieder da, bfcache. */
+        /** PWA-Deploy: SW neu laden + app-version.json – häufige Prüfung, Tab-Fokus, Netz wieder da, bfcache.
+         * Wichtig: Bei jedem Release `app-version.json` → `version` ändern: dann leeren alle Nutzer Cache API + melden SW ab und laden neu. */
         (function setupPwaAutoUpdate() {
             if (!('serviceWorker' in navigator)) {
                 (function versionOnly() {
@@ -1271,7 +1300,9 @@
                             try { prev = localStorage.getItem(STORAGE_KEY); } catch (e) { /* ignore */ }
                             if (prev !== null && prev !== v) {
                                 try { localStorage.setItem(STORAGE_KEY, v); } catch (e) { /* ignore */ }
-                                window.location.reload();
+                                void it9anPurgeWebCachesAndUnregisterSw().then(function() {
+                                    try { window.location.reload(); } catch (r) {}
+                                });
                                 return;
                             }
                             try { localStorage.setItem(STORAGE_KEY, v); } catch (e) { /* ignore */ }
@@ -1348,7 +1379,7 @@
                     try { prev = localStorage.getItem(VERSION_STORAGE_KEY); } catch (e) { /* ignore */ }
                     if (prev !== null && prev !== v) {
                         try { localStorage.setItem(VERSION_STORAGE_KEY, v); } catch (e) { /* ignore */ }
-                        scheduleReloadOnce();
+                        void it9anPurgeWebCachesAndUnregisterSw().then(function() { scheduleReloadOnce(); });
                         return;
                     }
                     try { localStorage.setItem(VERSION_STORAGE_KEY, v); } catch (e) { /* ignore */ }
@@ -1432,6 +1463,41 @@
             showPinLogin();
             forceLogoutKickScheduled = false;
         }
+        /**
+         * Nach Admin „تسجيل خروج الجميع“: PWA/Service-Worker-Caches leeren, Session leeren, Logout, dann harte Navigation mit Cache-Buster.
+         * Vollständigen HTTP-Disk-Cache kann kein Server erzwingen; Cache API + Neuladen holt frisches index.html sofern online.
+         */
+        async function it9anApplyForcedLogoutClientReset(serverVersion) {
+            if (it9anForcedLogoutRunning) return;
+            it9anForcedLogoutRunning = true;
+            const sv = parseInt(serverVersion, 10) || 0;
+            if (sv) {
+                try { localStorage.setItem('it9an_logout_gen', String(sv)); } catch (e) {}
+            }
+            try {
+                await it9anPurgeWebCachesAndUnregisterSw();
+            } catch (e1) { /* ignore */ }
+            try { sessionStorage.clear(); } catch (e2) { /* ignore */ }
+            try {
+                if (typeof window.doLogout === 'function') {
+                    await Promise.race([
+                        window.doLogout(),
+                        new Promise(function(r) { setTimeout(r, 10000); })
+                    ]);
+                } else {
+                    ['it9an_uid', 'it9an_role', 'it9an_name', 'it9an_pin', 'it9an_saved_pin', 'it9an_hidden'].forEach(function(k) {
+                        try { localStorage.removeItem(k); } catch (e4) {}
+                    });
+                }
+            } catch (e3) { /* ignore */ }
+            try {
+                const u = new URL(window.location.href);
+                u.searchParams.set('it9an_rev', String(sv || Date.now()));
+                window.location.replace(u.toString());
+            } catch (e6) {
+                try { window.location.reload(); } catch (e7) {}
+            }
+        }
         /** Erzwungener Logout (Version aus Firestore oder SW); idempotent, Admin nur it9an_logout_gen aktualisieren. */
         function it9anNotifyForceLogoutKick(version) {
             const v = parseInt(version, 10) || 0;
@@ -1447,23 +1513,7 @@
             try { localStorage.setItem('it9an_logout_gen', String(v)); } catch (e) {}
             if (forceLogoutKickScheduled) return;
             forceLogoutKickScheduled = true;
-            function hardReloadSoon() {
-                setTimeout(function() { try { window.location.reload(); } catch (e2) {} }, 200);
-            }
-            if (typeof window.doLogout === 'function') {
-                try {
-                    var p = window.doLogout();
-                    if (p && typeof p.then === 'function') p.then(hardReloadSoon).catch(hardReloadSoon);
-                    else hardReloadSoon();
-                } catch (e3) { hardReloadSoon(); }
-            } else {
-                try {
-                    ['it9an_uid', 'it9an_role', 'it9an_name', 'it9an_pin', 'it9an_saved_pin', 'it9an_hidden'].forEach(function(k) {
-                        try { localStorage.removeItem(k); } catch (e4) {}
-                    });
-                } catch (e5) {}
-                hardReloadSoon();
-            }
+            void it9anApplyForcedLogoutClientReset(v);
         }
         const APP_SETTINGS_DOC = 'appSettings';
         function detachForceLogoutRealtimeListener() {
@@ -1565,8 +1615,7 @@
                     const serverV = snap.exists() ? (Number(snap.data().version) || 0) : 0;
                     const localV = parseInt(localStorage.getItem('it9an_logout_gen') || '0', 10) || 0;
                     if (serverV > localV) {
-                        try { localStorage.setItem('it9an_logout_gen', String(serverV)); } catch (e) {}
-                        await window.doLogout();
+                        await it9anApplyForcedLogoutClientReset(serverV);
                         return true;
                     }
                 } catch (e) { console.warn('applyGlobalForceLogoutIfNeeded:', e); }
@@ -1609,7 +1658,7 @@
                     const serverV = snap.exists() ? (Number(snap.data().version) || 0) : 0;
                     localStorage.setItem('it9an_logout_gen', String(serverV));
                 } catch (e3) { /* ignore */ }
-                alert('تم. سيُسجّل خروج الطلاب والمعلمين عند التحديث أو العودة للتطبيق.');
+                alert('تم. سيُسجّل خروج الطلاب والمعلمين عند التحديث أو العودة للتطبيق، مع مسح ذاكرة التخزين المؤقت للتطبيق (PWA) قدر الإمكان وتحميل نسخة جديدة من الصفحة.');
             } catch (e) {
                 console.error(e);
                 alert('خطأ: ' + (e.message || e));

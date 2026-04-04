@@ -128,6 +128,5 @@ while true; do
   sleep 25
 done
 
-SHA="$(git rev-parse HEAD 2>/dev/null || echo local)"
-printf '%s\n' "{\"version\":\"fb-${SHA}\",\"builtAt\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}" > app-version.json
-echo "Wrote app-version.json (nach erfolgreichem Deploy)"
+bash "${ROOT}/scripts/bump-app-version.sh"
+echo "app-version.json nach erfolgreichem firebase deploy (bitte bei Bedarf committen/pushen — GitHub Pages nutzt den Bump im Pages-Workflow)."

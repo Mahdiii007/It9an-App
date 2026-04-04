@@ -107,9 +107,8 @@ if [[ "${SKIP_GIT:-0}" != "1" ]]; then
   if [[ "$BRANCH" != "main" && "$BRANCH" != "master" ]]; then
     echo "Hinweis: Der Pages-Workflow (.github/workflows/deploy-pages.yml) laeuft nur auf „main“ oder „master“."
   fi
-  # Vor Commit: app-version.json ins Repo — deploy-firebase schreibt sie erst NACH dem ersten Push (fb-*).
-  SHA_PRE="$(git rev-parse HEAD 2>/dev/null || echo unknown)"
-  printf '%s\n' "{\"version\":\"pre-${SHA_PRE}\",\"builtAt\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}" > app-version.json
+  # Vor Commit: app-version.json (scripts/bump-app-version.sh — eindeutig pro Lauf); nach Firebase erneuter Bump + Sync-Commit.
+  bash "${ROOT}/scripts/bump-app-version.sh"
   echo "→ git add -A …"
   git add -A
   if git diff --staged --quiet; then
@@ -146,7 +145,7 @@ else
   echo "=== Firebase übersprungen (SKIP_FIREBASE=1) ==="
 fi
 
-# app-version.json (fb-*), Zeilenenden, Skript-Modi, usw. — ein Commit, danach leerer Arbeitsbaum
+# app-version.json (erneuter Bump nach Firebase), Zeilenenden, Skript-Modi — ein Commit, danach leerer Arbeitsbaum
 if [[ "${SKIP_GIT:-0}" != "1" && "${SYNC_CLEAN_AFTER_DEPLOY:-1}" == "1" ]]; then
   echo "=== Git: Arbeitsbaum mit Remote abgleichen (soll leer werden) ==="
   sync_worktree_clean 3
