@@ -2059,12 +2059,18 @@
                 kind,
                 /** Mic → WebAudio → MediaRecorder (WebKit/iOS stark unterpegelt) */
                 micCaptureGain: kind === 'ios' ? 2.78 : kind === 'android' ? 1.95 : kind === 'mac' ? 1.42 : 1.58,
-                /** رد متزامن: Lehrer-Mic (nicht-iOS), Abgleich zum Schüler-Branch */
-                micSyncReplyPre: kind === 'android' ? 2.12 : kind === 'mac' ? 1.72 : 2.38,
                 /** Stereo-Mic → Mono: je Kanal (Summe ≈ 1 bei gleichem Pegel) */
                 stereoDownmixChannel: 0.5,
-                /** Schüler in Sync-Aufnahme (dest + Monitor): angehoben — Nutzerclips wirken sonst deutlich leiser als Kurs-Audio. */
-                syncReplyStudentRec: 2.2,
+                /**
+                 * رد متزامن — getrennt: Monitor (Kopfhörer) vs. Aufnahme-Mix.
+                 * Schülerdatei ist oft loudnorm (−16 LUFS); ohne niedrigeren To-Dest-Faktor dominiert sie die Mix-Spur.
+                 */
+                syncReplyStudentMonitorGain: kind === 'ios' ? 2.08 : 2.02,
+                syncReplyStudentToDestGain: 0.58,
+                /** Zusätzliche Verstärkung Lehrer-Stimme in den Aufnahme-Bus (nach Mic-Gate). */
+                syncReplyTeacherMakeupGain: 3.35,
+                /** Mic-Vorverstärker nur رد متزامن (hoch — Abgleich zu normalisiertem Schülerclip, variierende Distanz). */
+                syncReplyTeacherMicPre: kind === 'ios' ? 3.55 : kind === 'android' ? 3.6 : kind === 'mac' ? 3.05 : 3.25,
                 syncMonitorBase: 1.78,
                 syncMonitorIosExtra: kind === 'ios' ? 2.05 : 1,
                 syncMonitorPostMicIos: 3.2,
@@ -7039,9 +7045,8 @@
             let getUserMediaConfig;
             if (isIOS) {
                 getUserMediaConfig = null;
-            } else if (isMacDesktop) {
-                getUserMediaConfig = { audio: true };
             } else {
+                /* Einheitlich (inkl. Mac): weniger AGC/NS-Ducken, Mono ideal — robusterer Pegel im Mix. */
                 getUserMediaConfig = { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: { ideal: 1 } } };
             }
             if (!isMacDesktop) {
@@ -7822,15 +7827,15 @@
             if (isIOSSyncReply && navigator.audioSession) {
                 try { navigator.audioSession.type = 'playback'; } catch (ePlaySync0) {}
             }
-            const SYNC_REPLY_MIC_PRE_NON_IOS = it9anAudioProfile.micSyncReplyPre;
             const SYNC_REPLY_MONITOR_ONLY = it9anAudioProfile.syncMonitorBase;
             const SYNC_REPLY_MONITOR_IOS_EXTRA = it9anAudioProfile.syncMonitorIosExtra;
-            const SYNC_REPLY_STUDENT_REC_GAIN = it9anAudioProfile.syncReplyStudentRec;
             const SYNC_REPLY_MONITOR_ONLY_POST_FIRST_MIC_IOS = it9anAudioProfile.syncMonitorPostMicIos;
             const SYNC_REPLY_MONITOR_ONLY_POST_FIRST_MIC_OTHER = it9anAudioProfile.syncMonitorPostMicOther;
             const SYNC_REPLY_MONITOR_POST_MIC_CAP = it9anAudioProfile.syncMonitorCap;
             const studentGain = ctx.createGain();
-            studentGain.gain.value = SYNC_REPLY_STUDENT_REC_GAIN;
+            studentGain.gain.value = it9anAudioProfile.syncReplyStudentMonitorGain;
+            const studentToDestGain = ctx.createGain();
+            studentToDestGain.gain.value = it9anAudioProfile.syncReplyStudentToDestGain;
 
             let revokeBlobUrl = null;
             let studentDriver = null;
@@ -7856,7 +7861,9 @@
             let micSplit = null;
             let preMic = null;
             let micToStereo = null;
-            let teacherRecordingIsIOS = false;
+            let syncReplyMicStereoGL = null;
+            let syncReplyMicStereoGR = null;
+            let syncReplyMicComp = null;
 
             const dest = ctx.createMediaStreamDestination();
             const studentMonitorOnlyGain = ctx.createGain();
@@ -7865,7 +7872,8 @@
             monitorRoute.gain.value = SYNC_REPLY_MONITOR_ONLY * SYNC_REPLY_MONITOR_IOS_EXTRA;
             const monitorGain = ctx.createGain();
             monitorGain.gain.value = 1;
-            studentGain.connect(dest);
+            studentGain.connect(studentToDestGain);
+            studentToDestGain.connect(dest);
             studentGain.connect(studentMonitorOnlyGain);
             if (isIOSSyncReply) {
                 try {
@@ -7886,8 +7894,10 @@
 
             const micGain = ctx.createGain();
             micGain.gain.value = 0;
-
-            micGain.connect(dest);
+            const teacherMixGain = ctx.createGain();
+            teacherMixGain.gain.value = it9anAudioProfile.syncReplyTeacherMakeupGain;
+            micGain.connect(teacherMixGain);
+            teacherMixGain.connect(dest);
 
             let syncReplyFirstMicBoostApplied = false;
             /** Nach erstem Mic: nur studentMonitorOnlyGain (Hörpfad). dest unverändert → Datei ohne Pegelbruch; Live-Schüler wirkt wieder wie vor dem Mic. */
@@ -7913,6 +7923,18 @@
                     if (micToStereo) {
                         try { micToStereo.disconnect(); } catch (e) {}
                         micToStereo = null;
+                    }
+                    if (syncReplyMicStereoGL) {
+                        try { syncReplyMicStereoGL.disconnect(); } catch (e) {}
+                        syncReplyMicStereoGL = null;
+                    }
+                    if (syncReplyMicStereoGR) {
+                        try { syncReplyMicStereoGR.disconnect(); } catch (e) {}
+                        syncReplyMicStereoGR = null;
+                    }
+                    if (syncReplyMicComp) {
+                        try { syncReplyMicComp.disconnect(); } catch (e) {}
+                        syncReplyMicComp = null;
                     }
                     if (micSplit) {
                         try { micSplit.disconnect(); } catch (e) {}
@@ -7951,22 +7973,39 @@
                 if (rawStream) detachTeacherSyncMicPipeline(false);
                 const mic = await acquireMicStreamForTeacherSync();
                 rawStream = mic.rawStream;
-                teacherRecordingIsIOS = !!mic.isIOS;
                 micSrc = ctx.createMediaStreamSource(rawStream);
                 preMic = ctx.createGain();
-                preMic.gain.value = teacherRecordingIsIOS ? it9anAudioProfile.micCaptureGain : SYNC_REPLY_MIC_PRE_NON_IOS;
+                preMic.gain.value = it9anAudioProfile.syncReplyTeacherMicPre;
                 const tMicSync = rawStream.getAudioTracks()[0];
                 const chMicSync = (tMicSync && tMicSync.getSettings && tMicSync.getSettings().channelCount) || 1;
                 if (chMicSync >= 2) {
+                    /* Nur Kanal 0 war an preMic: auf manchen Geräten liegt die Stimme auf Kanal 1 → „stummer“ Lehrer. */
                     micSplit = ctx.createChannelSplitter(2);
                     micSrc.connect(micSplit);
-                    micSplit.connect(preMic, 0);
+                    const dch = it9anAudioProfile.stereoDownmixChannel;
+                    syncReplyMicStereoGL = ctx.createGain();
+                    syncReplyMicStereoGR = ctx.createGain();
+                    syncReplyMicStereoGL.gain.value = dch;
+                    syncReplyMicStereoGR.gain.value = dch;
+                    micSplit.connect(syncReplyMicStereoGL, 0);
+                    micSplit.connect(syncReplyMicStereoGR, 1);
+                    syncReplyMicStereoGL.connect(preMic);
+                    syncReplyMicStereoGR.connect(preMic);
                 } else {
                     micSrc.connect(preMic);
                 }
+                syncReplyMicComp = ctx.createDynamicsCompressor();
+                try {
+                    syncReplyMicComp.threshold.value = -38;
+                    syncReplyMicComp.knee.value = 22;
+                    syncReplyMicComp.ratio.value = 3.2;
+                    syncReplyMicComp.attack.value = 0.002;
+                    syncReplyMicComp.release.value = 0.22;
+                } catch (eComp) {}
+                preMic.connect(syncReplyMicComp);
                 micToStereo = ctx.createChannelMerger(2);
-                preMic.connect(micToStereo, 0, 0);
-                preMic.connect(micToStereo, 0, 1);
+                syncReplyMicComp.connect(micToStereo, 0, 0);
+                syncReplyMicComp.connect(micToStereo, 0, 1);
                 micToStereo.connect(micGain);
                 try {
                     rawStream.getAudioTracks().forEach(t => {
