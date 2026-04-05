@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="إتقان">
     <!-- Wird von scripts/bump-app-version.sh mit derselben version wie app-version.json gesetzt (synchroner Deploy-Check, kein fetch → zuverlässig in Safari/PWA). -->
-    <meta name="it9an-deploy-version" content="it9an-1775376080-local-32960-ccd0960">
+    <meta name="it9an-deploy-version" content="it9an-1775394538-local-49618-e1506b7">
     <link rel="manifest" href="manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap" rel="stylesheet">
     
@@ -2410,6 +2410,20 @@
                 }
             }
         }
+        /**
+         * Feed/Review-Clips: play() muss im selben synchronen User-Gesture wie ctx.resume() starten
+         * (sonst nach App-Wechsel / anderer Audio-App oft stummer Lauf trotz UI „spielt“; PWA-Neustart half bisher).
+         */
+        function it9anPlayUserClipFromUserGesture(el) {
+            if (!el) return;
+            try {
+                it9anKickUserRecPlaybackContextSync();
+                it9anNormalizeUserClipMediaElement(el);
+                const pr = el.play();
+                void it9anEnsureUserRecPlaybackContextRunning();
+                if (pr && typeof pr.catch === 'function') pr.catch(function() {});
+            } catch (e) {}
+        }
         function it9anPrepareReviewAudioPlayback() {
             try { it9anIosKickAudioRouteToSpeakerAfterHeavyOp(); } catch (eS) {}
             it9anKickUserRecPlaybackContextSync();
@@ -2681,9 +2695,7 @@
 
             if (currentFeedAudioId === id) {
                 if (feedAudioEl.paused) {
-                    await it9anEnsureUserRecPlaybackContextRunning();
-                    it9anNormalizeUserClipMediaElement(feedAudioEl);
-                    feedAudioEl.play();
+                    it9anPlayUserClipFromUserGesture(feedAudioEl);
                     document.getElementById('btn-' + id).innerText = "⏸";
                     requestWakeLock();
                 } else {
@@ -2714,13 +2726,13 @@
                     console.warn('Feed-Audio-Puffer:', e);
                     playUrl = url;
                 }
-                /* Nach async fetch (iOS/PWA voller Puffer): Kontext + Session erneut — sonst bleibt WebAudio oft suspended / falsche Route. */
-                it9anKickUserRecPlaybackContextSync();
+                /* Nach async fetch: Kontext sofort wecken + play(); weitere resume-Frames parallel (Gesture nach await schwach). */
                 try { it9anIosKickAudioRouteToSpeakerAfterHeavyOp(); } catch (eKickAfterBuf) {}
-                await it9anEnsureUserRecPlaybackContextRunning();
-                it9anNormalizeUserClipMediaElement(feedAudioEl);
                 feedAudioEl.preload = 'auto';
                 feedAudioEl.src = playUrl;
+                it9anKickUserRecPlaybackContextSync();
+                it9anNormalizeUserClipMediaElement(feedAudioEl);
+                void it9anEnsureUserRecPlaybackContextRunning();
                 feedAudioEl.play().then(() => {
                     newBtn.innerText = "⏸";
                     it9anKickUserRecPlaybackContextSync();
@@ -10757,25 +10769,19 @@
             const yBtn = document.getElementById('review-yellow-side-btn');
             if (!audio || !_reviewMainYellowUrl || !reviewYellowEnabled) return;
             if (!_reviewReviewPlayingYellow) {
-                it9anPrepareReviewAudioPlayback();
                 audio.pause();
                 audio.src = _reviewMainYellowUrl;
                 audio.load();
                 _reviewReviewPlayingYellow = true;
                 const mainBtn = document.getElementById('review-play-btn');
                 if (mainBtn) mainBtn.textContent = '▶';
-                void it9anEnsureUserRecPlaybackContextRunning().then(function() {
-                    it9anNormalizeUserClipMediaElement(audio);
-                    return audio.play();
-                }).catch(function() {});
+                it9anPrepareReviewAudioPlayback();
+                it9anPlayUserClipFromUserGesture(audio);
                 return;
             }
             if (audio.paused) {
                 it9anPrepareReviewAudioPlayback();
-                void it9anEnsureUserRecPlaybackContextRunning().then(function() {
-                    it9anNormalizeUserClipMediaElement(audio);
-                    return audio.play();
-                }).catch(function() {});
+                it9anPlayUserClipFromUserGesture(audio);
             } else {
                 audio.pause();
             }
@@ -10784,16 +10790,13 @@
             const audio = document.getElementById('reviewAudio');
             const btn = document.getElementById('review-play-btn');
             if (!audio || !_reviewMainGreenUrl) return;
-            it9anPrepareReviewAudioPlayback();
             _reviewReviewPlayingYellow = false;
             reviewModalResetYellowSideBtn();
             audio.pause();
             audio.src = _reviewMainGreenUrl;
             audio.load();
-            void it9anEnsureUserRecPlaybackContextRunning().then(function() {
-                it9anNormalizeUserClipMediaElement(audio);
-                return audio.play();
-            }).catch(function() {});
+            it9anPrepareReviewAudioPlayback();
+            it9anPlayUserClipFromUserGesture(audio);
             if (btn) btn.textContent = '⏸';
         };
         window.reviewModalPlayMainYellow = function() {
@@ -10801,16 +10804,13 @@
             const audio = document.getElementById('reviewAudio');
             const btn = document.getElementById('review-play-btn');
             if (!audio) return;
-            it9anPrepareReviewAudioPlayback();
             audio.pause();
             audio.src = _reviewMainYellowUrl;
             audio.load();
             _reviewReviewPlayingYellow = true;
             if (btn) btn.textContent = '▶';
-            void it9anEnsureUserRecPlaybackContextRunning().then(function() {
-                it9anNormalizeUserClipMediaElement(audio);
-                return audio.play();
-            }).catch(function() {});
+            it9anPrepareReviewAudioPlayback();
+            it9anPlayUserClipFromUserGesture(audio);
         };
         window.reviewModalPlayStripGreen = function(i) {
             const url = _reviewStripGreenUrls[i];
@@ -10818,16 +10818,13 @@
             const audio = document.getElementById('reviewAudio');
             const btn = document.getElementById('review-play-btn');
             if (!audio) return;
-            it9anPrepareReviewAudioPlayback();
             _reviewReviewPlayingYellow = false;
             reviewModalResetYellowSideBtn();
             audio.pause();
             audio.src = url;
             audio.load();
-            void it9anEnsureUserRecPlaybackContextRunning().then(function() {
-                it9anNormalizeUserClipMediaElement(audio);
-                return audio.play();
-            }).catch(function() {});
+            it9anPrepareReviewAudioPlayback();
+            it9anPlayUserClipFromUserGesture(audio);
             if (btn) btn.textContent = '⏸';
         };
         window.reviewModalPlayStripYellow = function(i) {
@@ -10835,16 +10832,13 @@
                 const audio = document.getElementById('reviewAudio');
                 const btn = document.getElementById('review-play-btn');
                 if (!audio) return;
-                it9anPrepareReviewAudioPlayback();
                 _reviewReviewPlayingYellow = false;
                 reviewModalResetYellowSideBtn();
                 audio.pause();
                 audio.src = _reviewStripStudentUrls[i];
                 audio.load();
-                void it9anEnsureUserRecPlaybackContextRunning().then(function() {
-                    it9anNormalizeUserClipMediaElement(audio);
-                    return audio.play();
-                }).catch(function() {});
+                it9anPrepareReviewAudioPlayback();
+                it9anPlayUserClipFromUserGesture(audio);
                 if (btn) btn.textContent = '⏸';
                 return;
             }
@@ -10857,16 +10851,13 @@
             const audio = document.getElementById('reviewAudio');
             const btn = document.getElementById('review-play-btn');
             if (!audio) return;
-            it9anPrepareReviewAudioPlayback();
             _reviewReviewPlayingYellow = false;
             reviewModalResetYellowSideBtn();
             audio.pause();
             audio.src = url;
             audio.load();
-            void it9anEnsureUserRecPlaybackContextRunning().then(function() {
-                it9anNormalizeUserClipMediaElement(audio);
-                return audio.play();
-            }).catch(function() {});
+            it9anPrepareReviewAudioPlayback();
+            it9anPlayUserClipFromUserGesture(audio);
             if (btn) btn.textContent = '⏸';
         };
         window.reviewModalPlayStripStudent = function(i) {
@@ -11093,10 +11084,7 @@
                 }
                 if (audio.paused) {
                     it9anPrepareReviewAudioPlayback();
-                    void it9anEnsureUserRecPlaybackContextRunning().then(function() {
-                        it9anNormalizeUserClipMediaElement(audio);
-                        return audio.play();
-                    }).catch(function() {});
+                    it9anPlayUserClipFromUserGesture(audio);
                     btn.textContent = '⏸';
                 } else {
                     audio.pause();
@@ -11105,10 +11093,7 @@
             } else {
                 if (audio.paused) {
                     it9anPrepareReviewAudioPlayback();
-                    void it9anEnsureUserRecPlaybackContextRunning().then(function() {
-                        it9anNormalizeUserClipMediaElement(audio);
-                        return audio.play();
-                    }).catch(function() {});
+                    it9anPlayUserClipFromUserGesture(audio);
                     btn.textContent = '⏸';
                 } else {
                     audio.pause();
@@ -12119,6 +12104,16 @@
             } catch (e3) {}
             it9anReapplyAudioSessionDuringActiveMicCapture();
             it9anEnsureToggleRecordIntervalRunning();
+            try {
+                it9anKickUserRecPlaybackContextSync();
+                if (!echoHoldIosPlaybackRestore) {
+                    it9anApplyDefaultPlaybackVolumes();
+                    it9anNormalizeUserClipMediaElement(feedAudioEl);
+                    it9anNormalizeUserClipMediaElement(document.getElementById('reviewAudio'));
+                    const ma = document.getElementById('mainAudio');
+                    if (ma) ma.muted = false;
+                }
+            } catch (eUnstick) {}
         }
         window.addEventListener('pageshow', function(ev) {
             it9anResumeSuspendedRecordingAudioContexts();
@@ -12130,6 +12125,10 @@
             if (typeof applyGlobalForceLogoutIfNeeded === 'function') {
                 void applyGlobalForceLogoutIfNeeded();
             }
+        });
+        window.addEventListener('focus', function() {
+            if (document.visibilityState !== 'visible') return;
+            try { it9anResumeSuspendedRecordingAudioContexts(); } catch (eF) {}
         });
         document.addEventListener('visibilitychange', () => {
             if (document.hidden) {
