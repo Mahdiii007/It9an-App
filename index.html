@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="إتقان">
     <!-- Wird von scripts/bump-app-version.sh mit derselben version wie app-version.json gesetzt (synchroner Deploy-Check, kein fetch → zuverlässig in Safari/PWA). -->
-    <meta name="it9an-deploy-version" content="it9an-1775400332-local-2190-9b74230">
+    <meta name="it9an-deploy-version" content="it9an-1775401147-local-9961-f5b6327">
     <link rel="manifest" href="manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap" rel="stylesheet">
     
@@ -250,6 +250,31 @@
             overflow: hidden;
             text-overflow: ellipsis;
         }
+        .lesson-diff-loading { opacity: 0.55; }
+        #lessons-loading-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.48);
+            z-index: 5600;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            direction: rtl;
+        }
+        #lessons-loading-overlay.it9an-visible { display: flex; }
+        .lessons-loading-inner {
+            background: #fff;
+            color: #333;
+            padding: 22px 28px;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.22);
+            text-align: center;
+            font-size: 18px;
+            line-height: 1.65;
+            max-width: min(92vw, 360px);
+        }
+        .lessons-loading-sub { font-size: 15px; color: #666; margin-top: 10px; display: block; }
         .menu-item-students-icon { cursor: pointer; display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; flex-shrink: 0; border-radius: 50%; background: rgba(15,76,58,0.15); font-size: 12px; }
         .menu-item-students-icon:hover { background: rgba(15,76,58,0.3); }
 
@@ -1055,6 +1080,13 @@
             <div class="verse-list-title" style="margin-bottom:15px;">📚</div>
             <div id="stage-no-lessons-modal-body" style="text-align:right; line-height:1.8; font-size:17px; color:#333; margin:15px 0;">في هذه المرحلة لا توجد دورات بعد. نعمل عليها بجد. ترقبوا.</div>
             <button class="verse-list-btn" style="margin-top:15px; width:100%;" onclick="hideStageNoLessonsModal()">فهمت</button>
+        </div>
+    </div>
+
+    <div id="lessons-loading-overlay" aria-live="polite" role="status">
+        <div class="lessons-loading-inner">
+            يرجى الانتظار…
+            <span class="lessons-loading-sub">جاري تحضير قائمة الدروس</span>
         </div>
     </div>
 
@@ -6477,6 +6509,13 @@
             }
         }
 
+        function it9anSetLessonsLoadingVisible(visible) {
+            const el = document.getElementById('lessons-loading-overlay');
+            if (!el) return;
+            if (visible) el.classList.add('it9an-visible');
+            else el.classList.remove('it9an-visible');
+        }
+
         window.showLessonsView = async function() {
             if (isPlaying) stopLoop();
             pauseFeedAudio();
@@ -6494,50 +6533,43 @@
                 document.getElementById('appFooter').style.display = 'none';
                 return;
             }
-            const myUid = localStorage.getItem('it9an_uid');
-            const userRole = localStorage.getItem('it9an_role');
-            let completedVerses = new Set();
-            if (myUid && myUid !== 'admin_super' && userRole === 'student') {
-                completedVerses = await fetchCompletedVersesForStudent(myUid);
+            it9anSetLessonsLoadingVisible(true);
+            try {
+                const myUid = localStorage.getItem('it9an_uid');
+                const userRole = localStorage.getItem('it9an_role');
+                let completedVerses = new Set();
+                if (myUid && myUid !== 'admin_super' && userRole === 'student') {
+                    completedVerses = await fetchCompletedVersesForStudent(myUid);
+                }
+                const stageForLessons = Number(currentStageId);
+                KURS_DATEN.forEach((lek, index) => {
+                    const div = document.createElement('div');
+                    div.className = 'menu-item';
+                    const prog = getLessonCompletion(index, completedVerses);
+                    const progressPart = (myUid && myUid !== 'admin_super' && userRole === 'student')
+                        ? `<div class="lesson-progress-bar-wrap"><div class="lesson-progress-bar"><div class="lesson-progress-bar-fill" style="width:${prog.percent}%"></div></div><div class="lesson-progress-text">${prog.completed}/${prog.total} (${prog.percent}%)</div></div>`
+                        : '';
+                    const diffBlock = '<div id="lesson-diff-root-' + index + '" onclick="event.stopPropagation()">' + it9anLessonDifficultySkeletonHtml() + '</div>';
+                    const adminTop = (myUid === 'admin_super')
+                        ? '<div class="menu-item-students-icon lesson-card-tl-icon" onclick="event.stopPropagation(); sendLessonUploadedNotification(' + index + ')" title="إرسال إشعار للجميع: رفعنا هذا الدرس">📢</div>'
+                        : '';
+                    const titleContent = '<div class="lesson-card-top">'
+                        + '<div class="menu-item-students-icon lesson-card-tr-icon" onclick="event.stopPropagation(); showStudentsProgressForLesson(' + index + ')" title="عرض قائمة الطلاب">👥</div>'
+                        + adminTop
+                        + '<div class="menu-item-title lesson-title-text" style="padding:24px 15px; font-size:clamp(20px, 6vw, 32px); line-height:1.2; color:var(--red); white-space:nowrap;">' + (lek.title || '') + '</div>'
+                        + '</div>';
+                    const footerHtml = '<div class="lesson-card-footer">' + diffBlock + progressPart + '</div>';
+                    div.innerHTML = titleContent + footerHtml;
+                    div.onclick = () => startLesson(index);
+                    grid.appendChild(div);
+                });
+                showView('lessons-view');
+                const ptL = document.getElementById('pageTitle'); if (ptL) { ptL.classList.remove('header-name-pin', 'page-title-notifications'); ptL.classList.add('page-title-lessons'); ptL.innerText = stageCfg.name || 'جميع الدروس'; }
+                document.getElementById('appFooter').style.display = 'none';
+                await it9anFillLessonDifficultyBarsForView(stageForLessons);
+            } finally {
+                it9anSetLessonsLoadingVisible(false);
             }
-            let postsByFileForLessons = new Map();
-            if (window.db) {
-                try {
-                    postsByFileForLessons = await it9anBuildPostsMapForKursCourses(KURS_DATEN, currentStageId);
-                } catch (e) { console.warn('it9anBuildPostsMapForKursCourses', e); }
-            }
-            KURS_DATEN.forEach((lek, index) => {
-                const div = document.createElement('div');
-                div.className = 'menu-item';
-                const prog = getLessonCompletion(index, completedVerses);
-                const progressPart = (myUid && myUid !== 'admin_super' && userRole === 'student')
-                    ? `<div class="lesson-progress-bar-wrap"><div class="lesson-progress-bar"><div class="lesson-progress-bar-fill" style="width:${prog.percent}%"></div></div><div class="lesson-progress-text">${prog.completed}/${prog.total} (${prog.percent}%)</div></div>`
-                    : '';
-                const agg = it9anAggregateLessonDifficultyFromMap(postsByFileForLessons, lek);
-                const vis = it9anDifficultyBarState(agg.acceptedCount, agg.ratedCount, { scope: 'lesson' });
-                const diffBlock = '<div class="lesson-difficulty-foot" onclick="event.stopPropagation()">'
-                    + '<div class="lesson-difficulty-bar-track" title="' + it9anAttrEscape(vis.title) + '">'
-                    + '<div class="lesson-difficulty-bar-fill" style="width:' + vis.fillW + ';background-color:' + vis.fillBg + '"></div>'
-                    + '<span class="lesson-difficulty-bar-midmark" aria-hidden="true"></span>'
-                    + '</div>'
-                    + '<span class="lesson-difficulty-label">' + vis.label + '</span>'
-                    + '</div>';
-                const adminTop = (myUid === 'admin_super')
-                    ? '<div class="menu-item-students-icon lesson-card-tl-icon" onclick="event.stopPropagation(); sendLessonUploadedNotification(' + index + ')" title="إرسال إشعار للجميع: رفعنا هذا الدرس">📢</div>'
-                    : '';
-                const titleContent = '<div class="lesson-card-top">'
-                    + '<div class="menu-item-students-icon lesson-card-tr-icon" onclick="event.stopPropagation(); showStudentsProgressForLesson(' + index + ')" title="عرض قائمة الطلاب">👥</div>'
-                    + adminTop
-                    + '<div class="menu-item-title lesson-title-text" style="padding:24px 15px; font-size:clamp(20px, 6vw, 32px); line-height:1.2; color:var(--red); white-space:nowrap;">' + (lek.title || '') + '</div>'
-                    + '</div>';
-                const footerHtml = '<div class="lesson-card-footer">' + diffBlock + progressPart + '</div>';
-                div.innerHTML = titleContent + footerHtml;
-                div.onclick = () => startLesson(index);
-                grid.appendChild(div);
-            });
-            showView('lessons-view');
-            const ptL = document.getElementById('pageTitle'); if (ptL) { ptL.classList.remove('header-name-pin', 'page-title-notifications'); ptL.classList.add('page-title-lessons'); ptL.innerText = stageCfg.name || 'جميع الدروس'; }
-            document.getElementById('appFooter').style.display = 'none';
         };
 
         function startLesson(index) {
@@ -6807,47 +6839,160 @@
             return out;
         }
 
-        async function it9anBuildPostsMapForKursCourses(kurs, stageId) {
-            const map = new Map();
-            if (!window.db || !kurs || !kurs.length) return map;
-            const fileSet = new Set();
-            kurs.forEach(function(lek) {
-                const start = lek.startGlobalId;
-                const n = lek.verse || 0;
-                for (let fi = start; fi < start + n; fi++) fileSet.add(String(fi));
-            });
-            const ids = [...fileSet];
-            const conc = 5;
-            for (let i = 0; i < ids.length; i += conc) {
-                const slice = ids.slice(i, i + conc);
-                await Promise.all(slice.map(async function(fid) {
-                    try {
-                        const posts = await fetchAllPostsForFileStage(fid, false, stageId);
-                        map.set(fid, posts);
-                    } catch (e) {
-                        map.set(fid, []);
-                    }
-                }));
-            }
-            return map;
+        /** Cache für Schwierigkeit „جميع الدروس“: eine Abfrage pro Phase statt je Vers. */
+        window._it9anLessonAggCache = window._it9anLessonAggCache || null;
+        const IT9AN_LESSON_AGG_CACHE_MS = 90000;
+
+        function it9anKursManifestSig(kurs) {
+            if (!kurs || !kurs.length) return '';
+            return kurs.map(function(l) { return (l.startGlobalId || 0) + ':' + (l.verse || 0); }).join('|');
         }
 
-        function it9anAggregateLessonDifficultyFromMap(postsByFileId, lek) {
+        /**
+         * Alle Schüler-Posts einer Phase in wenigen paginierten Queries (skaliert mit Post-Anzahl, nicht mit Vers-Anzahl).
+         */
+        async function it9anFetchAllStudentPostsForStage(stageId) {
+            const sid = Number(stageId);
+            if (!window.db) return [];
+            const coll = window.collection(window.db, "posts");
+            const pageSize = 1000;
+            const out = [];
+
+            async function runPaginated(buildQ) {
+                let lastDoc = null;
+                for (;;) {
+                    const q = buildQ(lastDoc);
+                    let snap;
+                    try {
+                        snap = await window.getDocs(q);
+                    } catch (e) {
+                        throw e;
+                    }
+                    if (!snap.size) break;
+                    snap.forEach(function(doc) {
+                        out.push({ id: doc.id, ...doc.data() });
+                    });
+                    lastDoc = snap.docs[snap.docs.length - 1];
+                    if (snap.size < pageSize) break;
+                }
+            }
+
+            try {
+                await runPaginated(function(last) {
+                    const parts = [
+                        window.where("stageId", "==", sid),
+                        window.where("role", "==", "student"),
+                        window.orderBy("timestamp", "desc"),
+                        window.limit(pageSize)
+                    ];
+                    if (last) parts.push(window.startAfter(last));
+                    return window.query(coll, ...parts);
+                });
+                return out;
+            } catch (e1) {
+                out.length = 0;
+                try {
+                    await runPaginated(function(last) {
+                        const parts = [
+                            window.where("stageId", "==", sid),
+                            window.orderBy("timestamp", "desc"),
+                            window.limit(pageSize)
+                        ];
+                        if (last) parts.push(window.startAfter(last));
+                        return window.query(coll, ...parts);
+                    });
+                    return out.filter(function(p) { return p.role === 'student'; });
+                } catch (e2) {
+                    console.warn('it9anFetchAllStudentPostsForStage', e1, e2);
+                    return [];
+                }
+            }
+        }
+
+        function it9anBuildFileIdStatsMapFromPosts(posts) {
+            const m = new Map();
+            for (let i = 0; i < posts.length; i++) {
+                const p = posts[i];
+                if (p.role !== 'student' || p.fileId == null) continue;
+                const fid = String(p.fileId);
+                let o = m.get(fid);
+                if (!o) o = { rated: 0, accepted: 0 };
+                if (it9anStudentPostHasTeacherVerdict(p)) {
+                    o.rated++;
+                    if (p.teacherRating && p.teacherRating.verdict === 'accepted') o.accepted++;
+                }
+                m.set(fid, o);
+            }
+            return m;
+        }
+
+        function it9anAggregateLessonDifficultyFromFileStatsMap(fileStatsMap, lek) {
             let ratedCount = 0;
             let acceptedCount = 0;
             const start = lek.startGlobalId;
             const n = lek.verse || 0;
             for (let fi = start; fi < start + n; fi++) {
-                const posts = postsByFileId.get(String(fi)) || [];
-                for (let j = 0; j < posts.length; j++) {
-                    const p = posts[j];
-                    if (p.role !== 'student') continue;
-                    if (!it9anStudentPostHasTeacherVerdict(p)) continue;
-                    ratedCount++;
-                    if (p.teacherRating && p.teacherRating.verdict === 'accepted') acceptedCount++;
+                const o = fileStatsMap.get(String(fi));
+                if (o) {
+                    ratedCount += o.rated;
+                    acceptedCount += o.accepted;
                 }
             }
             return { ratedCount: ratedCount, acceptedCount: acceptedCount };
+        }
+
+        function it9anLessonDifficultySkeletonHtml() {
+            return '<div class="lesson-difficulty-foot" onclick="event.stopPropagation()">'
+                + '<div class="lesson-difficulty-bar-track" title="">'
+                + '<div class="lesson-difficulty-bar-fill" style="width:0%;background-color:transparent"></div>'
+                + '<span class="lesson-difficulty-bar-midmark" aria-hidden="true"></span>'
+                + '</div>'
+                + '<span class="lesson-difficulty-label lesson-diff-loading">…</span>'
+                + '</div>';
+        }
+
+        function it9anRenderLessonDifficultyHtml(vis) {
+            return '<div class="lesson-difficulty-foot" onclick="event.stopPropagation()">'
+                + '<div class="lesson-difficulty-bar-track" title="' + it9anAttrEscape(vis.title) + '">'
+                + '<div class="lesson-difficulty-bar-fill" style="width:' + vis.fillW + ';background-color:' + vis.fillBg + '"></div>'
+                + '<span class="lesson-difficulty-bar-midmark" aria-hidden="true"></span>'
+                + '</div>'
+                + '<span class="lesson-difficulty-label">' + vis.label + '</span>'
+                + '</div>';
+        }
+
+        async function it9anFillLessonDifficultyBarsForView(stageForLessons) {
+            const sig = it9anKursManifestSig(KURS_DATEN);
+            if (!window.db) return;
+            let fileStatsMap = null;
+            const c = window._it9anLessonAggCache;
+            if (c && Number(c.stageId) === stageForLessons && c.manifestSig === sig && Date.now() < c.expires && c.fileStatsMap) {
+                fileStatsMap = c.fileStatsMap;
+            } else {
+                try {
+                    const posts = await it9anFetchAllStudentPostsForStage(stageForLessons);
+                    fileStatsMap = it9anBuildFileIdStatsMapFromPosts(posts);
+                    window._it9anLessonAggCache = {
+                        stageId: stageForLessons,
+                        manifestSig: sig,
+                        expires: Date.now() + IT9AN_LESSON_AGG_CACHE_MS,
+                        fileStatsMap: fileStatsMap
+                    };
+                } catch (e) {
+                    console.warn('it9anFillLessonDifficultyBarsForView', e);
+                    return;
+                }
+            }
+            if (Number(currentStageId) !== stageForLessons) return;
+            const gridNow = document.getElementById('lesson-grid');
+            if (!gridNow) return;
+            for (let i = 0; i < KURS_DATEN.length; i++) {
+                const mount = document.getElementById('lesson-diff-root-' + i);
+                if (!mount) continue;
+                const agg = it9anAggregateLessonDifficultyFromFileStatsMap(fileStatsMap, KURS_DATEN[i]);
+                const vis = it9anDifficultyBarState(agg.acceptedCount, agg.ratedCount, { scope: 'lesson' });
+                mount.innerHTML = it9anRenderLessonDifficultyHtml(vis);
+            }
         }
 
         function it9anAttrEscape(s) {
