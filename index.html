@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="إتقان">
     <!-- Wird von scripts/bump-app-version.sh mit derselben version wie app-version.json gesetzt (synchroner Deploy-Check, kein fetch → zuverlässig in Safari/PWA). -->
-    <meta name="it9an-deploy-version" content="it9an-1775398875-local-88045-07961b7">
+    <meta name="it9an-deploy-version" content="it9an-1775399275-local-91920-25b30b1">
     <link rel="manifest" href="manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap" rel="stylesheet">
     
@@ -479,60 +479,100 @@
         
         .feed-container { min-height: 100px; width: 100%; max-width: 100%; overflow-x: hidden; }
 
-        /* LTR: يسار = درجة الصعوبة، الوسط = الشريط، يمين = عدد المشاركات */
+        /* الشريط دائماً بمركز الصف (وسط الشاشة نسبياً)؛ الجانبان لا يزحزحان الوسط */
         .participations-header-row {
-            display: grid;
-            grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-            align-items: center;
-            gap: 10px 12px;
+            position: relative;
             margin-top: 15px;
             margin-bottom: 0;
             border-bottom: 1px solid #ddd;
-            padding-bottom: 10px;
+            padding: 0 10px 12px;
+            min-height: 36px;
             font-size: clamp(14px, 3.5vw, 20px);
             color: var(--primary);
             width: 100%;
             max-width: 100%;
-            min-width: 0;
             font-weight: bold;
             direction: ltr;
+            box-sizing: border-box;
         }
         .part-header-left {
-            justify-self: start;
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            max-width: calc(50% - clamp(80px, 30vw, 150px));
             text-align: left;
             min-width: 0;
+            z-index: 2;
         }
         .part-header-center {
-            justify-self: center;
+            display: block;
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1;
         }
         .part-header-right {
-            justify-self: end;
-            text-align: right;
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            max-width: calc(50% - clamp(80px, 30vw, 150px));
+            display: inline-flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 6px;
             white-space: nowrap;
             color: var(--primary);
+            justify-content: flex-end;
+            z-index: 2;
         }
-        /* Rahmen = 100 %؛ طول الملء = صعوبة المقطع (100% قبول → 10% أخضر، 0% قبول → 100% أحمر) */
+        .part-header-musharakat {
+            direction: rtl;
+            unicode-bidi: embed;
+        }
+        .part-header-count {
+            font-variant-numeric: tabular-nums;
+            min-width: 1ch;
+        }
+        /* إطار 100% + خط 50% في المنتصف؛ الملء من اليسار (LTR) */
         .verse-difficulty-bar-track {
-            width: clamp(110px, 32vw, 220px);
-            height: 12px;
-            min-height: 12px;
+            display: block;
+            position: relative;
+            width: clamp(140px, 58vw, 300px);
+            height: 14px;
+            min-height: 14px;
             border: 2px solid #6d6d6d;
             border-radius: 5px;
             background: #ececec;
-            flex: 0 0 auto;
             overflow: hidden;
             box-sizing: border-box;
             box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.06);
             direction: ltr;
         }
+        .verse-difficulty-bar-midmark {
+            position: absolute;
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 0;
+            border-left: 1px dashed rgba(60, 60, 60, 0.55);
+            transform: translateX(-50%);
+            pointer-events: none;
+            z-index: 3;
+        }
         .verse-difficulty-bar-fill {
             display: block;
             height: 100%;
             width: 0%;
-            border-radius: 3px;
+            min-height: 14px;
+            border-radius: 2px;
             min-width: 0;
             box-sizing: border-box;
             transition: width 0.25s ease-out, background-color 0.25s ease;
+            position: relative;
+            z-index: 1;
         }
         .verse-difficulty-label {
             font-size: clamp(13px, 3.4vw, 18px);
@@ -1165,9 +1205,13 @@
             <span class="part-header-center" id="verseDifficultyCluster" title="">
                 <span class="verse-difficulty-bar-track" id="verseDifficultyTrack" aria-hidden="true">
                     <span class="verse-difficulty-bar-fill" id="verseDifficultyBar"></span>
+                    <span class="verse-difficulty-bar-midmark" aria-hidden="true"></span>
                 </span>
             </span>
-            <span class="part-header-right" id="participationsCount">0 مشاركة</span>
+            <span class="part-header-right">
+                <span class="part-header-musharakat">مشاركة</span>
+                <span id="participationsCount" class="part-header-count">0</span>
+            </span>
         </h4>
         <div id="community-feed" class="feed-container">جاري التحميل...</div>
         </div>
@@ -6824,7 +6868,7 @@
             const studentPosts = (allLoadedPosts || []).filter(p => p.role === 'student');
             const cnt = studentPosts.length;
             const el = document.getElementById('participationsCount');
-            if (el) el.textContent = cnt + ' مشاركة';
+            if (el) el.textContent = String(cnt);
 
             const fill = document.getElementById('verseDifficultyBar');
             const label = document.getElementById('verseDifficultyLabel');
