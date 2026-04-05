@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="إتقان">
     <!-- Wird von scripts/bump-app-version.sh mit derselben version wie app-version.json gesetzt (synchroner Deploy-Check, kein fetch → zuverlässig in Safari/PWA). -->
-    <meta name="it9an-deploy-version" content="it9an-1775408266-local-31428-a9f5439">
+    <meta name="it9an-deploy-version" content="it9an-1775409793-local-45368-ea6dd38">
     <link rel="manifest" href="manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap" rel="stylesheet">
     
@@ -1146,11 +1146,6 @@
             <button class="btn-admin-reset btn-admin-delete-all" onclick="adminForceLogoutAllUsers()" title="إجبار الطلاب والمعلمين على إعادة تسجيل الدخول (المسؤول يبقى متصلاً)">🚪 تسجيل خروج الجميع</button>
             <button type="button" class="btn-admin-reset" onclick="restoreStudentRecordingNotifications(this)" title="إعادة إشعارات التسجيلات والردود لجميع المستخدمين في جميع المراحل (يتم تشغيله تلقائياً يومياً الساعة 6 صباحاً)">🔔 استعادة إشعارات التسجيلات</button>
             <button type="button" class="btn-admin-reset" onclick="syncStudentReplyNotificationsListenedFromPosts(this)" title="إخفاء من جرس الطلاب الردود المعلَّمة «تم الاستماع» في المنشور (إصلاح بعد استعادة الإشعارات أو اختلاف نوع الطابع الزمني)">🔕 مزامنة الاستماع — إخفاء الردود المستمع لها</button>
-            <button class="btn-admin-reset" onclick="resetAllNotifications()">🔔 تصفير كل الإشعارات</button>
-            <button class="btn-admin-reset" onclick="resetAllViews()">👂 تصفير كل المشاهدات</button>
-            <button class="btn-admin-reset" onclick="resetAllLikes()">👍 تصفير كل الإعجابات</button>
-            <button class="btn-admin-reset" onclick="deleteAllTeacherReplies()">↩️ حذف كل ردود المعلمين</button>
-            <button class="btn-admin-reset btn-admin-delete-all" onclick="deleteAllPostsGlobal()">🗑️ حذف كل التسجيلات</button>
         </div>
     </div>
 
@@ -7271,6 +7266,41 @@
             if (cluster) cluster.title = st.title;
         }
 
+        function it9anPostIsStudentRecording(d) {
+            return d && d.uid !== 'admin_super' && d.role !== 'teacher';
+        }
+
+        /** Student post locked: teacher voice reply exists and teacherRating verdict is set. */
+        function it9anStudentPostLockedFromDeletion(d) {
+            if (!it9anPostIsStudentRecording(d)) return false;
+            const hasTeacherReply = d.replies && d.replies.some(function(r) { return r.role === 'teacher'; });
+            const tr = d.teacherRating;
+            const hasVerdict = tr && (tr.verdict === 'accepted' || tr.verdict === 'needs_improvement');
+            return !!(hasTeacherReply && hasVerdict);
+        }
+
+        function it9anCanUserDeletePost(d, myUid, userRole) {
+            if (!d || !myUid) return false;
+            if (myUid === 'admin_super') return true;
+            if (userRole === 'teacher') {
+                if (it9anPostIsStudentRecording(d)) return false;
+                return d.uid === myUid;
+            }
+            if (userRole === 'student') {
+                if (d.uid !== myUid) return false;
+                return !it9anStudentPostLockedFromDeletion(d);
+            }
+            return false;
+        }
+
+        function it9anCanUserDeleteReply(r, myUid, userRole) {
+            if (!r || myUid == null || myUid === '') return false;
+            if (myUid === 'admin_super') return true;
+            if (userRole === 'teacher') return r.uid === myUid;
+            if (userRole === 'student') return r.uid === myUid;
+            return false;
+        }
+
         function renderPosts(container, userRole, myUid, savedIds) {
             savedIds = savedIds || new Set();
             let htmlContent = "";
@@ -7329,15 +7359,8 @@
                 const showRatingButtons = canTeacherRate;
 
                 let deleteBtnHtml = "";
-                // MODIFIED: Show delete button if Admin OR Teacher OR Own Post (already handled by logic but button hidden)
-                // The prompt says teachers can delete ANYONE's post.
-                if (isAdmin || isTeacher) {
+                if (it9anCanUserDeletePost(d, myUid, userRole)) {
                     deleteBtnHtml = `<button class="delete-btn" onclick="deletePost('${d.id}', '${d.uid}')">🗑️</button>`;
-                } else if (isMyMainPost) {
-                     // Keep logic for students deleting their own posts if desired, 
-                     // or remove if only admins/teachers should delete. 
-                     // Assuming students can still delete their own based on previous code.
-                     deleteBtnHtml = `<button class="delete-btn" onclick="deletePost('${d.id}', '${d.uid}')">🗑️</button>`;
                 }
 
                 let repliesHtml = "";
@@ -7369,9 +7392,7 @@
                         if (isMyReply) { rLikeAction = ''; rLockedClass = 'locked'; rLikeClass += ' disabled'; }
 
                         let rDeleteBtn = "";
-                        if (isAdmin || isTeacher) {
-                            rDeleteBtn = `<button class="reply-delete-btn" onclick="deleteReply('${d.id}', ${r.timestamp}, '${r.uid}')">🗑</button>`;
-                        } else if (isMyReply) {
+                        if (it9anCanUserDeleteReply(r, myUid, userRole)) {
                             rDeleteBtn = `<button class="reply-delete-btn" onclick="deleteReply('${d.id}', ${r.timestamp}, '${r.uid}')">🗑</button>`;
                         }
 
@@ -12422,6 +12443,10 @@
         }
 
         window.deletePostFromLeaderboard = async function(postId, authorUid) {
+            if (localStorage.getItem('it9an_uid') !== 'admin_super') {
+                alert("غير مصرح.");
+                return;
+            }
             if(!confirm("هل أنت متأكد؟ حذف هذه التسجيل؟ سيتم حذف الردود أيضاً.")) return;
             try {
                 const docRef = window.doc(window.db, "posts", postId);
@@ -12466,46 +12491,55 @@
         }
 
         window.deletePost = async function(postId, authorUid) {
-            if(confirm("هل أنت متأكد؟ حذف هذه المشاركة؟")) {
-                try {
-                    const docRef = window.doc(window.db, "posts", postId);
-                    const docSnap = await window.getDoc(docRef);
-                    if (docSnap.exists()) {
-                        const data = docSnap.data();
-                        if(data.replies) {
-                            for(const r of data.replies) {
-                                if(r.uid) {
-                                    const rLikes = (r.likes && r.likes.length) || 0;
-                                    try { await window.updateDoc(window.doc(window.db, "users", r.uid), { totalRepliesCount: window.increment(-1), totalLikes: window.increment(-rLikes) }); } catch(e){}
-                                }
-                                if(r.audioUrl) await cleanupAudioFile(r.audioUrl);
-                            }
+            const myUid = localStorage.getItem('it9an_uid');
+            const role = localStorage.getItem('it9an_role');
+            try {
+                const docRef = window.doc(window.db, "posts", postId);
+                const docSnap = await window.getDoc(docRef);
+                if (!docSnap.exists()) {
+                    alert("غير موجود");
+                    return;
+                }
+                const data = docSnap.data();
+                if (!it9anCanUserDeletePost({ id: postId, ...data }, myUid, role)) return;
+
+                if (!confirm("هل أنت متأكد؟ حذف هذه المشاركة؟")) return;
+
+                if(data.replies) {
+                    for(const r of data.replies) {
+                        if(r.uid) {
+                            const rLikes = (r.likes && r.likes.length) || 0;
+                            try { await window.updateDoc(window.doc(window.db, "users", r.uid), { totalRepliesCount: window.increment(-1), totalLikes: window.increment(-rLikes) }); } catch(e){}
                         }
-                        await deleteSavedRecordingsForPost(postId);
-                        if(data.audioUrl) await cleanupAudioFile(data.audioUrl);
-                        if(data.echoMixAudioUrl) await cleanupAudioFile(data.echoMixAudioUrl);
-                        await window.deleteDoc(docRef);
-                        if(authorUid) {
-                             const userRef = window.doc(window.db, "users", authorUid);
-                             try { await window.updateDoc(userRef, { postsCount: window.increment(-1) }); } catch(e){}
-                        }
-                        var likesCount = (data.likes && data.likes.length) ? data.likes.length : 0;
-                        if(authorUid && likesCount > 0) { try { await window.updateDoc(window.doc(window.db, "users", authorUid), { totalLikes: window.increment(-likesCount) }); } catch(e){} }
-                        loadLeaderboard();
-                        if(localStorage.getItem('it9an_uid')==='admin_super') loadTeachersLeaderboard();
-                        const div = document.getElementById('community-feed');
-                        if (div && currentGlobalFileId != null) {
-                            allLoadedPosts = (allLoadedPosts || []).filter(p => p.id !== postId);
-                            renderPosts(div, localStorage.getItem('it9an_role'), localStorage.getItem('it9an_uid'), savedIdsForFeed || new Set());
-                            updateParticipationsCount();
-                        }
-                        alert("تم الحذف بنجاح");
+                        if(r.audioUrl) await cleanupAudioFile(r.audioUrl);
                     }
-                } catch(e) { alert("خطأ في الحذف"); }
-            }
+                }
+                await deleteSavedRecordingsForPost(postId);
+                if(data.audioUrl) await cleanupAudioFile(data.audioUrl);
+                if(data.echoMixAudioUrl) await cleanupAudioFile(data.echoMixAudioUrl);
+                await window.deleteDoc(docRef);
+                if(authorUid) {
+                    const userRef = window.doc(window.db, "users", authorUid);
+                    try { await window.updateDoc(userRef, { postsCount: window.increment(-1) }); } catch(e){}
+                }
+                var likesCount = (data.likes && data.likes.length) ? data.likes.length : 0;
+                if(authorUid && likesCount > 0) { try { await window.updateDoc(window.doc(window.db, "users", authorUid), { totalLikes: window.increment(-likesCount) }); } catch(e){} }
+                loadLeaderboard();
+                if(localStorage.getItem('it9an_uid')==='admin_super') loadTeachersLeaderboard();
+                const div = document.getElementById('community-feed');
+                if (div && currentGlobalFileId != null) {
+                    allLoadedPosts = (allLoadedPosts || []).filter(p => p.id !== postId);
+                    renderPosts(div, localStorage.getItem('it9an_role'), localStorage.getItem('it9an_uid'), savedIdsForFeed || new Set());
+                    updateParticipationsCount();
+                }
+                alert("تم الحذف بنجاح");
+            } catch(e) { alert("خطأ في الحذف"); }
         }
 
         window.deleteReply = async function(postId, replyTimestamp, authorUid) {
+            const myUid = localStorage.getItem('it9an_uid');
+            const role = localStorage.getItem('it9an_role');
+            if (!it9anCanUserDeleteReply({ uid: authorUid }, myUid, role)) return;
             if(confirm("هل أنت متأكد؟ حذف هذا الرد؟")) {
                 try {
                     const postRef = window.doc(window.db, "posts", postId);
