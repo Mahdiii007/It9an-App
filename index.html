@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="إتقان">
     <!-- Wird von scripts/bump-app-version.sh mit derselben version wie app-version.json gesetzt (synchroner Deploy-Check, kein fetch → zuverlässig in Safari/PWA). -->
-    <meta name="it9an-deploy-version" content="it9an-1775401841-local-16835-16406a1">
+    <meta name="it9an-deploy-version" content="it9an-1775408235-local-30934-53aaf05">
     <link rel="manifest" href="manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap" rel="stylesheet">
     
@@ -212,33 +212,21 @@
             height: 12px;
             border: 2px solid #6d6d6d;
             border-radius: 5px;
-            background: #ececec;
+            background: #e8e8e8;
             overflow: hidden;
             box-sizing: border-box;
             box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.06);
             direction: ltr;
         }
-        .lesson-difficulty-bar-fill {
-            display: block;
-            height: 100%;
-            min-height: 12px;
-            width: 0%;
-            border-radius: 2px;
-            box-sizing: border-box;
-            transition: width 0.25s ease-out, background-color 0.25s ease;
-            position: relative;
-            z-index: 1;
-        }
-        .lesson-difficulty-bar-midmark {
+        .lesson-difficulty-bar-zones {
             position: absolute;
-            left: 50%;
+            left: 0;
             top: 0;
+            right: 0;
             bottom: 0;
-            width: 0;
-            border-left: 1px dashed rgba(60, 60, 60, 0.55);
-            transform: translateX(-50%);
-            pointer-events: none;
-            z-index: 3;
+            border-radius: 2px;
+            transition: background 0.3s ease-out;
+            z-index: 1;
         }
         .lesson-difficulty-label {
             flex-shrink: 0;
@@ -628,7 +616,7 @@
             font-variant-numeric: tabular-nums;
             min-width: 1ch;
         }
-        /* إطار 100% + خط 50% في المنتصف؛ الملء من اليسار (LTR) */
+        /* إطار LTR: ثلث أيسر = صعب (أحمر)، الأوسط = برتقالي، الأيمن = أصفر (سهل) */
         .verse-difficulty-bar-track {
             display: block;
             position: relative;
@@ -637,33 +625,20 @@
             min-height: 14px;
             border: 2px solid #6d6d6d;
             border-radius: 5px;
-            background: #ececec;
+            background: #e8e8e8;
             overflow: hidden;
             box-sizing: border-box;
             box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.06);
             direction: ltr;
         }
-        .verse-difficulty-bar-midmark {
+        .verse-difficulty-bar-zones {
             position: absolute;
-            left: 50%;
+            left: 0;
             top: 0;
+            right: 0;
             bottom: 0;
-            width: 0;
-            border-left: 1px dashed rgba(60, 60, 60, 0.55);
-            transform: translateX(-50%);
-            pointer-events: none;
-            z-index: 3;
-        }
-        .verse-difficulty-bar-fill {
-            display: block;
-            height: 100%;
-            width: 0%;
-            min-height: 14px;
             border-radius: 2px;
-            min-width: 0;
-            box-sizing: border-box;
-            transition: width 0.25s ease-out, background-color 0.25s ease;
-            position: relative;
+            transition: background 0.3s ease-out;
             z-index: 1;
         }
         .verse-difficulty-label {
@@ -1303,8 +1278,7 @@
             <span class="part-header-left verse-difficulty-label" id="verseDifficultyLabel" aria-live="polite"></span>
             <span class="part-header-center" id="verseDifficultyCluster" title="">
                 <span class="verse-difficulty-bar-track" id="verseDifficultyTrack" aria-hidden="true">
-                    <span class="verse-difficulty-bar-fill" id="verseDifficultyBar"></span>
-                    <span class="verse-difficulty-bar-midmark" aria-hidden="true"></span>
+                    <span class="verse-difficulty-bar-zones" id="verseDifficultyZones"></span>
                 </span>
             </span>
             <span class="part-header-right">
@@ -7000,11 +6974,55 @@
             return { ratedCount: ratedCount, acceptedCount: acceptedCount };
         }
 
+        /** LTR: links = schwer (rot), mitte = orange, rechts = gelb (leicht). */
+        const IT9AN_DIFF_RGB = { red: [198, 40, 40], orange: [232, 118, 28], yellow: [245, 210, 72], gray: [178, 178, 178] };
+
+        function it9anRgbStr(t) {
+            return 'rgb(' + t[0] + ',' + t[1] + ',' + t[2] + ')';
+        }
+
+        function it9anRgbMixStr(t1, t2, u) {
+            return 'rgb('
+                + Math.round(t1[0] * (1 - u) + t2[0] * u) + ','
+                + Math.round(t1[1] * (1 - u) + t2[1] * u) + ','
+                + Math.round(t1[2] * (1 - u) + t2[2] * u) + ')';
+        }
+
+        /** Zwei kurze Übergänge an den Drittel-Grenzen (ca. ⅓ und ⅔). */
+        function it9anDifficultyZonesGradient(rgbLeft, rgbMid, rgbRight) {
+            const z1 = it9anRgbStr(rgbLeft);
+            const z2 = it9anRgbStr(rgbMid);
+            const z3 = it9anRgbStr(rgbRight);
+            const m12 = it9anRgbMixStr(rgbLeft, rgbMid, 0.5);
+            const m23 = it9anRgbMixStr(rgbMid, rgbRight, 0.5);
+            return 'linear-gradient(to right,'
+                + z1 + ' 0%,' + z1 + ' 29.5%,'
+                + m12 + ' 33.33%,'
+                + z2 + ' 37%,' + z2 + ' 62%,'
+                + m23 + ' 66.66%,'
+                + z3 + ' 71%,' + z3 + ' 100%)';
+        }
+
+        function it9anDifficultyNeutralGradient() {
+            const n = [218, 218, 218];
+            return it9anDifficultyZonesGradient(n, n, n);
+        }
+
+        /** Erfolgsquote = accepted/rated. >60% nur Gelb aktiv; 40–60% Gelb+Orange; <40% alle drei. */
+        function it9anDifficultyZoneColorsFromEaseRatio(easeRatio) {
+            const R = IT9AN_DIFF_RGB.red;
+            const O = IT9AN_DIFF_RGB.orange;
+            const Y = IT9AN_DIFF_RGB.yellow;
+            const G = IT9AN_DIFF_RGB.gray;
+            if (easeRatio > 0.6) return { left: G, mid: G, right: Y };
+            if (easeRatio < 0.4) return { left: R, mid: O, right: Y };
+            return { left: G, mid: O, right: Y };
+        }
+
         function it9anLessonDifficultySkeletonHtml() {
             return '<div class="lesson-difficulty-foot" onclick="event.stopPropagation()">'
                 + '<div class="lesson-difficulty-bar-track" title="">'
-                + '<div class="lesson-difficulty-bar-fill" style="width:0%;background-color:transparent"></div>'
-                + '<span class="lesson-difficulty-bar-midmark" aria-hidden="true"></span>'
+                + '<div class="lesson-difficulty-bar-zones" style="background:' + it9anDifficultyNeutralGradient() + '"></div>'
                 + '</div>'
                 + '<span class="lesson-difficulty-label lesson-diff-loading">…</span>'
                 + '</div>';
@@ -7013,8 +7031,7 @@
         function it9anRenderLessonDifficultyHtml(vis) {
             return '<div class="lesson-difficulty-foot" onclick="event.stopPropagation()">'
                 + '<div class="lesson-difficulty-bar-track" title="' + it9anAttrEscape(vis.title) + '">'
-                + '<div class="lesson-difficulty-bar-fill" style="width:' + vis.fillW + ';background-color:' + vis.fillBg + '"></div>'
-                + '<span class="lesson-difficulty-bar-midmark" aria-hidden="true"></span>'
+                + '<div class="lesson-difficulty-bar-zones" style="background:' + vis.zonesBg + '"></div>'
                 + '</div>'
                 + '<span class="lesson-difficulty-label">' + vis.label + '</span>'
                 + '</div>';
@@ -7059,32 +7076,30 @@
             return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
         }
 
-        /** المقيَّمون فقط؛ طول = (1−نسبة القبول) مع حد أدنى 10٪ للأخضر. opts.scope: 'lesson' | 'verse' */
+        /** المقيَّمون فقط؛ ثلاثة أثلاث في الإطار (>٦٠٪ سهل، ٤٠–٦٠٪ متوسط، <٤٠٪ صعب). opts.scope: 'lesson' | 'verse' */
         function it9anDifficultyBarState(acceptedCount, ratedCount, opts) {
             opts = opts || {};
             const lessonScope = opts.scope === 'lesson';
             if (ratedCount === 0) {
                 return {
-                    fillW: '0%',
-                    fillBg: 'transparent',
+                    zonesBg: it9anDifficultyNeutralGradient(),
                     label: 'لم يُقَيَّم بعد',
                     title: lessonScope
                         ? 'لم يُقَيَّم بعد في أي مقطع من هذا الدرس؛ غير المقيَّم لا يُحتسب في الصعوبة.'
-                        : 'لم يُقَيَّم بعد؛ الإطار يوضح السعة الكاملة حتى يُقيَّم تسجيل. غير المقيَّم لا يُحتسب.'
+                        : 'لم يُقَيَّم بعد؛ الإطار ثلاثة أقسام (صعب / متوسط / سهل) تُلوَّن حسب نسبة القبول عند التقييم. غير المقيَّم لا يُحتسب.'
                 };
             }
             const easeRatio = acceptedCount / ratedCount;
-            const difficultyWidth = Math.max(10, Math.min(100, Math.round((1 - easeRatio) * 1000) / 10));
             let word = 'متوسط';
-            if (easeRatio >= 0.67) word = 'سهل';
-            else if (easeRatio <= 0.33) word = 'صعب';
+            if (easeRatio > 0.6) word = 'سهل';
+            else if (easeRatio < 0.4) word = 'صعب';
             const accPct = Math.round(easeRatio * 1000) / 10;
             const scopeNote = lessonScope ? ' عبر جميع مقاطع الدرس في المرحلة.' : ' لهذا المقطع فقط.';
+            const cols = it9anDifficultyZoneColorsFromEaseRatio(easeRatio);
             return {
-                fillW: difficultyWidth + '%',
-                fillBg: it9anDifficultyBarColorFromEaseRatio(easeRatio),
+                zonesBg: it9anDifficultyZonesGradient(cols.left, cols.mid, cols.right),
                 label: word,
-                title: word + ' — ' + acceptedCount + ' مقبول من ' + ratedCount + ' تسجيل مُقيَّم (' + accPct + '% بين المقيَّمين).' + scopeNote + ' غير المقيَّم لا يُحتسب.'
+                title: word + ' — ' + acceptedCount + ' مقبول من ' + ratedCount + ' تسجيل مُقيَّم (' + accPct + '%). أقل من ٤٠٪: الأقسام الثلاثة؛ ٤٠–٦٠٪: القسم الأصفر والبرتقالي؛ فوق ٦٠٪: الأصفر فقط (الباقي رمادي).' + scopeNote + ' غير المقيَّم لا يُحتسب.'
             };
         }
 
@@ -7214,21 +7229,6 @@
             });
         }
 
-        function it9anLerpByte(a, b, t) {
-            return Math.round(a + (b - a) * t);
-        }
-        /** 0 = أحمر (صعب)، 0.5 = برتقالي، 1 = أخضر (سهل) — حسب نسبة المقبول */
-        function it9anDifficultyBarColorFromEaseRatio(ratio) {
-            const r0 = 198, g0 = 40, b0 = 40;
-            const r1 = 232, g1 = 118, b1 = 28;
-            const r2 = 39, g2 = 122, b2 = 60;
-            if (ratio <= 0.5) {
-                const u = ratio / 0.5;
-                return 'rgb(' + it9anLerpByte(r0, r1, u) + ',' + it9anLerpByte(g0, g1, u) + ',' + it9anLerpByte(b0, b1, u) + ')';
-            }
-            const v = (ratio - 0.5) / 0.5;
-            return 'rgb(' + it9anLerpByte(r1, r2, v) + ',' + it9anLerpByte(g1, g2, v) + ',' + it9anLerpByte(b1, b2, v) + ')';
-        }
         function it9anStudentPostHasTeacherVerdict(p) {
             const tr = p.teacherRating;
             if (!tr || !tr.verdict) return false;
@@ -7240,10 +7240,10 @@
             const el = document.getElementById('participationsCount');
             if (el) el.textContent = String(cnt);
 
-            const fill = document.getElementById('verseDifficultyBar');
+            const zones = document.getElementById('verseDifficultyZones');
             const label = document.getElementById('verseDifficultyLabel');
             const cluster = document.getElementById('verseDifficultyCluster');
-            if (!fill || !label) return;
+            if (!label) return;
 
             let ratedCount = 0;
             let acceptedCount = 0;
@@ -7255,8 +7255,7 @@
             }
 
             if (cnt === 0) {
-                fill.style.width = '0%';
-                fill.style.backgroundColor = 'transparent';
+                if (zones) zones.style.background = 'transparent';
                 label.textContent = '';
                 if (cluster) {
                     cluster.style.display = 'none';
@@ -7267,8 +7266,7 @@
             if (cluster) cluster.style.display = '';
 
             const st = it9anDifficultyBarState(acceptedCount, ratedCount, { scope: 'verse' });
-            fill.style.width = st.fillW;
-            fill.style.backgroundColor = st.fillBg;
+            if (zones) zones.style.background = st.zonesBg;
             label.textContent = st.label;
             if (cluster) cluster.title = st.title;
         }
