@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="إتقان">
     <!-- Wird von scripts/bump-app-version.sh mit derselben version wie app-version.json gesetzt (synchroner Deploy-Check, kein fetch → zuverlässig in Safari/PWA). -->
-    <meta name="it9an-deploy-version" content="it9an-1775401176-local-10356-64fe40f">
+    <meta name="it9an-deploy-version" content="it9an-1775401719-local-15472-90b147d">
     <link rel="manifest" href="manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap" rel="stylesheet">
     
@@ -6541,7 +6541,7 @@
                 if (myUid && myUid !== 'admin_super' && userRole === 'student') {
                     completedVerses = await fetchCompletedVersesForStudent(myUid);
                 }
-                const stageForLessons = Number(currentStageId);
+                const stageForLessons = Number.isFinite(Number(currentStageId)) ? Number(currentStageId) : 4;
                 KURS_DATEN.forEach((lek, index) => {
                     const div = document.createElement('div');
                     div.className = 'menu-item';
@@ -6839,20 +6839,65 @@
             return out;
         }
 
+        /**
+         * Alte Posts ohne Feld stageId: in Firestore nicht per stageId auffindbar, aber weiterhin per fileId (wie der Feed).
+         * Nur Phase 4 + nur wenn die Sammelabfrage leer bleibt.
+         */
+        async function it9anLegacyFetchStudentPostsStage4FromManifestFiles() {
+            if (!window.db || !KURS_DATEN || !KURS_DATEN.length) return [];
+            const fileSet = new Set();
+            KURS_DATEN.forEach(function(lek) {
+                const start = lek.startGlobalId;
+                const n = lek.verse || 0;
+                for (let fi = start; fi < start + n; fi++) fileSet.add(String(fi));
+            });
+            const ids = [...fileSet];
+            const conc = 6;
+            const merged = [];
+            for (let i = 0; i < ids.length; i += conc) {
+                const slice = ids.slice(i, i + conc);
+                const batches = await Promise.all(slice.map(function(fid) {
+                    return fetchAllPostsForFileStage(fid, false, 4).catch(function() { return []; });
+                }));
+                for (let b = 0; b < batches.length; b++) {
+                    merged.push.apply(merged, batches[b]);
+                }
+            }
+            return merged;
+        }
+
         /** Cache für Schwierigkeit „جميع الدروس“: eine Abfrage pro Phase statt je Vers. */
         window._it9anLessonAggCache = window._it9anLessonAggCache || null;
         const IT9AN_LESSON_AGG_CACHE_MS = 90000;
+        /** Bei Logik-/Abfrage-Änderung erhöhen, damit alte (z. B. leere) Caches verworfen werden. */
+        const IT9AN_LESSON_AGG_CACHE_VER = 2;
 
         function it9anKursManifestSig(kurs) {
             if (!kurs || !kurs.length) return '';
             return kurs.map(function(l) { return (l.startGlobalId || 0) + ':' + (l.verse || 0); }).join('|');
         }
 
+        /** Firestore gleicht Typ strikt: stageId als Zahl vs. String sind verschiedene Werte. */
+        function it9anStageIdInValues(stageId) {
+            const n = stageId != null && stageId !== '' ? Number(stageId) : NaN;
+            const sidNum = Number.isFinite(n) ? n : 4;
+            return Array.from(new Set([sidNum, String(sidNum)]));
+        }
+
+        function it9anPostMatchesStage(p, wantNum) {
+            const ps = p.stageId != null ? p.stageId : 4;
+            return Number(ps) === Number(wantNum);
+        }
+
         /**
          * Alle Schüler-Posts einer Phase in wenigen paginierten Queries (skaliert mit Post-Anzahl, nicht mit Vers-Anzahl).
          */
         async function it9anFetchAllStudentPostsForStage(stageId) {
-            const sid = Number(stageId);
+            const sidNum = (function() {
+                const n = stageId != null && stageId !== '' ? Number(stageId) : NaN;
+                return Number.isFinite(n) ? n : 4;
+            })();
+            const sidInVals = it9anStageIdInValues(sidNum);
             if (!window.db) return [];
             const coll = window.collection(window.db, "posts");
             const pageSize = 1000;
@@ -6880,7 +6925,7 @@
             try {
                 await runPaginated(function(last) {
                     const parts = [
-                        window.where("stageId", "==", sid),
+                        window.where("stageId", "in", sidInVals),
                         window.where("role", "==", "student"),
                         window.orderBy("timestamp", "desc"),
                         window.limit(pageSize)
@@ -6888,22 +6933,35 @@
                     if (last) parts.push(window.startAfter(last));
                     return window.query(coll, ...parts);
                 });
-                return out;
+                if (out.length === 0 && sidNum === 4) {
+                    return await it9anLegacyFetchStudentPostsStage4FromManifestFiles();
+                }
+                return out.filter(function(p) { return it9anPostMatchesStage(p, sidNum); });
             } catch (e1) {
                 out.length = 0;
                 try {
                     await runPaginated(function(last) {
                         const parts = [
-                            window.where("stageId", "==", sid),
+                            window.where("stageId", "in", sidInVals),
                             window.orderBy("timestamp", "desc"),
                             window.limit(pageSize)
                         ];
                         if (last) parts.push(window.startAfter(last));
                         return window.query(coll, ...parts);
                     });
-                    return out.filter(function(p) { return p.role === 'student'; });
+                    if (out.length === 0 && sidNum === 4) {
+                        return await it9anLegacyFetchStudentPostsStage4FromManifestFiles();
+                    }
+                    return out.filter(function(p) {
+                        return (p.role === 'student' || p.role === undefined) && it9anPostMatchesStage(p, sidNum);
+                    });
                 } catch (e2) {
                     console.warn('it9anFetchAllStudentPostsForStage', e1, e2);
+                    if (sidNum === 4) {
+                        try {
+                            return await it9anLegacyFetchStudentPostsStage4FromManifestFiles();
+                        } catch (e3) { /* ignore */ }
+                    }
                     return [];
                 }
             }
@@ -6913,7 +6971,8 @@
             const m = new Map();
             for (let i = 0; i < posts.length; i++) {
                 const p = posts[i];
-                if (p.role !== 'student' || p.fileId == null) continue;
+                const pr = p.role != null ? String(p.role).trim() : '';
+                if (pr !== 'student' || p.fileId == null) continue;
                 const fid = String(p.fileId);
                 let o = m.get(fid);
                 if (!o) o = { rated: 0, accepted: 0 };
@@ -6966,13 +7025,14 @@
             if (!window.db) return;
             let fileStatsMap = null;
             const c = window._it9anLessonAggCache;
-            if (c && Number(c.stageId) === stageForLessons && c.manifestSig === sig && Date.now() < c.expires && c.fileStatsMap) {
+            if (c && c.aggCacheVer === IT9AN_LESSON_AGG_CACHE_VER && Number(c.stageId) === Number(stageForLessons) && c.manifestSig === sig && Date.now() < c.expires && c.fileStatsMap) {
                 fileStatsMap = c.fileStatsMap;
             } else {
                 try {
                     const posts = await it9anFetchAllStudentPostsForStage(stageForLessons);
                     fileStatsMap = it9anBuildFileIdStatsMapFromPosts(posts);
                     window._it9anLessonAggCache = {
+                        aggCacheVer: IT9AN_LESSON_AGG_CACHE_VER,
                         stageId: stageForLessons,
                         manifestSig: sig,
                         expires: Date.now() + IT9AN_LESSON_AGG_CACHE_MS,
