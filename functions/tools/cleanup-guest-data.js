@@ -107,7 +107,6 @@ async function runCleanup() {
             try {
               await db.collection('users').doc(r.uid).update({
                 totalRepliesCount: admin.firestore.FieldValue.increment(-1),
-                totalLikes: admin.firestore.FieldValue.increment(-((r.likes && r.likes.length) || 0)),
               });
             } catch (e) {
               console.warn('  reply author decrement', r.uid, e.message);
@@ -133,35 +132,6 @@ async function runCleanup() {
       await docSnap.ref.delete();
       removedPosts++;
     } else {
-      const likedMain = data.likes && data.likes.some((l) => (typeof l === 'object' ? l.uid : l) === uid);
-      let likedReplies = 0;
-      if (data.replies) {
-        data.replies.forEach((r) => {
-          if (r.likes && r.likes.some((l) => (typeof l === 'object' ? l.uid : l) === uid)) likedReplies++;
-        });
-      }
-      if (likedMain && data.uid) {
-        try {
-          await db.collection('users').doc(data.uid).update({ totalLikes: admin.firestore.FieldValue.increment(-1) });
-        } catch (e) {
-          console.warn('  main like dec', data.uid, e.message);
-        }
-      }
-      if (likedReplies > 0 && data.replies) {
-        const authorsToDec = {};
-        data.replies.forEach((r) => {
-          if (r.likes && r.likes.some((l) => (typeof l === 'object' ? l.uid : l) === uid) && r.uid) {
-            authorsToDec[r.uid] = (authorsToDec[r.uid] || 0) + 1;
-          }
-        });
-        for (const [au, c] of Object.entries(authorsToDec)) {
-          try {
-            await db.collection('users').doc(au).update({ totalLikes: admin.firestore.FieldValue.increment(-c) });
-          } catch (e) {
-            console.warn('  reply like dec', au, e.message);
-          }
-        }
-      }
       const newLikes = (data.likes || []).filter((l) => (typeof l === 'object' ? l.uid : l) !== uid);
       const newReplies = (data.replies || []).map((r) => {
         if (!r.likes) return r;
@@ -226,7 +196,7 @@ async function runCleanup() {
     await udoc.ref.delete();
   }
 
-  console.log('Fertig. Gelöschte Gast-Posts:', removedPosts, '| Posts mit entfernten Gast-Likes:', patchedPosts);
+  console.log('Fertig. Gelöschte Gast-Posts:', removedPosts, '| Posts mit bereinigten likes-Feldern (Gast):', patchedPosts);
 }
 
 async function main() {
