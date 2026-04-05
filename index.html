@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="إتقان">
     <!-- Wird von scripts/bump-app-version.sh mit derselben version wie app-version.json gesetzt (synchroner Deploy-Check, kein fetch → zuverlässig in Safari/PWA). -->
-    <meta name="it9an-deploy-version" content="it9an-1775409822-local-45827-9bcdfe6">
+    <meta name="it9an-deploy-version" content="it9an-1775410731-local-54586-e7bbbc3">
     <link rel="manifest" href="manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap" rel="stylesheet">
     
@@ -212,12 +212,25 @@
             height: 12px;
             border: 2px solid #6d6d6d;
             border-radius: 5px;
-            background: #e8e8e8;
+            background: var(--bg);
             overflow: hidden;
             box-sizing: border-box;
             box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.06);
             direction: ltr;
         }
+        .lesson-difficulty-bar-track.it9an-diff-track-thirds::before,
+        .lesson-difficulty-bar-track.it9an-diff-track-thirds::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 1px;
+            background: #6d6d6d;
+            z-index: 2;
+            pointer-events: none;
+        }
+        .lesson-difficulty-bar-track.it9an-diff-track-thirds::before { left: 33.333%; margin-left: -0.5px; }
+        .lesson-difficulty-bar-track.it9an-diff-track-thirds::after { left: 66.666%; margin-left: -0.5px; }
         .lesson-difficulty-bar-zones {
             position: absolute;
             left: 0;
@@ -625,12 +638,25 @@
             min-height: 14px;
             border: 2px solid #6d6d6d;
             border-radius: 5px;
-            background: #e8e8e8;
+            background: var(--bg);
             overflow: hidden;
             box-sizing: border-box;
             box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.06);
             direction: ltr;
         }
+        .verse-difficulty-bar-track.it9an-diff-track-thirds::before,
+        .verse-difficulty-bar-track.it9an-diff-track-thirds::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 1px;
+            background: #6d6d6d;
+            z-index: 2;
+            pointer-events: none;
+        }
+        .verse-difficulty-bar-track.it9an-diff-track-thirds::before { left: 33.333%; margin-left: -0.5px; }
+        .verse-difficulty-bar-track.it9an-diff-track-thirds::after { left: 66.666%; margin-left: -0.5px; }
         .verse-difficulty-bar-zones {
             position: absolute;
             left: 0;
@@ -1226,15 +1252,6 @@
     </div>
 
     <div id="player-view">
-        
-        <div id="adminPlayerPanel" class="admin-panel">
-            <div class="admin-title">🔒 إدارة المقطع الحالي</div>
-            <div class="admin-actions">
-                <button class="btn-admin-reset" onclick="resetLocalViews()">👂 تصفير المشاهدات</button>
-                <button class="btn-admin-reset" onclick="resetLocalLikes()">👍 تصفير الإعجابات</button>
-                <button class="btn-admin-reset btn-admin-delete-all" onclick="deleteAllLocalPosts()">🗑️ حذف تسجيلات المقطع</button>
-            </div>
-        </div>
 
         <div class="verse-section">
             <button id="lbBackToLikesBtn" class="verse-list-btn lb-back-btn" onclick="goBackToLbList()" style="display:none;">↩️ العودة</button>
@@ -1272,7 +1289,7 @@
         <h4 id="participations-header" class="participations-header-row">
             <span class="part-header-left verse-difficulty-label" id="verseDifficultyLabel" aria-live="polite"></span>
             <span class="part-header-center" id="verseDifficultyCluster" title="">
-                <span class="verse-difficulty-bar-track" id="verseDifficultyTrack" aria-hidden="true">
+                <span class="verse-difficulty-bar-track it9an-diff-track-thirds" id="verseDifficultyTrack" aria-hidden="true">
                     <span class="verse-difficulty-bar-zones" id="verseDifficultyZones"></span>
                 </span>
             </span>
@@ -3745,7 +3762,6 @@
             const recBtn = document.getElementById('recBtn');
             const recCol = document.getElementById('recBtnColumnWrap');
             const adminMenuPanel = document.getElementById('adminMenuPanel');
-            const adminPlayerPanel = document.getElementById('adminPlayerPanel');
             const notifContainer = document.querySelector('.notif-container');
             function setRecColumnVisible(visible) {
                 if (recCol) recCol.style.display = visible ? 'flex' : 'none';
@@ -3770,11 +3786,9 @@
                 if (role === 'student') {
                     setRecColumnVisible(true);
                     if(adminMenuPanel) adminMenuPanel.style.display = 'none';
-                    if(adminPlayerPanel) adminPlayerPanel.style.display = 'none';
                 } else {
                     setRecColumnVisible(false);
                     if(adminMenuPanel) adminMenuPanel.style.display = 'none';
-                    if(adminPlayerPanel) adminPlayerPanel.style.display = 'none';
                 }
             }
         }
@@ -6677,10 +6691,8 @@
             if (typeof updateRecButtonForStudentNotifications === 'function') updateRecButtonForStudentNotifications();
             if (typeof syncStudentVersEchoUi === 'function') syncStudentVersEchoUi();
             
-            document.getElementById('adminMenuPanel').style.display = 'none'; 
+            document.getElementById('adminMenuPanel').style.display = 'none';
             const uid = localStorage.getItem('it9an_uid');
-            if(uid === 'admin_super') document.getElementById('adminPlayerPanel').style.display = 'block';
-            else document.getElementById('adminPlayerPanel').style.display = 'none';
 
             const lek = KURS_DATEN[currentLessonIdx];
             const ptP = document.getElementById('pageTitle');
@@ -6969,38 +6981,31 @@
             return { ratedCount: ratedCount, acceptedCount: acceptedCount };
         }
 
-        /** LTR: links = schwer (rot), mitte = orange, rechts = gelb (leicht). */
-        const IT9AN_DIFF_RGB = { red: [198, 40, 40], orange: [232, 118, 28], yellow: [245, 210, 72], gray: [178, 178, 178] };
+        /** LTR: links = schwer (rot), mitte = orange, rechts = gelb (leicht). Inaktive Drittel: App-Hintergrund (--bg). */
+        const IT9AN_DIFF_RGB = { red: [198, 40, 40], orange: [232, 118, 28], yellow: [245, 210, 72] };
+        const IT9AN_DIFF_INACTIVE = 'var(--bg)';
 
         function it9anRgbStr(t) {
             return 'rgb(' + t[0] + ',' + t[1] + ',' + t[2] + ')';
         }
 
-        function it9anRgbMixStr(t1, t2, u) {
-            return 'rgb('
-                + Math.round(t1[0] * (1 - u) + t2[0] * u) + ','
-                + Math.round(t1[1] * (1 - u) + t2[1] * u) + ','
-                + Math.round(t1[2] * (1 - u) + t2[2] * u) + ')';
+        function it9anDifficultyZoneCss(c) {
+            return Array.isArray(c) ? it9anRgbStr(c) : c;
         }
 
-        /** Zwei kurze Übergänge an den Drittel-Grenzen (ca. ⅓ und ⅔). */
-        function it9anDifficultyZonesGradient(rgbLeft, rgbMid, rgbRight) {
-            const z1 = it9anRgbStr(rgbLeft);
-            const z2 = it9anRgbStr(rgbMid);
-            const z3 = it9anRgbStr(rgbRight);
-            const m12 = it9anRgbMixStr(rgbLeft, rgbMid, 0.5);
-            const m23 = it9anRgbMixStr(rgbMid, rgbRight, 0.5);
+        /** Harte Drittel, keine Übergangsfarben; Trennlinien per CSS (::before/::after am Track). */
+        function it9anDifficultyZonesGradient(leftSeg, midSeg, rightSeg) {
+            const z1 = it9anDifficultyZoneCss(leftSeg);
+            const z2 = it9anDifficultyZoneCss(midSeg);
+            const z3 = it9anDifficultyZoneCss(rightSeg);
             return 'linear-gradient(to right,'
-                + z1 + ' 0%,' + z1 + ' 29.5%,'
-                + m12 + ' 33.33%,'
-                + z2 + ' 37%,' + z2 + ' 62%,'
-                + m23 + ' 66.66%,'
-                + z3 + ' 71%,' + z3 + ' 100%)';
+                + z1 + ' 0%, ' + z1 + ' 33.333%, '
+                + z2 + ' 33.333%, ' + z2 + ' 66.666%, '
+                + z3 + ' 66.666%, ' + z3 + ' 100%)';
         }
 
-        function it9anDifficultyNeutralGradient() {
-            const n = [218, 218, 218];
-            return it9anDifficultyZonesGradient(n, n, n);
+        function it9anDifficultyNeutralBg() {
+            return IT9AN_DIFF_INACTIVE;
         }
 
         /** Erfolgsquote = accepted/rated. >60% nur Gelb aktiv; 40–60% Gelb+Orange; <40% alle drei. */
@@ -7008,16 +7013,16 @@
             const R = IT9AN_DIFF_RGB.red;
             const O = IT9AN_DIFF_RGB.orange;
             const Y = IT9AN_DIFF_RGB.yellow;
-            const G = IT9AN_DIFF_RGB.gray;
-            if (easeRatio > 0.6) return { left: G, mid: G, right: Y };
+            const B = IT9AN_DIFF_INACTIVE;
+            if (easeRatio > 0.6) return { left: B, mid: B, right: Y };
             if (easeRatio < 0.4) return { left: R, mid: O, right: Y };
-            return { left: G, mid: O, right: Y };
+            return { left: B, mid: O, right: Y };
         }
 
         function it9anLessonDifficultySkeletonHtml() {
             return '<div class="lesson-difficulty-foot" onclick="event.stopPropagation()">'
-                + '<div class="lesson-difficulty-bar-track" title="">'
-                + '<div class="lesson-difficulty-bar-zones" style="background:' + it9anDifficultyNeutralGradient() + '"></div>'
+                + '<div class="lesson-difficulty-bar-track it9an-diff-track-thirds" title="">'
+                + '<div class="lesson-difficulty-bar-zones" style="background:' + it9anDifficultyNeutralBg() + '"></div>'
                 + '</div>'
                 + '<span class="lesson-difficulty-label lesson-diff-loading">…</span>'
                 + '</div>';
@@ -7025,7 +7030,7 @@
 
         function it9anRenderLessonDifficultyHtml(vis) {
             return '<div class="lesson-difficulty-foot" onclick="event.stopPropagation()">'
-                + '<div class="lesson-difficulty-bar-track" title="' + it9anAttrEscape(vis.title) + '">'
+                + '<div class="lesson-difficulty-bar-track it9an-diff-track-thirds" title="' + it9anAttrEscape(vis.title) + '">'
                 + '<div class="lesson-difficulty-bar-zones" style="background:' + vis.zonesBg + '"></div>'
                 + '</div>'
                 + '<span class="lesson-difficulty-label">' + vis.label + '</span>'
@@ -7077,7 +7082,7 @@
             const lessonScope = opts.scope === 'lesson';
             if (ratedCount === 0) {
                 return {
-                    zonesBg: it9anDifficultyNeutralGradient(),
+                    zonesBg: it9anDifficultyNeutralBg(),
                     label: 'لم يُقَيَّم بعد',
                     title: lessonScope
                         ? 'لم يُقَيَّم بعد في أي مقطع من هذا الدرس؛ غير المقيَّم لا يُحتسب في الصعوبة.'
