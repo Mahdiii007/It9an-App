@@ -723,19 +723,16 @@ function buildQuranReminderMessages(tokens, body, tagSuffix) {
     openStages: '1',
     tag
   };
+  /* Kein webpush.notification: sonst zeigt FCM Web die Meldung automatisch UND
+   * firebase-messaging-sw.js (onBackgroundMessage) → doppelte Banner gleichzeitig.
+   * Wie sendPushOnNotif: nur data + fcmOptions; Anzeige nur im Service Worker. */
   return tokens.map((token) => ({
     token,
     data: { ...data },
     webpush: {
       headers: { Urgency: 'high' },
-      notification: {
-        title: data.title,
-        body: data.body,
-        icon: '/icon-192.png',
-        tag: data.tag,
-        vibrate: [200, 100, 200, 100, 200]
-      },
-      data: { ...data }
+      data: { ...data },
+      fcmOptions: { link: `${HOSTING_BASE}/` }
     },
     android: {
       priority: 'high',
