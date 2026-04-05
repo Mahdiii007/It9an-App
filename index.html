@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="إتقان">
     <!-- Wird von scripts/bump-app-version.sh mit derselben version wie app-version.json gesetzt (synchroner Deploy-Check, kein fetch → zuverlässig in Safari/PWA). -->
-    <meta name="it9an-deploy-version" content="it9an-1775397561-local-76151-6b65a26">
+    <meta name="it9an-deploy-version" content="it9an-1775398847-local-87580-50341b5">
     <link rel="manifest" href="manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap" rel="stylesheet">
     
@@ -479,14 +479,12 @@
         
         .feed-container { min-height: 100px; width: 100%; max-width: 100%; overflow-x: hidden; }
 
-        /* صف واحد: مؤشر صعوبة المقطع + المشاركات (RTL: المجموعة اليمنى تُقرأ قبل العنوان) */
+        /* LTR: يسار = درجة الصعوبة، الوسط = الشريط، يمين = عدد المشاركات */
         .participations-header-row {
-            display: flex;
-            flex-direction: row;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
             align-items: center;
-            justify-content: center;
-            flex-wrap: nowrap;
-            gap: 6px 8px;
+            gap: 10px 12px;
             margin-top: 15px;
             margin-bottom: 0;
             border-bottom: 1px solid #ddd;
@@ -496,18 +494,24 @@
             width: 100%;
             max-width: 100%;
             min-width: 0;
-            text-align: center;
             font-weight: bold;
+            direction: ltr;
         }
-        .verse-difficulty-cluster {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            flex-shrink: 1;
+        .part-header-left {
+            justify-self: start;
+            text-align: left;
             min-width: 0;
-            max-width: 58%;
         }
-        /* Rahmen = 100 % Referenz; Füllung = Anteil المقبول / إجمالي التسجيلات */
+        .part-header-center {
+            justify-self: center;
+        }
+        .part-header-right {
+            justify-self: end;
+            text-align: right;
+            white-space: nowrap;
+            color: var(--primary);
+        }
+        /* Rahmen = 100 %؛ طول الملء = صعوبة المقطع (100% قبول → 10% أخضر، 0% قبول → 100% أحمر) */
         .verse-difficulty-bar-track {
             width: clamp(110px, 32vw, 220px);
             height: 12px;
@@ -540,11 +544,6 @@
             line-height: 1.25;
             min-width: 0;
         }
-        .participations-title-inline {
-            white-space: nowrap;
-            flex-shrink: 0;
-        }
-        
         .feed-msg { padding: 10px 12px; border-radius: 12px; margin-bottom: 12px; position: relative; transition: transform 0.2s; max-width: 100%; overflow-x: hidden; }
         .feed-msg.highlighted { border: 2px solid var(--gold); background: #fffffa; animation: flash 1s; }
         @keyframes flash { 0% { background: var(--gold-light); } 100% { background: #fffffa; } }
@@ -1162,13 +1161,13 @@
             </div>
 
         <h4 id="participations-header" class="participations-header-row">
-            <span class="verse-difficulty-cluster" id="verseDifficultyCluster" title="">
+            <span class="part-header-left verse-difficulty-label" id="verseDifficultyLabel" aria-live="polite"></span>
+            <span class="part-header-center" id="verseDifficultyCluster" title="">
                 <span class="verse-difficulty-bar-track" id="verseDifficultyTrack" aria-hidden="true">
                     <span class="verse-difficulty-bar-fill" id="verseDifficultyBar"></span>
                 </span>
-                <span class="verse-difficulty-label" id="verseDifficultyLabel" aria-live="polite"></span>
             </span>
-            <span class="participations-title-inline"><span id="participationsCount">(0)</span> المشاركات</span>
+            <span class="part-header-right" id="participationsCount">0 مشاركة</span>
         </h4>
         <div id="community-feed" class="feed-container">جاري التحميل...</div>
         </div>
@@ -6804,10 +6803,10 @@
         function it9anLerpByte(a, b, t) {
             return Math.round(a + (b - a) * t);
         }
-        /** 0 = صعب/أحمر، 1 = سهل/أخضر، وسط ذهبي */
+        /** 0 = أحمر (صعب)، 0.5 = برتقالي، 1 = أخضر (سهل) — حسب نسبة المقبول */
         function it9anDifficultyBarColorFromEaseRatio(ratio) {
             const r0 = 198, g0 = 40, b0 = 40;
-            const r1 = 212, g1 = 168, b1 = 48;
+            const r1 = 232, g1 = 118, b1 = 28;
             const r2 = 39, g2 = 122, b2 = 60;
             if (ratio <= 0.5) {
                 const u = ratio / 0.5;
@@ -6825,7 +6824,7 @@
             const studentPosts = (allLoadedPosts || []).filter(p => p.role === 'student');
             const cnt = studentPosts.length;
             const el = document.getElementById('participationsCount');
-            if (el) el.textContent = '(' + cnt + ')';
+            if (el) el.textContent = cnt + ' مشاركة';
 
             const fill = document.getElementById('verseDifficultyBar');
             const label = document.getElementById('verseDifficultyLabel');
@@ -6846,34 +6845,33 @@
                 fill.style.backgroundColor = 'transparent';
                 label.textContent = '';
                 if (cluster) {
-                    cluster.style.display = 'none';
                     cluster.title = 'لا توجد تسجيلات طلابية بعد لهذا المقطع.';
                 }
                 return;
             }
-            if (cluster) cluster.style.display = '';
 
             if (ratedCount === 0) {
                 fill.style.width = '0%';
                 fill.style.backgroundColor = 'transparent';
                 label.textContent = 'لم يُقَيَّم بعد';
                 if (cluster) {
-                    cluster.title = 'لا يوجد تقييم من المعلم بعد لأي تسجيل؛ الإطار يبيّن 100٪ حتى يُقيَّم تسجيل (مقبول أو يحتاج تحسين).';
+                    cluster.title = 'لم يُقَيَّم بعد؛ الإطار يوضح السعة الكاملة حتى يقيّم المعلم تسجيلاً.';
                 }
                 return;
             }
 
             const easeRatio = acceptedCount / cnt;
-            const pct = Math.round(easeRatio * 1000) / 10;
-            fill.style.width = pct + '%';
+            const difficultyWidth = Math.max(10, Math.min(100, Math.round((1 - easeRatio) * 1000) / 10));
+            fill.style.width = difficultyWidth + '%';
             fill.style.backgroundColor = it9anDifficultyBarColorFromEaseRatio(easeRatio);
             let word = 'متوسط';
             if (easeRatio >= 0.67) word = 'سهل';
             else if (easeRatio <= 0.33) word = 'صعب';
-            label.textContent = word + ' (' + pct + '%)';
+            label.textContent = word;
             if (cluster) {
-                cluster.title = 'نسبة التسجيلات المقبولة: ' + pct + '% (' + acceptedCount + ' مقبول من ' + cnt + ' تسجيل) — ' + word
-                    + '. طول الشريط الملون داخل الإطار = هذه النسبة؛ اللون من صعب (أحمر) إلى سهل (أخضر).';
+                const accPct = Math.round(easeRatio * 1000) / 10;
+                cluster.title = word + ' — ' + acceptedCount + ' مقبول من ' + cnt + ' تسجيل (' + accPct + '% مقبول). '
+                    + 'طول الشريط: صعوبة أعلى عندما يقل القبول (كامل الإطار أحمر إن لم يُقبل أحد، أقصر وأخضر عند قبول الجميع، بحد أدنى 10٪ للون الأخضر).';
             }
         }
 
