@@ -791,8 +791,7 @@ QURAN_REMINDER_SLOTS.forEach((slot, idx) => {
 
 /**
  * Storage: uploads/*.(webm|ogg|mp4|wav) → AAC in MP4-Container (.m4a), Firestore audioUrl + replies.audioUrl auf neue Datei.
- * Lautheit: zweiphasig loudnorm wie unten — ausgenommen uploads/echo_* (تسجيل متزامن): nur Resample/AAC, Originalpegel.
- * Standard: FFmpeg loudnorm (EBU R128) — I=-16 LUFS, TP=-1.5 dBTP, LRA=11 LU.
+ * Lautheit: zweiphasig loudnorm für alle uploads/* inkl. uploads/echo_* — einheitlich mit تسجيل عادي / رد عادي / رد متزامن (EBU R128 I=-16 LUFS).
  * Ergebnis: audio/mp4, stereo 44,1 kHz, 128 kbit/s (Mono-Quellen werden von FFmpeg auf 2 Kanäle gehoben → L/R).
  * Ausgabe *.m4a löst keinen erneuten Lauf aus. Nach erfolgreicher URL-Patch wird die Originaldatei gelöscht.
  * Deploy: firebase deploy --only functions:transcodeUploadAudio (FFmpeg: gcp-build / tools/ensure-ffmpeg-linux.js).
@@ -802,11 +801,6 @@ QURAN_REMINDER_SLOTS.forEach((slot, idx) => {
  * Ohne bucket lauscht der Trigger auf dem Standard-Bucket (bei neuen Projekten: …firebasestorage.app).
  */
 const TRANSCODE_INPUT_EXT = /\.(webm|ogg|mp4|wav)$/i;
-
-/** Schüler-تسجيل متزامن: Client lädt unter uploads/echo_* — ohne loudnorm (Originalpegel, sonst R128-Ziel hebt leise Mixe an). */
-function transcodeSkipLoudnormForPath(filePath) {
-  return typeof filePath === 'string' && filePath.startsWith('uploads/echo_');
-}
 
 const transcodeUploadAudioOpts = {
   region: 'europe-west3',
@@ -830,26 +824,22 @@ async function transcodeUploadAudioHandler(event) {
   try {
     await bucket.file(filePath).download({ destination: tmpIn });
     let afEncode = 'aresample=44100:async=1';
-    if (transcodeSkipLoudnormForPath(filePath)) {
-      console.log('transcodeUploadAudio ohne loudnorm (echo-Sync-Pfad)', filePath, '→', destPath);
-    } else {
-      try {
-        const pass1Stderr = await runFfmpegCollectStderr([
-          '-y',
-          '-fflags', '+genpts+discardcorrupt',
-          '-err_detect', 'ignore_err',
-          '-i', tmpIn,
-          '-vn',
-          '-af', loudnormAfChainAnalyze(),
-          '-f', 'null',
-          '-',
-        ]);
-        const metrics = parseLoudnormMeasureJson(pass1Stderr);
-        afEncode = loudnormAfChainEncode(metrics);
-        console.log('transcodeUploadAudio loudnorm', destPath, 'input_i', metrics.input_i, '→ target', LOUDNORM_I, 'LUFS');
-      } catch (lnErr) {
-        console.warn('transcodeUploadAudio loudnorm übersprungen, nur Resample', filePath, lnErr.message || lnErr);
-      }
+    try {
+      const pass1Stderr = await runFfmpegCollectStderr([
+        '-y',
+        '-fflags', '+genpts+discardcorrupt',
+        '-err_detect', 'ignore_err',
+        '-i', tmpIn,
+        '-vn',
+        '-af', loudnormAfChainAnalyze(),
+        '-f', 'null',
+        '-',
+      ]);
+      const metrics = parseLoudnormMeasureJson(pass1Stderr);
+      afEncode = loudnormAfChainEncode(metrics);
+      console.log('transcodeUploadAudio loudnorm', destPath, 'input_i', metrics.input_i, '→ target', LOUDNORM_I, 'LUFS');
+    } catch (lnErr) {
+      console.warn('transcodeUploadAudio loudnorm übersprungen, nur Resample', filePath, lnErr.message || lnErr);
     }
     await runFfmpegArgs([
       '-y',

@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="إتقان">
     <!-- Wird von scripts/bump-app-version.sh mit derselben version wie app-version.json gesetzt (synchroner Deploy-Check, kein fetch → zuverlässig in Safari/PWA). -->
-    <meta name="it9an-deploy-version" content="it9an-1775509059-local-36240-f3cc5f5">
+    <meta name="it9an-deploy-version" content="it9an-1775509947-local-43763-7ef31de">
     <link rel="manifest" href="manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap" rel="stylesheet">
     
@@ -2512,8 +2512,8 @@
         let currentBlob = null, replyTargetId = null, maxRecDuration = 0;
         let lastRecStream = null, lastRecCtx = null;
         /**
-         * Client: WebAudio vor MediaRecorder gleicht Geräte-Unterpegel aus. Hochgeladene clips: Cloud Function transcodeUploadAudio
-         * nutzt FFmpeg zweiphasig loudnorm (EBU R128-Ziel I≈-16 LUFS nach Encoding zu .m4a).
+         * Client: WebAudio vor MediaRecorder gleicht Geräte-Unterpegel aus. Cloud Function transcodeUploadAudio
+         * wendet auf alle uploads/* (inkl. echo_ / تسجيل متزامن) dasselbe zweiphasige loudnorm an (I≈-16 LUFS → .m4a).
          * Wiedergabe: Feed/Review-Nutzerclips direkt über <audio> auf Android+iOS (loudnorm); Desktop ggf. WebAudio-Boost. Kurs bleibt #mainAudio ohne diesen Clip-Boost.
          */
         const it9anAudioProfile = (function () {
@@ -2852,7 +2852,7 @@
         let activePostFilter = null;
         let activePostFilterNotifId = null;
 
-        /* Audio: uploads/* → transcodeUploadAudio → .m4a; uploads/echo_* (تسجيل متزامن, grüner Mix) ohne loudnorm — Originalpegel */
+        /* Audio: uploads/* inkl. echo_* → transcodeUploadAudio → .m4a mit gleichem loudnorm (-16 LUFS) wie تسجيل عادي / رد عادي / رد متزامن */
 
         // --- GLOBAL FEED PLAYER LOGIC ---
         let currentFeedAudioId = null;
