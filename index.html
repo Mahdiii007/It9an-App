@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="إتقان">
     <!-- Wird von scripts/bump-app-version.sh mit derselben version wie app-version.json gesetzt (synchroner Deploy-Check, kein fetch → zuverlässig in Safari/PWA). -->
-    <meta name="it9an-deploy-version" content="it9an-1775512298-local-66014-cc4e3b8">
+    <meta name="it9an-deploy-version" content="it9an-1775513457-local-75001-7b2629f">
     <link rel="manifest" href="manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap" rel="stylesheet">
     
@@ -2512,9 +2512,9 @@
         let currentBlob = null, replyTargetId = null, maxRecDuration = 0;
         let lastRecStream = null, lastRecCtx = null;
         /**
-         * Client: WebAudio vor MediaRecorder gleicht Geräte-Unterpegel aus. Cloud Function transcodeUploadAudio
-         * wendet auf alle uploads/* (inkl. echo_ / تسجيل متزامن) dasselbe zweiphasige loudnorm an (Ziel-I wie Cloud Function, derzeit −11 LUFS → .m4a).
-         * Wiedergabe: Feed/Review-Nutzerclips direkt über <audio> auf Android+iOS (loudnorm); Desktop ggf. WebAudio-Boost. Kurs bleibt #mainAudio ohne diesen Clip-Boost.
+         * Audio-Ziele: (1) Aufnahme — micCaptureGain überall wo WebAudio→MediaRecorder (iOS immer; Desktop-Stereo-Downmix am Ausgangs-Gain).
+         * (2) رد متزامن — syncReply* in runTeacherSyncReplySession. (3) Wiedergabe — userRecordingPlaybackBoost + mediaElementVolume für
+         * feedAudio, reviewAudio, reviewVerseAudio, reviewMixAudio, Retake (nicht #mainAudio). Cloud: transcodeUploadAudio loudnorm (LOUDNORM_I).
          */
         const it9anAudioProfile = (function () {
             const ua = navigator.userAgent || '';
@@ -2525,14 +2525,17 @@
             if (isIOS) kind = 'ios';
             else if (isAndroid) kind = 'android';
             else if (isMacDesktop) kind = 'mac';
-            /** رد متزامن: hoher Mix-Pegel; Schüler- und Lehrer-Spur gleiches Produkt (×To-Dest bzw. ×Makeup). */
-            const syncReplyTeacherMakeupGain = 1.22;
-            const syncReplyStudentToDestGain = 1.3;
+            /**
+             * رد متزامن: Schüler-Datei ist bereits loudnorm + unkomprimiert in dest; Lehrer durch Kompressor oft leiser.
+             * Nur syncReplyStudentToDestGain dämpft die Aufnahme-Schülerspur (Monitor bleibt über studentGain → studentMonitorOnlyGain).
+             */
+            const syncReplyTeacherMakeupGain = 1.58;
+            const syncReplyStudentToDestGain = 0.58;
             const syncReplyStudentMonitorGain = kind === 'ios' ? 2.45 : 2.38;
-            const syncReplyTeacherMicPre = Math.round((syncReplyStudentMonitorGain * syncReplyStudentToDestGain) / syncReplyTeacherMakeupGain * 1000) / 1000;
+            const syncReplyTeacherMicPre = kind === 'ios' ? 3.38 : kind === 'android' ? 3.45 : kind === 'mac' ? 2.95 : 3.12;
             return {
                 kind,
-                /** Mic → WebAudio → MediaRecorder (WebKit/iOS stark unterpegelt) */
+                /** Mic → WebAudio → MediaRecorder: iOS direkt; Desktop nach Stereo-Downmix am gainBoost (Android meist Rohstream ohne diesen Knoten). */
                 micCaptureGain: kind === 'ios' ? 2.78 : kind === 'android' ? 1.95 : kind === 'mac' ? 1.42 : 1.58,
                 /** Stereo-Mic → Mono: je Kanal (Summe ≈ 1 bei gleichem Pegel) */
                 stereoDownmixChannel: 0.5,
@@ -2714,6 +2717,7 @@
                 return pr;
             } catch (e) {}
         }
+        /** Einheitliche Vorbereitung vor Abspielen im Review (gleiche Pegel/Kette wie Feed nach dem Senden). */
         function it9anPrepareReviewAudioPlayback() {
             try { it9anIosKickAudioRouteToSpeakerAfterHeavyOp(); } catch (eS) {}
             it9anKickUserRecPlaybackContextSync();
@@ -2888,7 +2892,8 @@
         let activePostFilter = null;
         let activePostFilterNotifId = null;
 
-        /* Audio: uploads/* inkl. echo_* → transcodeUploadAudio → .m4a (loudnorm-Ziel wie Function; abgestimmt auf Nahfeld/Sprache) */
+        /* Nutzerclips: Review (#review* + Retake), Feed (#feedAudio), Leaderboard → alle playFeedAudio bzw. review-Pfad + gleicher userRecordingPlaybackBoost */
+        /* uploads/* → transcodeUploadAudio → .m4a (loudnorm) */
 
         // --- GLOBAL FEED PLAYER LOGIC ---
         let currentFeedAudioId = null;
@@ -8879,11 +8884,11 @@
                 }
                 syncReplyMicComp = ctx.createDynamicsCompressor();
                 try {
-                    syncReplyMicComp.threshold.value = -38;
-                    syncReplyMicComp.knee.value = 22;
-                    syncReplyMicComp.ratio.value = 3.2;
-                    syncReplyMicComp.attack.value = 0.002;
-                    syncReplyMicComp.release.value = 0.22;
+                    syncReplyMicComp.threshold.value = -32;
+                    syncReplyMicComp.knee.value = 18;
+                    syncReplyMicComp.ratio.value = 2;
+                    syncReplyMicComp.attack.value = 0.003;
+                    syncReplyMicComp.release.value = 0.28;
                 } catch (eComp) {}
                 preMic.connect(syncReplyMicComp);
                 micToStereo = ctx.createChannelMerger(2);
@@ -10296,7 +10301,7 @@
                             gainL.connect(merger, 0, 0);
                             gainR.connect(merger, 0, 0);
                             const gainBoost = recCtx.createGain();
-                            gainBoost.gain.value = 1;
+                            gainBoost.gain.value = it9anAudioProfile.micCaptureGain;
                             merger.connect(gainBoost);
                             const destNode = recCtx.createMediaStreamDestination();
                             gainBoost.connect(destNode);
@@ -10533,7 +10538,7 @@
                             gainL.connect(merger, 0, 0);
                             gainR.connect(merger, 0, 0);
                             const gainBoost = recCtx.createGain();
-                            gainBoost.gain.value = 1;
+                            gainBoost.gain.value = it9anAudioProfile.micCaptureGain;
                             merger.connect(gainBoost);
                             const destNode = recCtx.createMediaStreamDestination();
                             gainBoost.connect(destNode);
@@ -11160,7 +11165,7 @@
                                 gainL.connect(merger, 0, 0);
                                 gainR.connect(merger, 0, 0);
                                 const gainBoost = recCtx.createGain();
-                                gainBoost.gain.value = 1;
+                                gainBoost.gain.value = it9anAudioProfile.micCaptureGain;
                                 merger.connect(gainBoost);
                                 const destNode = recCtx.createMediaStreamDestination();
                                 gainBoost.connect(destNode);
@@ -11685,6 +11690,7 @@
                 setupReviewAudioListeners();
                 it9anNormalizeUserClipMediaElement(document.getElementById('reviewVerseAudio'));
                 it9anNormalizeUserClipMediaElement(document.getElementById('reviewMixAudio'));
+                it9anPrepareReviewAudioPlayback();
                 return;
             }
 
@@ -11803,6 +11809,7 @@
                 const sid = recordingStageId != null ? recordingStageId : currentStageId;
                 void populateReviewModalPreviousPosts(reviewFid, sid);
             }
+            it9anPrepareReviewAudioPlayback();
         }
         let _reviewAudioHandlers = null;
         let _reviewMixHandlers = null;
