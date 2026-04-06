@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="إتقان">
     <!-- Wird von scripts/bump-app-version.sh mit derselben version wie app-version.json gesetzt (synchroner Deploy-Check, kein fetch → zuverlässig in Safari/PWA). -->
-    <meta name="it9an-deploy-version" content="it9an-1775514469-local-83574-02ed2fa">
+    <meta name="it9an-deploy-version" content="it9an-1775516277-local-95199-4c3274b">
     <link rel="manifest" href="manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap" rel="stylesheet">
     
@@ -7807,7 +7807,9 @@
         /** Nach abgebrochener Aufnahme bleiben audioEl/feed oft stumm+0 — das nicht als legitimen Restore-Zustand speichern. */
         function captureIosPlaybackStateBeforeMicSession() {
             const revA = document.getElementById('reviewAudio');
-            const stuckGuess = audioEl && feedAudioEl && audioEl.muted && audioEl.volume === 0 && feedAudioEl.muted && feedAudioEl.volume === 0;
+            const mainFeedStuck = audioEl && feedAudioEl && audioEl.muted && audioEl.volume === 0 && feedAudioEl.muted && feedAudioEl.volume === 0;
+            const revLooksLikeMicPrep = revA && revA.muted && revA.volume === 0;
+            const stuckGuess = mainFeedStuck && (!revA || revLooksLikeMicPrep);
             const o = {
                 mainMuted: stuckGuess ? false : audioEl.muted,
                 mainVol: stuckGuess ? 1 : audioEl.volume,
@@ -7815,8 +7817,9 @@
                 feedVol: stuckGuess ? 1 : feedAudioEl.volume
             };
             if (revA) {
-                o.revMuted = revA.muted;
-                o.revVol = revA.volume;
+                const revBad = mainFeedStuck && revLooksLikeMicPrep;
+                o.revMuted = revBad ? false : revA.muted;
+                o.revVol = revBad ? 1 : revA.volume;
             }
             return o;
         }
@@ -9210,14 +9213,20 @@
                 rev.muted = r.revMuted;
                 rev.volume = r.revVol;
             }
+            it9anNormalizeUserClipMediaElement(feedAudioEl);
+            it9anNormalizeUserClipMediaElement(document.getElementById('reviewAudio'));
             it9anNormalizeUserClipMediaElement(document.getElementById('reviewVerseAudio'));
             it9anNormalizeUserClipMediaElement(document.getElementById('reviewMixAudio'));
+            it9anKickUserRecPlaybackContextSync();
+            void it9anEnsureUserRecPlaybackContextRunning();
         }
         async function prepareIosEchoHoldMicSession() {
             const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
             if (!isIOS) return;
             pauseFeedAudio();
-            echoHoldIosPlaybackRestore = captureIosPlaybackStateBeforeMicSession();
+            if (!echoHoldIosPlaybackRestore) {
+                echoHoldIosPlaybackRestore = captureIosPlaybackStateBeforeMicSession();
+            }
             const revA = document.getElementById('reviewAudio');
             if (revA) {
                 revA.pause();
@@ -10160,8 +10169,12 @@
                     rev.muted = r.revMuted;
                     rev.volume = r.revVol;
                 }
+                it9anNormalizeUserClipMediaElement(feedAudioEl);
+                it9anNormalizeUserClipMediaElement(document.getElementById('reviewAudio'));
                 it9anNormalizeUserClipMediaElement(document.getElementById('reviewVerseAudio'));
                 it9anNormalizeUserClipMediaElement(document.getElementById('reviewMixAudio'));
+                it9anKickUserRecPlaybackContextSync();
+                void it9anEnsureUserRecPlaybackContextRunning();
             }
             try {
                 const isMacDesktop = /Mac|Macintosh/.test(navigator.platform) && !navigator.maxTouchPoints;
@@ -10586,6 +10599,20 @@
                 }
                 if (echoHoldCaptureMode === 'retake' && retakeHintEl) {
                     retakeHintEl.textContent = retakeHintDefault;
+                }
+                restoreEchoHoldIosPlaybackIfAny();
+                if (!reuseStream) {
+                    if (echoHoldRawStream) {
+                        try { echoHoldRawStream.getTracks().forEach(t => t.stop()); } catch (eEh) {}
+                        echoHoldRawStream = null;
+                    } else if (echoHoldStream) {
+                        try { echoHoldStream.getTracks().forEach(t => t.stop()); } catch (eEh2) {}
+                    }
+                    echoHoldStream = null;
+                    if (echoHoldRecCtx) {
+                        try { echoHoldRecCtx.close(); } catch (eEh3) {}
+                        echoHoldRecCtx = null;
+                    }
                 }
                 throw err;
             }
@@ -11028,8 +11055,12 @@
                         rev.muted = r.revMuted;
                         rev.volume = r.revVol;
                     }
+                    it9anNormalizeUserClipMediaElement(feedAudioEl);
+                    it9anNormalizeUserClipMediaElement(document.getElementById('reviewAudio'));
                     it9anNormalizeUserClipMediaElement(document.getElementById('reviewVerseAudio'));
                     it9anNormalizeUserClipMediaElement(document.getElementById('reviewMixAudio'));
+                    it9anKickUserRecPlaybackContextSync();
+                    void it9anEnsureUserRecPlaybackContextRunning();
                 }
                 try {
                     const isMacDesktop = /Mac|Macintosh/.test(navigator.platform) && !navigator.maxTouchPoints;
@@ -12819,7 +12850,9 @@
             return nu;
         }
         async function it9anHardResetUserClipPlaybackPipeline() {
-            if (echoHoldIosPlaybackRestore) return;
+            if (echoHoldIosPlaybackRestore) {
+                try { restoreEchoHoldIosPlaybackIfAny(); } catch (eRst) {}
+            }
             try { pauseFeedAudio(); } catch (e0) {}
             try {
                 const rev = document.getElementById('reviewAudio');
@@ -12877,7 +12910,11 @@
             } catch (e3) {}
         }
         function it9anMaybeHardResetClipPlaybackAfterForeground() {
-            if (!_it9anAllowClipPipelineHardReset || echoHoldIosPlaybackRestore) return;
+            if (!_it9anAllowClipPipelineHardReset) return;
+            const micCaptureActive = (echoHoldMediaRecorder && echoHoldMediaRecorder.state === 'recording')
+                || (typeof mediaRecorder !== 'undefined' && mediaRecorder && mediaRecorder.state === 'recording')
+                || (typeof teacherSyncReplyMicCapturing !== 'undefined' && teacherSyncReplyMicCapturing);
+            if (echoHoldIosPlaybackRestore && micCaptureActive) return;
             const now = Date.now();
             if (now - _it9anLastClipPipelineHardResetMs < 750) return;
             _it9anLastClipPipelineHardResetMs = now;
