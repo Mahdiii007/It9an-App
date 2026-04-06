@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="إتقان">
     <!-- Wird von scripts/bump-app-version.sh mit derselben version wie app-version.json gesetzt (synchroner Deploy-Check, kein fetch → zuverlässig in Safari/PWA). -->
-    <meta name="it9an-deploy-version" content="it9an-1775513485-local-75471-0c49f0f">
+    <meta name="it9an-deploy-version" content="it9an-1775514442-local-83093-2d7ad11">
     <link rel="manifest" href="manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap" rel="stylesheet">
     
@@ -2512,9 +2512,8 @@
         let currentBlob = null, replyTargetId = null, maxRecDuration = 0;
         let lastRecStream = null, lastRecCtx = null;
         /**
-         * Audio-Ziele: (1) Aufnahme — micCaptureGain überall wo WebAudio→MediaRecorder (iOS immer; Desktop-Stereo-Downmix am Ausgangs-Gain).
-         * (2) رد متزامن — syncReply* in runTeacherSyncReplySession. (3) Wiedergabe — userRecordingPlaybackBoost + mediaElementVolume für
-         * feedAudio, reviewAudio, reviewVerseAudio, reviewMixAudio, Retake (nicht #mainAudio). Cloud: transcodeUploadAudio loudnorm (LOUDNORM_I).
+         * Audio: Aufnahme micCaptureGain; رد متزامن getrennt decode→ToDest (Mix) vs. decode→monitorTap→route (Hörpegel ≈ userRecordingPlaybackBoost);
+         * Wiedergabe Nutzerclips userRecordingPlaybackBoost; Cloud loudnorm (LOUDNORM_I).
          */
         const it9anAudioProfile = (function () {
             const ua = navigator.userAgent || '';
@@ -2526,30 +2525,38 @@
             else if (isAndroid) kind = 'android';
             else if (isMacDesktop) kind = 'mac';
             /**
-             * رد متزامن: Schüler-Datei ist bereits loudnorm + unkomprimiert in dest; Lehrer durch Kompressor oft leiser.
-             * Nur syncReplyStudentToDestGain dämpft die Aufnahme-Schülerspur (Monitor bleibt über studentGain → studentMonitorOnlyGain).
+             * رد متزامن: studentDecodeGain → Aufnahme (×ToDest) vs. Monitor (×monitorTap×route) getrennt —
+             * monitorTap so gewählt, dass Hörpegel ≈ userRecordingPlaybackBoost (wie Feed), nicht ×8 wie früher.
+             * ToDest + Lehrer-Mic/Compressor für ausgewogenen Mix in der Datei.
              */
-            const syncReplyTeacherMakeupGain = 1.58;
-            const syncReplyStudentToDestGain = 0.58;
-            const syncReplyStudentMonitorGain = kind === 'ios' ? 2.45 : 2.38;
-            const syncReplyTeacherMicPre = kind === 'ios' ? 3.38 : kind === 'android' ? 3.45 : kind === 'mac' ? 2.95 : 3.12;
+            const userRecordingPlaybackBoost = 2.02;
+            const syncMonitorBase = 1.78;
+            const syncMonitorIosExtra = kind === 'ios' ? 2.05 : 1;
+            const syncReplyMonitorRouteLinear = syncMonitorBase * syncMonitorIosExtra;
+            const syncReplyStudentMonitorTapGain = Math.min(1.55, Math.max(0.2, Math.round((userRecordingPlaybackBoost / syncReplyMonitorRouteLinear) * 1000) / 1000));
+            const syncReplyStudentDecodeGain = 1;
+            const syncReplyStudentToDestGain = 0.34;
+            const syncReplyTeacherMakeupGain = 2.12;
+            const syncReplyTeacherMicPre = kind === 'ios' ? 4.15 : kind === 'android' ? 4.22 : kind === 'mac' ? 3.62 : 3.82;
             return {
                 kind,
                 /** Mic → WebAudio → MediaRecorder: iOS direkt; Desktop nach Stereo-Downmix am gainBoost (Android meist Rohstream ohne diesen Knoten). */
                 micCaptureGain: kind === 'ios' ? 2.78 : kind === 'android' ? 1.95 : kind === 'mac' ? 1.42 : 1.58,
                 /** Stereo-Mic → Mono: je Kanal (Summe ≈ 1 bei gleichem Pegel) */
                 stereoDownmixChannel: 0.5,
-                syncReplyStudentMonitorGain,
+                syncReplyStudentDecodeGain,
+                syncReplyStudentMonitorTapGain,
                 syncReplyStudentToDestGain,
                 syncReplyTeacherMakeupGain,
                 syncReplyTeacherMicPre,
-                syncMonitorBase: 1.78,
-                syncMonitorIosExtra: kind === 'ios' ? 2.05 : 1,
-                syncMonitorPostMicIos: 3.2,
-                syncMonitorPostMicOther: 1.52,
-                syncMonitorCap: 5.25,
-                /** Feed + Review (+ Echo-Review-Elemente): WebAudio-Gain nach MediaElementSource (kann >1; #mainAudio ohne Boost). */
-                userRecordingPlaybackBoost: 3.35,
+                syncMonitorBase,
+                syncMonitorIosExtra,
+                /** Nach Mic-Öffnen: nur leicht anheben (früher 3.2 → Gesamtmonitor viel zu laut). */
+                syncMonitorPostMicIos: 1.2,
+                syncMonitorPostMicOther: 1.15,
+                syncMonitorCap: 1.35,
+                /** Feed/Review/Leaderboard: moderat (loudnorm auf Server ist schon kräftig). */
+                userRecordingPlaybackBoost,
                 /**
                  * false: Nutzerclips überall per WebAudio verstärken (sonst iOS/Android nur volume≤1 → wirkt viel leiser als Desktop/رد متزامن).
                  * play/playing-Hooks + it9anPlayUserClipFromUserGesture rufen ctx.resume() auf (PWA nach Fremd-App weiterhin ggf. hart zurücksetzen).
@@ -8721,9 +8728,11 @@
             const SYNC_REPLY_MONITOR_ONLY_POST_FIRST_MIC_OTHER = it9anAudioProfile.syncMonitorPostMicOther;
             const SYNC_REPLY_MONITOR_POST_MIC_CAP = it9anAudioProfile.syncMonitorCap;
             const studentGain = ctx.createGain();
-            studentGain.gain.value = it9anAudioProfile.syncReplyStudentMonitorGain;
+            studentGain.gain.value = it9anAudioProfile.syncReplyStudentDecodeGain;
             const studentToDestGain = ctx.createGain();
             studentToDestGain.gain.value = it9anAudioProfile.syncReplyStudentToDestGain;
+            const studentMonitorTap = ctx.createGain();
+            studentMonitorTap.gain.value = it9anAudioProfile.syncReplyStudentMonitorTapGain;
 
             let revokeBlobUrl = null;
             let studentDriver = null;
@@ -8762,7 +8771,8 @@
             monitorGain.gain.value = 1;
             studentGain.connect(studentToDestGain);
             studentToDestGain.connect(dest);
-            studentGain.connect(studentMonitorOnlyGain);
+            studentGain.connect(studentMonitorTap);
+            studentMonitorTap.connect(studentMonitorOnlyGain);
             if (isIOSSyncReply) {
                 try {
                     const syncSpSplit = ctx.createChannelSplitter(2);
@@ -8788,7 +8798,7 @@
             teacherMixGain.connect(dest);
 
             let syncReplyFirstMicBoostApplied = false;
-            /** Nach erstem Mic: nur studentMonitorOnlyGain (Hörpfad). dest unverändert → Datei ohne Pegelbruch; Live-Schüler wirkt wieder wie vor dem Mic. */
+            /** Nach erstem Mic: leicht höherer studentMonitorOnlyGain (Hörpfad). dest unverändert. */
             function bumpSyncReplyStudentLevelAfterFirstMicOpen() {
                 if (syncReplyFirstMicBoostApplied) return;
                 syncReplyFirstMicBoostApplied = true;
@@ -8884,11 +8894,11 @@
                 }
                 syncReplyMicComp = ctx.createDynamicsCompressor();
                 try {
-                    syncReplyMicComp.threshold.value = -32;
-                    syncReplyMicComp.knee.value = 18;
-                    syncReplyMicComp.ratio.value = 2;
-                    syncReplyMicComp.attack.value = 0.003;
-                    syncReplyMicComp.release.value = 0.28;
+                    syncReplyMicComp.threshold.value = -24;
+                    syncReplyMicComp.knee.value = 14;
+                    syncReplyMicComp.ratio.value = 1.65;
+                    syncReplyMicComp.attack.value = 0.004;
+                    syncReplyMicComp.release.value = 0.38;
                 } catch (eComp) {}
                 preMic.connect(syncReplyMicComp);
                 micToStereo = ctx.createChannelMerger(2);
