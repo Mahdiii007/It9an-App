@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="إتقان">
     <!-- Wird von scripts/bump-app-version.sh mit derselben version wie app-version.json gesetzt (synchroner Deploy-Check, kein fetch → zuverlässig in Safari/PWA). -->
-    <meta name="it9an-deploy-version" content="it9an-1775498963-local-45186-b462ba0">
+    <meta name="it9an-deploy-version" content="it9an-1775501676-local-67205-7f25a23">
     <link rel="manifest" href="manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap" rel="stylesheet">
     
@@ -536,6 +536,33 @@
             flex-shrink: 0; transition: transform 0.1s;
         }
         .cp-btn:active { transform: scale(0.9); }
+        /* Play/Pause/Loading/Error: SVG statt ▶/⏸ (robust in WebViews & wechselnden Fonts) */
+        .it9an-ico { display: block; width: 1em; height: 1em; flex-shrink: 0; }
+        .it9an-pp {
+            position: relative; display: inline-flex; align-items: center; justify-content: center;
+            vertical-align: middle; font-size: 0; line-height: 0; color: inherit;
+        }
+        .it9an-pp .it9an-pp-layer { display: none; align-items: center; justify-content: center; width: 100%; height: 100%; }
+        .it9an-pp.it9an-pp-state-play .it9an-pp-play { display: flex; }
+        .it9an-pp.it9an-pp-state-pause .it9an-pp-pause { display: flex; }
+        .it9an-pp.it9an-pp-state-load .it9an-pp-load { display: flex; }
+        .it9an-pp.it9an-pp-state-err .it9an-pp-err { display: flex; }
+        .cp-btn.it9an-pp .it9an-ico { width: 14px; height: 14px; }
+        .feed-msg .cp-btn.it9an-pp .it9an-ico, .reply-box .cp-btn.it9an-pp .it9an-ico { width: 22px; height: 22px; }
+        .lb-player-mini .cp-btn.it9an-pp .it9an-ico, .lb-player-stack .cp-btn.it9an-pp .it9an-ico { width: 14px; height: 14px; }
+        .review-box .review-player-wrap .cp-btn.it9an-pp .it9an-ico { width: 40px; height: 40px; }
+        .btn-play.it9an-pp { box-sizing: border-box; }
+        .btn-play.it9an-pp .it9an-ico { width: 30px; height: 30px; }
+        .review-yellow-side-btn.it9an-pp .it9an-ico { width: 24px; height: 24px; }
+        .review-strip-play .it9an-pp-icononly .it9an-ico { width: 18px; height: 18px; }
+        .review-hist-play .it9an-pp-icononly .it9an-ico { width: 18px; height: 18px; }
+        .review-verse-ref-btn .it9an-inline-play { display: inline-flex; align-items: center; vertical-align: middle; }
+        .review-verse-ref-btn .it9an-inline-play .it9an-ico { width: 1.15em; height: 1.15em; }
+        .review-echo-retake-btn-play { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: center; }
+        .review-echo-retake-btn-play .it9an-inline-play { display: inline-flex; align-items: center; }
+        .review-echo-retake-btn-play .it9an-inline-play .it9an-ico { width: 1.15em; height: 1.15em; }
+        @keyframes it9anSpin { to { transform: rotate(360deg); } }
+        .it9an-ico-spin { animation: it9anSpin 0.72s linear infinite; transform-origin: center center; }
         .cp-slider, .cp-time { display: none !important; }
         /* Feed & Reply: Play-Button kompakt für eine Zeile */
         .feed-msg .cp-btn, .reply-box .cp-btn { width: 64px; height: 36px; border-radius: 18px; font-size: 16px; }
@@ -1290,7 +1317,7 @@
                 <button type="button" id="studentVersePracticeBtn" class="btn btn-rec-yellow student-hold-rec-btn" title="نقرة: تشغيل المقطع والنافذة. الميكروفون الأحمر في النافذة: اضغط مع الاستمرار للتسجيل وأفلِت للمتابعة." aria-label="تمرين مع المقطع"><svg class="icon-mic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
                 <span class="verse-mic-label verse-mic-label-sync" id="studentVersePracticeSubLabel">تسجيل متزامن</span>
                 </div>
-                <button id="playBtn" class="btn btn-play" onclick="toggleSmartLoop()">▶</button>
+                <button type="button" id="playBtn" class="btn btn-play" onclick="toggleSmartLoop()"></button>
                 </div>
             </div>
 
@@ -1355,7 +1382,7 @@
                 <div class="review-echo-retake-inner">
                     <div id="review-echo-retake-title" class="review-echo-retake-title"></div>
                     <div class="review-echo-retake-actions">
-                        <button type="button" id="review-echo-retake-play-verse" class="review-echo-retake-btn review-echo-retake-btn-play">▶ استمع للمقطع</button>
+                        <button type="button" id="review-echo-retake-play-verse" class="review-echo-retake-btn review-echo-retake-btn-play">استمع للمقطع</button>
                     </div>
                     <div id="review-echo-retake-timer" class="review-echo-retake-timer review-echo-retake-timer-idle" aria-live="polite">00:00</div>
                     <button type="button" id="review-echo-retake-mic-btn" class="review-echo-retake-btn-mic" title="اضغط مع الاستمرار للتسجيل، أفلِت للإيقاف" aria-label="اضغط مع الاستمرار للتسجيل"><svg class="icon-mic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
@@ -2748,6 +2775,36 @@
         const REVIEW_ECHO_RETAKE_HINT_HOLD = '';
         const REVIEW_ECHO_RETAKE_HINT_TAIL_HOLD = 'استمع لباقي المقطع (حتى النهاية)، ثم اضغط مع الاستمرار على الميكروفون الأحمر للتسجيل، وأفلِت للإيقاف.';
         const ICON_MIC_HTML = '<svg class="icon-mic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>';
+        const IT9AN_ICO_PLAY = '<svg class="it9an-ico" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path fill="currentColor" d="M8 5v14l11-7z"/></svg>';
+        const IT9AN_ICO_PAUSE = '<svg class="it9an-ico" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path fill="currentColor" d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>';
+        const IT9AN_ICO_LOAD = '<svg class="it9an-ico it9an-ico-spin" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2.5" stroke-dasharray="42" stroke-dashoffset="12" stroke-linecap="round"/></svg>';
+        const IT9AN_ICO_WARN = '<svg class="it9an-ico" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path fill="currentColor" d="M12 2L1 21h22L12 2zm0 16c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm1-6h-2V7h2v5z"/></svg>';
+        const IT9AN_PP_LAYERS_INNER = '<span class="it9an-pp-layer it9an-pp-play" aria-hidden="true">' + IT9AN_ICO_PLAY + '</span>'
+            + '<span class="it9an-pp-layer it9an-pp-pause" aria-hidden="true">' + IT9AN_ICO_PAUSE + '</span>'
+            + '<span class="it9an-pp-layer it9an-pp-load" aria-hidden="true">' + IT9AN_ICO_LOAD + '</span>'
+            + '<span class="it9an-pp-layer it9an-pp-err" aria-hidden="true">' + IT9AN_ICO_WARN + '</span>';
+        const IT9AN_PLAY_ICON_ONLY = '<span class="it9an-pp-icononly" aria-hidden="true">' + IT9AN_ICO_PLAY + '</span>';
+        function it9anSetPpState(btn, state) {
+            if (!btn) return;
+            if (!btn.classList.contains('it9an-pp')) return;
+            btn.classList.remove('it9an-pp-state-play', 'it9an-pp-state-pause', 'it9an-pp-state-load', 'it9an-pp-state-err');
+            let s = 'play';
+            if (state === 'pause' || state === 'playing') s = 'pause';
+            else if (state === 'load' || state === 'loading') s = 'load';
+            else if (state === 'err' || state === 'error') s = 'err';
+            btn.classList.add('it9an-pp-state-' + s);
+        }
+        (function it9anInitStaticPlayControls() {
+            const pb = document.getElementById('playBtn');
+            if (pb && !pb.querySelector('.it9an-pp-play')) {
+                pb.classList.add('it9an-pp', 'it9an-pp-state-play');
+                pb.innerHTML = IT9AN_PP_LAYERS_INNER;
+            }
+            const ev = document.getElementById('review-echo-retake-play-verse');
+            if (ev && !ev.querySelector('.it9an-inline-play')) {
+                ev.innerHTML = '<span class="it9an-inline-play">' + IT9AN_ICO_PLAY + '</span> استمع للمقطع';
+            }
+        })();
 
         window.currentViewersData = { viewers: {}, totalRepetitions: 0 }; 
         
@@ -2829,7 +2886,7 @@
             }
             if (currentFeedAudioId) {
                 const btn = document.getElementById('btn-' + currentFeedAudioId);
-                if (btn) btn.innerText = "▶";
+                if (btn) it9anSetPpState(btn, 'play');
                 const seek = document.getElementById('seek-' + currentFeedAudioId);
                 if (seek) seek.value = 0;
                 currentFeedAudioId = null;
@@ -2857,7 +2914,7 @@
             const id = currentFeedAudioId;
             if (id) {
                 const btn = document.getElementById('btn-' + id);
-                if (btn) btn.innerText = "▶";
+                if (btn) it9anSetPpState(btn, 'play');
                 const myUid = localStorage.getItem('it9an_uid');
                 const myRole = localStorage.getItem('it9an_role');
                 if (myRole === 'student' && myUid && id.indexOf('-reply-') >= 0) {
@@ -2922,11 +2979,11 @@
             if (currentFeedAudioId === id) {
                 if (feedAudioEl.paused) {
                     it9anPlayUserClipFromUserGesture(feedAudioEl);
-                    document.getElementById('btn-' + id).innerText = "⏸";
+                    it9anSetPpState(document.getElementById('btn-' + id), 'pause');
                     requestWakeLock();
                 } else {
                     feedAudioEl.pause();
-                    document.getElementById('btn-' + id).innerText = "▶";
+                    it9anSetPpState(document.getElementById('btn-' + id), 'play');
                     releaseWakeLock();
                 }
                 return;
@@ -2935,14 +2992,14 @@
             stopLoop();
                 if (currentFeedAudioId) {
                     const oldBtn = document.getElementById('btn-' + currentFeedAudioId);
-                    if(oldBtn) oldBtn.innerText = "▶";
+                    if(oldBtn) it9anSetPpState(oldBtn, 'play');
                     const oldSeek = document.getElementById('seek-' + currentFeedAudioId);
                     if(oldSeek) oldSeek.value = 0;
                 }
                 
                 currentFeedAudioId = id;
                 const newBtn = document.getElementById('btn-' + id);
-                newBtn.innerText = "⏳";
+                it9anSetPpState(newBtn, 'load');
                 requestWakeLock();
 
                 let playUrl = url;
@@ -2960,12 +3017,12 @@
                 it9anNormalizeUserClipMediaElement(feedAudioEl);
                 void it9anEnsureUserRecPlaybackContextRunning();
                 feedAudioEl.play().then(() => {
-                    newBtn.innerText = "⏸";
+                    it9anSetPpState(newBtn, 'pause');
                     it9anKickUserRecPlaybackContextSync();
                     try { it9anIosKickAudioRouteToSpeakerAfterHeavyOp(); } catch (eKickAfterPlay) {}
                     void it9anEnsureUserRecPlaybackContextRunning();
                 }).catch(e => {
-                    newBtn.innerText = "⚠️";
+                    it9anSetPpState(newBtn, 'err');
                     console.log(e);
                 });
         }
@@ -2977,7 +3034,7 @@
         function restoreFeedPlayButtonState() {
             if (!currentFeedAudioId) return;
             const btn = document.getElementById('btn-' + currentFeedAudioId);
-            if (btn && !feedAudioEl.paused) btn.innerText = '⏸';
+            if (btn && !feedAudioEl.paused) it9anSetPpState(btn, 'pause');
         }
 
         const audioEl = document.getElementById('mainAudio');
@@ -3041,7 +3098,7 @@
                 isPaused = false;
                 releaseWakeLock();
                 const pbe = document.getElementById('playBtn');
-                if (pbe) pbe.innerText = '▶';
+                if (pbe) it9anSetPpState(pbe, 'play');
                 return;
             }
             const gapDur = audioEl.duration || 0;
@@ -4920,18 +4977,18 @@
                     playSection = `
                     <div class="lb-player-pair">
                         <div class="lb-row-play lb-player-stack">
-                            <button type="button" class="cp-btn" id="btn-${playIdMain}" onclick="playFeedAudio(window._lbRecordingsMainUrls[${idx}]||'','${playIdMain}')" title="تسجيل الطالب">▶</button>
+                            <button type="button" class="cp-btn it9an-pp it9an-pp-state-play" id="btn-${playIdMain}" onclick="playFeedAudio(window._lbRecordingsMainUrls[${idx}]||'','${playIdMain}')" title="تسجيل الطالب">${IT9AN_PP_LAYERS_INNER}</button>
                             <span class="lb-player-label" title="تسجيل الطالب">🎓</span>
                         </div>
                         <div class="lb-row-play lb-player-stack">
-                            <button type="button" class="cp-btn" id="btn-${playId}" onclick="playFeedAudio(window._lbRecordingsUrls[${idx}]||'','${playId}')" title="رد المعلم">▶</button>
+                            <button type="button" class="cp-btn it9an-pp it9an-pp-state-play" id="btn-${playId}" onclick="playFeedAudio(window._lbRecordingsUrls[${idx}]||'','${playId}')" title="رد المعلم">${IT9AN_PP_LAYERS_INNER}</button>
                             <span class="lb-player-label" title="رد المعلم">👨‍🏫</span>
                         </div>
                     </div>`;
                 } else {
                     playSection = `
                     <div class="lb-row-play custom-player lb-player-mini" style="flex:1; min-width:0;">
-                        <button type="button" class="cp-btn" id="btn-${playId}" onclick="playFeedAudio(window._lbRecordingsUrls[${idx}]||'','${playId}')">▶</button>
+                        <button type="button" class="cp-btn it9an-pp it9an-pp-state-play" id="btn-${playId}" onclick="playFeedAudio(window._lbRecordingsUrls[${idx}]||'','${playId}')">${IT9AN_PP_LAYERS_INNER}</button>
                     </div>`;
                 }
                 html += `
@@ -5616,8 +5673,8 @@
                     const hasTeacher = !!(r.teacherAudio);
                     const dateStr = fmtTs(r.timestamp);
                     const playBlock = hasTeacher
-                        ? '<div class="review-hist-player-pair"><div class="review-hist-stack"><button type="button" class="review-hist-play" onclick="reviewModalPlayHistoryStudent(' + i + ')" title="تسجيل الطالب">▶</button><span class="review-hist-icon">🎓</span></div><div class="review-hist-stack"><button type="button" class="review-hist-play review-hist-play-teacher" onclick="reviewModalPlayHistoryTeacher(' + i + ')" title="رد المعلم">▶</button><span class="review-hist-icon">👨‍🏫</span></div></div>'
-                        : '<div class="review-hist-player-pair"><div class="review-hist-stack"><button type="button" class="review-hist-play" onclick="reviewModalPlayHistoryStudent(' + i + ')" title="تسجيل الطالب">▶</button><span class="review-hist-icon">🎓</span></div></div>';
+                        ? '<div class="review-hist-player-pair"><div class="review-hist-stack"><button type="button" class="review-hist-play" onclick="reviewModalPlayHistoryStudent(' + i + ')" title="تسجيل الطالب">' + IT9AN_PLAY_ICON_ONLY + '</button><span class="review-hist-icon">🎓</span></div><div class="review-hist-stack"><button type="button" class="review-hist-play review-hist-play-teacher" onclick="reviewModalPlayHistoryTeacher(' + i + ')" title="رد المعلم">' + IT9AN_PLAY_ICON_ONLY + '</button><span class="review-hist-icon">👨‍🏫</span></div></div>'
+                        : '<div class="review-hist-player-pair"><div class="review-hist-stack"><button type="button" class="review-hist-play" onclick="reviewModalPlayHistoryStudent(' + i + ')" title="تسجيل الطالب">' + IT9AN_PLAY_ICON_ONLY + '</button><span class="review-hist-icon">🎓</span></div></div>';
                     html += '<div class="review-prev-row">' + playBlock + '<div class="review-prev-meta ' + vClass + '"><div class="review-prev-verdict">' + vLabel + '</div><div class="review-prev-date">' + dateStr + '</div></div></div>';
                 });
                 listEl.innerHTML = html;
@@ -7186,7 +7243,7 @@
                         let rListenBadge = (isStudentPost && rIsTeacher) ? (r.listenedByStudent ? '<span class="reply-listened-badge listened">تم الاستماع</span>' : '<span class="reply-listened-badge not-listened">لم يُستمع بعد</span>') : '';
 
                         let rDelWrap = rDeleteBtn ? `<div class="reply-delete-wrap">${rDeleteBtn}</div>` : '';
-                        const rPlayAndRemarks = `<div class="reply-play-remarks"><div class="reply-player-wrap"><div class="custom-player"><button class="cp-btn" id="btn-${rUniqueId}" onclick="playFeedAudio('${r.audioUrl}', '${rUniqueId}')">▶</button><input type="range" class="cp-slider" id="seek-${rUniqueId}" value="0" min="0" step="0.1" oninput="seekFeedAudio(this.value)"><span class="cp-time" id="time-${rUniqueId}">00:00</span></div></div><div class="reply-remarks-wrap">${rListenBadge}</div></div>`;
+                        const rPlayAndRemarks = `<div class="reply-play-remarks"><div class="reply-player-wrap"><div class="custom-player"><button type="button" class="cp-btn it9an-pp it9an-pp-state-play" id="btn-${rUniqueId}" onclick="playFeedAudio('${r.audioUrl}', '${rUniqueId}')">${IT9AN_PP_LAYERS_INNER}</button><input type="range" class="cp-slider" id="seek-${rUniqueId}" value="0" min="0" step="0.1" oninput="seekFeedAudio(this.value)"><span class="cp-time" id="time-${rUniqueId}">00:00</span></div></div><div class="reply-remarks-wrap">${rListenBadge}</div></div>`;
                         const rNameAndIcon = `<div class="reply-name-icon"><span class="reply-role-icon">${rRoleIcon}</span><span class="reply-name-badge">${stripYearFromName(r.name)}</span></div>`;
                         const isTeacherView = (userRole === 'teacher' || myUid === 'admin_super');
                         const rRow1Content = `${rPlayAndRemarks}<div class="reply-row1-right">${rNameAndIcon}</div>`;
@@ -7238,7 +7295,7 @@
                 const ratingStatusBadge = (!isTeacherViewStudent && ratingStatusText) ? `<span class="rating-status-badge ${ratingStatusClass}">${ratingStatusText}</span>` : '';
                 let delBtn = deleteBtnHtml ? `<div class="feed-delete-wrap">${deleteBtnHtml}</div>` : '';
                 const feedRow1Class = isTeacherViewStudent ? 'feed-row1 feed-row1-teacher' : 'feed-row1';
-                const playAndRemarks = `<div class="feed-play-remarks"><div class="feed-player-wrap"><div class="custom-player"><button class="cp-btn" id="btn-${d.id}" onclick="playFeedAudio('${d.audioUrl}', '${d.id}')">▶</button><input type="range" class="cp-slider" id="seek-${d.id}" value="0" min="0" step="0.1" oninput="seekFeedAudio(this.value)"><span class="cp-time" id="time-${d.id}">00:00</span></div></div><div class="feed-remarks-wrap">${ratingStatusBadge}</div></div>`;
+                const playAndRemarks = `<div class="feed-play-remarks"><div class="feed-player-wrap"><div class="custom-player"><button type="button" class="cp-btn it9an-pp it9an-pp-state-play" id="btn-${d.id}" onclick="playFeedAudio('${d.audioUrl}', '${d.id}')">${IT9AN_PP_LAYERS_INNER}</button><input type="range" class="cp-slider" id="seek-${d.id}" value="0" min="0" step="0.1" oninput="seekFeedAudio(this.value)"><span class="cp-time" id="time-${d.id}">00:00</span></div></div><div class="feed-remarks-wrap">${ratingStatusBadge}</div></div>`;
                 const iconNameSave = `<div class="feed-row1-right"><span class="feed-role-icon">${roleIcon}</span><div class="feed-name-badge">${stripYearFromName(d.name)}</div>${saveBtnHtml}</div>`;
                 const feedRow1ContentStudent = `<div class="feed-row1-left">${playAndRemarks}</div>${iconNameSave}`;
                 const feedRow1ContentTeacher = `<div class="feed-row1-left">${playAndRemarks}</div><div class="feed-row1-center">${mainActionHtml}</div>${iconNameSave}`;
@@ -7373,7 +7430,7 @@
                             let rRoleIcon = r.uid === 'admin_super' ? 'المسؤول' : (r.role === 'teacher' ? '👨‍🏫' : '🎓');
                             let rListenBadge = (isStudentPost && r.role === 'teacher') ? (r.listenedByStudent ? '<span class="reply-listened-badge listened">تم الاستماع</span>' : '<span class="reply-listened-badge not-listened">لم يُستمع بعد</span>') : '';
                             let rUniqueId = d.id + "-saved-reply-" + idx;
-                            repliesInner += `<div class="${rBoxClass}"><div class="reply-row1"><div class="reply-name-badge">${rRoleIcon} ${stripYearFromName(r.name || 'مستخدم')} ${rListenBadge}</div></div><div class="reply-row2">${rDateStr ? '<span class="reply-datetime">'+rDateStr+'</span>' : ''}<div class="reply-player-wrap"><div class="custom-player"><button class="cp-btn" id="btn-${rUniqueId}" onclick="playFeedAudio('${r.audioUrl}', '${rUniqueId}')">▶</button><input type="range" class="cp-slider" id="seek-${rUniqueId}" value="0" min="0" step="0.1" oninput="seekFeedAudio(this.value)"><span class="cp-time" id="time-${rUniqueId}">00:00</span></div></div></div></div>`;
+                            repliesInner += `<div class="${rBoxClass}"><div class="reply-row1"><div class="reply-name-badge">${rRoleIcon} ${stripYearFromName(r.name || 'مستخدم')} ${rListenBadge}</div></div><div class="reply-row2">${rDateStr ? '<span class="reply-datetime">'+rDateStr+'</span>' : ''}<div class="reply-player-wrap"><div class="custom-player"><button type="button" class="cp-btn it9an-pp it9an-pp-state-play" id="btn-${rUniqueId}" onclick="playFeedAudio('${r.audioUrl}', '${rUniqueId}')">${IT9AN_PP_LAYERS_INNER}</button><input type="range" class="cp-slider" id="seek-${rUniqueId}" value="0" min="0" step="0.1" oninput="seekFeedAudio(this.value)"><span class="cp-time" id="time-${rUniqueId}">00:00</span></div></div></div></div>`;
                         });
                         repliesHtml = `<div class="replies-wrapper">${repliesInner}</div>`;
                     }
@@ -7391,7 +7448,7 @@
                             ${savedRatingBadge}
                             <div class="feed-player-wrap">
                                 <div class="custom-player">
-                                    <button class="cp-btn" id="btn-saved-${d.id}" onclick="playFeedAudio('${d.audioUrl}', 'saved-${d.id}')">▶</button>
+                                    <button type="button" class="cp-btn it9an-pp it9an-pp-state-play" id="btn-saved-${d.id}" onclick="playFeedAudio('${d.audioUrl}', 'saved-${d.id}')">${IT9AN_PP_LAYERS_INNER}</button>
                                     <input type="range" class="cp-slider" id="seek-saved-${d.id}" value="0" min="0" step="0.1" oninput="seekFeedAudio(this.value)">
                                     <span class="cp-time" id="time-saved-${d.id}">00:00</span>
                                 </div>
@@ -9479,7 +9536,7 @@
                 timerElReset.classList.add('review-echo-retake-timer-idle');
             }
             if (hintReset) hintReset.textContent = REVIEW_ECHO_RETAKE_HINT_HOLD;
-            if (playBtnReset) playBtnReset.textContent = '▶ استمع للمقطع';
+            if (playBtnReset) playBtnReset.innerHTML = '<span class="it9an-inline-play">' + IT9AN_ICO_PLAY + '</span> استمع للمقطع';
             if (ov) {
                 ov.style.display = 'none';
                 ov.setAttribute('aria-hidden', 'true');
@@ -9676,11 +9733,11 @@
             if (isTailRetake) {
                 if (title) title.textContent = 'إعادة تسجيل بعد انتهاء المقطع';
                 if (hint) hint.textContent = REVIEW_ECHO_RETAKE_HINT_TAIL_HOLD;
-                if (playBtn) playBtn.textContent = '▶ استمع لباقي المقطع';
+                if (playBtn) playBtn.innerHTML = '<span class="it9an-inline-play">' + IT9AN_ICO_PLAY + '</span> استمع لباقي المقطع';
             } else {
                 if (title) title.textContent = 'إعادة تسجيل الجزء ' + (segIndex + 1);
                 if (hint) hint.textContent = REVIEW_ECHO_RETAKE_HINT_HOLD;
-                if (playBtn) playBtn.textContent = '▶ استمع للمقطع';
+                if (playBtn) playBtn.innerHTML = '<span class="it9an-inline-play">' + IT9AN_ICO_PLAY + '</span> استمع للمقطع';
             }
             const rtOpen = document.getElementById('review-echo-retake-timer');
             if (rtOpen) {
@@ -9850,7 +9907,7 @@
             pauseSecondsLeft = 0;
             audioEl.pause();
             const pb = document.getElementById('playBtn');
-            if (pb) pb.innerText = '▶';
+            if (pb) it9anSetPpState(pb, 'play');
             releaseWakeLock();
             if (echoHoldMediaRecorder && echoHoldMediaRecorder.state !== 'inactive') {
                 await stopEchoHoldSegmentRecording();
@@ -10454,13 +10511,13 @@
             isPlaying = true;
             isPaused = false;
             const pb = document.getElementById('playBtn');
-            if (pb) pb.innerText = '⏸';
+            if (pb) it9anSetPpState(pb, 'pause');
             requestWakeLock();
             pauseFeedAudio();
             audioEl.onended = function () { handleVerseAudioEnded().catch(() => {}); };
             audioEl.play().catch(() => {
                 isPlaying = false;
-                if (pb) pb.innerText = '▶';
+                if (pb) it9anSetPpState(pb, 'play');
                 releaseWakeLock();
             });
         }
@@ -10486,7 +10543,7 @@
             isPaused = true;
             releaseWakeLock();
             const pbClear = document.getElementById('playBtn');
-            if (pbClear) pbClear.innerText = '▶';
+            if (pbClear) it9anSetPpState(pbClear, 'play');
             const stPanel = document.getElementById('student-echo-sync-ui');
             const statusText = document.getElementById('student-echo-sync-status');
             const rt = document.getElementById('student-echo-sync-timer');
@@ -10548,7 +10605,7 @@
             isPlaying = false;
             isPaused = true;
             const pb = document.getElementById('playBtn');
-            if (pb) pb.innerText = '▶';
+            if (pb) it9anSetPpState(pb, 'play');
             releaseWakeLock();
             const prBtn = document.getElementById('studentVersePracticeBtn');
             if (prBtn) prBtn.classList.add('recording');
@@ -10576,7 +10633,7 @@
                     isPlaying = true;
                     isPaused = false;
                     const p2 = document.getElementById('playBtn');
-                    if (p2) p2.innerText = '⏸';
+                    if (p2) it9anSetPpState(p2, 'pause');
                     requestWakeLock();
                     audioEl.onended = function () { handleVerseAudioEnded().catch(() => {}); };
                     audioEl.play().catch(() => {});
@@ -10636,7 +10693,7 @@
                     isPlaying = true;
                     isPaused = false;
                     const pb = document.getElementById('playBtn');
-                    if (pb) pb.innerText = '⏸';
+                    if (pb) it9anSetPpState(pb, 'pause');
                     requestWakeLock();
                     audioEl.onended = function () { handleVerseAudioEnded().catch(() => {}); };
                     audioEl.play().catch(() => {});
@@ -10675,7 +10732,7 @@
                     isPaused = true;
                     releaseWakeLock();
                     const pb = document.getElementById('playBtn');
-                    if (pb) pb.innerText = '▶';
+                    if (pb) it9anSetPpState(pb, 'play');
                     return;
                 }
                 if (audioEl.paused && dur > 0 && t < dur - 0.05) {
@@ -11078,7 +11135,7 @@
                         isPlaying = true;
                         isPaused = false;
                         const pb = document.getElementById('playBtn');
-                        if (pb) pb.innerText = '⏸';
+                        if (pb) it9anSetPpState(pb, 'pause');
                         requestWakeLock();
                         audioEl.onended = function () { handleVerseAudioEnded().catch(() => {}); };
                         audioEl.play().catch(() => {});
@@ -11110,29 +11167,25 @@
         }
         function reviewModalResetYellowSideBtn() {
             const yBtn = document.getElementById('review-yellow-side-btn');
-            if (yBtn) yBtn.textContent = '▶';
+            if (yBtn) it9anSetPpState(yBtn, 'play');
         }
+        /** Gold-Button: zwischen Mix (مقطع+طالب) und reiner Schüler-Spur (يُرسَل) wechseln — ohne Play; großer Button spielt dann die gewählte Spur. */
         window.reviewModalToggleYellowMix = function() {
             const audio = document.getElementById('reviewAudio');
-            const yBtn = document.getElementById('review-yellow-side-btn');
+            const mainBtn = document.getElementById('review-play-btn');
             if (!audio || !_reviewMainYellowUrl || !reviewYellowEnabled) return;
-            if (!_reviewReviewPlayingYellow) {
-                audio.pause();
+            audio.pause();
+            if (_reviewReviewPlayingYellow) {
+                audio.src = _reviewMainGreenUrl;
+                audio.load();
+                _reviewReviewPlayingYellow = false;
+            } else {
                 audio.src = _reviewMainYellowUrl;
                 audio.load();
                 _reviewReviewPlayingYellow = true;
-                const mainBtn = document.getElementById('review-play-btn');
-                if (mainBtn) mainBtn.textContent = '▶';
-                it9anPrepareReviewAudioPlayback();
-                it9anPlayUserClipFromUserGesture(audio);
-                return;
             }
-            if (audio.paused) {
-                it9anPrepareReviewAudioPlayback();
-                it9anPlayUserClipFromUserGesture(audio);
-            } else {
-                audio.pause();
-            }
+            if (mainBtn) it9anSetPpState(mainBtn, 'play');
+            reviewModalResetYellowSideBtn();
         };
         window.reviewModalPlayMainGreen = function() {
             const audio = document.getElementById('reviewAudio');
@@ -11145,7 +11198,7 @@
             audio.load();
             it9anPrepareReviewAudioPlayback();
             it9anPlayUserClipFromUserGesture(audio);
-            if (btn) btn.textContent = '⏸';
+            if (btn) it9anSetPpState(btn, 'pause');
         };
         window.reviewModalPlayMainYellow = function() {
             if (!reviewYellowEnabled || !_reviewMainYellowUrl) return;
@@ -11156,7 +11209,7 @@
             audio.src = _reviewMainYellowUrl;
             audio.load();
             _reviewReviewPlayingYellow = true;
-            if (btn) btn.textContent = '▶';
+            if (btn) it9anSetPpState(btn, 'play');
             it9anPrepareReviewAudioPlayback();
             it9anPlayUserClipFromUserGesture(audio);
         };
@@ -11173,7 +11226,7 @@
             audio.load();
             it9anPrepareReviewAudioPlayback();
             it9anPlayUserClipFromUserGesture(audio);
-            if (btn) btn.textContent = '⏸';
+            if (btn) it9anSetPpState(btn, 'pause');
         };
         window.reviewModalPlayStripYellow = function(i) {
             if (typeof i === 'number' && _reviewStripStudentUrls && _reviewStripStudentUrls[i]) {
@@ -11187,7 +11240,7 @@
                 audio.load();
                 it9anPrepareReviewAudioPlayback();
                 it9anPlayUserClipFromUserGesture(audio);
-                if (btn) btn.textContent = '⏸';
+                if (btn) it9anSetPpState(btn, 'pause');
                 return;
             }
             if (!reviewYellowEnabled || !_reviewMainYellowUrl) return;
@@ -11206,7 +11259,7 @@
             audio.load();
             it9anPrepareReviewAudioPlayback();
             it9anPlayUserClipFromUserGesture(audio);
-            if (btn) btn.textContent = '⏸';
+            if (btn) it9anSetPpState(btn, 'pause');
         };
         window.reviewModalPlayStripStudent = function(i) {
             window.reviewModalPlayStripYellow(i);
@@ -11222,7 +11275,7 @@
             audio.load();
             it9anPrepareReviewAudioPlayback();
             it9anPlayUserClipFromUserGesture(audio);
-            if (btn) btn.textContent = '⏸';
+            if (btn) it9anSetPpState(btn, 'pause');
         };
         window.reviewModalPlayHistoryStudent = function(i) {
             const url = window._reviewHistStudentUrls && window._reviewHistStudentUrls[i];
@@ -11237,7 +11290,7 @@
             audio.load();
             it9anPrepareReviewAudioPlayback();
             it9anPlayUserClipFromUserGesture(audio);
-            if (btn) btn.textContent = '⏸';
+            if (btn) it9anSetPpState(btn, 'pause');
         };
         window.reviewModalPlayHistoryTeacher = function(i) {
             const url = window._reviewHistTeacherUrls && window._reviewHistTeacherUrls[i];
@@ -11252,7 +11305,7 @@
             audio.load();
             it9anPrepareReviewAudioPlayback();
             it9anPlayUserClipFromUserGesture(audio);
-            if (btn) btn.textContent = '⏸';
+            if (btn) it9anSetPpState(btn, 'pause');
         };
         function showReviewModal() {
             const modal = document.getElementById('review-modal');
@@ -11263,7 +11316,7 @@
             const reviewFid = recordingFileId != null ? recordingFileId : currentGlobalFileId;
             const isReply = !!replyTargetId;
             const verseImgHtml = !isReply && reviewFid != null ? `<img class="review-verse-img" src="${getAssetUrl(getVerseAssetPath(reviewFid) + '.png')}" alt="المقطع" onerror="verseImgFallback(this)">` : '';
-            const verseRefPlayHtml = (!isReply && reviewFid != null) ? `<div class="review-verse-ref-wrap"><button type="button" class="review-verse-ref-btn" onclick="reviewModalPlayVerseReference()" title="استمع للمقطع">▶ <span class="review-verse-ref-label">المقطع</span></button></div>` : '';
+            const verseRefPlayHtml = (!isReply && reviewFid != null) ? `<div class="review-verse-ref-wrap"><button type="button" class="review-verse-ref-btn" onclick="reviewModalPlayVerseReference()" title="استمع للمقطع"><span class="it9an-inline-play">${IT9AN_ICO_PLAY}</span><span class="review-verse-ref-label">المقطع</span></button></div>` : '';
             const showPrevPosts = !isReply && localStorage.getItem('it9an_role') === 'student';
             const prevPostsHtml = showPrevPosts ? `<div class="review-prev-posts-section" id="review-prev-posts-section"><div class="review-prev-posts-heading">تسجيلاتك السابقة لهذا المقطع</div><div id="review-prev-posts-list" class="review-prev-posts-list"><span class="review-prev-loading">جاري التحميل…</span></div></div>` : '';
             if (isReply) {
@@ -11276,7 +11329,7 @@
                 <div class="review-title">مراجعة الرد</div>
                 <div class="review-player-wrap">
                     <div class="custom-player">
-                        <button class="cp-btn" id="review-play-btn" onclick="toggleReviewAudio()">▶</button>
+                        <button type="button" class="cp-btn it9an-pp it9an-pp-state-play" id="review-play-btn" onclick="toggleReviewAudio()">${IT9AN_PP_LAYERS_INNER}</button>
                         <input type="range" class="cp-slider" id="review-seek" value="0" min="0" step="0.1" oninput="seekReviewAudio(this.value)">
                         <span class="cp-time" id="review-time">00:00</span>
                     </div>
@@ -11331,14 +11384,14 @@
                     const greenTitle = isTailStripRow
                         ? 'باقي المقطع: من نهاية آخر تسجيل أثناء المقطع حتى نهاية الصوت'
                         : 'جزء المقطع';
-                    const greenPart = `<button type="button" class="review-strip-play review-strip-green" onclick="reviewModalPlayStripVerse(${i})" title="${greenTitle}" aria-label="مقطع">▶</button>`;
+                    const greenPart = `<button type="button" class="review-strip-play review-strip-green" onclick="reviewModalPlayStripVerse(${i})" title="${greenTitle}" aria-label="مقطع">${IT9AN_PLAY_ICON_ONLY}</button>`;
                     const tailSegIndex = reviewEchoEditableRanges.length;
                     const retakePart = (retakeOk && !isTailStripRow && i < reviewEchoEditableRanges.length)
                         ? `<button type="button" class="review-strip-retake-btn" onclick="openReviewEchoSegmentRetake(${i})" title="إعادة تسجيل هذا الجزء">🔄 إعادة</button>`
                         : (retakeOk && isTailStripRow && reviewEchoEditableHasTail)
                         ? `<button type="button" class="review-strip-retake-btn" onclick="openReviewEchoSegmentRetake(${tailSegIndex})" title="إعادة تسجيل بعد انتهاء المقطع">🔄 إعادة</button>`
                         : '';
-                    return `<div class="review-strip-row"><span>${rowLabel}</span><div class="review-strip-btns">${greenPart}<button type="button" class="review-strip-play review-strip-yellow" onclick="reviewModalPlayStripStudent(${i})" title="تسجيل الطالب" aria-label="تلميذ">▶</button>${retakePart}</div></div>`;
+                    return `<div class="review-strip-row"><span>${rowLabel}</span><div class="review-strip-btns">${greenPart}<button type="button" class="review-strip-play review-strip-yellow" onclick="reviewModalPlayStripStudent(${i})" title="تسجيل الطالب" aria-label="تلميذ">${IT9AN_PLAY_ICON_ONLY}</button>${retakePart}</div></div>`;
                 }).join('');
             } else if (reviewStripSegmentBlobs.length > 0) {
                 reviewStripSegmentBlobs.forEach((b, i) => {
@@ -11348,9 +11401,9 @@
                     if (reviewYellowEnabled) {
                         const yDis = '';
                         const yExtra = '';
-                        stripsHtml += `<div class="review-strip-row"><span>تسجيل ${i + 1}</span><div class="review-strip-btns"><button type="button" class="review-strip-play review-strip-green" onclick="reviewModalPlayStripGreen(${i})" aria-label="أخضر">▶</button><button type="button" class="review-strip-play review-strip-yellow${yExtra}" onclick="reviewModalPlayStripYellow()" aria-label="أصفر" ${yDis}>▶</button></div></div>`;
+                        stripsHtml += `<div class="review-strip-row"><span>تسجيل ${i + 1}</span><div class="review-strip-btns"><button type="button" class="review-strip-play review-strip-green" onclick="reviewModalPlayStripGreen(${i})" aria-label="أخضر">${IT9AN_PLAY_ICON_ONLY}</button><button type="button" class="review-strip-play review-strip-yellow${yExtra}" onclick="reviewModalPlayStripYellow()" aria-label="أصفر" ${yDis}>${IT9AN_PLAY_ICON_ONLY}</button></div></div>`;
                     } else {
-                        stripsHtml += `<div class="review-strip-row"><span>تسجيل ${i + 1}</span><div class="review-strip-btns"><button type="button" class="review-strip-play review-strip-green" onclick="reviewModalPlayStripGreen(${i})" title="جزء من تسجيلك" aria-label="تسجيل">▶</button></div></div>`;
+                        stripsHtml += `<div class="review-strip-row"><span>تسجيل ${i + 1}</span><div class="review-strip-btns"><button type="button" class="review-strip-play review-strip-green" onclick="reviewModalPlayStripGreen(${i})" title="جزء من تسجيلك" aria-label="تسجيل">${IT9AN_PLAY_ICON_ONLY}</button></div></div>`;
                     }
                 });
             }
@@ -11360,18 +11413,23 @@
             const ySideDis = hasYellowQuickRow ? '' : 'disabled';
             const playerWrapClass = hasYellowQuickRow ? 'review-player-wrap review-player-with-echo-side' : 'review-player-wrap';
             const yellowSideBtnHtml = hasYellowQuickRow
-                ? `<button type="button" id="review-yellow-side-btn" class="review-yellow-side-btn" onclick="reviewModalToggleYellowMix()" title="المقطع + تسجيلات الطالب" aria-label="مقطع وتسجيل" ${ySideDis}>▶</button>`
+                ? `<button type="button" id="review-yellow-side-btn" class="review-yellow-side-btn it9an-pp it9an-pp-state-play" onclick="reviewModalToggleYellowMix()" title="تبديل: المقطع+التسجيلات ⇄ تسجيل الطالب فقط (يُرسَل)" aria-label="تبديل المسار" ${ySideDis}>${IT9AN_PP_LAYERS_INNER}</button>`
                 : '';
             const noteHtml = hasYellowQuickRow
                 ? (reviewEchoStripVerseBlobs && reviewEchoStripVerseBlobs.length > 0
-                    ? `<div class="review-note">▶ الزر الذهبي بجانب المشغّل: المقطع + تسجيلات الطالب بالتناوب (للاستماع فقط). ▶ المشغّل الكبير: تسجيلات الطالب فقط + فواصل — <strong>يُرسَل للمعلم</strong>. ▶ في كل صف جزئي: أخضر = جزء المقطع، أصفر = تسجيل الطالب.</div>`
-                    : `<div class="review-note">▶ الزر الذهبي: المقطع + التسجيلات (للاستماع فقط). ▶ المشغّل الكبير: تسجيلات الطالب فقط — <strong>يُرسَل للمعلم</strong>.</div>`)
+                    ? `<div class="review-note">• <strong>المشغّل الكبير:</strong> تشغيل/إيقاف المسار الحالي (افتراضياً: المقطع + تسجيلات الطالب). • <strong>الزر الذهبي:</strong> التبديل بين المقطع+التسجيلات وبين <strong>تسجيل الطالب فقط</strong> (ما يُرسَل للمعلم). • في كل صف جزئي: أخضر = جزء المقطع، أصفر = تسجيل الطالب.</div>`
+                    : `<div class="review-note">• <strong>المشغّل الكبير:</strong> تشغيل/إيقاف المسار الحالي (افتراضياً: المقطع + التسجيلات). • <strong>الزر الذهبي:</strong> التبديل بين ذلك وبين <strong>تسجيل الطالب فقط</strong> (ما يُرسَل للمعلم).</div>`)
                 : '';
 
-            audio.src = greenUrl;
+            if (_reviewMainYellowUrl) {
+                audio.src = _reviewMainYellowUrl;
+                _reviewReviewPlayingYellow = true;
+            } else {
+                audio.src = greenUrl;
+                _reviewReviewPlayingYellow = false;
+            }
             audio.muted = false;
             audio.volume = it9anAudioProfile.mediaElementVolume;
-            _reviewReviewPlayingYellow = false;
             _reviewVerseRefUrl = (reviewFid != null) ? getAssetUrl(getVerseAssetPath(reviewFid) + '.mp3') : '';
 
             content.innerHTML = `
@@ -11380,7 +11438,7 @@
                 ${verseRefPlayHtml}
                 <div class="${playerWrapClass}">
                     <div class="custom-player">
-                        <button class="cp-btn" id="review-play-btn" onclick="toggleReviewAudio()">▶</button>
+                        <button type="button" class="cp-btn it9an-pp it9an-pp-state-play" id="review-play-btn" onclick="toggleReviewAudio()">${IT9AN_PP_LAYERS_INNER}</button>
                         <input type="range" class="cp-slider" id="review-seek" value="0" min="0" step="0.1" oninput="seekReviewAudio(this.value)">
                         <span class="cp-time" id="review-time">00:00</span>
                     </div>
@@ -11424,38 +11482,26 @@
                 },
                 loadedmetadata: () => { seek.max = audio.duration; },
                 ended: () => {
-                    const yBtn = document.getElementById('review-yellow-side-btn');
-                    if (_reviewReviewPlayingYellow) {
-                        _reviewReviewPlayingYellow = false;
-                        if (yBtn) yBtn.textContent = '▶';
-                        if (_reviewMainGreenUrl) {
-                            audio.src = _reviewMainGreenUrl;
-                            audio.load();
-                        }
+                    const home = (_reviewMainYellowUrl && _reviewReviewPlayingYellow) ? _reviewMainYellowUrl : _reviewMainGreenUrl;
+                    if (home) {
+                        audio.src = home;
+                        audio.load();
                     }
-                    btn.textContent = '▶';
+                    it9anSetPpState(btn, 'play');
+                    const yBtn = document.getElementById('review-yellow-side-btn');
+                    if (yBtn) it9anSetPpState(yBtn, 'play');
                     seek.value = 0;
                     timeEl.textContent = '00:00';
                     void releaseWakeLock();
                 },
                 play: () => {
                     void requestWakeLock();
+                    it9anSetPpState(btn, 'pause');
                     const yBtn = document.getElementById('review-yellow-side-btn');
-                    if (_reviewReviewPlayingYellow) {
-                        btn.textContent = '▶';
-                        if (yBtn) yBtn.textContent = '⏸';
-                    } else {
-                        btn.textContent = '⏸';
-                        if (yBtn) yBtn.textContent = '▶';
-                    }
+                    if (yBtn) it9anSetPpState(yBtn, 'play');
                 },
                 pause: () => {
-                    const yBtn = document.getElementById('review-yellow-side-btn');
-                    if (_reviewReviewPlayingYellow) {
-                        if (yBtn) yBtn.textContent = '▶';
-                    } else {
-                        btn.textContent = '▶';
-                    }
+                    it9anSetPpState(btn, 'play');
                     void releaseWakeLock();
                 }
             };
@@ -11464,42 +11510,44 @@
             audio.addEventListener('ended', _reviewAudioHandlers.ended);
             audio.addEventListener('play', _reviewAudioHandlers.play);
             audio.addEventListener('pause', _reviewAudioHandlers.pause);
-            seek.value = 0; timeEl.textContent = '00:00'; btn.textContent = '▶';
+            seek.value = 0; timeEl.textContent = '00:00'; it9anSetPpState(btn, 'play');
         }
         window.toggleReviewAudio = function() {
             const audio = document.getElementById('reviewAudio');
             const btn = document.getElementById('review-play-btn');
             if (!audio || !btn) return;
             try { it9anIosKickAudioRouteToSpeakerAfterHeavyOp(); } catch (eRevKick) {}
-            if (_reviewMainGreenUrl) {
-                if (_reviewReviewPlayingYellow) {
+            function reviewActiveMainBlobUrl() {
+                if (_reviewMainYellowUrl && reviewYellowEnabled && _reviewReviewPlayingYellow) return _reviewMainYellowUrl;
+                return _reviewMainGreenUrl || '';
+            }
+            function audioIsOnReviewMainTrack() {
+                const u = audio.currentSrc || audio.src || '';
+                return !!u && (u === _reviewMainGreenUrl || (_reviewMainYellowUrl && u === _reviewMainYellowUrl));
+            }
+            const mainUrl = reviewActiveMainBlobUrl();
+            if (mainUrl) {
+                if (!audioIsOnReviewMainTrack()) {
                     audio.pause();
-                    audio.src = _reviewMainGreenUrl;
-                    audio.load();
-                    _reviewReviewPlayingYellow = false;
-                    reviewModalResetYellowSideBtn();
-                } else if (audio.src && audio.src !== _reviewMainGreenUrl) {
-                    /* Nach Teilstück-Play wieder vollständige Schüler-Aufnahme (grün) laden */
-                    audio.pause();
-                    audio.src = _reviewMainGreenUrl;
+                    audio.src = mainUrl;
                     audio.load();
                 }
                 if (audio.paused) {
                     it9anPrepareReviewAudioPlayback();
                     it9anPlayUserClipFromUserGesture(audio);
-                    btn.textContent = '⏸';
+                    it9anSetPpState(btn, 'pause');
                 } else {
                     audio.pause();
-                    btn.textContent = '▶';
+                    it9anSetPpState(btn, 'play');
                 }
             } else {
                 if (audio.paused) {
                     it9anPrepareReviewAudioPlayback();
                     it9anPlayUserClipFromUserGesture(audio);
-                    btn.textContent = '⏸';
+                    it9anSetPpState(btn, 'pause');
                 } else {
                     audio.pause();
-                    btn.textContent = '▶';
+                    it9anSetPpState(btn, 'play');
                 }
             }
         };
@@ -11727,12 +11775,13 @@
         }
 
         window.toggleSmartLoop = function() {
+            const playBtnEl = document.getElementById('playBtn');
             if (isPlaying) {
                 isPlaying = false; isPaused = true; audioEl.pause(); clearInterval(pauseInterval);
                 releaseWakeLock();
-                document.getElementById('playBtn').innerText = "▶";
+                it9anSetPpState(playBtnEl, 'play');
             } else {
-                isPlaying = true; isPaused = false; document.getElementById('playBtn').innerText = "⏸";
+                isPlaying = true; isPaused = false; it9anSetPpState(playBtnEl, 'pause');
                 requestWakeLock();
                 if (pauseSecondsLeft > 0) { startPauseCountdown(pauseSecondsLeft); }
                 else if (audioEl.currentTime > 0 && audioEl.currentTime < audioEl.duration) {
@@ -11773,7 +11822,7 @@
             releaseWakeLock();
             pauseFeedAudio();
             clearIt9anOsMediaSession();
-            document.getElementById('playBtn').innerText = "▶"; 
+            it9anSetPpState(document.getElementById('playBtn'), 'play');
         }
 
         window.goToMenu = function() { stopLoop(); stopRecordingAndReview();
