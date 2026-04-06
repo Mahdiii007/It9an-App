@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="إتقان">
     <!-- Wird von scripts/bump-app-version.sh mit derselben version wie app-version.json gesetzt (synchroner Deploy-Check, kein fetch → zuverlässig in Safari/PWA). -->
-    <meta name="it9an-deploy-version" content="it9an-1775511010-local-54674-f6f0411">
+    <meta name="it9an-deploy-version" content="it9an-1775511384-local-57730-74157fa">
     <link rel="manifest" href="manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap" rel="stylesheet">
     
@@ -2513,7 +2513,7 @@
         let lastRecStream = null, lastRecCtx = null;
         /**
          * Client: WebAudio vor MediaRecorder gleicht Geräte-Unterpegel aus. Cloud Function transcodeUploadAudio
-         * wendet auf alle uploads/* (inkl. echo_ / تسجيل متزامن) dasselbe zweiphasige loudnorm an (Ziel-I wie Cloud Function, derzeit −13 LUFS → .m4a).
+         * wendet auf alle uploads/* (inkl. echo_ / تسجيل متزامن) dasselbe zweiphasige loudnorm an (Ziel-I wie Cloud Function, derzeit −12 LUFS → .m4a).
          * Wiedergabe: Feed/Review-Nutzerclips direkt über <audio> auf Android+iOS (loudnorm); Desktop ggf. WebAudio-Boost. Kurs bleibt #mainAudio ohne diesen Clip-Boost.
          */
         const it9anAudioProfile = (function () {
@@ -2546,7 +2546,7 @@
                 syncMonitorPostMicOther: 1.52,
                 syncMonitorCap: 5.25,
                 /** Feed + Review: WebAudio-Gain nach MediaElementSource (kann >1; Kurs bleibt über #mainAudio ohne Boost). */
-                userRecordingPlaybackBoost: 2.72,
+                userRecordingPlaybackBoost: 3.05,
                 /**
                  * Android + iOS: MediaElementSource + gemeinsamer AudioContext — nach Fremd-App-Audio oft stummer Lauf bis PWA-Neustart.
                  * Direkter <audio>-Output (loudnorm-Clips); Verstärkung nur über mediaElementVolume (max. 1).

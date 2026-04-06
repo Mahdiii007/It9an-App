@@ -28,7 +28,7 @@ const PROJECT_ID = 'it9an-neu';
 const STORAGE_BUCKET = 'it9an-neu.firebasestorage.app';
 
 /** Muss mit functions/index.js (transcodeUploadAudio) übereinstimmen. */
-const LOUDNORM_I = -13;
+const LOUDNORM_I = -12;
 const LOUDNORM_TP = -1.5;
 const LOUDNORM_LRA = 11;
 

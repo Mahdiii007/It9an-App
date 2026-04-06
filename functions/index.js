@@ -59,11 +59,11 @@ function runFfmpegCollectStderr(args) {
 
 /**
  * EBU R128-kompatible Ziele (FFmpeg loudnorm, zweiphasig linear=true).
- * I=-13 LUFS: etwas höher als klassische -16, damit تسجيل عادي / تسجيل متزامن / رد عادي
- * näher an der subjektiven Lautheit von رد متزامن wirken (dort dichtes Mix-Material).
+ * I=-12 LUFS: näher an der wahrgenommenen Lautheit von رد متزامن (dichtes Mix) als klassische −16;
+ * dünnere Sprache (تسجيل عادي / تسجيل متزامن / رد عادي) wirkt sonst deutlich leiser.
  * TP in dBTP (True Peak), LRA in LU.
  */
-const LOUDNORM_I = -13;
+const LOUDNORM_I = -12;
 const LOUDNORM_TP = -1.5;
 const LOUDNORM_LRA = 11;
 
