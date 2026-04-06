@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="إتقان">
     <!-- Wird von scripts/bump-app-version.sh mit derselben version wie app-version.json gesetzt (synchroner Deploy-Check, kein fetch → zuverlässig in Safari/PWA). -->
-    <meta name="it9an-deploy-version" content="it9an-1775501706-local-67664-383caa1">
+    <meta name="it9an-deploy-version" content="it9an-1775503428-local-82889-574489f">
     <link rel="manifest" href="manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap" rel="stylesheet">
     
@@ -547,17 +547,21 @@
         .it9an-pp.it9an-pp-state-pause .it9an-pp-pause { display: flex; }
         .it9an-pp.it9an-pp-state-load .it9an-pp-load { display: flex; }
         .it9an-pp.it9an-pp-state-err .it9an-pp-err { display: flex; }
+        .cp-btn.it9an-pp,
+        .review-verse-ref-player .cp-btn.it9an-pp { color: #fff; }
         .cp-btn.it9an-pp .it9an-ico { width: 14px; height: 14px; }
         .feed-msg .cp-btn.it9an-pp .it9an-ico, .reply-box .cp-btn.it9an-pp .it9an-ico { width: 22px; height: 22px; }
+        .lb-player-mini .cp-btn.it9an-pp, .lb-player-stack .cp-btn.it9an-pp { color: #fff; }
         .lb-player-mini .cp-btn.it9an-pp .it9an-ico, .lb-player-stack .cp-btn.it9an-pp .it9an-ico { width: 14px; height: 14px; }
         .review-box .review-player-wrap .cp-btn.it9an-pp .it9an-ico { width: 40px; height: 40px; }
         .btn-play.it9an-pp { box-sizing: border-box; }
         .btn-play.it9an-pp .it9an-ico { width: 30px; height: 30px; }
         .review-yellow-side-btn.it9an-pp .it9an-ico { width: 24px; height: 24px; }
-        .review-strip-play .it9an-pp-icononly .it9an-ico { width: 18px; height: 18px; }
-        .review-hist-play .it9an-pp-icononly .it9an-ico { width: 18px; height: 18px; }
-        .review-verse-ref-btn .it9an-inline-play { display: inline-flex; align-items: center; vertical-align: middle; }
-        .review-verse-ref-btn .it9an-inline-play .it9an-ico { width: 1.15em; height: 1.15em; }
+        .review-strip-play.it9an-pp { font-size: 0; padding: 0; }
+        .review-hist-play.it9an-pp { font-size: 0; padding: 0; }
+        .review-verse-ref-wrap { width: 100%; margin: 0 0 10px 0; display: flex; justify-content: center; }
+        .review-verse-ref-player { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; direction: ltr; }
+        .review-verse-ref-player .review-verse-ref-label { font-size: 15px; font-weight: bold; color: var(--primary); }
         .review-echo-retake-btn-play { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: center; }
         .review-echo-retake-btn-play .it9an-inline-play { display: inline-flex; align-items: center; }
         .review-echo-retake-btn-play .it9an-inline-play .it9an-ico { width: 1.15em; height: 1.15em; }
@@ -836,6 +840,7 @@
         .review-box .review-player-wrap .cp-btn { width: 100px; height: 100px; border-radius: 50%; font-size: 40px; }
         .review-box .review-player-wrap .cp-slider, .review-box .review-player-wrap .cp-time { display: none !important; }
         .review-yellow-side-btn { width: 56px; height: 56px; min-width: 56px; flex-shrink: 0; border-radius: 50%; border: none; font-size: 22px; cursor: pointer; background: linear-gradient(180deg, #f1c40f 0%, #d4ac0d 100%); color: #222; box-shadow: 0 4px 12px rgba(0,0,0,0.15); font-family: inherit; display: flex; align-items: center; justify-content: center; }
+        .review-yellow-side-btn.it9an-pp { color: #222; }
         .review-yellow-side-btn:disabled { opacity: 0.45; cursor: not-allowed; }
         .review-box .review-note { font-size: 14px; color: #666; margin: 12px 0; text-align: center; line-height: 1.5; }
         .review-box .review-btns { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; }
@@ -850,14 +855,14 @@
         .review-strip-row:last-child { border-bottom: none; }
         .review-strip-btns { display: flex; gap: 8px; align-items: center; }
         .review-strip-play { width: 44px; height: 44px; border-radius: 50%; border: none; font-size: 18px; cursor: pointer; color: #fff; display: flex; align-items: center; justify-content: center; }
+        .review-strip-play.it9an-pp .it9an-ico { width: 18px; height: 18px; }
         .review-strip-play.review-strip-green { background: #27ae60; }
         .review-strip-play.review-strip-yellow { background: #f1c40f; color: #222; }
         .review-strip-play.review-btn-muted { background: #95a5a6 !important; color: #ecf0f1 !important; cursor: not-allowed; opacity: 0.55; }
         .review-strip-retake-btn { padding: 8px 12px; border-radius: 10px; border: 1px solid var(--primary); background: #fff; color: var(--primary); font-size: 14px; font-weight: bold; cursor: pointer; font-family: inherit; flex-shrink: 0; }
         .review-strip-retake-btn:active { opacity: 0.85; }
-        .review-verse-ref-wrap { width: 100%; margin: 0 0 10px 0; display: flex; justify-content: center; }
-        .review-verse-ref-btn { padding: 10px 20px; border-radius: 14px; border: 2px solid var(--primary); background: linear-gradient(180deg, #e8f5e9 0%, #c8e6c9 100%); color: var(--primary); font-size: 16px; font-weight: bold; cursor: pointer; font-family: inherit; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 2px 8px rgba(15,76,58,0.12); }
-        .review-verse-ref-btn:active { opacity: 0.9; transform: scale(0.98); }
+        .review-box .review-verse-ref-player .cp-btn.it9an-pp { width: 56px; height: 56px; border-radius: 50%; }
+        .review-box .review-verse-ref-player .cp-btn.it9an-pp .it9an-ico { width: 26px; height: 26px; }
         .review-prev-posts-section { width: 100%; margin-top: 16px; padding-top: 12px; border-top: 1px solid #e0e0e0; text-align: right; direction: rtl; }
         .review-prev-posts-heading { font-size: 15px; font-weight: bold; color: var(--primary); margin-bottom: 10px; }
         .review-prev-posts-list { max-height: 220px; overflow-y: auto; -webkit-overflow-scrolling: touch; margin-bottom: 4px; }
@@ -867,6 +872,7 @@
         .review-hist-stack { display: flex; flex-direction: column; align-items: center; gap: 3px; }
         .review-hist-play { width: 42px; height: 42px; border-radius: 50%; border: none; font-size: 16px; cursor: pointer; color: #fff; display: flex; align-items: center; justify-content: center; background: linear-gradient(180deg, #27ae60 0%, #1e8449 100%); box-shadow: 0 2px 6px rgba(0,0,0,0.12); font-family: inherit; }
         .review-hist-play.review-hist-play-teacher { background: linear-gradient(180deg, #2980b9 0%, #1f618d 100%); }
+        .review-hist-play.it9an-pp .it9an-ico { width: 18px; height: 18px; }
         .review-hist-play:disabled { background: #bdc3c7 !important; color: #ecf0f1 !important; cursor: not-allowed; opacity: 0.55; box-shadow: none; }
         .review-hist-icon { font-size: 12px; font-weight: bold; color: var(--primary); line-height: 1; }
         .review-prev-meta { flex: 1; min-width: 0; text-align: right; }
@@ -886,6 +892,10 @@
         .review-echo-retake-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
         .review-echo-retake-btn { padding: 12px 16px; border-radius: 12px; border: none; font-size: 16px; font-weight: bold; cursor: pointer; font-family: inherit; }
         .review-echo-retake-btn-play { background: #e8f5e9; color: #0f4c3a; }
+        .review-echo-retake-play-row { display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; direction: rtl; }
+        .review-echo-retake-play-label { font-size: 15px; font-weight: bold; color: var(--primary); }
+        .review-echo-retake-verse-pp { width: 52px; height: 52px; border-radius: 50%; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; background: linear-gradient(180deg, #27ae60 0%, #1e8449 100%); color: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.15); flex-shrink: 0; }
+        .review-echo-retake-verse-pp .it9an-ico { width: 22px; height: 22px; }
         .review-echo-retake-btn-mic { width: 72px; height: 72px; min-height: 0; padding: 0; margin: 8px auto; align-self: center; border-radius: 50%; border: 3px solid #b71c1c; background: linear-gradient(180deg, #e53935 0%, #c62828 100%); color: #fff; touch-action: none; user-select: none; -webkit-user-select: none; box-shadow: 0 4px 14px rgba(198,40,40,0.35); display: flex; align-items: center; justify-content: center; cursor: pointer; font-family: inherit; }
         .review-echo-retake-btn-mic .icon-mic { width: 32px; height: 32px; stroke: currentColor; }
         .review-echo-retake-btn-mic:active, .review-echo-retake-btn-mic.sync-hold-active { background: linear-gradient(180deg, #b71c1c 0%, #8e0000 100%); transform: scale(0.96); }
@@ -1381,8 +1391,9 @@
             <div id="review-echo-retake-overlay" aria-hidden="true">
                 <div class="review-echo-retake-inner">
                     <div id="review-echo-retake-title" class="review-echo-retake-title"></div>
-                    <div class="review-echo-retake-actions">
-                        <button type="button" id="review-echo-retake-play-verse" class="review-echo-retake-btn review-echo-retake-btn-play">استمع للمقطع</button>
+                    <div class="review-echo-retake-actions review-echo-retake-play-row">
+                        <span id="review-echo-retake-play-label" class="review-echo-retake-play-label">استمع للمقطع</span>
+                        <button type="button" id="review-echo-retake-play-verse" class="review-echo-retake-verse-pp it9an-pp it9an-pp-state-play" title="تشغيل / إيقاف" aria-label="استمع للمقطع"></button>
                     </div>
                     <div id="review-echo-retake-timer" class="review-echo-retake-timer review-echo-retake-timer-idle" aria-live="polite">00:00</div>
                     <button type="button" id="review-echo-retake-mic-btn" class="review-echo-retake-btn-mic" title="اضغط مع الاستمرار للتسجيل، أفلِت للإيقاف" aria-label="اضغط مع الاستمرار للتسجيل"><svg class="icon-mic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
@@ -1392,6 +1403,8 @@
                 </div>
             </div>
             <audio id="reviewAudio" style="display:none;" playsinline webkit-playsinline preload="metadata"></audio>
+            <audio id="reviewVerseAudio" style="display:none;" playsinline webkit-playsinline preload="metadata"></audio>
+            <audio id="reviewMixAudio" style="display:none;" playsinline webkit-playsinline preload="metadata"></audio>
         </div>
     </div>
 
@@ -2668,7 +2681,10 @@
         function it9anPrepareReviewAudioPlayback() {
             try { it9anIosKickAudioRouteToSpeakerAfterHeavyOp(); } catch (eS) {}
             it9anKickUserRecPlaybackContextSync();
-            it9anNormalizeUserClipMediaElement(document.getElementById('reviewAudio'));
+            ['reviewAudio', 'reviewVerseAudio', 'reviewMixAudio'].forEach(function(id) {
+                const el = document.getElementById(id);
+                if (el) it9anNormalizeUserClipMediaElement(el);
+            });
         }
         /** Nach Aufnahme-Ende: alle gehaltenen Mic-Streams + Kontext freigeben (inkl. macOS-Menüleiste). */
         async function forceReleaseRecordingPipeline() {
@@ -2753,8 +2769,6 @@
         /** Review-Modal: frühere Aufnahmen (Remote-URLs, keine Object-URLs) */
         window._reviewHistStudentUrls = [];
         window._reviewHistTeacherUrls = [];
-        /** Review: true wenn reviewAudio gerade den gelben Mix (Vers+Schüler) abspielt */
-        let _reviewReviewPlayingYellow = false;
         let reviewEchoStripVerseBlobs = [];
         let reviewEchoStripStudentBlobs = [];
         let reviewEchoEditableOrderedBlobs = [];
@@ -2801,8 +2815,8 @@
                 pb.innerHTML = IT9AN_PP_LAYERS_INNER;
             }
             const ev = document.getElementById('review-echo-retake-play-verse');
-            if (ev && !ev.querySelector('.it9an-inline-play')) {
-                ev.innerHTML = '<span class="it9an-inline-play">' + IT9AN_ICO_PLAY + '</span> استمع للمقطع';
+            if (ev && !ev.querySelector('.it9an-pp-play')) {
+                ev.innerHTML = IT9AN_PP_LAYERS_INNER;
             }
         })();
 
@@ -3059,6 +3073,8 @@
             }
             hook(feedAudioEl);
             hook(document.getElementById('reviewAudio'));
+            hook(document.getElementById('reviewVerseAudio'));
+            hook(document.getElementById('reviewMixAudio'));
         }
         it9anInstallUserClipResumeHooksForElements();
         const pBar = document.getElementById('progressBar');
@@ -3119,6 +3135,20 @@
                     if (srcHas) return true;
                 }
             } catch (e) {}
+            try {
+                const rv = document.getElementById('reviewVerseAudio');
+                if (rv && !rv.paused && !rv.ended) {
+                    const sh = (rv.src && String(rv.src).length > 0) || (rv.currentSrc && String(rv.currentSrc).length > 0);
+                    if (sh) return true;
+                }
+            } catch (eRv) {}
+            try {
+                const rm = document.getElementById('reviewMixAudio');
+                if (rm && !rm.paused && !rm.ended) {
+                    const sh = (rm.src && String(rm.src).length > 0) || (rm.currentSrc && String(rm.currentSrc).length > 0);
+                    if (sh) return true;
+                }
+            } catch (eRm) {}
             try {
                 const rva = document.getElementById('review-echo-retake-verse-audio');
                 if (rva && !rva.paused && !rva.ended) {
@@ -5673,8 +5703,8 @@
                     const hasTeacher = !!(r.teacherAudio);
                     const dateStr = fmtTs(r.timestamp);
                     const playBlock = hasTeacher
-                        ? '<div class="review-hist-player-pair"><div class="review-hist-stack"><button type="button" class="review-hist-play" onclick="reviewModalPlayHistoryStudent(' + i + ')" title="تسجيل الطالب">' + IT9AN_PLAY_ICON_ONLY + '</button><span class="review-hist-icon">🎓</span></div><div class="review-hist-stack"><button type="button" class="review-hist-play review-hist-play-teacher" onclick="reviewModalPlayHistoryTeacher(' + i + ')" title="رد المعلم">' + IT9AN_PLAY_ICON_ONLY + '</button><span class="review-hist-icon">👨‍🏫</span></div></div>'
-                        : '<div class="review-hist-player-pair"><div class="review-hist-stack"><button type="button" class="review-hist-play" onclick="reviewModalPlayHistoryStudent(' + i + ')" title="تسجيل الطالب">' + IT9AN_PLAY_ICON_ONLY + '</button><span class="review-hist-icon">🎓</span></div></div>';
+                        ? '<div class="review-hist-player-pair"><div class="review-hist-stack"><button type="button" class="review-hist-play it9an-pp it9an-pp-state-play" id="review-hist-stu-' + i + '" onclick="reviewModalToggleHistoryStudent(' + i + ')" title="تسجيل الطالب">' + IT9AN_PP_LAYERS_INNER + '</button><span class="review-hist-icon">🎓</span></div><div class="review-hist-stack"><button type="button" class="review-hist-play review-hist-play-teacher it9an-pp it9an-pp-state-play" id="review-hist-tea-' + i + '" onclick="reviewModalToggleHistoryTeacher(' + i + ')" title="رد المعلم">' + IT9AN_PP_LAYERS_INNER + '</button><span class="review-hist-icon">👨‍🏫</span></div></div>'
+                        : '<div class="review-hist-player-pair"><div class="review-hist-stack"><button type="button" class="review-hist-play it9an-pp it9an-pp-state-play" id="review-hist-stu-' + i + '" onclick="reviewModalToggleHistoryStudent(' + i + ')" title="تسجيل الطالب">' + IT9AN_PP_LAYERS_INNER + '</button><span class="review-hist-icon">🎓</span></div></div>';
                     html += '<div class="review-prev-row">' + playBlock + '<div class="review-prev-meta ' + vClass + '"><div class="review-prev-verdict">' + vLabel + '</div><div class="review-prev-date">' + dateStr + '</div></div></div>';
                 });
                 listEl.innerHTML = html;
@@ -9536,7 +9566,7 @@
                 timerElReset.classList.add('review-echo-retake-timer-idle');
             }
             if (hintReset) hintReset.textContent = REVIEW_ECHO_RETAKE_HINT_HOLD;
-            if (playBtnReset) playBtnReset.innerHTML = '<span class="it9an-inline-play">' + IT9AN_ICO_PLAY + '</span> استمع للمقطع';
+            if (playBtnReset) it9anSetPpState(playBtnReset, 'play');
             if (ov) {
                 ov.style.display = 'none';
                 ov.setAttribute('aria-hidden', 'true');
@@ -9569,10 +9599,18 @@
                     if (va.currentTime >= dur - 0.06) {
                         va.pause();
                         try { va.currentTime = startSec; } catch (e2) {}
+                        const pb = document.getElementById('review-echo-retake-play-verse');
+                        if (pb) it9anSetPpState(pb, 'play');
                     }
                 };
                 va.addEventListener('timeupdate', reviewEchoRetakeVerseTimeUpdateHandler);
-                va.play().catch(() => {});
+                const pr2 = va.play();
+                if (pr2 && typeof pr2.then === 'function') {
+                    pr2.then(function() {
+                        const pb = document.getElementById('review-echo-retake-play-verse');
+                        if (pb) it9anSetPpState(pb, 'pause');
+                    }).catch(function() {});
+                }
             }, { once: true });
         }
         function reviewRetakePlayVerseSlice() {
@@ -9600,19 +9638,39 @@
                     if (va.currentTime >= endSec - 0.02) {
                         va.pause();
                         try { va.currentTime = r.startSec; } catch (e) {}
+                        const pb = document.getElementById('review-echo-retake-play-verse');
+                        if (pb) it9anSetPpState(pb, 'play');
                     }
                 };
                 va.addEventListener('timeupdate', reviewEchoRetakeVerseTimeUpdateHandler);
-                va.play().catch(() => {});
+                const pr = va.play();
+                if (pr && typeof pr.then === 'function') {
+                    pr.then(function() {
+                        const pb = document.getElementById('review-echo-retake-play-verse');
+                        if (pb) it9anSetPpState(pb, 'pause');
+                    }).catch(function() {});
+                }
             }, { once: true });
         }
+        window.toggleReviewEchoRetakeVersePlay = function() {
+            const va = document.getElementById('review-echo-retake-verse-audio');
+            const playBtn = document.getElementById('review-echo-retake-play-verse');
+            if (!va || !playBtn) return;
+            if (!va.paused) {
+                va.pause();
+                it9anSetPpState(playBtn, 'play');
+                return;
+            }
+            if (reviewEchoRetakeIsTailPhase) reviewRetakePlayTailContextVerse();
+            else reviewRetakePlayVerseSlice();
+        };
         function bindReviewEchoRetakeOverlayOnce() {
             const playBtn = document.getElementById('review-echo-retake-play-verse');
             const micBtn = document.getElementById('review-echo-retake-mic-btn');
             const cancelBtn = document.getElementById('review-echo-retake-cancel');
             if (!playBtn || !micBtn || !cancelBtn || micBtn.dataset.retakeBound === '1') return;
             micBtn.dataset.retakeBound = '1';
-            playBtn.addEventListener('click', () => reviewRetakePlayVerseSlice());
+            playBtn.addEventListener('click', () => toggleReviewEchoRetakeVersePlay());
             cancelBtn.addEventListener('click', () => closeReviewEchoRetakeOverlay());
             micBtn.addEventListener('pointerdown', e => {
                 if (e.button !== 0) return;
@@ -9657,6 +9715,8 @@
             const mic = document.getElementById('review-echo-retake-mic-btn');
             const va = document.getElementById('review-echo-retake-verse-audio');
             if (va) va.pause();
+            const retakePb = document.getElementById('review-echo-retake-play-verse');
+            if (retakePb) it9anSetPpState(retakePb, 'play');
             reviewEchoRetakeBlobPromise = new Promise(resolve => { echoHoldRetakeResolve = resolve; });
             echoHoldCaptureMode = 'retake';
             reviewEchoRetakeHoldStarting = true;
@@ -9730,14 +9790,27 @@
             const title = document.getElementById('review-echo-retake-title');
             const hint = document.getElementById('review-echo-retake-hint');
             const playBtn = document.getElementById('review-echo-retake-play-verse');
+            const playLabel = document.getElementById('review-echo-retake-play-label');
             if (isTailRetake) {
                 if (title) title.textContent = 'إعادة تسجيل بعد انتهاء المقطع';
                 if (hint) hint.textContent = REVIEW_ECHO_RETAKE_HINT_TAIL_HOLD;
-                if (playBtn) playBtn.innerHTML = '<span class="it9an-inline-play">' + IT9AN_ICO_PLAY + '</span> استمع لباقي المقطع';
+                if (playLabel) playLabel.textContent = 'استمع لباقي المقطع';
+                if (playBtn) {
+                    if (!playBtn.querySelector('.it9an-pp-play')) playBtn.innerHTML = IT9AN_PP_LAYERS_INNER;
+                    it9anSetPpState(playBtn, 'play');
+                    playBtn.setAttribute('aria-label', 'استمع لباقي المقطع');
+                    playBtn.title = 'تشغيل / إيقاف';
+                }
             } else {
                 if (title) title.textContent = 'إعادة تسجيل الجزء ' + (segIndex + 1);
                 if (hint) hint.textContent = REVIEW_ECHO_RETAKE_HINT_HOLD;
-                if (playBtn) playBtn.innerHTML = '<span class="it9an-inline-play">' + IT9AN_ICO_PLAY + '</span> استمع للمقطع';
+                if (playLabel) playLabel.textContent = 'استمع للمقطع';
+                if (playBtn) {
+                    if (!playBtn.querySelector('.it9an-pp-play')) playBtn.innerHTML = IT9AN_PP_LAYERS_INNER;
+                    it9anSetPpState(playBtn, 'play');
+                    playBtn.setAttribute('aria-label', 'استمع للمقطع');
+                    playBtn.title = 'تشغيل / إيقاف';
+                }
             }
             const rtOpen = document.getElementById('review-echo-retake-timer');
             if (rtOpen) {
@@ -11163,36 +11236,138 @@
             _reviewVerseRefUrl = '';
             window._reviewHistStudentUrls = [];
             window._reviewHistTeacherUrls = [];
-            _reviewReviewPlayingYellow = false;
+            try {
+                const rv = document.getElementById('reviewVerseAudio');
+                const rm = document.getElementById('reviewMixAudio');
+                if (rv) { rv.pause(); rv.removeAttribute('src'); try { rv.load(); } catch (eL) {} }
+                if (rm) { rm.pause(); rm.removeAttribute('src'); try { rm.load(); } catch (eL2) {} }
+            } catch (eRv) {}
+        }
+        function reviewModalPauseReviewVerseAndMix() {
+            const va = document.getElementById('reviewVerseAudio');
+            const mix = document.getElementById('reviewMixAudio');
+            if (va && !va.paused) va.pause();
+            if (mix && !mix.paused) mix.pause();
+            const vb = document.getElementById('review-verse-play-btn');
+            if (vb) it9anSetPpState(vb, 'play');
+            reviewModalResetYellowSideBtn();
         }
         function reviewModalResetYellowSideBtn() {
+            const mix = document.getElementById('reviewMixAudio');
             const yBtn = document.getElementById('review-yellow-side-btn');
+            if (mix && !mix.paused) mix.pause();
             if (yBtn) it9anSetPpState(yBtn, 'play');
+            reviewModalResetStripMixRowPp();
         }
-        /** Gold-Button: zwischen Mix (مقطع+طالب) und reiner Schüler-Spur (يُرسَل) wechseln — ohne Play; großer Button spielt dann die gewählte Spur. */
-        window.reviewModalToggleYellowMix = function() {
+        function reviewModalReviewAudioIsMainStudentTrack(u) {
+            if (!_reviewMainGreenUrl) return true;
+            return !!u && u === _reviewMainGreenUrl;
+        }
+        function reviewModalResetAllStripHistPp() {
+            const root = document.getElementById('review-content');
+            if (!root) return;
+            root.querySelectorAll('.review-strip-play.it9an-pp:not(.review-strip-mix), .review-hist-play.it9an-pp').forEach(function(b) {
+                it9anSetPpState(b, 'play');
+            });
+        }
+        function reviewModalResetStripMixRowPp() {
+            const root = document.getElementById('review-content');
+            if (!root) return;
+            root.querySelectorAll('.review-strip-mix.it9an-pp').forEach(function(b) {
+                it9anSetPpState(b, 'play');
+            });
+        }
+        function reviewModalSyncStripHistPpFromReviewAudio() {
             const audio = document.getElementById('reviewAudio');
+            const root = document.getElementById('review-content');
+            if (!audio || !root) return;
+            const u = audio.currentSrc || audio.src || '';
+            const playing = !audio.paused && !audio.ended;
+            root.querySelectorAll('.review-strip-play.it9an-pp:not(.review-strip-mix)').forEach(function(b) {
+                const bid = b.id || '';
+                let expect = '';
+                const mV = /^review-strip-v-(\d+)$/.exec(bid);
+                const mS = /^review-strip-s-(\d+)$/.exec(bid);
+                const mG = /^review-strip-g-(\d+)$/.exec(bid);
+                if (mV) expect = _reviewStripVerseUrls[Number(mV[1])] || '';
+                else if (mS) expect = _reviewStripStudentUrls[Number(mS[1])] || '';
+                else if (mG) expect = _reviewStripGreenUrls[Number(mG[1])] || '';
+                it9anSetPpState(b, (playing && expect && expect === u) ? 'pause' : 'play');
+            });
+            root.querySelectorAll('.review-hist-play.it9an-pp').forEach(function(b) {
+                const bid = b.id || '';
+                let expect = '';
+                const mSt = /^review-hist-stu-(\d+)$/.exec(bid);
+                const mTe = /^review-hist-tea-(\d+)$/.exec(bid);
+                if (mSt) expect = window._reviewHistStudentUrls[Number(mSt[1])] || '';
+                else if (mTe) expect = window._reviewHistTeacherUrls[Number(mTe[1])] || '';
+                it9anSetPpState(b, (playing && expect && expect === u) ? 'pause' : 'play');
+            });
+        }
+        /** Gold-Button: Mix (مقطع+طالب) auf eigenem Audio — Play/Pause; großer grüner Button bleibt nur für تسجيل الطالب. */
+        window.reviewModalToggleYellowMix = function() {
+            const mix = document.getElementById('reviewMixAudio');
+            const yBtn = document.getElementById('review-yellow-side-btn');
+            if (!mix || !yBtn || !_reviewMainYellowUrl || !reviewYellowEnabled) return;
+            const ra = document.getElementById('reviewAudio');
+            const va = document.getElementById('reviewVerseAudio');
+            if (ra && !ra.paused) ra.pause();
+            if (va && !va.paused) va.pause();
             const mainBtn = document.getElementById('review-play-btn');
-            if (!audio || !_reviewMainYellowUrl || !reviewYellowEnabled) return;
-            audio.pause();
-            if (_reviewReviewPlayingYellow) {
-                audio.src = _reviewMainGreenUrl;
-                audio.load();
-                _reviewReviewPlayingYellow = false;
-            } else {
-                audio.src = _reviewMainYellowUrl;
-                audio.load();
-                _reviewReviewPlayingYellow = true;
+            if (mainBtn) it9anSetPpState(mainBtn, 'play');
+            const vb = document.getElementById('review-verse-play-btn');
+            if (vb) it9anSetPpState(vb, 'play');
+            try { it9anIosKickAudioRouteToSpeakerAfterHeavyOp(); } catch (eY) {}
+            if (mix.src !== _reviewMainYellowUrl) {
+                mix.pause();
+                mix.src = _reviewMainYellowUrl;
+                mix.load();
             }
+            it9anPrepareReviewAudioPlayback();
+            if (mix.paused || mix.ended) {
+                reviewModalResetAllStripHistPp();
+                it9anPlayUserClipFromUserGesture(mix);
+                it9anSetPpState(yBtn, 'pause');
+                document.querySelectorAll('#review-content .review-strip-mix.it9an-pp').forEach(function(b) {
+                    it9anSetPpState(b, 'pause');
+                });
+            } else {
+                mix.pause();
+                it9anSetPpState(yBtn, 'play');
+                reviewModalResetStripMixRowPp();
+            }
+        };
+        window.toggleReviewVerseAudio = function() {
+            const va = document.getElementById('reviewVerseAudio');
+            const vb = document.getElementById('review-verse-play-btn');
+            if (!va || !vb || !_reviewVerseRefUrl) return;
+            const ra = document.getElementById('reviewAudio');
+            const mix = document.getElementById('reviewMixAudio');
+            if (ra && !ra.paused) ra.pause();
+            if (mix && !mix.paused) mix.pause();
+            const mainBtn = document.getElementById('review-play-btn');
             if (mainBtn) it9anSetPpState(mainBtn, 'play');
             reviewModalResetYellowSideBtn();
+            try { it9anIosKickAudioRouteToSpeakerAfterHeavyOp(); } catch (eV) {}
+            if (va.src !== _reviewVerseRefUrl) {
+                va.pause();
+                va.src = _reviewVerseRefUrl;
+                va.load();
+            }
+            it9anPrepareReviewAudioPlayback();
+            if (va.paused || va.ended) {
+                it9anPlayUserClipFromUserGesture(va);
+                it9anSetPpState(vb, 'pause');
+            } else {
+                va.pause();
+                it9anSetPpState(vb, 'play');
+            }
         };
         window.reviewModalPlayMainGreen = function() {
             const audio = document.getElementById('reviewAudio');
             const btn = document.getElementById('review-play-btn');
             if (!audio || !_reviewMainGreenUrl) return;
-            _reviewReviewPlayingYellow = false;
-            reviewModalResetYellowSideBtn();
+            reviewModalPauseReviewVerseAndMix();
             audio.pause();
             audio.src = _reviewMainGreenUrl;
             audio.load();
@@ -11202,111 +11377,120 @@
         };
         window.reviewModalPlayMainYellow = function() {
             if (!reviewYellowEnabled || !_reviewMainYellowUrl) return;
-            const audio = document.getElementById('reviewAudio');
-            const btn = document.getElementById('review-play-btn');
-            if (!audio) return;
-            audio.pause();
-            audio.src = _reviewMainYellowUrl;
-            audio.load();
-            _reviewReviewPlayingYellow = true;
-            if (btn) it9anSetPpState(btn, 'play');
+            const mix = document.getElementById('reviewMixAudio');
+            const yBtn = document.getElementById('review-yellow-side-btn');
+            if (!mix || !yBtn) return;
+            const ra = document.getElementById('reviewAudio');
+            const va = document.getElementById('reviewVerseAudio');
+            if (ra && !ra.paused) ra.pause();
+            if (va && !va.paused) va.pause();
+            const mainBtn = document.getElementById('review-play-btn');
+            if (mainBtn) it9anSetPpState(mainBtn, 'play');
+            const vb = document.getElementById('review-verse-play-btn');
+            if (vb) it9anSetPpState(vb, 'play');
+            reviewModalResetAllStripHistPp();
+            if (mix.src !== _reviewMainYellowUrl) {
+                mix.pause();
+                mix.src = _reviewMainYellowUrl;
+                mix.load();
+            }
             it9anPrepareReviewAudioPlayback();
-            it9anPlayUserClipFromUserGesture(audio);
+            it9anPlayUserClipFromUserGesture(mix);
+            it9anSetPpState(yBtn, 'pause');
+            document.querySelectorAll('#review-content .review-strip-mix.it9an-pp').forEach(function(b) {
+                it9anSetPpState(b, 'pause');
+            });
         };
-        window.reviewModalPlayStripGreen = function(i) {
-            const url = _reviewStripGreenUrls[i];
+        window.reviewModalToggleStripClip = function(kind, i) {
+            let url = '';
+            let btnId = '';
+            if (kind === 'verse') {
+                url = _reviewStripVerseUrls && _reviewStripVerseUrls[i];
+                btnId = 'review-strip-v-' + i;
+            } else if (kind === 'student') {
+                url = _reviewStripStudentUrls && _reviewStripStudentUrls[i];
+                btnId = 'review-strip-s-' + i;
+            } else if (kind === 'green') {
+                url = _reviewStripGreenUrls[i];
+                btnId = 'review-strip-g-' + i;
+            }
             if (!url) return;
             const audio = document.getElementById('reviewAudio');
-            const btn = document.getElementById('review-play-btn');
+            const stripBtn = document.getElementById(btnId);
             if (!audio) return;
-            _reviewReviewPlayingYellow = false;
-            reviewModalResetYellowSideBtn();
+            const uCur = audio.currentSrc || audio.src || '';
+            if (uCur === url && !audio.paused) {
+                audio.pause();
+                if (stripBtn) it9anSetPpState(stripBtn, 'play');
+                return;
+            }
+            reviewModalPauseReviewVerseAndMix();
+            reviewModalResetStripMixRowPp();
             audio.pause();
             audio.src = url;
             audio.load();
             it9anPrepareReviewAudioPlayback();
             it9anPlayUserClipFromUserGesture(audio);
-            if (btn) it9anSetPpState(btn, 'pause');
+            reviewModalResetAllStripHistPp();
+            if (stripBtn) it9anSetPpState(stripBtn, 'pause');
         };
+        window.reviewModalPlayStripGreen = function(i) { window.reviewModalToggleStripClip('green', i); };
         window.reviewModalPlayStripYellow = function(i) {
             if (typeof i === 'number' && _reviewStripStudentUrls && _reviewStripStudentUrls[i]) {
-                const audio = document.getElementById('reviewAudio');
-                const btn = document.getElementById('review-play-btn');
-                if (!audio) return;
-                _reviewReviewPlayingYellow = false;
-                reviewModalResetYellowSideBtn();
-                audio.pause();
-                audio.src = _reviewStripStudentUrls[i];
-                audio.load();
-                it9anPrepareReviewAudioPlayback();
-                it9anPlayUserClipFromUserGesture(audio);
-                if (btn) it9anSetPpState(btn, 'pause');
+                window.reviewModalToggleStripClip('student', i);
                 return;
             }
             if (!reviewYellowEnabled || !_reviewMainYellowUrl) return;
-            window.reviewModalPlayMainYellow();
+            window.reviewModalToggleYellowMix();
         };
-        window.reviewModalPlayStripVerse = function(i) {
-            const url = _reviewStripVerseUrls && _reviewStripVerseUrls[i];
-            if (!url) return;
-            const audio = document.getElementById('reviewAudio');
-            const btn = document.getElementById('review-play-btn');
-            if (!audio) return;
-            _reviewReviewPlayingYellow = false;
-            reviewModalResetYellowSideBtn();
-            audio.pause();
-            audio.src = url;
-            audio.load();
-            it9anPrepareReviewAudioPlayback();
-            it9anPlayUserClipFromUserGesture(audio);
-            if (btn) it9anSetPpState(btn, 'pause');
-        };
-        window.reviewModalPlayStripStudent = function(i) {
-            window.reviewModalPlayStripYellow(i);
-        };
-        window.reviewModalPlayVerseReference = function() {
-            const audio = document.getElementById('reviewAudio');
-            const btn = document.getElementById('review-play-btn');
-            if (!audio || !_reviewVerseRefUrl) return;
-            _reviewReviewPlayingYellow = false;
-            reviewModalResetYellowSideBtn();
-            audio.pause();
-            audio.src = _reviewVerseRefUrl;
-            audio.load();
-            it9anPrepareReviewAudioPlayback();
-            it9anPlayUserClipFromUserGesture(audio);
-            if (btn) it9anSetPpState(btn, 'pause');
-        };
-        window.reviewModalPlayHistoryStudent = function(i) {
+        window.reviewModalPlayStripVerse = function(i) { window.reviewModalToggleStripClip('verse', i); };
+        window.reviewModalPlayStripStudent = function(i) { window.reviewModalPlayStripYellow(i); };
+        window.reviewModalToggleHistoryStudent = function(i) {
             const url = window._reviewHistStudentUrls && window._reviewHistStudentUrls[i];
             if (!url) return;
             const audio = document.getElementById('reviewAudio');
-            const btn = document.getElementById('review-play-btn');
+            const histBtn = document.getElementById('review-hist-stu-' + i);
             if (!audio) return;
-            _reviewReviewPlayingYellow = false;
-            reviewModalResetYellowSideBtn();
+            const uCur = audio.currentSrc || audio.src || '';
+            if (uCur === url && !audio.paused) {
+                audio.pause();
+                if (histBtn) it9anSetPpState(histBtn, 'play');
+                return;
+            }
+            reviewModalPauseReviewVerseAndMix();
+            reviewModalResetStripMixRowPp();
             audio.pause();
             audio.src = url;
             audio.load();
             it9anPrepareReviewAudioPlayback();
             it9anPlayUserClipFromUserGesture(audio);
-            if (btn) it9anSetPpState(btn, 'pause');
+            reviewModalResetAllStripHistPp();
+            if (histBtn) it9anSetPpState(histBtn, 'pause');
         };
-        window.reviewModalPlayHistoryTeacher = function(i) {
+        window.reviewModalToggleHistoryTeacher = function(i) {
             const url = window._reviewHistTeacherUrls && window._reviewHistTeacherUrls[i];
             if (!url) return;
             const audio = document.getElementById('reviewAudio');
-            const btn = document.getElementById('review-play-btn');
+            const histBtn = document.getElementById('review-hist-tea-' + i);
             if (!audio) return;
-            _reviewReviewPlayingYellow = false;
-            reviewModalResetYellowSideBtn();
+            const uCur = audio.currentSrc || audio.src || '';
+            if (uCur === url && !audio.paused) {
+                audio.pause();
+                if (histBtn) it9anSetPpState(histBtn, 'play');
+                return;
+            }
+            reviewModalPauseReviewVerseAndMix();
+            reviewModalResetStripMixRowPp();
             audio.pause();
             audio.src = url;
             audio.load();
             it9anPrepareReviewAudioPlayback();
             it9anPlayUserClipFromUserGesture(audio);
-            if (btn) it9anSetPpState(btn, 'pause');
+            reviewModalResetAllStripHistPp();
+            if (histBtn) it9anSetPpState(histBtn, 'pause');
         };
+        window.reviewModalPlayHistoryStudent = function(i) { window.reviewModalToggleHistoryStudent(i); };
+        window.reviewModalPlayHistoryTeacher = function(i) { window.reviewModalToggleHistoryTeacher(i); };
         function showReviewModal() {
             const modal = document.getElementById('review-modal');
             const audio = document.getElementById('reviewAudio');
@@ -11316,7 +11500,7 @@
             const reviewFid = recordingFileId != null ? recordingFileId : currentGlobalFileId;
             const isReply = !!replyTargetId;
             const verseImgHtml = !isReply && reviewFid != null ? `<img class="review-verse-img" src="${getAssetUrl(getVerseAssetPath(reviewFid) + '.png')}" alt="المقطع" onerror="verseImgFallback(this)">` : '';
-            const verseRefPlayHtml = (!isReply && reviewFid != null) ? `<div class="review-verse-ref-wrap"><button type="button" class="review-verse-ref-btn" onclick="reviewModalPlayVerseReference()" title="استمع للمقطع"><span class="it9an-inline-play">${IT9AN_ICO_PLAY}</span><span class="review-verse-ref-label">المقطع</span></button></div>` : '';
+            const verseRefPlayHtml = (!isReply && reviewFid != null) ? `<div class="review-verse-ref-wrap"><div class="review-verse-ref-player"><span class="review-verse-ref-label">المقطع</span><button type="button" class="cp-btn it9an-pp it9an-pp-state-play" id="review-verse-play-btn" onclick="toggleReviewVerseAudio()" title="تشغيل / إيقاف المقطع">${IT9AN_PP_LAYERS_INNER}</button></div></div>` : '';
             const showPrevPosts = !isReply && localStorage.getItem('it9an_role') === 'student';
             const prevPostsHtml = showPrevPosts ? `<div class="review-prev-posts-section" id="review-prev-posts-section"><div class="review-prev-posts-heading">تسجيلاتك السابقة لهذا المقطع</div><div id="review-prev-posts-list" class="review-prev-posts-list"><span class="review-prev-loading">جاري التحميل…</span></div></div>` : '';
             if (isReply) {
@@ -11384,14 +11568,14 @@
                     const greenTitle = isTailStripRow
                         ? 'باقي المقطع: من نهاية آخر تسجيل أثناء المقطع حتى نهاية الصوت'
                         : 'جزء المقطع';
-                    const greenPart = `<button type="button" class="review-strip-play review-strip-green" onclick="reviewModalPlayStripVerse(${i})" title="${greenTitle}" aria-label="مقطع">${IT9AN_PLAY_ICON_ONLY}</button>`;
+                    const greenPart = `<button type="button" class="review-strip-play review-strip-green it9an-pp it9an-pp-state-play" id="review-strip-v-${i}" onclick="reviewModalToggleStripClip('verse',${i})" title="${greenTitle}" aria-label="مقطع">${IT9AN_PP_LAYERS_INNER}</button>`;
                     const tailSegIndex = reviewEchoEditableRanges.length;
                     const retakePart = (retakeOk && !isTailStripRow && i < reviewEchoEditableRanges.length)
                         ? `<button type="button" class="review-strip-retake-btn" onclick="openReviewEchoSegmentRetake(${i})" title="إعادة تسجيل هذا الجزء">🔄 إعادة</button>`
                         : (retakeOk && isTailStripRow && reviewEchoEditableHasTail)
                         ? `<button type="button" class="review-strip-retake-btn" onclick="openReviewEchoSegmentRetake(${tailSegIndex})" title="إعادة تسجيل بعد انتهاء المقطع">🔄 إعادة</button>`
                         : '';
-                    return `<div class="review-strip-row"><span>${rowLabel}</span><div class="review-strip-btns">${greenPart}<button type="button" class="review-strip-play review-strip-yellow" onclick="reviewModalPlayStripStudent(${i})" title="تسجيل الطالب" aria-label="تلميذ">${IT9AN_PLAY_ICON_ONLY}</button>${retakePart}</div></div>`;
+                    return `<div class="review-strip-row"><span>${rowLabel}</span><div class="review-strip-btns">${greenPart}<button type="button" class="review-strip-play review-strip-yellow it9an-pp it9an-pp-state-play" id="review-strip-s-${i}" onclick="reviewModalToggleStripClip('student',${i})" title="تسجيل الطالب" aria-label="تلميذ">${IT9AN_PP_LAYERS_INNER}</button>${retakePart}</div></div>`;
                 }).join('');
             } else if (reviewStripSegmentBlobs.length > 0) {
                 reviewStripSegmentBlobs.forEach((b, i) => {
@@ -11401,9 +11585,9 @@
                     if (reviewYellowEnabled) {
                         const yDis = '';
                         const yExtra = '';
-                        stripsHtml += `<div class="review-strip-row"><span>تسجيل ${i + 1}</span><div class="review-strip-btns"><button type="button" class="review-strip-play review-strip-green" onclick="reviewModalPlayStripGreen(${i})" aria-label="أخضر">${IT9AN_PLAY_ICON_ONLY}</button><button type="button" class="review-strip-play review-strip-yellow${yExtra}" onclick="reviewModalPlayStripYellow()" aria-label="أصفر" ${yDis}>${IT9AN_PLAY_ICON_ONLY}</button></div></div>`;
+                        stripsHtml += `<div class="review-strip-row"><span>تسجيل ${i + 1}</span><div class="review-strip-btns"><button type="button" class="review-strip-play review-strip-green it9an-pp it9an-pp-state-play" id="review-strip-g-${i}" onclick="reviewModalToggleStripClip('green',${i})" aria-label="أخضر">${IT9AN_PP_LAYERS_INNER}</button><button type="button" class="review-strip-play review-strip-yellow review-strip-mix it9an-pp it9an-pp-state-play" onclick="reviewModalToggleYellowMix()" aria-label="أصفر" title="تشغيل / إيقاف المزيج" ${yDis}>${IT9AN_PP_LAYERS_INNER}</button></div></div>`;
                     } else {
-                        stripsHtml += `<div class="review-strip-row"><span>تسجيل ${i + 1}</span><div class="review-strip-btns"><button type="button" class="review-strip-play review-strip-green" onclick="reviewModalPlayStripGreen(${i})" title="جزء من تسجيلك" aria-label="تسجيل">${IT9AN_PLAY_ICON_ONLY}</button></div></div>`;
+                        stripsHtml += `<div class="review-strip-row"><span>تسجيل ${i + 1}</span><div class="review-strip-btns"><button type="button" class="review-strip-play review-strip-green it9an-pp it9an-pp-state-play" id="review-strip-g-${i}" onclick="reviewModalToggleStripClip('green',${i})" title="جزء من تسجيلك" aria-label="تسجيل">${IT9AN_PP_LAYERS_INNER}</button></div></div>`;
                     }
                 });
             }
@@ -11413,21 +11597,15 @@
             const ySideDis = hasYellowQuickRow ? '' : 'disabled';
             const playerWrapClass = hasYellowQuickRow ? 'review-player-wrap review-player-with-echo-side' : 'review-player-wrap';
             const yellowSideBtnHtml = hasYellowQuickRow
-                ? `<button type="button" id="review-yellow-side-btn" class="review-yellow-side-btn it9an-pp it9an-pp-state-play" onclick="reviewModalToggleYellowMix()" title="تبديل: المقطع+التسجيلات ⇄ تسجيل الطالب فقط (يُرسَل)" aria-label="تبديل المسار" ${ySideDis}>${IT9AN_PP_LAYERS_INNER}</button>`
+                ? `<button type="button" id="review-yellow-side-btn" class="review-yellow-side-btn it9an-pp it9an-pp-state-play" onclick="reviewModalToggleYellowMix()" title="تشغيل / إيقاف المزيج (المقطع + تسجيلك)" aria-label="تشغيل المزيج" ${ySideDis}>${IT9AN_PP_LAYERS_INNER}</button>`
                 : '';
             const noteHtml = hasYellowQuickRow
                 ? (reviewEchoStripVerseBlobs && reviewEchoStripVerseBlobs.length > 0
-                    ? `<div class="review-note">• <strong>المشغّل الكبير:</strong> تشغيل/إيقاف المسار الحالي (افتراضياً: المقطع + تسجيلات الطالب). • <strong>الزر الذهبي:</strong> التبديل بين المقطع+التسجيلات وبين <strong>تسجيل الطالب فقط</strong> (ما يُرسَل للمعلم). • في كل صف جزئي: أخضر = جزء المقطع، أصفر = تسجيل الطالب.</div>`
-                    : `<div class="review-note">• <strong>المشغّل الكبير:</strong> تشغيل/إيقاف المسار الحالي (افتراضياً: المقطع + التسجيلات). • <strong>الزر الذهبي:</strong> التبديل بين ذلك وبين <strong>تسجيل الطالب فقط</strong> (ما يُرسَل للمعلم).</div>`)
+                    ? `<div class="review-note">• <strong>المشغّل الأخضر الكبير:</strong> تسجيل الطالب فقط (الجزء المُركّب أو ما يُرسَل). • <strong>الزر الذهبي:</strong> تشغيل/إيقاف <strong>المزيج</strong> (المقطع مع تسجيلك). • زر <strong>المقطع</strong> فوق الصورة: استماع لمرجع المقطع فقط. • في كل صف: أخضر = جزء المقطع، أصفر = تسجيل الطالب.</div>`
+                    : `<div class="review-note">• <strong>المشغّل الأخضر الكبير:</strong> تسجيل الطالب فقط. • <strong>الزر الذهبي:</strong> تشغيل/إيقاف <strong>المزيج</strong> (المقطع مع تسجيلاتك). • زر <strong>المقطع</strong>: مرجع الصوت فقط.</div>`)
                 : '';
 
-            if (_reviewMainYellowUrl) {
-                audio.src = _reviewMainYellowUrl;
-                _reviewReviewPlayingYellow = true;
-            } else {
-                audio.src = greenUrl;
-                _reviewReviewPlayingYellow = false;
-            }
+            audio.src = greenUrl;
             audio.muted = false;
             audio.volume = it9anAudioProfile.mediaElementVolume;
             _reviewVerseRefUrl = (reviewFid != null) ? getAssetUrl(getVerseAssetPath(reviewFid) + '.mp3') : '';
@@ -11459,6 +11637,8 @@
             }
         }
         let _reviewAudioHandlers = null;
+        let _reviewMixHandlers = null;
+        let _reviewVerseHandlers = null;
         function setupReviewAudioListeners() {
             const audio = document.getElementById('reviewAudio');
             const seek = document.getElementById('review-seek');
@@ -11482,26 +11662,32 @@
                 },
                 loadedmetadata: () => { seek.max = audio.duration; },
                 ended: () => {
-                    const home = (_reviewMainYellowUrl && _reviewReviewPlayingYellow) ? _reviewMainYellowUrl : _reviewMainGreenUrl;
+                    const home = _reviewMainGreenUrl;
                     if (home) {
                         audio.src = home;
                         audio.load();
                     }
                     it9anSetPpState(btn, 'play');
-                    const yBtn = document.getElementById('review-yellow-side-btn');
-                    if (yBtn) it9anSetPpState(yBtn, 'play');
+                    reviewModalResetAllStripHistPp();
                     seek.value = 0;
                     timeEl.textContent = '00:00';
                     void releaseWakeLock();
                 },
                 play: () => {
                     void requestWakeLock();
-                    it9anSetPpState(btn, 'pause');
+                    const u = audio.currentSrc || audio.src || '';
+                    if (reviewModalReviewAudioIsMainStudentTrack(u)) {
+                        it9anSetPpState(btn, 'pause');
+                    } else {
+                        it9anSetPpState(btn, 'play');
+                    }
                     const yBtn = document.getElementById('review-yellow-side-btn');
                     if (yBtn) it9anSetPpState(yBtn, 'play');
+                    reviewModalSyncStripHistPpFromReviewAudio();
                 },
                 pause: () => {
                     it9anSetPpState(btn, 'play');
+                    reviewModalSyncStripHistPpFromReviewAudio();
                     void releaseWakeLock();
                 }
             };
@@ -11511,23 +11697,66 @@
             audio.addEventListener('play', _reviewAudioHandlers.play);
             audio.addEventListener('pause', _reviewAudioHandlers.pause);
             seek.value = 0; timeEl.textContent = '00:00'; it9anSetPpState(btn, 'play');
+            reviewModalResetAllStripHistPp();
+            const mix = document.getElementById('reviewMixAudio');
+            const yBtn = document.getElementById('review-yellow-side-btn');
+            if (_reviewMixHandlers && _reviewMixHandlers.el) {
+                _reviewMixHandlers.el.removeEventListener('ended', _reviewMixHandlers.ended);
+                _reviewMixHandlers.el.removeEventListener('play', _reviewMixHandlers.play);
+                _reviewMixHandlers.el.removeEventListener('pause', _reviewMixHandlers.pause);
+            }
+            _reviewMixHandlers = null;
+            if (mix && yBtn) {
+                _reviewMixHandlers = {
+                    el: mix,
+                    ended: () => { it9anSetPpState(yBtn, 'play'); reviewModalResetStripMixRowPp(); void releaseWakeLock(); },
+                    play: () => { void requestWakeLock(); },
+                    pause: () => { void releaseWakeLock(); }
+                };
+                mix.addEventListener('ended', _reviewMixHandlers.ended);
+                mix.addEventListener('play', _reviewMixHandlers.play);
+                mix.addEventListener('pause', _reviewMixHandlers.pause);
+            }
+            const va = document.getElementById('reviewVerseAudio');
+            const vb = document.getElementById('review-verse-play-btn');
+            if (_reviewVerseHandlers && _reviewVerseHandlers.el) {
+                _reviewVerseHandlers.el.removeEventListener('ended', _reviewVerseHandlers.ended);
+                _reviewVerseHandlers.el.removeEventListener('play', _reviewVerseHandlers.play);
+                _reviewVerseHandlers.el.removeEventListener('pause', _reviewVerseHandlers.pause);
+            }
+            _reviewVerseHandlers = null;
+            if (va && vb) {
+                _reviewVerseHandlers = {
+                    el: va,
+                    ended: () => { it9anSetPpState(vb, 'play'); void releaseWakeLock(); },
+                    play: () => { void requestWakeLock(); },
+                    pause: () => { void releaseWakeLock(); }
+                };
+                va.addEventListener('ended', _reviewVerseHandlers.ended);
+                va.addEventListener('play', _reviewVerseHandlers.play);
+                va.addEventListener('pause', _reviewVerseHandlers.pause);
+            }
         }
         window.toggleReviewAudio = function() {
             const audio = document.getElementById('reviewAudio');
             const btn = document.getElementById('review-play-btn');
             if (!audio || !btn) return;
             try { it9anIosKickAudioRouteToSpeakerAfterHeavyOp(); } catch (eRevKick) {}
-            function reviewActiveMainBlobUrl() {
-                if (_reviewMainYellowUrl && reviewYellowEnabled && _reviewReviewPlayingYellow) return _reviewMainYellowUrl;
-                return _reviewMainGreenUrl || '';
-            }
-            function audioIsOnReviewMainTrack() {
+            const mix = document.getElementById('reviewMixAudio');
+            const va = document.getElementById('reviewVerseAudio');
+            if (mix && !mix.paused) mix.pause();
+            if (va && !va.paused) va.pause();
+            const vb = document.getElementById('review-verse-play-btn');
+            if (vb) it9anSetPpState(vb, 'play');
+            reviewModalResetYellowSideBtn();
+            reviewModalResetAllStripHistPp();
+            function audioIsOnMainStudentTrack() {
                 const u = audio.currentSrc || audio.src || '';
-                return !!u && (u === _reviewMainGreenUrl || (_reviewMainYellowUrl && u === _reviewMainYellowUrl));
+                return !!u && u === _reviewMainGreenUrl;
             }
-            const mainUrl = reviewActiveMainBlobUrl();
+            const mainUrl = _reviewMainGreenUrl || '';
             if (mainUrl) {
-                if (!audioIsOnReviewMainTrack()) {
+                if (!audioIsOnMainStudentTrack()) {
                     audio.pause();
                     audio.src = mainUrl;
                     audio.load();
@@ -11560,6 +11789,12 @@
             closeReviewEchoRetakeOverlay();
             const ra = document.getElementById('reviewAudio');
             if (ra) { ra.pause(); ra.src = ''; }
+            try {
+                const rv = document.getElementById('reviewVerseAudio');
+                const rm = document.getElementById('reviewMixAudio');
+                if (rv) { rv.pause(); rv.src = ''; }
+                if (rm) { rm.pause(); rm.src = ''; }
+            } catch (eRv) {}
             revokeReviewModalObjectUrls();
             document.getElementById('review-modal').style.display = 'none';
             await forceReleaseRecordingPipeline();
@@ -11722,6 +11957,12 @@
             clearReviewEchoEditableState();
             const ra = document.getElementById('reviewAudio');
             if (ra) { ra.pause(); ra.src = ''; }
+            try {
+                const rv = document.getElementById('reviewVerseAudio');
+                const rm = document.getElementById('reviewMixAudio');
+                if (rv) { rv.pause(); rv.src = ''; }
+                if (rm) { rm.pause(); rm.src = ''; }
+            } catch (eRv) {}
             revokeReviewModalObjectUrls();
             reviewBlobGreen = null;
             reviewBlobYellow = null;
@@ -11756,6 +11997,12 @@
             clearReviewEchoEditableState();
             const ra = document.getElementById('reviewAudio');
             if (ra) { ra.pause(); ra.src = ''; }
+            try {
+                const rv = document.getElementById('reviewVerseAudio');
+                const rm = document.getElementById('reviewMixAudio');
+                if (rv) { rv.pause(); rv.src = ''; }
+                if (rm) { rm.pause(); rm.src = ''; }
+            } catch (eRv) {}
             revokeReviewModalObjectUrls();
             reviewBlobGreen = null;
             reviewBlobYellow = null;
@@ -12323,9 +12570,13 @@
                 const mainA = document.getElementById('mainAudio');
                 const feedA = document.getElementById('feedAudio');
                 const reviewA = document.getElementById('reviewAudio');
+                const reviewV = document.getElementById('reviewVerseAudio');
+                const reviewM = document.getElementById('reviewMixAudio');
                 if (mainA && !mainA.paused) mainA.pause();
                 if (feedA && !feedA.paused) feedA.pause();
                 if (reviewA && !reviewA.paused) reviewA.pause();
+                if (reviewV && !reviewV.paused) reviewV.pause();
+                if (reviewM && !reviewM.paused) reviewM.pause();
                 pauseFeedAudio();
             } catch(e) {}
         }
@@ -12391,6 +12642,18 @@
                     rev.removeAttribute('src');
                     try { rev.load(); } catch (eL) {}
                 }
+                const revV = document.getElementById('reviewVerseAudio');
+                const revM = document.getElementById('reviewMixAudio');
+                if (revV) {
+                    revV.pause();
+                    revV.removeAttribute('src');
+                    try { revV.load(); } catch (eLV) {}
+                }
+                if (revM) {
+                    revM.pause();
+                    revM.removeAttribute('src');
+                    try { revM.load(); } catch (eLM) {}
+                }
             } catch (e1) {}
             const skipW = it9anAudioProfile.skipWebAudioUserClipRouting;
             if (!skipW && it9anUserRecPbCtx && it9anUserRecPbCtx.state !== 'closed') {
@@ -12407,12 +12670,18 @@
             const modalOpen = reviewModal && (reviewModal.style.display === 'flex' || reviewModal.style.display === 'block');
             try {
                 it9anReplaceClipAudioDomNode('feedAudio', true);
-                if (!modalOpen) it9anReplaceClipAudioDomNode('reviewAudio', false);
+                if (!modalOpen) {
+                    it9anReplaceClipAudioDomNode('reviewAudio', false);
+                    it9anReplaceClipAudioDomNode('reviewVerseAudio', false);
+                    it9anReplaceClipAudioDomNode('reviewMixAudio', false);
+                }
                 it9anAttachFeedAudioElementListeners();
                 it9anInstallUserClipResumeHooksForElements();
                 it9anApplyDefaultPlaybackVolumes();
                 it9anNormalizeUserClipMediaElement(feedAudioEl);
                 it9anNormalizeUserClipMediaElement(document.getElementById('reviewAudio'));
+                it9anNormalizeUserClipMediaElement(document.getElementById('reviewVerseAudio'));
+                it9anNormalizeUserClipMediaElement(document.getElementById('reviewMixAudio'));
             } catch (e3) {}
         }
         function it9anMaybeHardResetClipPlaybackAfterForeground() {
@@ -12495,6 +12764,8 @@
                     it9anApplyDefaultPlaybackVolumes();
                     it9anNormalizeUserClipMediaElement(feedAudioEl);
                     it9anNormalizeUserClipMediaElement(document.getElementById('reviewAudio'));
+                    it9anNormalizeUserClipMediaElement(document.getElementById('reviewVerseAudio'));
+                    it9anNormalizeUserClipMediaElement(document.getElementById('reviewMixAudio'));
                     const ma = document.getElementById('mainAudio');
                     if (ma) ma.muted = false;
                 }
