@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="إتقان">
     <!-- Wird von scripts/bump-app-version.sh mit derselben version wie app-version.json gesetzt (synchroner Deploy-Check, kein fetch → zuverlässig in Safari/PWA). -->
-    <meta name="it9an-deploy-version" content="it9an-1775516305-local-95651-50081ec">
+    <meta name="it9an-deploy-version" content="it9an-1775516795-local-913-d40fc02">
     <link rel="manifest" href="manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap" rel="stylesheet">
     
@@ -1399,16 +1399,16 @@
                     <button type="button" id="review-echo-retake-mic-btn" class="review-echo-retake-btn-mic" title="اضغط مع الاستمرار للتسجيل، أفلِت للإيقاف" aria-label="اضغط مع الاستمرار للتسجيل"><svg class="icon-mic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
                     <p id="review-echo-retake-hint" class="review-echo-retake-hint review-echo-retake-hint-below-mic"></p>
                     <button type="button" id="review-echo-retake-cancel" class="review-echo-retake-btn review-echo-retake-btn-cancel">إلغاء</button>
-                    <audio id="review-echo-retake-verse-audio" playsinline webkit-playsinline preload="metadata" style="display:none;"></audio>
+                    <audio id="review-echo-retake-verse-audio" crossorigin="anonymous" playsinline webkit-playsinline preload="metadata" style="display:none;"></audio>
                 </div>
             </div>
-            <audio id="reviewAudio" style="display:none;" playsinline webkit-playsinline preload="metadata"></audio>
-            <audio id="reviewVerseAudio" style="display:none;" playsinline webkit-playsinline preload="metadata"></audio>
-            <audio id="reviewMixAudio" style="display:none;" playsinline webkit-playsinline preload="metadata"></audio>
+            <audio id="reviewAudio" crossorigin="anonymous" style="display:none;" playsinline webkit-playsinline preload="metadata"></audio>
+            <audio id="reviewVerseAudio" crossorigin="anonymous" style="display:none;" playsinline webkit-playsinline preload="metadata"></audio>
+            <audio id="reviewMixAudio" crossorigin="anonymous" style="display:none;" playsinline webkit-playsinline preload="metadata"></audio>
         </div>
     </div>
 
-    <audio id="feedAudio" preload="none" playsinline webkit-playsinline></audio>
+    <audio id="feedAudio" crossorigin="anonymous" preload="none" playsinline webkit-playsinline></audio>
 
     <div class="footer" id="appFooter" style="display:none;">
         <div class="progress-container" style="display:none;">
@@ -2709,24 +2709,47 @@
             }
         }
         /**
-         * Feed/Review-Clips: play() muss im selben synchronen User-Gesture wie ctx.resume() starten
-         * (sonst nach App-Wechsel / anderer Audio-App oft stummer Lauf trotz UI „spielt“; PWA-Neustart half bisher).
+         * Feed/Review-Clips: bei WebAudio-Routing leitet MediaElementSource nur über den Kontext —
+         * iOS/WebKit: zuerst ctx.resume() (Promise), dann play(); sonst oft stummer Lauf trotz „spielt“.
          */
         function it9anPlayUserClipFromUserGesture(el) {
             if (!el) return;
             try {
                 try { it9anIosKickAudioRouteToSpeakerAfterHeavyOp(); } catch (eKick) {}
-                it9anKickUserRecPlaybackContextSync();
+                it9anWireUserRecordingPlaybackBoostIfNeeded();
+                it9anUpdateUserRecordingPlaybackBoostGains();
                 it9anNormalizeUserClipMediaElement(el);
-                const pr = el.play();
-                void it9anEnsureUserRecPlaybackContextRunning();
-                if (pr && typeof pr.catch === 'function') pr.catch(function() {});
-                return pr;
+                const skipW = it9anAudioProfile.skipWebAudioUserClipRouting;
+                const ctx = it9anUserRecPbCtx;
+                function doPlay() {
+                    it9anKickUserRecPlaybackContextSync();
+                    try {
+                        const pr = el.play();
+                        void it9anEnsureUserRecPlaybackContextRunning();
+                        if (pr && typeof pr.catch === 'function') pr.catch(function() {});
+                        return pr;
+                    } catch (eP) {}
+                }
+                if (!skipW && ctx && ctx.state !== 'closed') {
+                    try {
+                        const rp = ctx.resume();
+                        if (rp && typeof rp.then === 'function') {
+                            return rp.then(function() {
+                                try { it9anUpdateUserRecordingPlaybackBoostGains(); } catch (eG) {}
+                                return doPlay();
+                            }).catch(function() {
+                                return doPlay();
+                            });
+                        }
+                    } catch (eR) {}
+                }
+                return doPlay();
             } catch (e) {}
         }
         /** Einheitliche Vorbereitung vor Abspielen im Review (gleiche Pegel/Kette wie Feed nach dem Senden). */
         function it9anPrepareReviewAudioPlayback() {
             try { it9anIosKickAudioRouteToSpeakerAfterHeavyOp(); } catch (eS) {}
+            it9anWireUserRecordingPlaybackBoostIfNeeded();
             it9anKickUserRecPlaybackContextSync();
             ['reviewAudio', 'reviewVerseAudio', 'reviewMixAudio'].forEach(function(id) {
                 const el = document.getElementById(id);
@@ -5813,8 +5836,21 @@
             }
             try {
                 const rows = await fetchStudentVerseHistoryForReview(uid, String(fileIdNum), stageIdNum);
-                window._reviewHistStudentUrls = rows.map(function(r) { return r.studentAudio; });
-                window._reviewHistTeacherUrls = rows.map(function(r) { return r.teacherAudio || ''; });
+                /**
+                 * Remote https (Firebase) auf #reviewAudio + MediaElementSource: iOS/WebKit oft stumm ohne CORS-Blob
+                 * (Feed nutzt resolveFeedAudioPlayUrl — gleiche Pufferung hier für alle Geräte).
+                 */
+                async function resolveHistOne(u) {
+                    const s = u == null ? '' : String(u).trim();
+                    if (!s || !/^https?:/i.test(s)) return s;
+                    try {
+                        return await resolveFeedAudioPlayUrl(s, { force: true });
+                    } catch (e) {
+                        return s;
+                    }
+                }
+                window._reviewHistStudentUrls = await Promise.all(rows.map(function(r) { return resolveHistOne(r.studentAudio); }));
+                window._reviewHistTeacherUrls = await Promise.all(rows.map(function(r) { return resolveHistOne(r.teacherAudio || ''); }));
                 if (!rows.length) {
                     listEl.innerHTML = '<div class="review-prev-empty">لا توجد تسجيلات سابقة بعد في هذا المقطع</div>';
                     return;
