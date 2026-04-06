@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="إتقان">
     <!-- Wird von scripts/bump-app-version.sh mit derselben version wie app-version.json gesetzt (synchroner Deploy-Check, kein fetch → zuverlässig in Safari/PWA). -->
-    <meta name="it9an-deploy-version" content="it9an-1775417015-local-77765-9db3782">
+    <meta name="it9an-deploy-version" content="it9an-1775498930-local-44692-71c27c6">
     <link rel="manifest" href="manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap" rel="stylesheet">
     
@@ -342,6 +342,8 @@
         .lb-item-wrapper.lb-item-me .lb-item { background: linear-gradient(90deg, rgba(192, 57, 43, 0.25), rgba(192, 57, 43, 0.1)); border-radius: 8px; border: 1px solid rgba(192, 57, 43, 0.4); }
         .lb-stat-click { cursor: pointer; }
         .lb-stat-click:hover { opacity: 0.9; }
+        .lb-stat-click.lb-stat-recordings { position: relative; padding-left: 16px; padding-bottom: 11px; }
+        .lb-stat-recordings .lb-stat-tap-hand { position: absolute; left: 3px; bottom: 2px; font-size: 12px; line-height: 1; pointer-events: none; opacity: 0.92; text-shadow: 0 0 2px rgba(255,255,255,0.7); }
         .lb-expand-list { padding: 10px 10px; background: #f9f9f9; border-radius: 0 0 10px 10px; border: 1px solid #eee; border-top: none; max-width: 100%; overflow-x: hidden; }
         .lb-row-item { display: flex; align-items: center; gap: 10px; padding: 10px; background: white; border-radius: 10px; margin-bottom: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.06); border: 1px solid #eee; max-width: 100%; overflow-x: hidden; scroll-margin: 80px 0; }
         .lb-row-item.lb-rating-unexamined { background: #ffffff; border-color: #eee; }
@@ -363,7 +365,7 @@
         .lb-player-mini .cp-btn { margin: 0; }
         .lb-player-stack { display: flex; flex-direction: column; align-items: center; gap: 4px; background: transparent !important; border: none !important; padding: 0 !important; }
         .lb-player-stack .cp-btn { margin: 0; }
-        .lb-player-pair { display: flex; align-items: stretch; gap: 2px; flex-shrink: 0; }
+        .lb-player-pair { display: flex; align-items: flex-start; gap: 8px; flex-shrink: 0; }
         .lb-player-pair .lb-row-play { flex: 1; min-width: 0; }
         .lb-player-label { font-size: 12px; color: var(--primary); font-weight: bold; }
         .lb-load-more { display: block; width: 100%; margin-top: 10px; padding: 10px; background: var(--primary); color: white; border: none; border-radius: 10px; font-size: 14px; font-family: 'Amiri'; font-weight: bold; cursor: pointer; }
@@ -826,6 +828,28 @@
         .review-strip-play.review-btn-muted { background: #95a5a6 !important; color: #ecf0f1 !important; cursor: not-allowed; opacity: 0.55; }
         .review-strip-retake-btn { padding: 8px 12px; border-radius: 10px; border: 1px solid var(--primary); background: #fff; color: var(--primary); font-size: 14px; font-weight: bold; cursor: pointer; font-family: inherit; flex-shrink: 0; }
         .review-strip-retake-btn:active { opacity: 0.85; }
+        .review-verse-ref-wrap { width: 100%; margin: 0 0 10px 0; display: flex; justify-content: center; }
+        .review-verse-ref-btn { padding: 10px 20px; border-radius: 14px; border: 2px solid var(--primary); background: linear-gradient(180deg, #e8f5e9 0%, #c8e6c9 100%); color: var(--primary); font-size: 16px; font-weight: bold; cursor: pointer; font-family: inherit; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 2px 8px rgba(15,76,58,0.12); }
+        .review-verse-ref-btn:active { opacity: 0.9; transform: scale(0.98); }
+        .review-prev-posts-section { width: 100%; margin-top: 16px; padding-top: 12px; border-top: 1px solid #e0e0e0; text-align: right; direction: rtl; }
+        .review-prev-posts-heading { font-size: 15px; font-weight: bold; color: var(--primary); margin-bottom: 10px; }
+        .review-prev-posts-list { max-height: 220px; overflow-y: auto; -webkit-overflow-scrolling: touch; margin-bottom: 4px; }
+        .review-prev-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 6px; border-bottom: 1px solid #eee; font-size: 13px; }
+        .review-prev-row:last-child { border-bottom: none; }
+        .review-hist-player-pair { display: flex; align-items: flex-start; gap: 10px; flex-shrink: 0; }
+        .review-hist-stack { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+        .review-hist-play { width: 42px; height: 42px; border-radius: 50%; border: none; font-size: 16px; cursor: pointer; color: #fff; display: flex; align-items: center; justify-content: center; background: linear-gradient(180deg, #27ae60 0%, #1e8449 100%); box-shadow: 0 2px 6px rgba(0,0,0,0.12); font-family: inherit; }
+        .review-hist-play.review-hist-play-teacher { background: linear-gradient(180deg, #2980b9 0%, #1f618d 100%); }
+        .review-hist-play:disabled { background: #bdc3c7 !important; color: #ecf0f1 !important; cursor: not-allowed; opacity: 0.55; box-shadow: none; }
+        .review-hist-icon { font-size: 12px; font-weight: bold; color: var(--primary); line-height: 1; }
+        .review-prev-meta { flex: 1; min-width: 0; text-align: right; }
+        .review-prev-verdict { font-weight: bold; font-size: 13px; margin-bottom: 2px; }
+        .review-prev-date { font-size: 12px; color: #666; white-space: nowrap; }
+        .review-prev-verdict-accepted .review-prev-verdict { color: #1b5e20; }
+        .review-prev-verdict-improve .review-prev-verdict { color: #c62828; }
+        .review-prev-verdict-pending .review-prev-verdict { color: #666; }
+        .review-prev-empty, .review-prev-error, .review-prev-loading { font-size: 13px; color: #888; text-align: center; padding: 8px 4px; }
+        .review-prev-error { color: #c62828; }
         #review-echo-retake-overlay { display: none; position: absolute; inset: 0; background: #fff; z-index: 10; flex-direction: column; align-items: stretch; justify-content: flex-start; padding: 16px 14px; border-radius: 16px; overflow-y: auto; direction: rtl; text-align: center; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.06); }
         .review-box { position: relative; }
         .review-echo-retake-inner { display: flex; flex-direction: column; gap: 12px; align-items: stretch; max-width: 100%; }
@@ -2698,6 +2722,10 @@
         let _reviewStripGreenUrls = [];
         let _reviewStripVerseUrls = [];
         let _reviewStripStudentUrls = [];
+        let _reviewVerseRefUrl = '';
+        /** Review-Modal: frühere Aufnahmen (Remote-URLs, keine Object-URLs) */
+        window._reviewHistStudentUrls = [];
+        window._reviewHistTeacherUrls = [];
         /** Review: true wenn reviewAudio gerade den gelben Mix (Vers+Schüler) abspielt */
         let _reviewReviewPlayingYellow = false;
         let reviewEchoStripVerseBlobs = [];
@@ -4066,8 +4094,8 @@
                 const lbDateStr = isAdmin ? formatDateLatin(getLastLoginForDisplay(u)) : '';
                 const pinBadge = isAdmin ? `<span class="lb-pin" title="الرمز الشخصي">${u.personalPin ? String(u.personalPin).padStart(4,'0') : '—'}</span>` : '';
                 const adminBtns = isAdmin ? `<button class="delete-btn" onclick="deleteUser('${u.uid}')" title="حذف">🗑️</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="editUserName('${u.uid}')" title="تعديل الاسم">✏️</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="swapFirstLastName('${u.uid}')" title="تبديل الاسم الأول واللقب">🔄</button><button class="btn-action" style="padding:4px 8px; font-size:12px;" onclick="sendPrivateMessageToUser('${u.uid}')" title="رسالة خاصة">✉️</button><button class="${blockBtnClass}" style="padding:4px 10px; font-size:12px;" onclick="toggleBlockUser('${u.uid}', ${isBlocked})">${blockBtnText}</button>` : '';
-                const nameRow = isAdmin ? `<div class="lb-admin-name-row">${pinBadge}<span class="lb-rank">#${rank}</span><span class="lb-name">${(lbDisplayName || '—').replace(/</g,'&lt;')}</span><span class="lb-admin-date">${lbDateStr}</span></div>` : `<div class="lb-item-top-row" style="display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%; min-width:0;"><div class="lb-name-pin-wrap" style="display:flex; align-items:center; gap:6px; flex:1; min-width:0; overflow:hidden;">${pinBadge}<span class="lb-rank">#${rank}</span><span class="lb-name">${(lbDisplayName || '—').replace(/</g,'&lt;')}</span></div><div class="lb-stats"><span class="lb-score" title="آيات مقبولة في هذه المرحلة">✓ ${u.acceptedVersesCount || 0}</span><span class="lb-score" title="إجمالي التكرارات (استماع)">👂 ${u.totalVerseViews || 0}</span><span class="lb-score lb-stat-click" onclick="toggleLbRecordings('${u.uid}')" title="عرض التسجيلات">${ICON_MIC_HTML} ${u.postsCount || 0}</span></div></div>`;
-                const iconsRow = isAdmin ? `<div class="lb-stats" style="display:flex; gap:8px; flex-shrink:0; margin-top:6px;"><span class="lb-score" title="آيات مقبولة في هذه المرحلة">✓ ${u.acceptedVersesCount || 0}</span><span class="lb-score" title="إجمالي التكرارات (استماع)">👂 ${u.totalVerseViews || 0}</span><span class="lb-score lb-stat-click" onclick="toggleLbRecordings('${u.uid}')" title="عرض التسجيلات">${ICON_MIC_HTML} ${u.postsCount || 0}</span></div>` : '';
+                const nameRow = isAdmin ? `<div class="lb-admin-name-row">${pinBadge}<span class="lb-rank">#${rank}</span><span class="lb-name">${(lbDisplayName || '—').replace(/</g,'&lt;')}</span><span class="lb-admin-date">${lbDateStr}</span></div>` : `<div class="lb-item-top-row" style="display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%; min-width:0;"><div class="lb-name-pin-wrap" style="display:flex; align-items:center; gap:6px; flex:1; min-width:0; overflow:hidden;">${pinBadge}<span class="lb-rank">#${rank}</span><span class="lb-name">${(lbDisplayName || '—').replace(/</g,'&lt;')}</span></div><div class="lb-stats"><span class="lb-score" title="آيات مقبولة في هذه المرحلة">✓ ${u.acceptedVersesCount || 0}</span><span class="lb-score" title="إجمالي التكرارات (استماع)">👂 ${u.totalVerseViews || 0}</span><span class="lb-score lb-stat-click lb-stat-recordings" onclick="toggleLbRecordings('${u.uid}')" title="عرض التسجيلات — اضغط"><span class="lb-stat-tap-hand" aria-hidden="true">👆</span>${ICON_MIC_HTML} ${u.postsCount || 0}</span></div></div>`;
+                const iconsRow = isAdmin ? `<div class="lb-stats" style="display:flex; gap:8px; flex-shrink:0; margin-top:6px;"><span class="lb-score" title="آيات مقبولة في هذه المرحلة">✓ ${u.acceptedVersesCount || 0}</span><span class="lb-score" title="إجمالي التكرارات (استماع)">👂 ${u.totalVerseViews || 0}</span><span class="lb-score lb-stat-click lb-stat-recordings" onclick="toggleLbRecordings('${u.uid}')" title="عرض التسجيلات — اضغط"><span class="lb-stat-tap-hand" aria-hidden="true">👆</span>${ICON_MIC_HTML} ${u.postsCount || 0}</span></div>` : '';
                 list.innerHTML += `
                 <li class="${cls}">
                     <div class="lb-item">
@@ -4788,12 +4816,17 @@
                 const postId = docSnap.id;
                 const fileId = data.fileId || '1';
                 const teacherRating = data.teacherRating || null;
+                let teacherReplyAudioUrl = null;
+                if (data.replies && Array.isArray(data.replies)) {
+                    const tr = data.replies.find(function(r) { return r && r.role === 'teacher' && r.audioUrl; });
+                    if (tr) teacherReplyAudioUrl = tr.audioUrl;
+                }
                 let ts = 0;
                 if (data.timestamp) {
                     if (typeof data.timestamp === 'object' && data.timestamp.seconds) ts = data.timestamp.seconds * 1000;
                     else if (typeof data.timestamp === 'number') ts = data.timestamp;
                 }
-                all.push({ postId, audioUrl: data.audioUrl, fileId, timestamp: ts, teacherRating });
+                all.push({ postId, audioUrl: data.audioUrl, teacherReplyAudioUrl, fileId, timestamp: ts, teacherRating });
             });
             all.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
             return all;
@@ -4847,8 +4880,23 @@
             window._lbRecordingsUrls = [];
             window._lbRecordingsMainUrls = [];
             toShow.forEach((it, idx) => {
-                window._lbRecordingsUrls.push(it.audioUrl || '');
-                window._lbRecordingsMainUrls.push(it.mainAudioUrl || '');
+                let studentAudio = '';
+                let teacherAudio = '';
+                if (it.type === 'reply' && it.mainAudioUrl) {
+                    studentAudio = it.mainAudioUrl;
+                    teacherAudio = it.audioUrl || '';
+                } else if (it.type === 'post' && it.teacherReplyAudioUrl) {
+                    studentAudio = it.audioUrl || '';
+                    teacherAudio = it.teacherReplyAudioUrl;
+                }
+                const isDualPlayer = !!(studentAudio && teacherAudio);
+                if (isDualPlayer) {
+                    window._lbRecordingsMainUrls.push(studentAudio);
+                    window._lbRecordingsUrls.push(teacherAudio);
+                } else {
+                    window._lbRecordingsUrls.push(it.audioUrl || '');
+                    window._lbRecordingsMainUrls.push(it.mainAudioUrl || '');
+                }
                 const playId = 'lbr-' + studentUid.replace(/[^a-zA-Z0-9]/g, '_') + '-' + idx;
                 const playIdMain = 'lbr-main-' + studentUid.replace(/[^a-zA-Z0-9]/g, '_') + '-' + idx;
                 const lv = getLessonVerseFromFileId(it.fileId);
@@ -4868,22 +4916,22 @@
                     }
                 }
                 let playSection = '';
-                if (it.type === 'reply' && it.mainAudioUrl) {
+                if (isDualPlayer) {
                     playSection = `
                     <div class="lb-player-pair">
                         <div class="lb-row-play lb-player-stack">
-                            <button class="cp-btn" id="btn-${playIdMain}" onclick="playFeedAudio(window._lbRecordingsMainUrls[${idx}]||'','${playIdMain}')">▶</button>
-                            <span class="lb-player-label">🎓</span>
+                            <button type="button" class="cp-btn" id="btn-${playIdMain}" onclick="playFeedAudio(window._lbRecordingsMainUrls[${idx}]||'','${playIdMain}')" title="تسجيل الطالب">▶</button>
+                            <span class="lb-player-label" title="تسجيل الطالب">🎓</span>
                         </div>
                         <div class="lb-row-play lb-player-stack">
-                            <button class="cp-btn" id="btn-${playId}" onclick="playFeedAudio(window._lbRecordingsUrls[${idx}]||'','${playId}')">▶</button>
-                            <span class="lb-player-label">👨‍🏫</span>
+                            <button type="button" class="cp-btn" id="btn-${playId}" onclick="playFeedAudio(window._lbRecordingsUrls[${idx}]||'','${playId}')" title="رد المعلم">▶</button>
+                            <span class="lb-player-label" title="رد المعلم">👨‍🏫</span>
                         </div>
                     </div>`;
                 } else {
                     playSection = `
                     <div class="lb-row-play custom-player lb-player-mini" style="flex:1; min-width:0;">
-                        <button class="cp-btn" id="btn-${playId}" onclick="playFeedAudio(window._lbRecordingsUrls[${idx}]||'','${playId}')">▶</button>
+                        <button type="button" class="cp-btn" id="btn-${playId}" onclick="playFeedAudio(window._lbRecordingsUrls[${idx}]||'','${playId}')">▶</button>
                     </div>`;
                 }
                 html += `
@@ -5500,6 +5548,83 @@
             const posts = [];
             snap.forEach(doc => posts.push({ id: doc.id, ...doc.data() }));
             return studentHasUnfinishedAmongPosts(posts, studentUid, fileIdStr, stageIdNum);
+        }
+        /** Schüler-Hauptposts zu einem Vers (aktuelle Stage), neueste zuerst — für Review-Modal */
+        async function fetchStudentVerseHistoryForReview(studentUid, fileIdStr, stageIdNum) {
+            const coll = window.collection(window.db, "posts");
+            const q = window.query(coll, window.where("fileId", "==", fileIdStr), window.where("uid", "==", studentUid));
+            let snap;
+            try { snap = await window.getDocsFromServer(q); } catch (e) { try { snap = await window.getDocs(q); } catch (e2) { return []; } }
+            const rows = [];
+            const sid = Number(stageIdNum != null ? stageIdNum : 4);
+            snap.forEach(docSnap => {
+                const data = docSnap.data();
+                if (data.role === 'teacher') return;
+                const postStage = data.stageId != null ? data.stageId : 4;
+                if (Number(postStage) !== sid) return;
+                const studentAudio = data.audioUrl || '';
+                if (!studentAudio) return;
+                let ts = 0;
+                if (data.timestamp) {
+                    if (typeof data.timestamp === 'object' && data.timestamp.seconds) ts = data.timestamp.seconds * 1000;
+                    else if (typeof data.timestamp === 'number') ts = data.timestamp;
+                }
+                let teacherAudio = null;
+                if (data.replies && Array.isArray(data.replies)) {
+                    const tr = data.replies.find(function(r) { return r && r.role === 'teacher' && r.audioUrl; });
+                    if (tr) teacherAudio = tr.audioUrl;
+                }
+                rows.push({
+                    postId: docSnap.id,
+                    studentAudio,
+                    teacherAudio,
+                    timestamp: ts,
+                    teacherRating: data.teacherRating || null
+                });
+            });
+            rows.sort(function(a, b) { return (b.timestamp || 0) - (a.timestamp || 0); });
+            return rows;
+        }
+        async function populateReviewModalPreviousPosts(fileIdNum, stageIdNum) {
+            const listEl = document.getElementById('review-prev-posts-list');
+            if (!listEl) return;
+            const uid = localStorage.getItem('it9an_uid');
+            if (!uid) { listEl.innerHTML = ''; return; }
+            window._reviewHistStudentUrls = [];
+            window._reviewHistTeacherUrls = [];
+            function fmtTs(ts) {
+                if (!ts) return '';
+                const d = new Date(ts);
+                return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2) + ' ' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
+            }
+            try {
+                const rows = await fetchStudentVerseHistoryForReview(uid, String(fileIdNum), stageIdNum);
+                window._reviewHistStudentUrls = rows.map(function(r) { return r.studentAudio; });
+                window._reviewHistTeacherUrls = rows.map(function(r) { return r.teacherAudio || ''; });
+                if (!rows.length) {
+                    listEl.innerHTML = '<div class="review-prev-empty">لا توجد تسجيلات سابقة بعد في هذا المقطع</div>';
+                    return;
+                }
+                let html = '';
+                rows.forEach(function(r, i) {
+                    const tr = r.teacherRating || null;
+                    const rv = tr ? tr.verdict : null;
+                    let vLabel = 'لم يُفحص بعد';
+                    let vClass = 'review-prev-verdict-pending';
+                    if (rv === 'accepted') { vLabel = '✓ مقبول'; vClass = 'review-prev-verdict-accepted'; }
+                    else if (rv === 'needs_improvement') { vLabel = '↻ يمكن أن يكون أفضل'; vClass = 'review-prev-verdict-improve'; }
+                    const hasTeacher = !!(r.teacherAudio);
+                    const dateStr = fmtTs(r.timestamp);
+                    const playBlock = hasTeacher
+                        ? '<div class="review-hist-player-pair"><div class="review-hist-stack"><button type="button" class="review-hist-play" onclick="reviewModalPlayHistoryStudent(' + i + ')" title="تسجيل الطالب">▶</button><span class="review-hist-icon">🎓</span></div><div class="review-hist-stack"><button type="button" class="review-hist-play review-hist-play-teacher" onclick="reviewModalPlayHistoryTeacher(' + i + ')" title="رد المعلم">▶</button><span class="review-hist-icon">👨‍🏫</span></div></div>'
+                        : '<div class="review-hist-player-pair"><div class="review-hist-stack"><button type="button" class="review-hist-play" onclick="reviewModalPlayHistoryStudent(' + i + ')" title="تسجيل الطالب">▶</button><span class="review-hist-icon">🎓</span></div></div>';
+                    html += '<div class="review-prev-row">' + playBlock + '<div class="review-prev-meta ' + vClass + '"><div class="review-prev-verdict">' + vLabel + '</div><div class="review-prev-date">' + dateStr + '</div></div></div>';
+                });
+                listEl.innerHTML = html;
+            } catch (e) {
+                console.warn('populateReviewModalPreviousPosts', e);
+                listEl.innerHTML = '<div class="review-prev-error">تعذر تحميل القائمة</div>';
+            }
         }
         function updateRecButtonForStudentNotifications() {
             const recBtn = document.getElementById('recBtn');
@@ -10978,6 +11103,9 @@
             _reviewStripGreenUrls = [];
             _reviewStripVerseUrls = [];
             _reviewStripStudentUrls = [];
+            _reviewVerseRefUrl = '';
+            window._reviewHistStudentUrls = [];
+            window._reviewHistTeacherUrls = [];
             _reviewReviewPlayingYellow = false;
         }
         function reviewModalResetYellowSideBtn() {
@@ -11083,14 +11211,61 @@
         window.reviewModalPlayStripStudent = function(i) {
             window.reviewModalPlayStripYellow(i);
         };
+        window.reviewModalPlayVerseReference = function() {
+            const audio = document.getElementById('reviewAudio');
+            const btn = document.getElementById('review-play-btn');
+            if (!audio || !_reviewVerseRefUrl) return;
+            _reviewReviewPlayingYellow = false;
+            reviewModalResetYellowSideBtn();
+            audio.pause();
+            audio.src = _reviewVerseRefUrl;
+            audio.load();
+            it9anPrepareReviewAudioPlayback();
+            it9anPlayUserClipFromUserGesture(audio);
+            if (btn) btn.textContent = '⏸';
+        };
+        window.reviewModalPlayHistoryStudent = function(i) {
+            const url = window._reviewHistStudentUrls && window._reviewHistStudentUrls[i];
+            if (!url) return;
+            const audio = document.getElementById('reviewAudio');
+            const btn = document.getElementById('review-play-btn');
+            if (!audio) return;
+            _reviewReviewPlayingYellow = false;
+            reviewModalResetYellowSideBtn();
+            audio.pause();
+            audio.src = url;
+            audio.load();
+            it9anPrepareReviewAudioPlayback();
+            it9anPlayUserClipFromUserGesture(audio);
+            if (btn) btn.textContent = '⏸';
+        };
+        window.reviewModalPlayHistoryTeacher = function(i) {
+            const url = window._reviewHistTeacherUrls && window._reviewHistTeacherUrls[i];
+            if (!url) return;
+            const audio = document.getElementById('reviewAudio');
+            const btn = document.getElementById('review-play-btn');
+            if (!audio) return;
+            _reviewReviewPlayingYellow = false;
+            reviewModalResetYellowSideBtn();
+            audio.pause();
+            audio.src = url;
+            audio.load();
+            it9anPrepareReviewAudioPlayback();
+            it9anPlayUserClipFromUserGesture(audio);
+            if (btn) btn.textContent = '⏸';
+        };
         function showReviewModal() {
             const modal = document.getElementById('review-modal');
             const audio = document.getElementById('reviewAudio');
             const content = document.getElementById('review-content');
             if (!currentBlob || !modal || !audio || !content) return;
             revokeReviewModalObjectUrls();
+            const reviewFid = recordingFileId != null ? recordingFileId : currentGlobalFileId;
             const isReply = !!replyTargetId;
-            const verseImgHtml = !isReply && currentGlobalFileId != null ? `<img class="review-verse-img" src="${getAssetUrl(getVerseAssetPath(currentGlobalFileId) + '.png')}" alt="المقطع" onerror="verseImgFallback(this)">` : '';
+            const verseImgHtml = !isReply && reviewFid != null ? `<img class="review-verse-img" src="${getAssetUrl(getVerseAssetPath(reviewFid) + '.png')}" alt="المقطع" onerror="verseImgFallback(this)">` : '';
+            const verseRefPlayHtml = (!isReply && reviewFid != null) ? `<div class="review-verse-ref-wrap"><button type="button" class="review-verse-ref-btn" onclick="reviewModalPlayVerseReference()" title="استمع للمقطع">▶ <span class="review-verse-ref-label">المقطع</span></button></div>` : '';
+            const showPrevPosts = !isReply && localStorage.getItem('it9an_role') === 'student';
+            const prevPostsHtml = showPrevPosts ? `<div class="review-prev-posts-section" id="review-prev-posts-section"><div class="review-prev-posts-heading">تسجيلاتك السابقة لهذا المقطع</div><div id="review-prev-posts-list" class="review-prev-posts-list"><span class="review-prev-loading">جاري التحميل…</span></div></div>` : '';
             if (isReply) {
                 const u = URL.createObjectURL(currentBlob);
                 _reviewModalObjectUrls.push(u);
@@ -11197,10 +11372,12 @@
             audio.muted = false;
             audio.volume = it9anAudioProfile.mediaElementVolume;
             _reviewReviewPlayingYellow = false;
+            _reviewVerseRefUrl = (reviewFid != null) ? getAssetUrl(getVerseAssetPath(reviewFid) + '.mp3') : '';
 
             content.innerHTML = `
                 <div class="review-title">مراجعة التسجيل</div>
                 ${verseImgHtml}
+                ${verseRefPlayHtml}
                 <div class="${playerWrapClass}">
                     <div class="custom-player">
                         <button class="cp-btn" id="review-play-btn" onclick="toggleReviewAudio()">▶</button>
@@ -11211,12 +11388,17 @@
                 </div>
                 ${stripsHtml ? `<div class="review-strip-list">${stripsHtml}</div>` : ''}
                 ${noteHtml}
+                ${prevPostsHtml}
                 <div class="review-btns">
                     <button type="button" class="r-btn btn-retry" onclick="retryRecord()">🔄 إعادة</button>
                     <button type="button" class="r-btn btn-send" onclick="confirmSend()">✅ إرسال</button>
                 </div>`;
             modal.style.display = 'flex';
             setupReviewAudioListeners();
+            if (showPrevPosts && reviewFid != null) {
+                const sid = recordingStageId != null ? recordingStageId : currentStageId;
+                void populateReviewModalPreviousPosts(reviewFid, sid);
+            }
         }
         let _reviewAudioHandlers = null;
         function setupReviewAudioListeners() {
