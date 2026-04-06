@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="إتقان">
     <!-- Wird von scripts/bump-app-version.sh mit derselben version wie app-version.json gesetzt (synchroner Deploy-Check, kein fetch → zuverlässig in Safari/PWA). -->
-    <meta name="it9an-deploy-version" content="it9an-1775503457-local-83309-08d6415">
+    <meta name="it9an-deploy-version" content="it9an-1775504282-local-90822-352bacb">
     <link rel="manifest" href="manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap" rel="stylesheet">
     
@@ -2836,6 +2836,8 @@
 
         // --- GLOBAL FEED PLAYER LOGIC ---
         let currentFeedAudioId = null;
+        /** Original-URL des aktuellen Clips (wie an playFeedAudio übergeben) — gleiche URL = derselbe Clip (z. B. Feed vs. gespeichert), Toggle Play/Pause. */
+        let currentFeedAudioSourceUrl = null;
         const _feedAudioBlobCache = new Map();
         const FEED_AUDIO_BLOB_CACHE_MAX = 16;
         function evictFeedAudioBlobCacheIfNeeded() {
@@ -2904,6 +2906,7 @@
                 const seek = document.getElementById('seek-' + currentFeedAudioId);
                 if (seek) seek.value = 0;
                 currentFeedAudioId = null;
+                currentFeedAudioSourceUrl = null;
                 releaseWakeLock();
             }
             unloadFeedAudioIfNoActiveClip();
@@ -2970,6 +2973,7 @@
                 }
             }
             currentFeedAudioId = null;
+            currentFeedAudioSourceUrl = null;
             releaseWakeLock();
             unloadFeedAudioIfNoActiveClip();
             clearIt9anOsMediaSession();
@@ -2990,14 +2994,31 @@
             it9anNormalizeUserClipMediaElement(feedAudioEl);
             try { it9anIosKickAudioRouteToSpeakerAfterHeavyOp(); } catch (eKickFeed) {}
 
-            if (currentFeedAudioId === id) {
+            const srcNorm = String(url).trim();
+            const hasLoadedSrc = !!(feedAudioEl.src || feedAudioEl.currentSrc);
+            const sameClip = (currentFeedAudioId === id)
+                || (currentFeedAudioSourceUrl && srcNorm === String(currentFeedAudioSourceUrl).trim() && hasLoadedSrc);
+
+            if (sameClip) {
                 if (feedAudioEl.paused) {
+                    currentFeedAudioId = id;
+                    currentFeedAudioSourceUrl = srcNorm;
                     it9anPlayUserClipFromUserGesture(feedAudioEl);
                     it9anSetPpState(document.getElementById('btn-' + id), 'pause');
                     requestWakeLock();
                 } else {
                     feedAudioEl.pause();
-                    it9anSetPpState(document.getElementById('btn-' + id), 'play');
+                    const oldId = currentFeedAudioId;
+                    if (oldId) {
+                        const ob = document.getElementById('btn-' + oldId);
+                        if (ob) it9anSetPpState(ob, 'play');
+                    }
+                    if (id !== oldId) {
+                        const nb = document.getElementById('btn-' + id);
+                        if (nb) it9anSetPpState(nb, 'play');
+                    }
+                    currentFeedAudioId = null;
+                    /* currentFeedAudioSourceUrl bleibt: nächster Klick (gleiche URL / anderer Button) = Fortsetzen, nicht neu laden */
                     releaseWakeLock();
                 }
                 return;
@@ -3012,6 +3033,7 @@
                 }
                 
                 currentFeedAudioId = id;
+                currentFeedAudioSourceUrl = srcNorm;
                 const newBtn = document.getElementById('btn-' + id);
                 it9anSetPpState(newBtn, 'load');
                 requestWakeLock();
@@ -3037,6 +3059,8 @@
                     void it9anEnsureUserRecPlaybackContextRunning();
                 }).catch(e => {
                     it9anSetPpState(newBtn, 'err');
+                    currentFeedAudioSourceUrl = null;
+                    currentFeedAudioId = null;
                     console.log(e);
                 });
         }
