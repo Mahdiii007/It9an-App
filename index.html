@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="إتقان">
     <!-- Wird von scripts/bump-app-version.sh mit derselben version wie app-version.json gesetzt (synchroner Deploy-Check, kein fetch → zuverlässig in Safari/PWA). -->
-    <meta name="it9an-deploy-version" content="it9an-1775504311-local-91216-33c484c">
+    <meta name="it9an-deploy-version" content="it9an-1775504961-local-97396-5444f64">
     <link rel="manifest" href="manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap" rel="stylesheet">
     
@@ -2807,6 +2807,24 @@
             else if (state === 'load' || state === 'loading') s = 'load';
             else if (state === 'err' || state === 'error') s = 'err';
             btn.classList.add('it9an-pp-state-' + s);
+        }
+        /** Gleiche Mediendatei? (Browser setzt src oft absolut; gespeichert ist oft relativ oder umgekehrt.) */
+        function it9anMediaUrlStringsMatch(a, b) {
+            if (a == null || b == null) return false;
+            const sa = String(a).trim();
+            const sb = String(b).trim();
+            if (!sa || !sb) return false;
+            if (sa === sb) return true;
+            try {
+                return new URL(sa, window.location.href).href === new URL(sb, window.location.href).href;
+            } catch (e) {
+                return false;
+            }
+        }
+        function it9anMediaSrcMatchesTarget(el, targetUrl) {
+            if (!el || targetUrl == null || targetUrl === '') return false;
+            const cur = el.currentSrc || el.src || '';
+            return it9anMediaUrlStringsMatch(cur, targetUrl);
         }
         (function it9anInitStaticPlayControls() {
             const pb = document.getElementById('playBtn');
@@ -9632,7 +9650,7 @@
                 if (pr2 && typeof pr2.then === 'function') {
                     pr2.then(function() {
                         const pb = document.getElementById('review-echo-retake-play-verse');
-                        if (pb) it9anSetPpState(pb, 'pause');
+                        if (pb && !va.paused) it9anSetPpState(pb, 'pause');
                     }).catch(function() {});
                 }
             }, { once: true });
@@ -9671,7 +9689,7 @@
                 if (pr && typeof pr.then === 'function') {
                     pr.then(function() {
                         const pb = document.getElementById('review-echo-retake-play-verse');
-                        if (pb) it9anSetPpState(pb, 'pause');
+                        if (pb && !va.paused) it9anSetPpState(pb, 'pause');
                     }).catch(function() {});
                 }
             }, { once: true });
@@ -11285,7 +11303,7 @@
         }
         function reviewModalReviewAudioIsMainStudentTrack(u) {
             if (!_reviewMainGreenUrl) return true;
-            return !!u && u === _reviewMainGreenUrl;
+            return !!u && it9anMediaUrlStringsMatch(u, _reviewMainGreenUrl);
         }
         function reviewModalResetAllStripHistPp() {
             const root = document.getElementById('review-content');
@@ -11316,7 +11334,7 @@
                 if (mV) expect = _reviewStripVerseUrls[Number(mV[1])] || '';
                 else if (mS) expect = _reviewStripStudentUrls[Number(mS[1])] || '';
                 else if (mG) expect = _reviewStripGreenUrls[Number(mG[1])] || '';
-                it9anSetPpState(b, (playing && expect && expect === u) ? 'pause' : 'play');
+                it9anSetPpState(b, (playing && expect && it9anMediaUrlStringsMatch(expect, u)) ? 'pause' : 'play');
             });
             root.querySelectorAll('.review-hist-play.it9an-pp').forEach(function(b) {
                 const bid = b.id || '';
@@ -11325,7 +11343,7 @@
                 const mTe = /^review-hist-tea-(\d+)$/.exec(bid);
                 if (mSt) expect = window._reviewHistStudentUrls[Number(mSt[1])] || '';
                 else if (mTe) expect = window._reviewHistTeacherUrls[Number(mTe[1])] || '';
-                it9anSetPpState(b, (playing && expect && expect === u) ? 'pause' : 'play');
+                it9anSetPpState(b, (playing && expect && it9anMediaUrlStringsMatch(expect, u)) ? 'pause' : 'play');
             });
         }
         /** Gold-Button: Mix (مقطع+طالب) auf eigenem Audio — Play/Pause; großer grüner Button bleibt nur für تسجيل الطالب. */
@@ -11342,7 +11360,7 @@
             const vb = document.getElementById('review-verse-play-btn');
             if (vb) it9anSetPpState(vb, 'play');
             try { it9anIosKickAudioRouteToSpeakerAfterHeavyOp(); } catch (eY) {}
-            if (mix.src !== _reviewMainYellowUrl) {
+            if (!it9anMediaSrcMatchesTarget(mix, _reviewMainYellowUrl)) {
                 mix.pause();
                 mix.src = _reviewMainYellowUrl;
                 mix.load();
@@ -11373,7 +11391,7 @@
             if (mainBtn) it9anSetPpState(mainBtn, 'play');
             reviewModalResetYellowSideBtn();
             try { it9anIosKickAudioRouteToSpeakerAfterHeavyOp(); } catch (eV) {}
-            if (va.src !== _reviewVerseRefUrl) {
+            if (!it9anMediaSrcMatchesTarget(va, _reviewVerseRefUrl)) {
                 va.pause();
                 va.src = _reviewVerseRefUrl;
                 va.load();
@@ -11413,7 +11431,7 @@
             const vb = document.getElementById('review-verse-play-btn');
             if (vb) it9anSetPpState(vb, 'play');
             reviewModalResetAllStripHistPp();
-            if (mix.src !== _reviewMainYellowUrl) {
+            if (!it9anMediaSrcMatchesTarget(mix, _reviewMainYellowUrl)) {
                 mix.pause();
                 mix.src = _reviewMainYellowUrl;
                 mix.load();
@@ -11442,8 +11460,7 @@
             const audio = document.getElementById('reviewAudio');
             const stripBtn = document.getElementById(btnId);
             if (!audio) return;
-            const uCur = audio.currentSrc || audio.src || '';
-            if (uCur === url && !audio.paused) {
+            if (it9anMediaSrcMatchesTarget(audio, url) && !audio.paused) {
                 audio.pause();
                 if (stripBtn) it9anSetPpState(stripBtn, 'play');
                 return;
@@ -11475,8 +11492,7 @@
             const audio = document.getElementById('reviewAudio');
             const histBtn = document.getElementById('review-hist-stu-' + i);
             if (!audio) return;
-            const uCur = audio.currentSrc || audio.src || '';
-            if (uCur === url && !audio.paused) {
+            if (it9anMediaSrcMatchesTarget(audio, url) && !audio.paused) {
                 audio.pause();
                 if (histBtn) it9anSetPpState(histBtn, 'play');
                 return;
@@ -11497,8 +11513,7 @@
             const audio = document.getElementById('reviewAudio');
             const histBtn = document.getElementById('review-hist-tea-' + i);
             if (!audio) return;
-            const uCur = audio.currentSrc || audio.src || '';
-            if (uCur === url && !audio.paused) {
+            if (it9anMediaSrcMatchesTarget(audio, url) && !audio.paused) {
                 audio.pause();
                 if (histBtn) it9anSetPpState(histBtn, 'play');
                 return;
@@ -11775,8 +11790,7 @@
             reviewModalResetYellowSideBtn();
             reviewModalResetAllStripHistPp();
             function audioIsOnMainStudentTrack() {
-                const u = audio.currentSrc || audio.src || '';
-                return !!u && u === _reviewMainGreenUrl;
+                return it9anMediaSrcMatchesTarget(audio, _reviewMainGreenUrl);
             }
             const mainUrl = _reviewMainGreenUrl || '';
             if (mainUrl) {
