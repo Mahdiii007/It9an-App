@@ -59,10 +59,11 @@ function runFfmpegCollectStderr(args) {
 
 /**
  * EBU R128-kompatible Ziele (FFmpeg loudnorm, zweiphasig linear=true).
- * I=-16 LUFS: gängig für Sprach-/Mobile/Podcast (näher an Plattform-Erwartung als Broadcast -23).
+ * I=-13 LUFS: etwas höher als klassische -16, damit تسجيل عادي / تسجيل متزامن / رد عادي
+ * näher an der subjektiven Lautheit von رد متزامن wirken (dort dichtes Mix-Material).
  * TP in dBTP (True Peak), LRA in LU.
  */
-const LOUDNORM_I = -16;
+const LOUDNORM_I = -13;
 const LOUDNORM_TP = -1.5;
 const LOUDNORM_LRA = 11;
 
@@ -791,7 +792,7 @@ QURAN_REMINDER_SLOTS.forEach((slot, idx) => {
 
 /**
  * Storage: uploads/*.(webm|ogg|mp4|wav) → AAC in MP4-Container (.m4a), Firestore audioUrl + replies.audioUrl auf neue Datei.
- * Lautheit: zweiphasig loudnorm für alle uploads/* inkl. uploads/echo_* — einheitlich mit تسجيل عادي / رد عادي / رد متزامن (EBU R128 I=-16 LUFS).
+ * Lautheit: zweiphasig loudnorm für alle uploads/* inkl. uploads/echo_* (EBU R128, I siehe LOUDNORM_I).
  * Ergebnis: audio/mp4, stereo 44,1 kHz, 128 kbit/s (Mono-Quellen werden von FFmpeg auf 2 Kanäle gehoben → L/R).
  * Ausgabe *.m4a löst keinen erneuten Lauf aus. Nach erfolgreicher URL-Patch wird die Originaldatei gelöscht.
  * Deploy: firebase deploy --only functions:transcodeUploadAudio (FFmpeg: gcp-build / tools/ensure-ffmpeg-linux.js).

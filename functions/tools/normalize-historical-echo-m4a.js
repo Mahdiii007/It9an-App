@@ -2,7 +2,7 @@
 /**
  * Einmalige Angleichung historischer تسجيل متزامن-Clips: uploads/echo_*.m4a
  * (früher ohne loudnorm) → erneut encodieren mit derselben Pipeline wie transcodeUploadAudio
- * (EBU R128 I=-16 LUFS) und Firestore audioUrl in posts + replies aktualisieren.
+ * (EBU R128, gleiches I wie transcodeUploadAudio) und Firestore audioUrl in posts + replies aktualisieren.
  *
  * Ausführung (Ordner Github/functions):
  *   npm run normalize-echo-m4a -- --dry-run
@@ -27,7 +27,8 @@ const admin = require('firebase-admin');
 const PROJECT_ID = 'it9an-neu';
 const STORAGE_BUCKET = 'it9an-neu.firebasestorage.app';
 
-const LOUDNORM_I = -16;
+/** Muss mit functions/index.js (transcodeUploadAudio) übereinstimmen. */
+const LOUDNORM_I = -13;
 const LOUDNORM_TP = -1.5;
 const LOUDNORM_LRA = 11;
 
