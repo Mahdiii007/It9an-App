@@ -59,11 +59,10 @@ function runFfmpegCollectStderr(args) {
 
 /**
  * EBU R128-kompatible Ziele (FFmpeg loudnorm, zweiphasig linear=true).
- * I=-12 LUFS: näher an der wahrgenommenen Lautheit von رد متزامن (dichtes Mix) als klassische −16;
- * dünnere Sprache (تسجيل عادي / تسجيل متزامن / رد عادي) wirkt sonst deutlich leiser.
+ * I=-11 LUFS: zusätzlich zur Client-WebAudio-Verstärkung — neue Uploads etwas kräftiger als −16.
  * TP in dBTP (True Peak), LRA in LU.
  */
-const LOUDNORM_I = -12;
+const LOUDNORM_I = -11;
 const LOUDNORM_TP = -1.5;
 const LOUDNORM_LRA = 11;
 
