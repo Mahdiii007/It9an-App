@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="إتقان">
     <!-- Wird von scripts/bump-app-version.sh mit derselben version wie app-version.json gesetzt (synchroner Deploy-Check, kein fetch → zuverlässig in Safari/PWA). -->
-    <meta name="it9an-deploy-version" content="it9an-1775507553-local-21988-b320aab">
+    <meta name="it9an-deploy-version" content="it9an-1775508436-local-29918-7ca2ccc">
     <link rel="manifest" href="manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap" rel="stylesheet">
     
@@ -2533,14 +2533,14 @@
                 stereoDownmixChannel: 0.5,
                 /**
                  * رد متزامن — getrennt: Monitor (Kopfhörer) vs. Aufnahme-Mix.
-                 * Schülerdatei ist oft loudnorm (−16 LUFS); ohne niedrigeren To-Dest-Faktor dominiert sie die Mix-Spur.
+                 * Schüler-Clip (loudnorm) und Lehrer-Mikro sollen im fertigen Mix ähnlich wirken; To-Dest + Mic/Makeup gemeinsam abstimmen.
                  */
                 syncReplyStudentMonitorGain: kind === 'ios' ? 2.08 : 2.02,
-                syncReplyStudentToDestGain: 0.58,
-                /** Zusätzliche Verstärkung Lehrer-Stimme in den Aufnahme-Bus (nach Mic-Gate). */
-                syncReplyTeacherMakeupGain: 3.35,
-                /** Mic-Vorverstärker nur رد متزامن (hoch — Abgleich zu normalisiertem Schülerclip, variierende Distanz). */
-                syncReplyTeacherMicPre: kind === 'ios' ? 3.55 : kind === 'android' ? 3.6 : kind === 'mac' ? 3.05 : 3.25,
+                syncReplyStudentToDestGain: 0.95,
+                /** Lehrer in den Aufnahme-Bus (nach Mic-Gate); niedrig halten, sonst dominieren Lehrer-Teile im Mix. */
+                syncReplyTeacherMakeupGain: 1.0,
+                /** Mic-Vorverstärker nur رد متزامن — mit Makeup so setzen, dass Pegel zum Schüler-Clip passt. */
+                syncReplyTeacherMicPre: kind === 'ios' ? 2.2 : kind === 'android' ? 2.25 : kind === 'mac' ? 1.9 : 2.05,
                 syncMonitorBase: 1.78,
                 syncMonitorIosExtra: kind === 'ios' ? 2.05 : 1,
                 syncMonitorPostMicIos: 3.2,
