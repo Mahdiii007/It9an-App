@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="إتقان">
     <!-- Wird von scripts/bump-app-version.sh mit derselben version wie app-version.json gesetzt (synchroner Deploy-Check, kein fetch → zuverlässig in Safari/PWA). -->
-    <meta name="it9an-deploy-version" content="it9an-1775506713-local-14037-825f551">
+    <meta name="it9an-deploy-version" content="it9an-1775507526-local-21612-5c98cc8">
     <link rel="manifest" href="manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap" rel="stylesheet">
     
@@ -2899,8 +2899,13 @@
             _feedAudioBlobCache.set(remoteUrl, objUrl);
             return objUrl;
         }
-        /** Review-Referenzvers: Fetch→Blob (auch relative asset-URLs → absolut); nach Mic/WebAudio oft still ohne Blob. */
-        async function it9anResolveReviewVersePlayUrl(remoteUrl) {
+        /**
+         * Review-Referenzvers als Blob-URL.
+         * linkToReviewModal: eigener Fetch + _reviewModalObjectUrls (bei إعادة kein geteiltes Feed-Cache-Blob, das evtl. ungültig ist).
+         * sonst: Feed-Cache (Retake-Overlay).
+         */
+        async function it9anResolveReviewVersePlayUrl(remoteUrl, opts) {
+            const linkModal = opts && opts.linkToReviewModal === true;
             const s = remoteUrl == null ? '' : String(remoteUrl).trim();
             if (!s) return s;
             let abs = s;
@@ -2908,8 +2913,19 @@
                 abs = new URL(s, window.location.href).href;
             } catch (e) {}
             if (!/^https?:/i.test(abs)) return s;
+            if (!linkModal && _feedAudioBlobCache.has(abs)) return _feedAudioBlobCache.get(abs);
             try {
-                return await resolveFeedAudioPlayUrl(abs, { force: true });
+                const res = await fetch(abs, { mode: 'cors', credentials: 'omit', cache: 'default' });
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const blob = await res.blob();
+                const objUrl = URL.createObjectURL(blob);
+                if (linkModal) {
+                    _reviewModalObjectUrls.push(objUrl);
+                } else {
+                    evictFeedAudioBlobCacheIfNeeded();
+                    _feedAudioBlobCache.set(abs, objUrl);
+                }
+                return objUrl;
             } catch (e) {
                 return s;
             }
@@ -11301,11 +11317,10 @@
                 finishPracticeSessionWithReviewEarly().catch(err => console.warn(err));
             }
         }
-        function reviewModalReviewAudioSameClipLoaded(targetUrl) {
+        /** Nur logische Review-Quelle (#reviewAudio): kein Abgleich mit currentSrc (Browser normalisiert blob-URLs → Pause/Toggle bricht sonst). */
+        function reviewModalReviewAudioLogicalMatches(targetUrl) {
             if (!targetUrl) return false;
-            if (_reviewAudioLogicalSourceUrl && it9anMediaUrlStringsMatch(_reviewAudioLogicalSourceUrl, targetUrl)) return true;
-            const audio = document.getElementById('reviewAudio');
-            return !!(audio && it9anMediaSrcMatchesTarget(audio, targetUrl));
+            return !!(_reviewAudioLogicalSourceUrl && it9anMediaUrlStringsMatch(_reviewAudioLogicalSourceUrl, targetUrl));
         }
         function revokeReviewModalObjectUrls() {
             _reviewModalObjectUrls.forEach(u => { try { URL.revokeObjectURL(u); } catch (e) {} });
@@ -11433,13 +11448,13 @@
             if (mainBtn) it9anSetPpState(mainBtn, 'play');
             reviewModalResetYellowSideBtn();
             try { it9anIosKickAudioRouteToSpeakerAfterHeavyOp(); } catch (eV) {}
-            if (!it9anMediaSrcMatchesTarget(va, _reviewVerseRefUrl)) {
-                va.pause();
-                va.src = _reviewVerseRefUrl;
-                va.load();
-            }
-            it9anPrepareReviewAudioPlayback();
             if (va.paused || va.ended) {
+                it9anPrepareReviewAudioPlayback();
+                if (!it9anMediaSrcMatchesTarget(va, _reviewVerseRefUrl) || va.ended) {
+                    va.pause();
+                    va.src = _reviewVerseRefUrl;
+                    va.load();
+                }
                 it9anPlayUserClipFromUserGesture(va);
                 it9anSetPpState(vb, 'pause');
             } else {
@@ -11503,7 +11518,7 @@
             const audio = document.getElementById('reviewAudio');
             const stripBtn = document.getElementById(btnId);
             if (!audio) return;
-            if (reviewModalReviewAudioSameClipLoaded(url)) {
+            if (reviewModalReviewAudioLogicalMatches(url)) {
                 if (!audio.paused) {
                     audio.pause();
                     if (stripBtn) it9anSetPpState(stripBtn, 'play');
@@ -11543,7 +11558,7 @@
             const audio = document.getElementById('reviewAudio');
             const histBtn = document.getElementById('review-hist-stu-' + i);
             if (!audio) return;
-            if (reviewModalReviewAudioSameClipLoaded(url)) {
+            if (reviewModalReviewAudioLogicalMatches(url)) {
                 if (!audio.paused) {
                     audio.pause();
                     if (histBtn) it9anSetPpState(histBtn, 'play');
@@ -11572,7 +11587,7 @@
             const audio = document.getElementById('reviewAudio');
             const histBtn = document.getElementById('review-hist-tea-' + i);
             if (!audio) return;
-            if (reviewModalReviewAudioSameClipLoaded(url)) {
+            if (reviewModalReviewAudioLogicalMatches(url)) {
                 if (!audio.paused) {
                     audio.pause();
                     if (histBtn) it9anSetPpState(histBtn, 'play');
@@ -11721,7 +11736,7 @@
             _reviewVerseRefUrl = '';
             if (reviewFid != null) {
                 const verseRemote = getAssetUrl(getVerseAssetPath(reviewFid) + '.mp3');
-                _reviewVerseRefUrl = await it9anResolveReviewVersePlayUrl(verseRemote);
+                _reviewVerseRefUrl = await it9anResolveReviewVersePlayUrl(verseRemote, { linkToReviewModal: true });
             }
 
             content.innerHTML = `
