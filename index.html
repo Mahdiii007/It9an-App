@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="إتقان">
     <!-- Wird von scripts/bump-app-version.sh mit derselben version wie app-version.json gesetzt (synchroner Deploy-Check, kein fetch → zuverlässig in Safari/PWA). -->
-    <meta name="it9an-deploy-version" content="it9an-1775508464-local-30382-e5ef6d9">
+    <meta name="it9an-deploy-version" content="it9an-1775509031-local-35774-67897f1">
     <link rel="manifest" href="manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap" rel="stylesheet">
     
@@ -2525,22 +2525,21 @@
             if (isIOS) kind = 'ios';
             else if (isAndroid) kind = 'android';
             else if (isMacDesktop) kind = 'mac';
+            /** رد متزامن: hoher Mix-Pegel; Schüler- und Lehrer-Spur gleiches Produkt (×To-Dest bzw. ×Makeup). */
+            const syncReplyTeacherMakeupGain = 1.22;
+            const syncReplyStudentToDestGain = 1.3;
+            const syncReplyStudentMonitorGain = kind === 'ios' ? 2.45 : 2.38;
+            const syncReplyTeacherMicPre = Math.round((syncReplyStudentMonitorGain * syncReplyStudentToDestGain) / syncReplyTeacherMakeupGain * 1000) / 1000;
             return {
                 kind,
                 /** Mic → WebAudio → MediaRecorder (WebKit/iOS stark unterpegelt) */
                 micCaptureGain: kind === 'ios' ? 2.78 : kind === 'android' ? 1.95 : kind === 'mac' ? 1.42 : 1.58,
                 /** Stereo-Mic → Mono: je Kanal (Summe ≈ 1 bei gleichem Pegel) */
                 stereoDownmixChannel: 0.5,
-                /**
-                 * رد متزامن — getrennt: Monitor (Kopfhörer) vs. Aufnahme-Mix.
-                 * Schüler-Clip (loudnorm) und Lehrer-Mikro sollen im fertigen Mix ähnlich wirken; To-Dest + Mic/Makeup gemeinsam abstimmen.
-                 */
-                syncReplyStudentMonitorGain: kind === 'ios' ? 2.08 : 2.02,
-                syncReplyStudentToDestGain: 0.95,
-                /** Lehrer in den Aufnahme-Bus (nach Mic-Gate); niedrig halten, sonst dominieren Lehrer-Teile im Mix. */
-                syncReplyTeacherMakeupGain: 1.0,
-                /** Mic-Vorverstärker nur رد متزامن — mit Makeup so setzen, dass Pegel zum Schüler-Clip passt. */
-                syncReplyTeacherMicPre: kind === 'ios' ? 2.2 : kind === 'android' ? 2.25 : kind === 'mac' ? 1.9 : 2.05,
+                syncReplyStudentMonitorGain,
+                syncReplyStudentToDestGain,
+                syncReplyTeacherMakeupGain,
+                syncReplyTeacherMicPre,
                 syncMonitorBase: 1.78,
                 syncMonitorIosExtra: kind === 'ios' ? 2.05 : 1,
                 syncMonitorPostMicIos: 3.2,
