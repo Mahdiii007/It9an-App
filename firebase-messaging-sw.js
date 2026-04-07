@@ -1,6 +1,6 @@
 /* PWA Service Worker: Push (Ton+Vibration) + Offline-Caching
  * CACHE_NAME bei größeren Strategie-Änderungen erhöhen (alte Caches werden in activate entfernt). */
-const CACHE_NAME = 'it9an-v12';
+const CACHE_NAME = 'it9an-v13';
 const META_CACHE = 'it9an-sw-meta';
 const FORCE_LOGOUT_META_URL = 'https://it9an-sw-meta.local/force-logout-v';
 const CACHE_MAX_AGE = 24 * 60 * 60 * 1000;
@@ -219,14 +219,16 @@ messaging.onBackgroundMessage((payload) => {
     }
     const base = new URL('index.html', self.registration.scope).href.replace(/\/index\.html$/, '');
     const url = urlParams.toString() ? (base + '/index.html?' + urlParams.toString()) : (base + '/index.html');
+    /* renotify: false — gleicher tag ersetzt still; vermeidet wiederholtes Vibrieren/Klingeln (Chrome/Android „Spam“-Signale). */
     const options = {
       body,
       icon: iconUrl,
       badge: iconUrl,
       tag,
-      renotify: true,
+      renotify: false,
       requireInteraction: false,
-      vibrate: [200, 100, 200, 100, 200],
+      vibrate: [180],
+      silent: false,
       data: { url, postId: data.postId || '', fileId: data.fileId || '', notifId: data.notifId || '', replyTimestamp: data.replyTimestamp || '', openStages: data.openStages || '', openLesson: data.openLesson || '', stageId: data.stageId || '', badge: String(badgeCount) }
     };
     try {

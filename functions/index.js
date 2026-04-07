@@ -252,6 +252,48 @@ function notifReplyTsMs(val) {
   return Number.isNaN(n) ? 0 : n;
 }
 
+/** Mindestabstand zwischen FCM „new_recording“ an denselben Lehrer — verringert Push-Fluten (Chrome/PWA „Spam“). */
+const NEW_RECORDING_PUSH_MIN_GAP_MS = 18000;
+
+/**
+ * @returns {Promise<boolean>} true wenn dieser Push gesendet werden darf (Slot reserviert)
+ */
+async function claimNewRecordingTeacherPushSlot(db, uid) {
+  if (!uid) return true;
+  const ref = db.collection('pushThrottle').doc(String(uid));
+  try {
+    let allowed = false;
+    await db.runTransaction(async (t) => {
+      const snap = await t.get(ref);
+      const last = snap.exists && snap.data().lastNewRecordingMs != null
+        ? Number(snap.data().lastNewRecordingMs)
+        : 0;
+      const now = Date.now();
+      if (last > 0 && now - last < NEW_RECORDING_PUSH_MIN_GAP_MS) {
+        allowed = false;
+        return;
+      }
+      allowed = true;
+      t.set(ref, {
+        lastNewRecordingMs: now,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      }, { merge: true });
+    });
+    return allowed;
+  } catch (e) {
+    console.warn('claimNewRecordingTeacherPushSlot', uid, e);
+    return true;
+  }
+}
+
+function fcmUrgencyAndAndroidPriority(notifType) {
+  const t = String(notifType || '');
+  if (t === 'reply' || t === 'admin_message' || t === 'lesson_uploaded') {
+    return { urgency: 'high', androidPriority: 'high' };
+  }
+  return { urgency: 'normal', androidPriority: 'normal' };
+}
+
 async function getNotifCountForUser(db, to, uid) {
   if (to === 'teachers') {
     const q = db.collection('notifications').where('to', '==', 'teachers');
@@ -418,6 +460,19 @@ exports.sendPushOnNotif = functions
 
     if (recipients.length === 0) return;
 
+    const recipientsToSend = [];
+    for (const r of recipients) {
+      if (d.type === 'new_recording' && to === 'teachers') {
+        const ok = await claimNewRecordingTeacherPushSlot(db, r.uid);
+        if (!ok) continue;
+      }
+      recipientsToSend.push(r);
+    }
+    if (recipientsToSend.length === 0) {
+      console.warn('sendPushOnNotif: alle Empfänger durch new_recording-Throttle übersprungen', notifId);
+      return;
+    }
+
     let title = 'تطبيق إتقان';
     let body = 'إشعار جديد';
     const stageNum = d.stageId != null ? d.stageId : '';
@@ -452,8 +507,10 @@ exports.sendPushOnNotif = functions
       ? `it9an-reply-${d.postId}-${String(d.replyTimestamp)}`
       : `it9an-${d.type}-${d.postId || ''}-${notifId}`;
     const iconUrl = `${HOSTING_BASE}/icon-192.png`;
+    const { urgency, androidPriority } = fcmUrgencyAndAndroidPriority(d.type);
+    const collapseKeyRaw = String(tag).replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 64) || 'it9an';
     const messages = [];
-    for (const r of recipients) {
+    for (const r of recipientsToSend) {
       const badgeCount = await getNotifCountForUser(db, to, r.uid);
       messages.push({
         token: r.token,
@@ -465,7 +522,7 @@ exports.sendPushOnNotif = functions
           tag
         },
         webpush: {
-          headers: { Urgency: 'high' },
+          headers: { Urgency: urgency },
           data: {
             title,
             body,
@@ -478,7 +535,8 @@ exports.sendPushOnNotif = functions
           }
         },
         android: {
-          priority: 'high',
+          priority: androidPriority,
+          collapseKey: collapseKeyRaw,
           notification: {
             sound: 'default',
             defaultVibrateTimings: true,
@@ -504,9 +562,9 @@ exports.sendPushOnNotif = functions
           const err = resp.error;
           const code = err && err.code ? String(err.code) : '';
           if (code.includes('registration-token-not-registered') || code.includes('invalid-registration-token')) {
-            deadUids.add(recipients[i].uid);
+            deadUids.add(recipientsToSend[i].uid);
           }
-          console.warn('Push failed for', recipients[i].uid, err);
+          console.warn('Push failed for', recipientsToSend[i].uid, err);
         }
       });
       for (const deadUid of deadUids) {
@@ -730,12 +788,12 @@ function buildQuranReminderMessages(tokens, body, tagSuffix) {
     token,
     data: { ...data },
     webpush: {
-      headers: { Urgency: 'high' },
+      headers: { Urgency: 'normal' },
       data: { ...data },
       fcmOptions: { link: `${HOSTING_BASE}/` }
     },
     android: {
-      priority: 'high',
+      priority: 'normal',
       data: { ...data }
     },
     apns: {
