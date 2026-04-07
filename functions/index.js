@@ -772,9 +772,13 @@ async function getTeacherFcmTokens(db) {
   return tokens;
 }
 
-function buildQuranReminderMessages(tokens, body, tagSuffix) {
+/**
+ * Quran-Reminder: nur data; Anzeige nur im Service Worker.
+ * Kein APNS-Alert/Titel/Sound (sonst oft doppelte Meldung auf iPhone: System + Service Worker).
+ */
+function buildQuranReminderMessages(tokens, body, tagSuffix, dayKey, dayNight) {
   const title = 'تطبيق إتقان';
-  const tag = `it9an-quran-reminder-${tagSuffix}-${Date.now()}`;
+  const tag = `it9an-quran-${tagSuffix}-${dayKey}-${dayNight}`;
   const data = {
     title,
     body,
@@ -783,7 +787,8 @@ function buildQuranReminderMessages(tokens, body, tagSuffix) {
   };
   /* Kein webpush.notification: sonst zeigt FCM Web die Meldung automatisch UND
    * firebase-messaging-sw.js (onBackgroundMessage) → doppelte Banner gleichzeitig.
-   * Wie sendPushOnNotif: nur data + fcmOptions; Anzeige nur im Service Worker. */
+   * Wie sendPushOnNotif: nur data + fcmOptions; Anzeige nur im Service Worker.
+   * Kein apns-Block: Safari/iOS-Web-Push sonst oft natives Banner + SW-Meldung. */
   return tokens.map((token) => ({
     token,
     data: { ...data },
@@ -795,20 +800,15 @@ function buildQuranReminderMessages(tokens, body, tagSuffix) {
     android: {
       priority: 'normal',
       data: { ...data }
-    },
-    apns: {
-      payload: {
-        aps: { sound: 'default', contentAvailable: true },
-        title,
-        body
-      }
     }
   }));
 }
 
-async function sendQuranReminderBatch(tokens, body, tagSuffix, logLabel) {
+async function sendQuranReminderBatch(tokens, body, tagSuffix, logLabel, isMorningSlot) {
   if (tokens.length === 0) return;
-  const messages = buildQuranReminderMessages(tokens, body, tagSuffix);
+  const dayKey = new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Berlin' });
+  const dayNight = isMorningSlot ? 'd' : 'n';
+  const messages = buildQuranReminderMessages(tokens, body, tagSuffix, dayKey, dayNight);
   try {
     const res = await admin.messaging().sendEach(messages);
     if (res.failureCount > 0) {
@@ -840,8 +840,8 @@ QURAN_REMINDER_SLOTS.forEach((slot, idx) => {
         getStudentFcmTokens(db),
         getTeacherFcmTokens(db)
       ]);
-      await sendQuranReminderBatch(studentTokens, QURAN_REMINDER_BODY, 'stu', 'students');
-      await sendQuranReminderBatch(teacherTokens, QURAN_REMINDER_BODY_TEACHER, 'tch', 'teachers');
+      await sendQuranReminderBatch(studentTokens, QURAN_REMINDER_BODY, 'stu', 'students', slot.morning);
+      await sendQuranReminderBatch(teacherTokens, QURAN_REMINDER_BODY_TEACHER, 'tch', 'teachers', slot.morning);
       return null;
     }
   );
