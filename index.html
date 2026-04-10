@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="إتقان">
     <!-- Wird von scripts/bump-app-version.sh mit derselben version wie app-version.json gesetzt (synchroner Deploy-Check, kein fetch → zuverlässig in Safari/PWA). -->
-    <meta name="it9an-deploy-version" content="it9an-1775587279-local-74691-ba0647b">
+    <meta name="it9an-deploy-version" content="it9an-1775860790-local-11624-0eb2e9b">
     <link rel="manifest" href="manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap" rel="stylesheet">
     
@@ -155,22 +155,24 @@
         .stage-card-3:hover { box-shadow: 0 8px 24px rgba(15, 76, 58, 0.28); }
         .stage-card-4 { background: linear-gradient(145deg, #1a6b54 0%, #0f4c3a 100%); box-shadow: 0 4px 16px rgba(15, 76, 58, 0.25); }
         .stage-card-4:hover { box-shadow: 0 8px 24px rgba(15, 76, 58, 0.35); }
-        .stage-card-5 { background: linear-gradient(145deg, #2d4a5c 0%, #1a2f3d 100%); box-shadow: 0 4px 16px rgba(26, 47, 61, 0.28); margin-bottom: 30px; }
+        .stage-card-5 { background: linear-gradient(145deg, #2d4a5c 0%, #1a2f3d 100%); box-shadow: 0 4px 16px rgba(26, 47, 61, 0.28); }
         .stage-card-5:hover { box-shadow: 0 8px 24px rgba(26, 47, 61, 0.38); }
+        .stage-card-6 { background: linear-gradient(145deg, #3d3548 0%, #1e1a26 100%); box-shadow: 0 4px 16px rgba(30, 26, 38, 0.3); margin-bottom: 30px; }
+        .stage-card-6:hover { box-shadow: 0 8px 24px rgba(30, 26, 38, 0.42); }
         .stage-card-title { font-size: 20px; font-weight: bold; margin-bottom: 6px; text-align: center; }
         .stage-card-1 .stage-card-title, .stage-card-2 .stage-card-title { color: #0f4c3a; }
-        .stage-card-3 .stage-card-title, .stage-card-4 .stage-card-title, .stage-card-5 .stage-card-title { color: #ffffff; }
+        .stage-card-3 .stage-card-title, .stage-card-4 .stage-card-title, .stage-card-5 .stage-card-title, .stage-card-6 .stage-card-title { color: #ffffff; }
         .stage-card-name { font-size: 17px; margin-bottom: 14px; text-align: center; line-height: 1.4; }
         .stage-card-1 .stage-card-name, .stage-card-2 .stage-card-name { color: #1a3a2e; }
-        .stage-card-3 .stage-card-name, .stage-card-4 .stage-card-name, .stage-card-5 .stage-card-name { color: rgba(255,255,255,0.95); }
+        .stage-card-3 .stage-card-name, .stage-card-4 .stage-card-name, .stage-card-5 .stage-card-name, .stage-card-6 .stage-card-name { color: rgba(255,255,255,0.95); }
         .stage-progress-wrap { margin-top: 12px; text-align: center; }
         .stage-progress-bar { height: 8px; background: rgba(0,0,0,0.12); border-radius: 4px; overflow: hidden; }
         .stage-progress-fill { height: 100%; border-radius: 4px; transition: width 0.3s ease; background: var(--primary); }
         .stage-card-1 .stage-progress-fill, .stage-card-2 .stage-progress-fill { background: linear-gradient(90deg, #1a6b54, #0f4c3a); }
-        .stage-card-3 .stage-progress-fill, .stage-card-4 .stage-progress-fill, .stage-card-5 .stage-progress-fill { background: linear-gradient(90deg, rgba(255,255,255,0.9), rgba(255,255,255,0.6)); }
+        .stage-card-3 .stage-progress-fill, .stage-card-4 .stage-progress-fill, .stage-card-5 .stage-progress-fill, .stage-card-6 .stage-progress-fill { background: linear-gradient(90deg, rgba(255,255,255,0.9), rgba(255,255,255,0.6)); }
         .stage-progress-text { font-size: 14px; margin-top: 6px; font-weight: 600; text-align: center; }
         .stage-card-1 .stage-progress-text, .stage-card-2 .stage-progress-text { color: #0f4c3a; }
-        .stage-card-3 .stage-progress-text, .stage-card-4 .stage-progress-text, .stage-card-5 .stage-progress-text { color: #ffffff; }
+        .stage-card-3 .stage-progress-text, .stage-card-4 .stage-progress-text, .stage-card-5 .stage-progress-text, .stage-card-6 .stage-progress-text { color: #ffffff; }
         .stage-card { position: relative; }
         .stage-notif-bell { position: absolute; top: 12px; left: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.4); font-size: 22px; z-index: 2; }
         .stage-notif-bell:hover { background: rgba(255,255,255,0.6); }
@@ -180,6 +182,8 @@
         .stage-students-icon:hover { background: rgba(255,255,255,0.6); }
         .stage-card-disabled { opacity: 0.5; filter: grayscale(0.6); cursor: not-allowed; pointer-events: auto; }
         .stage-card-disabled:hover { transform: none; }
+        .stage-card-restricted { opacity: 0.48; filter: grayscale(0.85); cursor: not-allowed; pointer-events: auto; }
+        .stage-card-restricted:hover { transform: none; box-shadow: inherit; }
         .menu-item { position: relative; }
         .lesson-card-top { position: relative; }
         .lesson-card-tr-icon { position: absolute; top: 10px; right: 8px; z-index: 2; }
@@ -2069,8 +2073,43 @@
             { id: 2, name: 'فن الإدغام', assetsBase: 'assets-v2' },
             { id: 3, name: 'أسرار الإخفاء', assetsBase: 'assets-v3' },
             { id: 4, name: 'أساليب التلاوة', assetsBase: 'assets-v4' },
-            { id: 5, name: 'الختمة التعليمية', assetsBase: 'assets-v5' }
+            { id: 5, name: 'الختمة التعليمية (رواية قالون عن نافع المدني)', assetsBase: 'assets-v5' },
+            { id: 6, name: 'الختمة التعليمية (بقية الروايات)', assetsBase: 'assets-v6' }
         ];
+        const STAGE6_ACCESS_ALERT_AR = 'هذه المرحلة متاحة لمستخدمين محددين فقط.';
+        const STAGE56_STUDENT_ONLY_SYNC_REC_MSG_AR = 'في المرحلتين 5 و 6 يُسمح فقط بالتسجيل المتزامن (الميكروفون الأصفر)، وليس التسجيل العادي.';
+        const STAGE56_TEACHER_ONLY_SYNC_REPLY_MSG_AR = 'في المرحلتين 5 و 6 يُسمح فقط بالرد المتزامن، وليس الرد العادي.';
+        function it9anIsSyncOnlyRecordingReplyStage(stageId) {
+            const n = stageId != null && stageId !== '' && !Number.isNaN(Number(stageId)) ? Number(stageId) : Number(currentStageId);
+            return n === 5 || n === 6;
+        }
+        function syncStudentNormalRecColumnVisibility() {
+            const role = localStorage.getItem('it9an_role');
+            const recCol = document.getElementById('recBtnColumnWrap');
+            const recBtn = document.getElementById('recBtn');
+            if (role !== 'student' || (!recCol && !recBtn)) return;
+            const hideNormal = it9anIsSyncOnlyRecordingReplyStage();
+            if (recCol) recCol.style.display = hideNormal ? 'none' : 'flex';
+            if (recBtn) recBtn.style.display = hideNormal ? 'none' : 'flex';
+        }
+        function getNormalizedPinForStageAccess() {
+            const myUid = localStorage.getItem('it9an_uid');
+            if (!myUid || myUid === 'admin_super') return '';
+            const u = (typeof leaderboardAllUsers !== 'undefined' && leaderboardAllUsers.find(function(x) { return x.uid === myUid; })) || (typeof leaderboardAllTeachers !== 'undefined' && leaderboardAllTeachers.find(function(x) { return x.uid === myUid; }));
+            const pin = (u && u.personalPin) ? u.personalPin : (localStorage.getItem('it9an_pin') || '');
+            if (pin === '' || pin == null) return '';
+            return (String(pin)).padStart(4, '0');
+        }
+        function canUserAccessStage6() {
+            const myUid = localStorage.getItem('it9an_uid');
+            if (!myUid) return false;
+            if (myUid === 'admin_super') return true;
+            const userRole = localStorage.getItem('it9an_role');
+            const pinStr = getNormalizedPinForStageAccess();
+            if (userRole === 'teacher' && pinStr === '9696') return true;
+            if (userRole === 'student' && pinStr === '0860') return true;
+            return false;
+        }
         const VERS_PRO_LEKTION_FALLBACK = [ 8, 15, 9, 15, 16 ];
         const VERS_PRO_LEKTION_FALLBACK_STAGE4 = [ 8, 15, 9, 15, 16, 10, 12, 6, 4, 8, 3, 27, 4, 4, 10, 4 ];
         const LESSON_TITLES_FALLBACK_STAGE4 = [ "لا النّافية", "لا النّاهية", "لا الدّعائية", "القصر والحصر", "الشرط", "الترغيب والترجي", "التوكيد", "ما الموصوليّة", "ما النّافية", "ما الاستفهاميّة", "الاستفهام الحقيقي", "الاستفهام الإنكاري", "الاستفهام التعجّبي", "الاستفهام التّهديدي", "الاستفهام التّوبيخي", "الاستفهام التّقريري" ];
@@ -2117,6 +2156,10 @@
             return [];
         }
         async function enterStage(stageId) {
+            if (Number(stageId) === 6 && !canUserAccessStage6()) {
+                alert(STAGE6_ACCESS_ALERT_AR);
+                return;
+            }
             currentStageId = stageId;
             const cfg = getStageConfig(stageId);
             ASSETS_BASE = cfg.assetsBase;
@@ -2126,6 +2169,7 @@
             invalidateCompletedVersesCache();
             if (typeof window.applyNotifStageFilter === 'function') window.applyNotifStageFilter();
             renderMenu();
+            if (typeof syncStudentNormalRecColumnVisibility === 'function') syncStudentNormalRecColumnVisibility();
             if (typeof syncStudentVersEchoUi === 'function') syncStudentVersEchoUi();
         }
         async function getStageProgressForStudent(studentUid, stageId) {
@@ -2194,17 +2238,26 @@
                     let kurs = await loadManifestForStage(stage.id);
                     if (kurs.length === 0 && stage.id === 4) kurs = buildKursFromVerses(VERS_PRO_LEKTION_FALLBACK_STAGE4, LESSON_TITLES_FALLBACK_STAGE4);
                     const hasLessons = kurs.length > 0;
+                    const restrictedStage6 = stage.id === 6 && !canUserAccessStage6();
                     const div = document.createElement('div');
-                    div.className = 'stage-card stage-card-' + stage.id + (hasLessons ? '' : ' stage-card-disabled');
+                    let cardClass = 'stage-card stage-card-' + stage.id;
+                    if (restrictedStage6) cardClass += ' stage-card-restricted';
+                    else if (!hasLessons) cardClass += ' stage-card-disabled';
+                    div.className = cardClass;
                     let progressHtml = '';
-                    if (hasLessons && myUid && myUid !== 'admin_super' && userRole === 'student') {
+                    if (hasLessons && !restrictedStage6 && myUid && myUid !== 'admin_super' && userRole === 'student') {
                         try {
                             const prog = await getStageProgressForStudent(myUid, stage.id);
                             progressHtml = `<div class="stage-progress-wrap"><div class="stage-progress-bar"><div class="stage-progress-fill" style="width:${prog.percent}%"></div></div><div class="stage-progress-text">${prog.completed}/${prog.total} (${prog.percent}%)</div></div>`;
                         } catch (e) { console.warn('getStageProgressForStudent:', e); }
                     }
-                    div.innerHTML = `<div class="stage-notif-bell" data-stage-id="${stage.id}" onclick="event.stopPropagation(); showNotificationsForStage(${stage.id})"><span class="stage-notif-icon">🔔</span><span class="stage-notif-badge" id="stage-notif-badge-${stage.id}">0</span></div><div class="stage-students-icon" onclick="event.stopPropagation(); showStudentsProgressForStage(${stage.id})" title="عرض قائمة الطلاب">👥</div><div class="stage-card-title">مرحلة ${stage.id}</div><div class="stage-card-name">${stage.name}</div>${progressHtml}`;
+                    const topIcons = restrictedStage6 ? '' : `<div class="stage-notif-bell" data-stage-id="${stage.id}" onclick="event.stopPropagation(); showNotificationsForStage(${stage.id})"><span class="stage-notif-icon">🔔</span><span class="stage-notif-badge" id="stage-notif-badge-${stage.id}">0</span></div><div class="stage-students-icon" onclick="event.stopPropagation(); showStudentsProgressForStage(${stage.id})" title="عرض قائمة الطلاب">👥</div>`;
+                    div.innerHTML = `${topIcons}<div class="stage-card-title">مرحلة ${stage.id}</div><div class="stage-card-name">${stage.name}</div>${progressHtml}`;
                     div.onclick = () => {
+                        if (restrictedStage6) {
+                            alert(STAGE6_ACCESS_ALERT_AR);
+                            return;
+                        }
                         if (!hasLessons) {
                             showStageNoLessonsModal();
                             return;
@@ -4068,6 +4121,7 @@
                 if (role === 'student') {
                     setRecColumnVisible(true);
                     if(adminMenuPanel) adminMenuPanel.style.display = 'none';
+                    if (typeof syncStudentNormalRecColumnVisibility === 'function') syncStudentNormalRecColumnVisibility();
                 } else {
                     setRecColumnVisible(false);
                     if(adminMenuPanel) adminMenuPanel.style.display = 'none';
@@ -5601,7 +5655,7 @@
                 if (userSnap.exists() && userSnap.data().notifStages) notifStages = userSnap.data().notifStages;
             } catch (e) { console.warn('loadTeacherNotifStages:', e); }
             if (!Array.isArray(notifStages)) notifStages = [];
-            const stages = typeof STAGES_CONFIG !== 'undefined' ? STAGES_CONFIG : [{ id: 1, name: 'هندسة الحروف' }, { id: 2, name: 'فن الإدغام' }, { id: 3, name: 'أسرار الإخفاء' }, { id: 4, name: 'أساليب التلاوة' }, { id: 5, name: 'الختمة التعليمية' }];
+            const stages = typeof STAGES_CONFIG !== 'undefined' ? STAGES_CONFIG : [{ id: 1, name: 'هندسة الحروف' }, { id: 2, name: 'فن الإدغام' }, { id: 3, name: 'أسرار الإخفاء' }, { id: 4, name: 'أساليب التلاوة' }, { id: 5, name: 'الختمة التعليمية (رواية قالون عن نافع المدني)' }, { id: 6, name: 'الختمة التعليمية (بقية الروايات)' }];
             container.innerHTML = stages.map(s => {
                 const checked = notifStages.length === 0 || notifStages.includes(s.id);
                 return `<label style="display:flex; align-items:center; gap:6px; cursor:pointer;"><input type="checkbox" data-stage-id="${s.id}" ${checked ? 'checked' : ''}> مرحلة ${s.id}: ${s.name}</label>`;
@@ -5917,6 +5971,10 @@
             const role = localStorage.getItem('it9an_role');
             const uid = localStorage.getItem('it9an_uid');
             if (role !== 'student' || !uid) return;
+            if (it9anIsSyncOnlyRecordingReplyStage()) {
+                if (typeof syncStudentVersEchoUi === 'function') syncStudentVersEchoUi();
+                return;
+            }
             const notifBlocked = hasUnlistenedNotificationsForStage(currentStageId);
             const pendingTeacher = studentHasUnfinishedRecordingOnCurrentVerse();
             const repCount = getMyRepetitionCountForCurrentVerse();
@@ -6777,6 +6835,7 @@
             if (!activePostFilter) window.scrollTo({ top: 0, behavior: 'smooth' });
             updateLbBackButton();
             document.getElementById('appFooter').style.display = 'none';
+            if (typeof syncStudentNormalRecColumnVisibility === 'function') syncStudentNormalRecColumnVisibility();
             if (typeof updateRecButtonForStudentNotifications === 'function') updateRecButtonForStudentNotifications();
             if (typeof syncStudentVersEchoUi === 'function') syncStudentVersEchoUi();
             
@@ -7493,11 +7552,18 @@
                 const hasTeacherReply = d.replies && d.replies.some(r => r.role === 'teacher');
                 const syncReplyStageOk = isStages45SyncFeaturesEnabled();
                 const syncReplyBtnClass = 'reply-btn reply-btn-sync' + (syncReplyStageOk ? '' : ' reply-btn-sync-stage-disabled');
-                const syncReplyTitleAttr = syncReplyStageOk ? '' : ' title="رد متزامن يعمل فقط في المرحلة 4 والمرحلة 5."';
+                const syncReplyTitleAttr = syncReplyStageOk ? '' : ' title="رد متزامن يعمل فقط في المراحل 4 و 5 و 6."';
                 const syncReplyBtnHtml = isSyncReplyEnvironmentSupported()
                     ? `<button type="button" class="${syncReplyBtnClass}" onclick="startSyncReply('${d.id}')"${syncReplyTitleAttr}>رد متزامن</button>`
                     : `<button type="button" class="reply-btn reply-btn-sync" disabled title="غير متاح: متصفح قديم أو اتصال غير آمن (HTTPS)">رد متزامن</button>`;
-                const replyBtnWrap = ((userRole === 'teacher' || isAdmin) && isStudentPost && !hasTeacherReply) ? `<div class="feed-reply-wrap"><button class="reply-btn" onclick="startReply('${d.id}')">↩️ الرد</button>${syncReplyBtnHtml}</div>` : '';
+                const postStageForReply = Number(d.stageId != null && d.stageId !== '' ? d.stageId : currentStageId);
+                const teacherReplySyncOnly = postStageForReply === 5 || postStageForReply === 6;
+                let replyBtnWrap = '';
+                if ((userRole === 'teacher' || isAdmin) && isStudentPost && !hasTeacherReply) {
+                    replyBtnWrap = teacherReplySyncOnly
+                        ? `<div class="feed-reply-wrap">${syncReplyBtnHtml}</div>`
+                        : `<div class="feed-reply-wrap"><button class="reply-btn" onclick="startReply('${d.id}')">↩️ الرد</button>${syncReplyBtnHtml}</div>`;
+                }
                 let postDateStr = formatDateTime(d.timestamp);
                 const isSaved = savedIds.has(d.id);
                 const saveBtnHtml = (myUid && myUid !== 'admin_super') ? `<button class="save-btn ${isSaved ? 'saved' : ''}" onclick="toggleSaveForLater('${d.id}', ${isSaved})" title="${isSaved ? 'إزالة من القائمة' : 'حفظ للمشاهدة لاحقاً'}"><svg class="save-icon" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></button>` : '';
@@ -7717,8 +7783,15 @@
         }
 
         window.startReply = function(postId) {
-            replyTargetId = postId;
             const post = allLoadedPosts.find(p => p.id === postId);
+            const replyStage = Number(post && post.stageId != null && post.stageId !== '' ? post.stageId : currentStageId);
+            const role = localStorage.getItem('it9an_role');
+            const uid = localStorage.getItem('it9an_uid');
+            if (it9anIsSyncOnlyRecordingReplyStage(replyStage) && (role === 'teacher' || uid === 'admin_super')) {
+                alert(STAGE56_TEACHER_ONLY_SYNC_REPLY_MSG_AR);
+                return;
+            }
+            replyTargetId = postId;
             if (post && post.fileId != null) { recordingFileId = parseInt(String(post.fileId), 10); recordingStageId = post.stageId ?? currentStageId; }
             toggleRecord();
         }
@@ -9268,8 +9341,8 @@
 
         const REC_BLOCKED_MSG = 'يرجى استخدام إشعارات الجرس لسماع جميع ردود المعلم لهذه المرحلة حتى النهاية. يمكنك التسجيل في هذه المرحلة مرة أخرى فقط عندما تكون جميع ردود المعلم قد سُمعت حتى النهاية. هكذا تتعلم بشكل أفضل.';
         const REC_PENDING_TEACHER_MSG = 'لديك بالفعل تسجيل تحت هذا المقطع لم يُقيِّمه المعلم بعد أو لم يُرَدَّ عليه صوتياً بعد. لا يمكنك بدء تسجيل جديد هنا حتى يُقيَّم كل تسجيلاتك لهذا المقطع ويصلك رد صوتي من المعلم على كل منها.\n\nإن أردت إعادة التسجيل من جديد، احذف أولاً التسجيل القديم غير المكتمل (زر الحذف 🗑️ بجانب تسجيلك في الخلاصة أدناه)، ثم يمكنك استخدام الميكروفون مرة أخرى.';
-        const SYNC_REC_ONLY_STAGES_4_5_MSG = 'تسجيل متزامن (الميكروفون الأصفر) يعمل فقط في المرحلة 4 والمرحلة 5.';
-        const SYNC_REPLY_ONLY_STAGES_4_5_MSG = 'رد متزامن يعمل فقط في المرحلة 4 والمرحلة 5.';
+        const SYNC_REC_ONLY_STAGES_4_5_MSG = 'تسجيل متزامن (الميكروفون الأصفر) يعمل فقط في المراحل 4 و 5 و 6.';
+        const SYNC_REPLY_ONLY_STAGES_4_5_MSG = 'رد متزامن يعمل فقط في المراحل 4 و 5 و 6.';
         /** تسجيل متزامن (Schüler): einheitliche Formulierung — نقرة vs. ضغط مطوّل/إفلات. */
         const STUDENT_ECHO_SYNC_TXT_BOOT = 'جاري تشغيل المقطع… ثم اضغط الميكروفون في النافذة مع الاستمرار للتسجيل، وأفلِت لمتابعة الاستماع.';
         const STUDENT_ECHO_SYNC_TXT_READY = 'اضغط مع الاستمرار';
@@ -9281,7 +9354,7 @@
 
         function isStages45SyncFeaturesEnabled() {
             const id = Number(currentStageId);
-            return id === 4 || id === 5;
+            return id === 4 || id === 5 || id === 6;
         }
 
         function isStudentSyncRecordingStageAllowed() {
@@ -11121,6 +11194,10 @@
                 return;
             }
             if (localStorage.getItem('it9an_role') === 'student') {
+                if (it9anIsSyncOnlyRecordingReplyStage()) {
+                    alert(STAGE56_STUDENT_ONLY_SYNC_REC_MSG_AR);
+                    return;
+                }
                 if (hasUnlistenedNotificationsForStage(currentStageId)) {
                     alert(REC_BLOCKED_MSG);
                     return;

@@ -4,6 +4,8 @@
 # Nutzung:
 #   ./scripts/deploy-all.sh
 #   ./scripts/deploy-all.sh "feat: Kurzbeschreibung"
+# Haengt bei „git add“ ohne Ausgabe? Projekt nicht unter iCloud/OneDrive legen, oder:
+#   DEBUG=1 ./scripts/deploy-all.sh   (zeigt jede gestagte Datei bei git add -v)
 #
 # Nur Git (kein Firebase):  SKIP_FIREBASE=1 ./scripts/deploy-all.sh
 # Nur Firebase (kein Push):    SKIP_GIT=1 ./scripts/deploy-all.sh
@@ -71,14 +73,47 @@ if [[ ! -d .git ]]; then
 fi
 
 if [[ "${SKIP_GIT:-0}" != "1" && -f .git/index.lock ]]; then
-  echo "=== FEHLER: .git/index.lock existiert ==="
-  echo "Anderes Git/Cursor-Panel nutzt das Repo, oder ein git ist abgestürzt."
-  echo "Wenn sicher kein git mehr läuft: rm -f .git/index.lock"
-  exit 1
+  _lock=".git/index.lock"
+  if [[ "$(uname -s)" == "Darwin" ]]; then
+    _lock_age=$(($(date +%s) - $(stat -f %m "$_lock" 2>/dev/null || echo 0)))
+  else
+    _lock_age=$(($(date +%s) - $(stat -c %Y "$_lock" 2>/dev/null || echo 0)))
+  fi
+  # FORCE_INDEX_LOCK=1: immer Lock-Prozesse beenden (haengendes git status/diff aus Cursor-Terminals).
+  # Sonst: nur wenn Lock aelter als 120s — dann meist verwaist (haengender Git).
+  if [[ "${FORCE_INDEX_LOCK:-0}" == "1" ]] || [[ "${_lock_age:-999}" -gt 120 ]]; then
+    echo ">>> ${_lock} (${_lock_age}s) — beende Prozesse auf der Lock-Datei (lsof) und entferne Lock …"
+    if command -v lsof >/dev/null 2>&1; then
+      _pids=$(lsof -t "$_lock" 2>/dev/null || true)
+      if [[ -n "${_pids:-}" ]]; then
+        echo "    kill -9 ${_pids}"
+        kill -9 ${_pids} 2>/dev/null || true
+        sleep 0.4
+      fi
+    fi
+    rm -f "$_lock"
+  fi
+  if [[ -f .git/index.lock ]]; then
+    echo "=== FEHLER: .git/index.lock existiert ==="
+    echo "Anderes Git laeuft gerade (Lock frisch, <~2 Min), oder Cursor-Terminal mit haengendem „git status“/„git diff“."
+    echo "Alle Git-Terminals in Cursor schliessen, warten, erneut — oder:"
+    echo "  FORCE_INDEX_LOCK=1 $0"
+    echo "  rm -f .git/index.lock   (nur wenn sicher kein aktives git mehr laeuft)"
+    exit 1
+  fi
 fi
 
 COMMIT_MSG="${1:-chore: deploy $(date -u +%Y-%m-%dT%H:%M:%SZ)}"
 BRANCH="$(git rev-parse --abbrev-ref HEAD)"
+
+# Weder „git diff --staged“ noch „git status“ sind auf langsamen/iCloud-Worktrees zuverlässig schnell.
+# Index vs. HEAD nur über Tree-Hashes (kein Verzeichnis-Scan der Arbeitskopie).
+git_staged_is_empty() {
+  local ht it
+  ht=$(git rev-parse HEAD^{tree} 2>/dev/null) || return 1
+  it=$(git write-tree 2>/dev/null) || return 1
+  [[ "$ht" == "$it" ]]
+}
 
 # Committet alle getrackten/ungetrackten (nicht ignorierten) Änderungen und pusht, bis status leer oder max n.
 sync_worktree_clean() {
@@ -86,8 +121,10 @@ sync_worktree_clean() {
   local i=0
   while [[ $i -lt "$max" ]]; do
     i=$((i + 1))
-    git add -A
-    if git diff --staged --quiet 2>/dev/null; then
+    echo "   sync_worktree_clean: git add -A ($i/$max) …"
+    if [[ "${DEBUG:-0}" == "1" ]]; then git --no-pager add -A -v; else git add -A; fi
+    echo "   sync_worktree_clean: git add fertig"
+    if git_staged_is_empty; then
       break
     fi
     git commit -m "chore: Arbeitsbaum nach Deploy synchronisieren"
@@ -109,9 +146,16 @@ if [[ "${SKIP_GIT:-0}" != "1" ]]; then
   fi
   # Vor Commit: app-version.json (scripts/bump-app-version.sh — eindeutig pro Lauf); nach Firebase erneuter Bump + Sync-Commit.
   bash "${ROOT}/scripts/bump-app-version.sh"
-  echo "→ git add -A …"
-  git add -A
-  if git diff --staged --quiet; then
+  echo "→ git add -A … (UTC $(date -u +%H:%M:%S)) — kann bei vielen Dateien oder iCloud/OneDrive-Ordnern Minuten dauern; bei Haengen: Ctrl+C, dann DEBUG=1 $0"
+  if [[ "${DEBUG:-0}" == "1" ]]; then
+    echo "   DEBUG: git add -v (jede Datei eine Zeile) …"
+    git --no-pager add -A -v
+  else
+    git add -A
+  fi
+  echo "→ git add fertig (UTC $(date -u +%H:%M:%S))"
+  echo "→ Staging pruefen (Index-Baum vs HEAD, git write-tree) …"
+  if git_staged_is_empty; then
     if [[ "${FORCE_GITHUB_PAGES:-0}" == "1" ]]; then
       git commit --allow-empty -m "chore: trigger GitHub Pages redeploy"
       echo "Leerer Commit erzeugt — loest GitHub Actions (Pages) aus."
@@ -122,10 +166,12 @@ if [[ "${SKIP_GIT:-0}" != "1" ]]; then
   else
     echo "→ git commit …"
     git commit -m "$COMMIT_MSG"
+    echo "→ git commit fertig (UTC $(date -u +%H:%M:%S))"
   fi
-  echo "→ git push (bei Rückfrage zu Anmeldung/SSH hier warten) …"
+  echo "→ git push (bei Rückfrage zu Anmeldung/SSH hier warten) … (UTC $(date -u +%H:%M:%S))"
   git push -u origin "$BRANCH"
   _GIT_PUSH_OK=1
+  echo "→ git push fertig (UTC $(date -u +%H:%M:%S))"
   echo "Git push erledigt. Pages: Repository → Actions → „Deploy to GitHub Pages“ pruefen (nur bei neuem Commit auf main/master)."
 else
   echo "=== Git übersprungen (SKIP_GIT=1) ==="
