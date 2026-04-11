@@ -1,6 +1,8 @@
 {
   "stageId": 6,
   "stageName": "الختمة التعليمية (بقية الروايات)",
-  "versesPerLesson": [],
-  "lessonTitles": []
+  "versesPerLesson": [48],
+  "lessonTitles": [
+    "سورة البقرة - أحمد بن طالب"
+  ]
 }
