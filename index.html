@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="إتقان">
     <!-- Wird von scripts/bump-app-version.sh mit derselben version wie app-version.json gesetzt (synchroner Deploy-Check, kein fetch → zuverlässig in Safari/PWA). -->
-    <meta name="it9an-deploy-version" content="it9an-1775909303-local-6635-ae9ca35">
+    <meta name="it9an-deploy-version" content="it9an-1775909685-local-7769-e0fa9a2">
     <link rel="manifest" href="manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap" rel="stylesheet">
     
@@ -2082,11 +2082,11 @@
             const n = stageId != null && stageId !== '' && !Number.isNaN(Number(stageId)) ? Number(stageId) : Number(currentStageId);
             return n === 5 || n === 6;
         }
-        /** معلم/مسؤول في المرحلة 6: مثل الطالب — تسجيل متزامن فقط، لا تسجيل عادي */
-        function it9anTeacherOrAdminStage6SyncMic() {
+        /** معلم/مسؤول في المرحلتين 5 و 6: مثل الطالب — تسجيل متزامن فقط، لا تسجيل عادي */
+        function it9anTeacherOrAdminStage56SyncMic() {
             const role = localStorage.getItem('it9an_role');
             const uid = localStorage.getItem('it9an_uid');
-            return (role === 'teacher' || uid === 'admin_super') && Number(currentStageId) === 6;
+            return (role === 'teacher' || uid === 'admin_super') && it9anIsSyncOnlyRecordingReplyStage();
         }
         function syncStudentNormalRecColumnVisibility() {
             const role = localStorage.getItem('it9an_role');
@@ -2095,9 +2095,9 @@
             const recBtn = document.getElementById('recBtn');
             if (!recCol && !recBtn) return;
             const hideNormalStudent = role === 'student' && it9anIsSyncOnlyRecordingReplyStage();
-            const hideNormalAdminStage6 = uid === 'admin_super' && Number(currentStageId) === 6;
-            const hideNormal = hideNormalStudent || hideNormalAdminStage6;
-            if (role === 'student' || hideNormalAdminStage6) {
+            const hideNormalAdmin56 = uid === 'admin_super' && it9anIsSyncOnlyRecordingReplyStage();
+            const hideNormal = hideNormalStudent || hideNormalAdmin56;
+            if (role === 'student' || hideNormalAdmin56) {
                 if (recCol) recCol.style.display = hideNormal ? 'none' : 'flex';
                 if (recBtn) recBtn.style.display = hideNormal ? 'none' : 'flex';
             }
@@ -5795,6 +5795,26 @@
             });
         }
 
+        /** Glocke: Aufnahme gesperrt bis Benachrichtigungen für diese Stufe erledigt — Schüler (unangehörte Lehrer-Replies), Lehrer (wie Stufen-Badge). */
+        function hasRecordingNotifBarrierForStage(stageId) {
+            const uid = localStorage.getItem('it9an_uid');
+            const role = localStorage.getItem('it9an_role');
+            if (!uid || uid === 'admin_super') return false;
+            if (role === 'student') return hasUnlistenedNotificationsForStage(stageId);
+            if (role === 'teacher') {
+                const sid = stageId != null ? Number(stageId) : Number(currentStageId);
+                const raw = lastRawNotifsGlobal || [];
+                return raw.some(function(n) {
+                    const s = n.stageId;
+                    const stageMatch = n.type === 'admin_message' ? true : (s == null || s === undefined ? (sid === 4) : Number(s) === sid);
+                    if (!stageMatch) return false;
+                    if ((n.clearedBy || []).includes(uid)) return false;
+                    return true;
+                });
+            }
+            return false;
+        }
+
         function getMyRepetitionCountForCurrentVerse() {
             const uid = localStorage.getItem('it9an_uid');
             if (!uid) return 0;
@@ -5802,10 +5822,10 @@
             const v = data.viewers && data.viewers[uid];
             return (v && v.count) || 0;
         }
-        /** مراحل 1–3: 30 تكراراً كحد أدنى للتسجيل؛ 4 و5: 20؛ المرحلة 6: بلا حد أدنى */
+        /** مراحل 1–3: 30 تكراراً كحد أدنى للتسجيل؛ 4: 20؛ 5 و6: بلا حد أدنى */
         function getMinRepetitionsForRecording(stageId) {
             const id = stageId != null ? Number(stageId) : Number(currentStageId);
-            if (id === 6) return 0;
+            if (id === 5 || id === 6) return 0;
             if (id >= 1 && id <= 3) return 30;
             return 20;
         }
@@ -5987,7 +6007,7 @@
                 if (typeof syncStudentVersEchoUi === 'function') syncStudentVersEchoUi();
                 return;
             }
-            const notifBlocked = hasUnlistenedNotificationsForStage(currentStageId);
+            const notifBlocked = hasRecordingNotifBarrierForStage(currentStageId);
             const pendingTeacher = studentHasUnfinishedRecordingOnCurrentVerse();
             const repCount = getMyRepetitionCountForCurrentVerse();
             const minRep = getMinRepetitionsForRecording(currentStageId);
@@ -9354,6 +9374,9 @@
         }
 
         const REC_BLOCKED_MSG = 'يرجى استخدام إشعارات الجرس لسماع جميع ردود المعلم لهذه المرحلة حتى النهاية. يمكنك التسجيل في هذه المرحلة مرة أخرى فقط عندما تكون جميع ردود المعلم قد سُمعت حتى النهاية. هكذا تتعلم بشكل أفضل.';
+        function getRecordingNotifBarrierAlertMessage() {
+            return localStorage.getItem('it9an_role') === 'student' ? REC_BLOCKED_MSG : 'يرجى استخدام إشعارات الجرس لمراجعة الإشعارات لهذه المرحلة قبل التسجيل.';
+        }
         const REC_PENDING_TEACHER_MSG = 'لديك بالفعل تسجيل تحت هذا المقطع لم يُقيِّمه المعلم بعد أو لم يُرَدَّ عليه صوتياً بعد. لا يمكنك بدء تسجيل جديد هنا حتى يُقيَّم كل تسجيلاتك لهذا المقطع ويصلك رد صوتي من المعلم على كل منها.\n\nإن أردت إعادة التسجيل من جديد، احذف أولاً التسجيل القديم غير المكتمل (زر الحذف 🗑️ بجانب تسجيلك في الخلاصة أدناه)، ثم يمكنك استخدام الميكروفون مرة أخرى.';
         const SYNC_REC_ONLY_STAGES_4_5_MSG = 'تسجيل متزامن (الميكروفون الأصفر) يعمل فقط في المراحل 4 و 5 و 6.';
         const SYNC_REPLY_ONLY_STAGES_4_5_MSG = 'رد متزامن يعمل فقط في المراحل 4 و 5 و 6.';
@@ -9379,15 +9402,16 @@
             const role = localStorage.getItem('it9an_role');
             const uid = localStorage.getItem('it9an_uid');
             if (!uid) return false;
-            if (it9anTeacherOrAdminStage6SyncMic()) {
+            if (it9anTeacherOrAdminStage56SyncMic()) {
                 if (!isStudentSyncRecordingStageAllowed()) return false;
                 if (replyTargetId) return false;
+                if (hasRecordingNotifBarrierForStage(currentStageId)) return false;
                 return true;
             }
             if (role !== 'student') return false;
             if (!isStudentSyncRecordingStageAllowed()) return false;
             if (replyTargetId) return false;
-            if (hasUnlistenedNotificationsForStage(currentStageId)) return false;
+            if (hasRecordingNotifBarrierForStage(currentStageId)) return false;
             if (studentHasUnfinishedRecordingOnCurrentVerse()) return false;
             if (getMyRepetitionCountForCurrentVerse() < getMinRepetitionsForRecording(currentStageId)) return false;
             return true;
@@ -9517,9 +9541,9 @@
             const role = localStorage.getItem('it9an_role');
             const uid = localStorage.getItem('it9an_uid');
             if (!prBtn) return;
-            const teacherAdminStage6 = it9anTeacherOrAdminStage6SyncMic();
+            const teacherAdminStage56 = it9anTeacherOrAdminStage56SyncMic();
             if (role !== 'student' || !uid) {
-                if (!teacherAdminStage6) {
+                if (!teacherAdminStage56) {
                     if (prWrap) prWrap.style.display = 'none';
                     else prBtn.style.display = 'none';
                     return;
@@ -9527,16 +9551,32 @@
             }
             if (prWrap) prWrap.style.display = 'flex';
             prBtn.style.display = '';
-            if (teacherAdminStage6) {
+            if (teacherAdminStage56) {
                 prBtn.classList.remove('sync-rec-stage-disabled');
                 if (prSub) prSub.classList.remove('sync-rec-label-disabled');
                 prBtn.style.filter = '';
+                const syncStageOkTa = isStudentSyncRecordingStageAllowed();
+                prBtn.classList.toggle('sync-rec-stage-disabled', !syncStageOkTa);
+                if (prSub) prSub.classList.toggle('sync-rec-label-disabled', !syncStageOkTa);
+                if (!syncStageOkTa) {
+                    prBtn.style.opacity = '';
+                    prBtn.style.cursor = 'pointer';
+                    prBtn.title = SYNC_REC_ONLY_STAGES_4_5_MSG;
+                    return;
+                }
+                const notifBlockedTa = hasRecordingNotifBarrierForStage(currentStageId);
+                if (notifBlockedTa) {
+                    prBtn.style.opacity = '0.5';
+                    prBtn.style.cursor = 'pointer';
+                    prBtn.title = 'استخدم إشعارات الجرس أولاً';
+                    return;
+                }
                 prBtn.style.opacity = '';
                 prBtn.style.cursor = '';
                 prBtn.title = STUDENT_ECHO_SYNC_TITLE_VERSE_BTN;
                 return;
             }
-            const notifBlocked = hasUnlistenedNotificationsForStage(currentStageId);
+            const notifBlocked = hasRecordingNotifBarrierForStage(currentStageId);
             const pendingTeacher = studentHasUnfinishedRecordingOnCurrentVerse();
             const repCount = getMyRepetitionCountForCurrentVerse();
             const minRep = getMinRepetitionsForRecording(currentStageId);
@@ -10291,7 +10331,7 @@
             const role = localStorage.getItem('it9an_role');
             const uid = localStorage.getItem('it9an_uid');
             if (!uid) return false;
-            if (role !== 'student' && !it9anTeacherOrAdminStage6SyncMic()) return false;
+            if (role !== 'student' && !it9anTeacherOrAdminStage56SyncMic()) return false;
             if (replyTargetId) return false;
             if (!shouldUseStudentEchoHoldMode()) return false;
             if (studentEchoPostVersePhase) return false;
@@ -10893,9 +10933,13 @@
             });
         }
         function studentPracticeSessionGatesOkOrAlert() {
-            if (it9anTeacherOrAdminStage6SyncMic()) {
+            if (it9anTeacherOrAdminStage56SyncMic()) {
                 if (!isStudentSyncRecordingStageAllowed()) {
                     alert(SYNC_REC_ONLY_STAGES_4_5_MSG);
+                    return false;
+                }
+                if (hasRecordingNotifBarrierForStage(currentStageId)) {
+                    alert(getRecordingNotifBarrierAlertMessage());
                     return false;
                 }
                 return true;
@@ -10904,8 +10948,8 @@
                 alert(SYNC_REC_ONLY_STAGES_4_5_MSG);
                 return false;
             }
-            if (hasUnlistenedNotificationsForStage(currentStageId)) {
-                alert(REC_BLOCKED_MSG);
+            if (hasRecordingNotifBarrierForStage(currentStageId)) {
+                alert(getRecordingNotifBarrierAlertMessage());
                 return false;
             }
             if (!replyTargetId && studentHasUnfinishedRecordingOnCurrentVerse()) {
@@ -11162,7 +11206,7 @@
                 e.stopPropagation();
                 return;
             }
-            if (localStorage.getItem('it9an_role') !== 'student' && !it9anTeacherOrAdminStage6SyncMic()) return;
+            if (localStorage.getItem('it9an_role') !== 'student' && !it9anTeacherOrAdminStage56SyncMic()) return;
             if (!isStudentSyncRecordingStageAllowed() && !studentEchoPracticeSessionActive) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -11238,8 +11282,8 @@
                     alert(STAGE56_STUDENT_ONLY_SYNC_REC_MSG_AR);
                     return;
                 }
-                if (hasUnlistenedNotificationsForStage(currentStageId)) {
-                    alert(REC_BLOCKED_MSG);
+                if (hasRecordingNotifBarrierForStage(currentStageId)) {
+                    alert(getRecordingNotifBarrierAlertMessage());
                     return;
                 }
                 if (!replyTargetId && studentHasUnfinishedRecordingOnCurrentVerse()) {
@@ -11251,7 +11295,11 @@
                     return;
                 }
             }
-            if (it9anTeacherOrAdminStage6SyncMic()) {
+            if (it9anTeacherOrAdminStage56SyncMic()) {
+                if (hasRecordingNotifBarrierForStage(currentStageId)) {
+                    alert(getRecordingNotifBarrierAlertMessage());
+                    return;
+                }
                 alert(STAGE56_STUDENT_ONLY_SYNC_REC_MSG_AR);
                 return;
             }
@@ -12241,9 +12289,9 @@
             const uid = localStorage.getItem('it9an_uid');
 
             try {
-                /* تسجيل طالب جديد: رفع المسار الأخضر إن وُجد (رد متزامن)، وإلا currentBlob (مثلاً الميكروفون الأحمر). معلم/مسؤول مرحلة 6: مثل الطالب */
+                /* تسجيل طالب جديد: رفع المسار الأخضر إن وُجد (رد متزامن)، وإلا currentBlob (مثلاً الميكروفون الأحمر). معلم/مسؤول مرحلتا 5 و6: مثل الطالب */
                 const echoSyncUpload = !replyTargetId && reviewBlobGreen && reviewBlobGreen.size > 0
-                    && (role === 'student' || it9anTeacherOrAdminStage6SyncMic());
+                    && (role === 'student' || it9anTeacherOrAdminStage56SyncMic());
                 const blobToUpload = echoSyncUpload ? reviewBlobGreen : currentBlob;
                 let ext = 'webm';
                 if (blobToUpload.type.includes('mp4')) ext = 'mp4';
@@ -12414,7 +12462,7 @@
                 return;
             }
             const _retryEchoPractice = !replyTargetId && reviewOpenedFromEchoPractice
-                && (localStorage.getItem('it9an_role') === 'student' || it9anTeacherOrAdminStage6SyncMic());
+                && (localStorage.getItem('it9an_role') === 'student' || it9anTeacherOrAdminStage56SyncMic());
             if (_retryEchoPractice) {
                 if (!studentPracticeSessionGatesOkOrAlert()) {
                     reviewOpenedFromEchoPractice = false;
