@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="إتقان">
     <!-- Wird von scripts/bump-app-version.sh mit derselben version wie app-version.json gesetzt (synchroner Deploy-Check, kein fetch → zuverlässig in Safari/PWA). -->
-    <meta name="it9an-deploy-version" content="it9an-1776006283-local-25423-dadab93">
+    <meta name="it9an-deploy-version" content="it9an-1776006913-local-26708-2dab598">
     <link rel="manifest" href="manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap" rel="stylesheet">
     
@@ -136,27 +136,33 @@
         }
         .title-text-maktaa.verse-num-maktaa { border-right: none; padding-right: 0; margin-right: 0; }
         .title-text-maktaa.lesson-title-text { border-right: 2px solid #ddd; padding-right: 10px; margin-right: 5px; }
-        /* Player: goldene Pill fest breit (Vers + Lektion), kein Kollision mit «الدروس»; kein extra Rahmen nur um den Lektionsnamen */
+        /* Player: Pill mittig; Breite skaliert mit Viewport (Rand für «الدروس» + Glocke + safe-area) */
         #pageTitle.page-title-with-lesson {
             align-items: center;
             justify-content: center;
-            gap: 8px;
+            gap: 6px;
             flex-wrap: nowrap;
             box-sizing: border-box;
-            width: min(310px, calc(100vw - 120px));
-            max-width: min(310px, calc(100vw - 120px));
+            left: 50%;
+            transform: translateX(-50%);
+            --it9an-pill-side: clamp(44px, 16vw, 96px);
+            width: min(280px, calc(100vw - 2 * var(--it9an-pill-side) - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)));
+            max-width: min(280px, calc(100vw - 2 * var(--it9an-pill-side) - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)));
             min-width: 0;
-            padding: 8px 14px;
-            min-height: 54px;
+            padding: 8px min(12px, 3vw);
+            min-height: 52px;
             overflow: visible;
         }
-        #pageTitle.page-title-with-lesson .verse-num-maktaa { flex-shrink: 0; }
+        #pageTitle.page-title-with-lesson .verse-num-maktaa {
+            flex-shrink: 0;
+            font-size: clamp(11px, 3.4vw, 16px);
+        }
         #pageTitle.page-title-with-lesson .it9an-player-lesson-title {
             flex: 1;
             min-width: 0;
             color: var(--red);
             line-height: 1.45;
-            font-size: 26px;
+            font-size: min(26px, 5vw);
             white-space: nowrap;
             overflow: visible;
             padding-top: 1px;
@@ -164,9 +170,15 @@
         }
         @media (max-width: 400px) {
             #pageTitle.page-title-with-lesson {
-                width: min(280px, calc(100vw - 108px));
-                max-width: min(280px, calc(100vw - 108px));
-                padding: 8px 10px;
+                --it9an-pill-side: clamp(48px, 18vw, 88px);
+                gap: 4px;
+                padding: 6px min(8px, 2.5vw);
+                min-height: 50px;
+            }
+        }
+        @media (max-width: 340px) {
+            #pageTitle.page-title-with-lesson {
+                --it9an-pill-side: clamp(50px, 20vw, 82px);
             }
         }
         .menu-item-title.it9an-lesson-grid-title {
@@ -2433,7 +2445,16 @@
             const pt = document.getElementById('pageTitle');
             const lessonEl = pt && pt.querySelector('.it9an-player-lesson-title');
             if (!pt || !lessonEl || !String(lessonEl.textContent || '').trim()) return;
-            const maxPx = parseFloat(lessonEl.getAttribute('data-max-fs')) || 26;
+            const attrMax = parseFloat(lessonEl.getAttribute('data-max-fs')) || 26;
+            const ptW = pt.getBoundingClientRect().width;
+            const verseEl = pt.querySelector('.verse-num-maktaa');
+            const verseW = verseEl ? verseEl.getBoundingClientRect().width : 0;
+            const innerPad = 28;
+            const avail = Math.max(32, ptW - verseW - innerPad - 10);
+            const vw = typeof window !== 'undefined' ? window.innerWidth : 400;
+            const capByAvail = Math.min(26, Math.max(7, avail * 0.16));
+            const capByVw = Math.min(26, Math.max(8, vw * 0.062));
+            const maxPx = Math.min(attrMax, capByAvail, capByVw);
             it9anShrinkFontToFitOneLine(lessonEl, maxPx);
         }
         function it9anEqualizeLessonCardHeights() {
