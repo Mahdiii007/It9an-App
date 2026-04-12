@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="إتقان">
     <!-- Wird von scripts/bump-app-version.sh mit derselben version wie app-version.json gesetzt (synchroner Deploy-Check, kein fetch → zuverlässig in Safari/PWA). -->
-    <meta name="it9an-deploy-version" content="it9an-1776010473-local-35920-108d0b4">
+    <meta name="it9an-deploy-version" content="it9an-1776011005-local-37097-634b313">
     <link rel="manifest" href="manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap" rel="stylesheet">
     
@@ -89,15 +89,17 @@
         .header { 
             position: sticky; top: 0; z-index: 1000; 
             background: linear-gradient(to right, var(--primary), var(--primary-light));
-            padding: 10px 8px 10px 2px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); 
+            padding: 10px 8px 10px 0; box-shadow: 0 4px 15px rgba(0,0,0,0.15); 
             display: flex; justify-content: space-between; align-items: center; 
             flex-direction: row; direction: ltr;
             gap: 10px; height: 80px; border-bottom: 2px solid var(--gold);
             width: 100%; max-width: 100%; overflow-x: hidden;
         }
         .header-nav-cluster {
-            display: flex; align-items: center; gap: 6px;
+            display: flex; align-items: center; gap: 4px;
             flex-shrink: 0;
+            margin: 0;
+            padding: 0;
         }
         .header-btn {
             background: rgba(255,255,255,0.1); border: 1px solid var(--gold); color: var(--gold-light);
@@ -106,37 +108,21 @@
             box-sizing: border-box;
             flex-shrink: 0;
         }
-        /* المرحلة / المراحل / الدروس: gleiche Außenmaße, links am Rand; ☰ am goldenen Rand, arabische Beschriftung daneben */
+        /* المرحلة / المراحل / الدروس: ohne ☰ — goldener Rahmen dicht am Text, schmal für mehr Pill-Breite (2px-Logik unverändert) */
         .header-nav-cluster .header-nav-main-btn {
-            width: 108px;
-            min-width: 108px;
-            max-width: 108px;
+            width: max-content;
+            min-width: 0;
+            max-width: none;
             height: 44px;
             min-height: 44px;
             max-height: 44px;
-            padding: 0 4px 0 2px;
-            justify-content: flex-start;
-            gap: 4px;
-            flex-direction: row;
-            direction: ltr;
+            padding: 0 5px 0 4px;
+            justify-content: center;
+            align-items: center;
+            direction: rtl;
             font-size: 13px;
             white-space: nowrap;
-        }
-        .header-nav-cluster .header-btn-hamburger {
-            flex-shrink: 0;
-            width: 1.15em;
-            text-align: center;
-            line-height: 1;
-            font-size: 1.1em;
-        }
-        .header-nav-cluster .header-btn-txt {
-            direction: rtl;
-            unicode-bidi: isolate;
-            flex: 1;
-            min-width: 0;
-            text-align: right;
-            overflow: hidden;
-            text-overflow: clip;
+            gap: 0;
         }
         .header #pageTitle { direction: rtl; }
         .header-right-slot { display: flex; align-items: center; flex-shrink: 0; gap: 8px; }
@@ -1256,9 +1242,9 @@
 
     <div class="header">
         <div class="header-nav-cluster">
-            <button id="menuBtn" type="button" class="header-btn header-nav-main-btn" onclick="goToMenu()"><span class="header-btn-hamburger" aria-hidden="true">☰</span><span class="header-btn-txt">المرحلة</span></button>
-            <button id="stagesBackBtn" type="button" class="header-btn header-nav-main-btn" onclick="showStagesView()" style="display:none;"><span class="header-btn-hamburger" aria-hidden="true">☰</span><span class="header-btn-txt">المراحل</span></button>
-            <button id="lessonsBackBtn" type="button" class="header-btn header-nav-main-btn" onclick="showLessonsView()" style="display:none;"><span class="header-btn-hamburger" aria-hidden="true">☰</span><span class="header-btn-txt">الدروس</span></button>
+            <button id="menuBtn" type="button" class="header-btn header-nav-main-btn" onclick="goToMenu()">المرحلة</button>
+            <button id="stagesBackBtn" type="button" class="header-btn header-nav-main-btn" onclick="showStagesView()" style="display:none;">المراحل</button>
+            <button id="lessonsBackBtn" type="button" class="header-btn header-nav-main-btn" onclick="showLessonsView()" style="display:none;">الدروس</button>
         </div>
         <div id="pageTitle"></div>
         <div class="header-right-slot">
