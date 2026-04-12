@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="إتقان">
     <!-- Wird von scripts/bump-app-version.sh mit derselben version wie app-version.json gesetzt (synchroner Deploy-Check, kein fetch → zuverlässig in Safari/PWA). -->
-    <meta name="it9an-deploy-version" content="it9an-1776007467-local-28264-5810149">
+    <meta name="it9an-deploy-version" content="it9an-1776007787-local-29294-6177b47">
     <link rel="manifest" href="manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap" rel="stylesheet">
     
@@ -136,32 +136,32 @@
         }
         .title-text-maktaa.verse-num-maktaa { border-right: none; padding-right: 0; margin-right: 0; }
         .title-text-maktaa.lesson-title-text { border-right: 2px solid #ddd; padding-right: 10px; margin-right: 5px; }
-        /* Player: Pill mittig. ~300px Viewport für «الدروس» (breit) + Glocke + flex-Gap + Schatten reservieren */
+        /* Player: Pill mittig, groß genug lesbar; Rand für «الدروس»+Glocke (moderater Abzug als zuvor) */
         #pageTitle.page-title-with-lesson {
             align-items: center;
             justify-content: center;
-            gap: 6px;
+            gap: 10px;
             flex-wrap: nowrap;
             box-sizing: border-box;
             left: 50%;
             transform: translateX(-50%);
-            width: min(260px, max(48px, calc(100vw - 300px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px))));
-            max-width: min(260px, max(48px, calc(100vw - 300px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px))));
+            width: min(330px, max(64px, calc(100vw - 236px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px))));
+            max-width: min(330px, max(64px, calc(100vw - 236px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px))));
             min-width: 0;
-            padding: 8px min(12px, 3vw);
-            min-height: 52px;
+            padding: 12px 16px;
+            min-height: 60px;
             overflow: visible;
         }
         #pageTitle.page-title-with-lesson .verse-num-maktaa {
             flex-shrink: 0;
-            font-size: clamp(11px, 3.4vw, 16px);
+            font-size: clamp(13px, 3.8vw, 18px);
         }
         #pageTitle.page-title-with-lesson .it9an-player-lesson-title {
             flex: 1;
             min-width: 0;
             color: var(--red);
             line-height: 1.45;
-            font-size: min(26px, 5vw);
+            font-size: min(30px, 6.2vw);
             white-space: nowrap;
             overflow: visible;
             padding-top: 1px;
@@ -169,17 +169,17 @@
         }
         @media (max-width: 400px) {
             #pageTitle.page-title-with-lesson {
-                width: min(240px, max(44px, calc(100vw - 312px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px))));
-                max-width: min(240px, max(44px, calc(100vw - 312px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px))));
-                gap: 4px;
-                padding: 6px min(8px, 2.5vw);
-                min-height: 50px;
+                width: min(300px, max(58px, calc(100vw - 246px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px))));
+                max-width: min(300px, max(58px, calc(100vw - 246px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px))));
+                gap: 8px;
+                padding: 11px 14px;
+                min-height: 58px;
             }
         }
         @media (max-width: 340px) {
             #pageTitle.page-title-with-lesson {
-                width: min(200px, max(40px, calc(100vw - 320px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px))));
-                max-width: min(200px, max(40px, calc(100vw - 320px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px))));
+                width: min(280px, max(52px, calc(100vw - 256px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px))));
+                max-width: min(280px, max(52px, calc(100vw - 256px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px))));
             }
         }
         .menu-item-title.it9an-lesson-grid-title {
@@ -2413,10 +2413,10 @@
         function getAssetUrl(relativePath) {
             return ASSETS_BASE + '/' + relativePath.replace(/^\//, '');
         }
-        /** Eine Zeile, kein «…»: Schrift verkleinern bis alles sichtbar (harte Untergrenze nur für Extremfälle). */
-        function it9anShrinkFontToFitOneLine(el, maxPx) {
+        /** Eine Zeile, kein «…»: Schrift verkleinern bis alles sichtbar. hardMinPx = Mindestlesbarkeit (Player höher als Raster). */
+        function it9anShrinkFontToFitOneLine(el, maxPx, hardMinPx) {
             if (!el) return;
-            const HARD_MIN = 4;
+            const HARD_MIN = hardMinPx != null ? hardMinPx : 4;
             el.style.whiteSpace = 'nowrap';
             el.style.wordBreak = 'normal';
             el.style.textOverflow = 'clip';
@@ -2429,34 +2429,28 @@
                 el.style.fontSize = fs + 'px';
                 guard++;
             }
-            guard = 0;
-            while (el.scrollWidth > el.clientWidth && fs > 2 && guard < 200) {
-                fs -= 0.25;
-                el.style.fontSize = fs + 'px';
-                guard++;
+            if (hardMinPx == null || hardMinPx <= 4) {
+                guard = 0;
+                while (el.scrollWidth > el.clientWidth && fs > 2 && guard < 200) {
+                    fs -= 0.25;
+                    el.style.fontSize = fs + 'px';
+                    guard++;
+                }
             }
             el.style.overflow = 'visible';
         }
         function it9anFitLessonGridTitle(el) {
             if (!el || !String(el.textContent || '').trim()) return;
             const maxPx = parseFloat(el.getAttribute('data-max-fs')) || 32;
-            it9anShrinkFontToFitOneLine(el, maxPx);
+            it9anShrinkFontToFitOneLine(el, maxPx, 10);
         }
         function it9anFitPlayerLessonTitle() {
             const pt = document.getElementById('pageTitle');
             const lessonEl = pt && pt.querySelector('.it9an-player-lesson-title');
             if (!pt || !lessonEl || !String(lessonEl.textContent || '').trim()) return;
-            const attrMax = parseFloat(lessonEl.getAttribute('data-max-fs')) || 26;
-            const ptW = pt.getBoundingClientRect().width;
-            const verseEl = pt.querySelector('.verse-num-maktaa');
-            const verseW = verseEl ? verseEl.getBoundingClientRect().width : 0;
-            const innerPad = 28;
-            const avail = Math.max(32, ptW - verseW - innerPad - 10);
-            const vw = typeof window !== 'undefined' ? window.innerWidth : 400;
-            const capByAvail = Math.min(26, Math.max(7, avail * 0.16));
-            const capByVw = Math.min(26, Math.max(8, vw * 0.062));
-            const maxPx = Math.min(attrMax, capByAvail, capByVw);
-            it9anShrinkFontToFitOneLine(lessonEl, maxPx);
+            const attrMax = parseFloat(lessonEl.getAttribute('data-max-fs')) || 30;
+            const maxPx = Math.min(Math.max(attrMax, 20), 30);
+            it9anShrinkFontToFitOneLine(lessonEl, maxPx, 12);
         }
         function it9anEqualizeLessonCardHeights() {
             const grid = document.getElementById('lesson-grid');
@@ -6318,7 +6312,7 @@
                     if (ptP) {
                         ptP.classList.remove('header-name-pin', 'page-title-lessons', 'page-title-notifications', 'page-title-with-lesson');
                         ptP.classList.add('page-title-with-lesson');
-                        const lessonPart = `<span class="title-text-maktaa lesson-title-text it9an-player-lesson-title" data-max-fs="26">${lek.title}</span>`;
+                        const lessonPart = `<span class="title-text-maktaa lesson-title-text it9an-player-lesson-title" data-max-fs="30">${lek.title}</span>`;
                         ptP.innerHTML = `<span class="title-text-maktaa verse-num-maktaa">المقطع ${currentLocalVers}</span>${lessonPart}`;
                         it9anScheduleLessonTitleFits();
                     }
@@ -7008,7 +7002,7 @@
             if (ptP) {
                 ptP.classList.remove('header-name-pin', 'page-title-lessons', 'page-title-notifications', 'page-title-with-lesson');
                 ptP.classList.add('page-title-with-lesson');
-                const lessonPart = `<span class="title-text-maktaa lesson-title-text it9an-player-lesson-title" data-max-fs="26">${lek.title}</span>`;
+                const lessonPart = `<span class="title-text-maktaa lesson-title-text it9an-player-lesson-title" data-max-fs="30">${lek.title}</span>`;
                 ptP.innerHTML = `<span class="title-text-maktaa verse-num-maktaa">المقطع ${localVersNum}</span>${lessonPart}`;
                 it9anScheduleLessonTitleFits();
             }
