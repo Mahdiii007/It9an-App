@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="إتقان">
     <!-- Wird von scripts/bump-app-version.sh mit derselben version wie app-version.json gesetzt (synchroner Deploy-Check, kein fetch → zuverlässig in Safari/PWA). -->
-    <meta name="it9an-deploy-version" content="it9an-1776008813-local-32403-27020ac">
+    <meta name="it9an-deploy-version" content="it9an-1776009785-local-34194-1707158">
     <link rel="manifest" href="manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap" rel="stylesheet">
     
@@ -98,16 +98,17 @@
             background: rgba(255,255,255,0.1); border: 1px solid var(--gold); color: var(--gold-light);
             padding: 8px 15px; border-radius: 10px; cursor: pointer; font-size: 15px; font-family: 'Amiri';
             font-weight: bold; display: flex; align-items: center; gap: 5px; white-space: nowrap;
-        }
-        /* Player: feste Breite — Pill wird per JS so begrenzt, dass 2px zum goldenen Rahmen bleiben */
-        #lessonsBackBtn {
-            flex: 0 0 130px;
-            width: 130px;
-            min-width: 130px;
-            max-width: 130px;
             box-sizing: border-box;
+            flex-shrink: 0;
+        }
+        /* «المرحلة» und «الدروس»: identische goldene Rahmen-Breite (schmaler als zuvor nur-Dروس); «المراحل» bleibt breiter */
+        #menuBtn, #lessonsBackBtn {
+            width: 118px;
+            min-width: 118px;
+            max-width: 118px;
+            padding: 8px 10px;
             justify-content: center;
-            padding-inline: 8px;
+            box-sizing: border-box;
         }
         .header-right-slot { margin-inline-end: auto; display: flex; align-items: center; flex-shrink: 0; gap: 8px; }
         .logout-icon-btn {
@@ -2487,14 +2488,43 @@
             const lessonEl = pt && pt.querySelector('.it9an-player-lesson-title');
             const verseEl = pt && pt.querySelector('.verse-num-maktaa');
             if (!pt || !lessonEl || !String(lessonEl.textContent || '').trim()) return;
+            lessonEl.style.removeProperty('font-size');
             if (verseEl) verseEl.style.removeProperty('font-size');
-            const attrMax = parseFloat(lessonEl.getAttribute('data-max-fs')) || 30;
-            const maxPx = Math.min(Math.max(attrMax, 20), 30);
-            it9anShrinkFontToFitOneLine(lessonEl, maxPx, 12);
-            if (verseEl) {
-                const fs = window.getComputedStyle(lessonEl).fontSize;
-                verseEl.style.fontSize = fs;
+            if (!verseEl) {
+                const attrMax = parseFloat(lessonEl.getAttribute('data-max-fs')) || 30;
+                it9anShrinkFontToFitOneLine(lessonEl, Math.min(Math.max(attrMax, 20), 30), 5);
+                return;
             }
+            const attrMax = parseFloat(lessonEl.getAttribute('data-max-fs')) || 30;
+            let fs = Math.min(Math.max(attrMax, 20), 30);
+            const MIN_FS = 5;
+            verseEl.style.whiteSpace = 'nowrap';
+            lessonEl.style.whiteSpace = 'nowrap';
+            verseEl.style.overflow = 'hidden';
+            lessonEl.style.overflow = 'hidden';
+            let guard = 0;
+            while (guard < 800) {
+                verseEl.style.fontSize = fs + 'px';
+                lessonEl.style.fontSize = fs + 'px';
+                const rowOverflow = pt.scrollWidth > pt.clientWidth + 1;
+                const lessonOverflow = lessonEl.scrollWidth > lessonEl.clientWidth + 1;
+                if (!rowOverflow && !lessonOverflow) break;
+                fs -= 0.5;
+                if (fs < MIN_FS) {
+                    fs = MIN_FS;
+                    break;
+                }
+                guard++;
+            }
+            guard = 0;
+            while (guard < 400 && (pt.scrollWidth > pt.clientWidth + 1 || lessonEl.scrollWidth > lessonEl.clientWidth + 1) && fs > 3) {
+                fs -= 0.25;
+                verseEl.style.fontSize = fs + 'px';
+                lessonEl.style.fontSize = fs + 'px';
+                guard++;
+            }
+            verseEl.style.removeProperty('overflow');
+            lessonEl.style.removeProperty('overflow');
         }
         function it9anEqualizeLessonCardHeights() {
             const grid = document.getElementById('lesson-grid');
