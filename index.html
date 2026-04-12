@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="إتقان">
     <!-- Wird von scripts/bump-app-version.sh mit derselben version wie app-version.json gesetzt (synchroner Deploy-Check, kein fetch → zuverlässig in Safari/PWA). -->
-    <meta name="it9an-deploy-version" content="it9an-1776011033-local-37313-1600a7c">
+    <meta name="it9an-deploy-version" content="it9an-1776011774-local-38137-137e839">
     <link rel="manifest" href="manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap" rel="stylesheet">
     
@@ -174,29 +174,27 @@
             width: min(400px, var(--it9an-player-pill-max-w, 260px));
             max-width: min(400px, var(--it9an-player-pill-max-w, 260px));
             min-width: 0;
-            padding: 8px 16px;
-            height: 60px;
-            min-height: 60px;
-            max-height: 60px;
+            padding: 4px 16px;
+            height: 50px;
+            min-height: 50px;
+            max-height: 50px;
             overflow: hidden;
         }
         #pageTitle.page-title-with-lesson .verse-num-maktaa {
             flex-shrink: 0;
             font-size: min(30px, 6.2vw);
-            line-height: 1.2;
-            max-height: 100%;
+            line-height: 1.35;
         }
         #pageTitle.page-title-with-lesson .it9an-player-lesson-title {
             flex: 1 1 0%;
             min-width: 0;
             color: var(--red);
-            line-height: 1.2;
+            line-height: 1.35;
             font-size: min(30px, 6.2vw);
             white-space: nowrap;
             overflow: hidden;
             padding-top: 0;
             padding-bottom: 0;
-            max-height: 100%;
             border-right: 1px solid #ddd;
             padding-right: 2px;
             margin-right: 0;
@@ -204,10 +202,10 @@
         @media (max-width: 400px) {
             #pageTitle.page-title-with-lesson {
                 gap: 2px;
-                padding: 8px 14px;
-                height: 58px;
-                min-height: 58px;
-                max-height: 58px;
+                padding: 4px 14px;
+                height: 50px;
+                min-height: 50px;
+                max-height: 50px;
             }
         }
         .menu-item-title.it9an-lesson-grid-title {
