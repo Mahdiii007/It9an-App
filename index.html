@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="إتقان">
     <!-- Wird von scripts/bump-app-version.sh mit derselben version wie app-version.json gesetzt (synchroner Deploy-Check, kein fetch → zuverlässig in Safari/PWA). -->
-    <meta name="it9an-deploy-version" content="it9an-1776002917-local-19221-f4b94a3">
+    <meta name="it9an-deploy-version" content="it9an-1776004816-local-21134-eb8b7b8">
     <link rel="manifest" href="manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap" rel="stylesheet">
     
@@ -136,6 +136,34 @@
         }
         .title-text-maktaa.verse-num-maktaa { border-right: none; padding-right: 0; margin-right: 0; }
         .title-text-maktaa.lesson-title-text { border-right: 2px solid #ddd; padding-right: 10px; margin-right: 5px; }
+        #pageTitle.page-title-with-lesson {
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            flex-wrap: nowrap;
+            min-height: auto;
+        }
+        #pageTitle.page-title-with-lesson .verse-num-maktaa { flex-shrink: 0; }
+        #pageTitle.page-title-with-lesson .it9an-player-lesson-title {
+            flex: 1;
+            min-width: 0;
+            max-width: 100%;
+            color: var(--red);
+            line-height: 1.25;
+            font-size: 26px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .menu-item-title.it9an-lesson-grid-title {
+            width: 100%;
+            box-sizing: border-box;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        #lesson-grid .menu-item { align-self: stretch; }
+        #lesson-grid .lesson-card-footer { margin-top: auto; }
 
         /* --- STAGES VIEW --- */
         #stages-view { display: none; width: 100%; max-width: 100%; overflow-x: hidden; padding: 20px 15px; }
@@ -2218,14 +2246,14 @@
                     const u = (typeof leaderboardAllUsers !== 'undefined' && leaderboardAllUsers.find(x => x.uid === myUid)) || (typeof leaderboardAllTeachers !== 'undefined' && leaderboardAllTeachers.find(x => x.uid === myUid));
                     const pin = (u && u.personalPin) ? u.personalPin : (localStorage.getItem('it9an_pin') || '');
                     const pinStr = pin ? (pin+'').padStart(4,'0') : '';
-                    pt.classList.add('header-name-pin'); pt.classList.remove('page-title-lessons', 'page-title-notifications');
+                    pt.classList.add('header-name-pin'); pt.classList.remove('page-title-lessons', 'page-title-notifications', 'page-title-with-lesson');
                     if (pin) {
                         pt.innerHTML = `<span class="header-user-name-main" style="font-size:20px">${nameClean || ''}</span><div class="header-pin-row"><span class="header-pin">${pinStr}</span> <span>— استخدم هذا الرمز للدخول في المستقبل</span></div>`;
                     } else {
                         pt.innerHTML = `<span class="header-user-name-main" style="font-size:20px">${nameClean || ''}</span>`;
                     }
                 } else {
-                    pt.classList.remove('header-name-pin', 'page-title-lessons', 'page-title-notifications');
+                    pt.classList.remove('header-name-pin', 'page-title-lessons', 'page-title-notifications', 'page-title-with-lesson');
                     pt.innerHTML = `<span class="header-user-name-main" style="font-size:26px">${nameClean || 'إتقان'}</span>`;
                 }
             }
@@ -2358,6 +2386,63 @@
         }
         function getAssetUrl(relativePath) {
             return ASSETS_BASE + '/' + relativePath.replace(/^\//, '');
+        }
+        function it9anFitLessonGridTitle(el) {
+            if (!el || !String(el.textContent || '').trim()) return;
+            const maxPx = parseFloat(el.getAttribute('data-max-fs')) || 32;
+            const minPx = parseFloat(el.getAttribute('data-min-fs')) || 11;
+            el.style.whiteSpace = 'nowrap';
+            el.style.wordBreak = 'normal';
+            el.style.overflow = 'hidden';
+            el.style.textOverflow = 'ellipsis';
+            let fs = maxPx;
+            el.style.fontSize = fs + 'px';
+            while (fs > minPx && el.scrollWidth > el.clientWidth) {
+                fs -= 0.5;
+                el.style.fontSize = fs + 'px';
+            }
+        }
+        function it9anFitPlayerLessonTitle() {
+            const pt = document.getElementById('pageTitle');
+            const lessonEl = pt && pt.querySelector('.it9an-player-lesson-title');
+            if (!pt || !lessonEl || !String(lessonEl.textContent || '').trim()) return;
+            const maxPx = parseFloat(lessonEl.getAttribute('data-max-fs')) || 26;
+            const minPx = parseFloat(lessonEl.getAttribute('data-min-fs')) || 10;
+            let fs = maxPx;
+            lessonEl.style.whiteSpace = 'nowrap';
+            lessonEl.style.wordBreak = 'normal';
+            lessonEl.style.overflow = 'hidden';
+            lessonEl.style.textOverflow = 'ellipsis';
+            lessonEl.style.fontSize = fs + 'px';
+            while (fs > minPx && lessonEl.scrollWidth > lessonEl.clientWidth) {
+                fs -= 0.5;
+                lessonEl.style.fontSize = fs + 'px';
+            }
+        }
+        function it9anEqualizeLessonCardHeights() {
+            const grid = document.getElementById('lesson-grid');
+            if (!grid) return;
+            const lv = document.getElementById('lessons-view');
+            if (lv && lv.style.display === 'none') return;
+            const items = grid.querySelectorAll('.menu-item');
+            if (!items.length) return;
+            items.forEach(function(node) { node.style.minHeight = ''; });
+            let maxH = 0;
+            items.forEach(function(node) {
+                const h = node.getBoundingClientRect().height;
+                if (h > maxH) maxH = h;
+            });
+            if (maxH <= 0) return;
+            items.forEach(function(node) { node.style.minHeight = Math.ceil(maxH) + 'px'; });
+        }
+        function it9anScheduleLessonTitleFits() {
+            requestAnimationFrame(function() {
+                requestAnimationFrame(function() {
+                    document.querySelectorAll('.it9an-lesson-grid-title').forEach(function(el) { it9anFitLessonGridTitle(el); });
+                    it9anFitPlayerLessonTitle();
+                    it9anEqualizeLessonCardHeights();
+                });
+            });
         }
         const IMG_TRANSPARENT_PIXEL = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
         function getVerseImgOnError(img, usePlaceholder) {
@@ -6163,7 +6248,7 @@
             document.getElementById('notifications-view').style.display = 'block';
             const hint = document.getElementById('notifStudentHint');
             if (hint) hint.style.display = (localStorage.getItem('it9an_role') === 'student') ? 'block' : 'none';
-            const ptN = document.getElementById('pageTitle'); if (ptN) { ptN.classList.remove('header-name-pin', 'page-title-lessons'); ptN.classList.add('page-title-notifications'); ptN.innerText = getStageConfig && getStageConfig(stageId) ? getStageConfig(stageId).name : "مرحلة " + stageId; }
+            const ptN = document.getElementById('pageTitle'); if (ptN) { ptN.classList.remove('header-name-pin', 'page-title-lessons', 'page-title-with-lesson'); ptN.classList.add('page-title-notifications'); ptN.innerText = getStageConfig && getStageConfig(stageId) ? getStageConfig(stageId).name : "مرحلة " + stageId; }
             document.getElementById('appFooter').style.display = 'none';
             const menuBtn = document.getElementById('menuBtn'); if (menuBtn) menuBtn.style.display = 'flex';
             const stagesBackBtn = document.getElementById('stagesBackBtn'); if (stagesBackBtn) stagesBackBtn.style.display = 'none';
@@ -6192,9 +6277,11 @@
                     const lek = KURS_DATEN[currentLessonIdx];
                     const ptP = document.getElementById('pageTitle');
                     if (ptP) {
-                        ptP.classList.remove('header-name-pin', 'page-title-lessons', 'page-title-notifications');
-                        const lessonPart = `<span class="title-text-maktaa lesson-title-text" style="font-size:clamp(18px, 5vw, 26px); color:var(--red); white-space:nowrap;">${lek.title}</span>`;
+                        ptP.classList.remove('header-name-pin', 'page-title-lessons', 'page-title-notifications', 'page-title-with-lesson');
+                        ptP.classList.add('page-title-with-lesson');
+                        const lessonPart = `<span class="title-text-maktaa lesson-title-text it9an-player-lesson-title" data-max-fs="26" data-min-fs="10">${lek.title}</span>`;
                         ptP.innerHTML = `<span class="title-text-maktaa verse-num-maktaa">المقطع ${currentLocalVers}</span>${lessonPart}`;
+                        it9anScheduleLessonTitleFits();
                     }
                 }
             } else {
@@ -6214,7 +6301,7 @@
             document.getElementById('player-view').style.display = 'none';
             const logoutBtnS = document.getElementById('logoutBtn'); if (logoutBtnS) logoutBtnS.style.display = 'none';
             document.getElementById('notifications-view').style.display = 'block';
-            const ptN = document.getElementById('pageTitle'); if (ptN) { ptN.classList.remove('header-name-pin', 'page-title-lessons'); ptN.classList.add('page-title-notifications'); ptN.innerText = getStageConfig && getStageConfig(currentStageId) ? getStageConfig(currentStageId).name : "مرحلة " + currentStageId; }
+            const ptN = document.getElementById('pageTitle'); if (ptN) { ptN.classList.remove('header-name-pin', 'page-title-lessons', 'page-title-with-lesson'); ptN.classList.add('page-title-notifications'); ptN.innerText = getStageConfig && getStageConfig(currentStageId) ? getStageConfig(currentStageId).name : "مرحلة " + currentStageId; }
             document.getElementById('appFooter').style.display = 'none';
             const menuBtn = document.getElementById('menuBtn'); if(menuBtn) menuBtn.style.display = 'flex';
             const stagesBackBtn = document.getElementById('stagesBackBtn'); if(stagesBackBtn) stagesBackBtn.style.display = 'none';
@@ -6410,7 +6497,7 @@
             const menuBtn = document.getElementById('menuBtn'); if(menuBtn) menuBtn.style.display = 'flex';
             const stagesBackBtn = document.getElementById('stagesBackBtn'); if(stagesBackBtn) stagesBackBtn.style.display = 'none';
             const lessonsBackBtn = document.getElementById('lessonsBackBtn'); if(lessonsBackBtn) lessonsBackBtn.style.display = 'none';
-            const ptA = document.getElementById('pageTitle'); if (ptA) { ptA.classList.remove('header-name-pin', 'page-title-lessons', 'page-title-notifications'); ptA.innerText = "رسالة من المسؤول"; }
+            const ptA = document.getElementById('pageTitle'); if (ptA) { ptA.classList.remove('header-name-pin', 'page-title-lessons', 'page-title-notifications', 'page-title-with-lesson'); ptA.innerText = "رسالة من المسؤول"; }
             window.scrollTo({ top: 0, behavior: 'smooth' });
             const isAdmin = localStorage.getItem('it9an_uid') === 'admin_super';
             const myUid = localStorage.getItem('it9an_uid');
@@ -6445,7 +6532,7 @@
             const menuBtn = document.getElementById('menuBtn'); if (menuBtn) menuBtn.style.display = 'flex';
             const stagesBackBtn = document.getElementById('stagesBackBtn'); if (stagesBackBtn) stagesBackBtn.style.display = 'none';
             const lessonsBackBtn = document.getElementById('lessonsBackBtn'); if (lessonsBackBtn) lessonsBackBtn.style.display = 'none';
-            const pt = document.getElementById('pageTitle'); if (pt) { pt.classList.remove('header-name-pin', 'page-title-lessons', 'page-title-notifications'); pt.innerText = 'تواصل مع المسؤول'; }
+            const pt = document.getElementById('pageTitle'); if (pt) { pt.classList.remove('header-name-pin', 'page-title-lessons', 'page-title-notifications', 'page-title-with-lesson'); pt.innerText = 'تواصل مع المسؤول'; }
             window.scrollTo({ top: 0, behavior: 'smooth' });
             try {
                 const q = window.query(window.collection(window.db, "adminMessages"), window.where("to", "==", "admin_super"), window.where("senderUid", "==", myUid), window.orderBy("timestamp", "desc"), window.limit(1));
@@ -6553,7 +6640,7 @@
             if (!pt) return;
             if (document.getElementById('menu-view').style.display === 'grid') {
                 const stageCfg = getStageConfig(currentStageId);
-                pt.classList.remove('header-name-pin', 'page-title-lessons', 'page-title-notifications');
+                pt.classList.remove('header-name-pin', 'page-title-lessons', 'page-title-notifications', 'page-title-with-lesson');
                 pt.innerHTML = `<span class="header-user-name-main" style="font-size:22px">${stageCfg.name}</span>`;
             } else if (document.getElementById('stages-view').style.display === 'block') {
                 const nameClean = getDisplayNameForCurrentUser();
@@ -6562,14 +6649,14 @@
                     const u = (typeof leaderboardAllUsers !== 'undefined' && leaderboardAllUsers.find(x => x.uid === uid)) || (typeof leaderboardAllTeachers !== 'undefined' && leaderboardAllTeachers.find(x => x.uid === uid));
                     const pin = (u && u.personalPin) ? u.personalPin : (localStorage.getItem('it9an_pin') || '');
                     const pinStr = pin ? (pin+'').padStart(4,'0') : '';
-                    pt.classList.add('header-name-pin'); pt.classList.remove('page-title-lessons', 'page-title-notifications');
+                    pt.classList.add('header-name-pin'); pt.classList.remove('page-title-lessons', 'page-title-notifications', 'page-title-with-lesson');
                     if (pin) {
                         pt.innerHTML = `<span class="header-user-name-main" style="font-size:20px">${nameClean || ''}</span><div class="header-pin-row"><span class="header-pin">${pinStr}</span> <span>— استخدم هذا الرمز للدخول في المستقبل</span></div>`;
                     } else {
                         pt.innerHTML = `<span class="header-user-name-main" style="font-size:20px">${nameClean || ''}</span>`;
                     }
                 } else {
-                    pt.classList.remove('header-name-pin', 'page-title-lessons', 'page-title-notifications');
+                    pt.classList.remove('header-name-pin', 'page-title-lessons', 'page-title-notifications', 'page-title-with-lesson');
                     pt.innerHTML = `<span class="header-user-name-main" style="font-size:26px">${nameClean || 'إتقان'}</span>`;
                 }
             }
@@ -6606,7 +6693,7 @@
             if (lbTeachersTitle) lbTeachersTitle.innerHTML = `🏆 أفضل المعلمين — ${stageCfg.name}`;
             const pt = document.getElementById('pageTitle');
             if (pt) {
-                pt.classList.remove('header-name-pin', 'page-title-lessons', 'page-title-notifications');
+                pt.classList.remove('header-name-pin', 'page-title-lessons', 'page-title-notifications', 'page-title-with-lesson');
                 pt.innerHTML = `<span class="header-user-name-main" style="font-size:22px">${stageCfg.name}</span>`;
             }
             document.getElementById('appFooter').style.display = 'none';
@@ -6691,7 +6778,7 @@
             if (KURS_DATEN.length === 0) {
                 grid.innerHTML = `<div style="text-align:center; padding:30px; color:#666; font-size:18px;">لا توجد دروس في مرحلة "${stageCfg.name}" بعد.<br><br>سيتم إضافتها قريباً إن شاء الله.</div>`;
                 showView('lessons-view');
-                const ptL = document.getElementById('pageTitle'); if (ptL) { ptL.classList.remove('header-name-pin', 'page-title-notifications'); ptL.classList.add('page-title-lessons'); ptL.innerText = stageCfg.name || 'جميع الدروس'; }
+                const ptL = document.getElementById('pageTitle'); if (ptL) { ptL.classList.remove('header-name-pin', 'page-title-notifications', 'page-title-with-lesson'); ptL.classList.add('page-title-lessons'); ptL.innerText = stageCfg.name || 'جميع الدروس'; }
                 document.getElementById('appFooter').style.display = 'none';
                 return;
             }
@@ -6715,12 +6802,13 @@
                     const adminTop = (myUid === 'admin_super')
                         ? '<div class="menu-item-students-icon lesson-card-tl-icon" onclick="event.stopPropagation(); sendLessonUploadedNotification(' + index + ')" title="إرسال إشعار للجميع: رفعنا هذا الدرس">📢</div>'
                         : '';
-                    const titleStyleStage6 = 'padding:18px 12px; font-size:clamp(13px, 3.6vw, 20px); line-height:1.35; color:var(--red); white-space:normal; word-wrap:break-word; overflow-wrap:anywhere;';
-                    const titleStyleDefault = 'padding:24px 15px; font-size:clamp(20px, 6vw, 32px); line-height:1.2; color:var(--red); white-space:nowrap;';
+                    const titlePad = stageForLessons === 6 ? 'padding:18px 12px;' : 'padding:24px 15px;';
+                    const titleMaxFs = stageForLessons === 6 ? 20 : 32;
+                    const titleMinFs = stageForLessons === 6 ? 11 : 12;
                     const titleContent = '<div class="lesson-card-top">'
                         + '<div class="menu-item-students-icon lesson-card-tr-icon" onclick="event.stopPropagation(); showStudentsProgressForLesson(' + index + ')" title="عرض قائمة الطلاب">👥</div>'
                         + adminTop
-                        + '<div class="menu-item-title lesson-title-text" style="' + (stageForLessons === 6 ? titleStyleStage6 : titleStyleDefault) + '">' + (lek.title || '') + '</div>'
+                        + '<div class="menu-item-title lesson-title-text it9an-lesson-grid-title" data-max-fs="' + titleMaxFs + '" data-min-fs="' + titleMinFs + '" style="' + titlePad + ' font-size:' + titleMaxFs + 'px; line-height:1.35; color:var(--red);">' + (lek.title || '') + '</div>'
                         + '</div>';
                     const footerHtml = '<div class="lesson-card-footer">' + diffBlock + progressPart + '</div>';
                     div.innerHTML = titleContent + footerHtml;
@@ -6728,9 +6816,10 @@
                     grid.appendChild(div);
                 });
                 showView('lessons-view');
-                const ptL = document.getElementById('pageTitle'); if (ptL) { ptL.classList.remove('header-name-pin', 'page-title-notifications'); ptL.classList.add('page-title-lessons'); ptL.innerText = stageCfg.name || 'جميع الدروس'; }
+                const ptL = document.getElementById('pageTitle'); if (ptL) { ptL.classList.remove('header-name-pin', 'page-title-notifications', 'page-title-with-lesson'); ptL.classList.add('page-title-lessons'); ptL.innerText = stageCfg.name || 'جميع الدروس'; }
                 document.getElementById('appFooter').style.display = 'none';
                 await it9anFillLessonDifficultyBarsForView(stageForLessons);
+                it9anScheduleLessonTitleFits();
             } finally {
                 it9anSetLessonsLoadingVisible(false);
             }
@@ -6879,9 +6968,11 @@
             const lek = KURS_DATEN[currentLessonIdx];
             const ptP = document.getElementById('pageTitle');
             if (ptP) {
-                ptP.classList.remove('header-name-pin', 'page-title-lessons', 'page-title-notifications');
-                const lessonPart = `<span class="title-text-maktaa lesson-title-text" style="font-size:clamp(18px, 5vw, 26px); color:var(--red); white-space:nowrap;">${lek.title}</span>`;
+                ptP.classList.remove('header-name-pin', 'page-title-lessons', 'page-title-notifications', 'page-title-with-lesson');
+                ptP.classList.add('page-title-with-lesson');
+                const lessonPart = `<span class="title-text-maktaa lesson-title-text it9an-player-lesson-title" data-max-fs="26" data-min-fs="10">${lek.title}</span>`;
                 ptP.innerHTML = `<span class="title-text-maktaa verse-num-maktaa">المقطع ${localVersNum}</span>${lessonPart}`;
+                it9anScheduleLessonTitleFits();
             }
 
             const imgEl = document.getElementById('currentImg');
@@ -7252,6 +7343,7 @@
                 const vis = it9anDifficultyBarState(agg.acceptedCount, agg.ratedCount, { scope: 'lesson' });
                 mount.innerHTML = it9anRenderLessonDifficultyHtml(vis);
             }
+            it9anScheduleLessonTitleFits();
         }
 
         function it9anAttrEscape(s) {
@@ -7703,7 +7795,7 @@
             const myUid = localStorage.getItem('it9an_uid');
             if (!myUid) { alert("يجب تسجيل الدخول"); return; }
             showView('saved-list-view');
-            const ptS = document.getElementById('pageTitle'); if (ptS) { ptS.classList.remove('header-name-pin', 'page-title-lessons', 'page-title-notifications'); ptS.innerHTML = '<span style="display:inline-flex;align-items:center;gap:6px;"><svg style="width:22px;height:22px;flex-shrink:0;" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>للمشاهدة لاحقاً</span>'; }
+            const ptS = document.getElementById('pageTitle'); if (ptS) { ptS.classList.remove('header-name-pin', 'page-title-lessons', 'page-title-notifications', 'page-title-with-lesson'); ptS.innerHTML = '<span style="display:inline-flex;align-items:center;gap:6px;"><svg style="width:22px;height:22px;flex-shrink:0;" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>للمشاهدة لاحقاً</span>'; }
             document.getElementById('appFooter').style.display = 'none';
             const container = document.getElementById('savedList');
             container.innerHTML = "<div style='text-align:center; color:#999; padding:20px;'>جاري التحميل...</div>";
@@ -12567,7 +12659,7 @@
             }
             lbReturnSource = null; lbReturnToUid = null; lbReturnOffset = 0; lbReturnScrollToId = null; showView('menu-view'); renderMenu(); updateLbBackButton();
         } 
-        function showView(id) { document.getElementById('stages-view').style.display = 'none'; document.getElementById('menu-view').style.display = 'none'; document.getElementById('player-view').style.display = 'none'; document.getElementById('notifications-view').style.display = 'none'; document.getElementById('saved-list-view').style.display = 'none'; document.getElementById('lessons-view').style.display = 'none'; document.getElementById('admin-message-view').style.display = 'none'; const cn = document.getElementById('contact-admin-new-view'); if(cn) cn.style.display = 'none'; document.getElementById(id).style.display = (id === 'menu-view') ? 'grid' : 'block'; const logoutBtn = document.getElementById('logoutBtn'); if(logoutBtn) logoutBtn.style.display = 'none'; const menuBtn = document.getElementById('menuBtn'); if(menuBtn) menuBtn.style.display = (id === 'menu-view' || id === 'player-view') ? 'none' : 'flex'; const stagesBackBtn = document.getElementById('stagesBackBtn'); if(stagesBackBtn) stagesBackBtn.style.display = (id === 'menu-view') ? 'flex' : 'none'; const lessonsBackBtn = document.getElementById('lessonsBackBtn'); if(lessonsBackBtn) lessonsBackBtn.style.display = (id === 'player-view') ? 'flex' : 'none'; const uid = localStorage.getItem('it9an_uid'); const role = localStorage.getItem('it9an_role'); const notifContainer = document.querySelector('.notif-container'); if (notifContainer && uid !== 'admin_super') notifContainer.style.display = 'flex'; const skipScroll = (id === 'menu-view' && lbPendingRestore) || (id === 'player-view' && activePostFilter); if (!skipScroll) window.scrollTo({ top: 0, behavior: 'smooth' }); }
+        function showView(id) { document.getElementById('stages-view').style.display = 'none'; document.getElementById('menu-view').style.display = 'none'; document.getElementById('player-view').style.display = 'none'; document.getElementById('notifications-view').style.display = 'none'; document.getElementById('saved-list-view').style.display = 'none'; document.getElementById('lessons-view').style.display = 'none'; document.getElementById('admin-message-view').style.display = 'none'; const cn = document.getElementById('contact-admin-new-view'); if(cn) cn.style.display = 'none'; document.getElementById(id).style.display = (id === 'menu-view') ? 'grid' : 'block'; if (id !== 'player-view') { const ptRm = document.getElementById('pageTitle'); if (ptRm) ptRm.classList.remove('page-title-with-lesson'); } const logoutBtn = document.getElementById('logoutBtn'); if(logoutBtn) logoutBtn.style.display = 'none'; const menuBtn = document.getElementById('menuBtn'); if(menuBtn) menuBtn.style.display = (id === 'menu-view' || id === 'player-view') ? 'none' : 'flex'; const stagesBackBtn = document.getElementById('stagesBackBtn'); if(stagesBackBtn) stagesBackBtn.style.display = (id === 'menu-view') ? 'flex' : 'none'; const lessonsBackBtn = document.getElementById('lessonsBackBtn'); if(lessonsBackBtn) lessonsBackBtn.style.display = (id === 'player-view') ? 'flex' : 'none'; const uid = localStorage.getItem('it9an_uid'); const role = localStorage.getItem('it9an_role'); const notifContainer = document.querySelector('.notif-container'); if (notifContainer && uid !== 'admin_super') notifContainer.style.display = 'flex'; const skipScroll = (id === 'menu-view' && lbPendingRestore) || (id === 'player-view' && activePostFilter); if (!skipScroll) window.scrollTo({ top: 0, behavior: 'smooth' }); }
         
         window.rateStudentPost = async function(postId, verdict) {
             const uid = localStorage.getItem('it9an_uid');
@@ -13321,6 +13413,14 @@
                     }
                 });
             }
+        });
+
+        let it9anLessonTitleFitResizeTimer = null;
+        window.addEventListener('resize', function() {
+            clearTimeout(it9anLessonTitleFitResizeTimer);
+            it9anLessonTitleFitResizeTimer = setTimeout(function() {
+                if (typeof it9anScheduleLessonTitleFits === 'function') it9anScheduleLessonTitleFits();
+            }, 150);
         });
 
         setInterval(function() {
