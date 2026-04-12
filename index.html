@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="إتقان">
     <!-- Wird von scripts/bump-app-version.sh mit derselben version wie app-version.json gesetzt (synchroner Deploy-Check, kein fetch → zuverlässig in Safari/PWA). -->
-    <meta name="it9an-deploy-version" content="it9an-1776004845-local-21406-d92c1f8">
+    <meta name="it9an-deploy-version" content="it9an-1776005547-local-23194-a2a094c">
     <link rel="manifest" href="manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap" rel="stylesheet">
     
@@ -142,18 +142,45 @@
             gap: 8px;
             flex-wrap: nowrap;
             min-height: auto;
+            max-width: calc(100vw - 120px);
+            box-sizing: border-box;
         }
         #pageTitle.page-title-with-lesson .verse-num-maktaa { flex-shrink: 0; }
+        #pageTitle.page-title-with-lesson .it9an-player-lesson-title-wrap {
+            flex: 0 0 auto;
+            width: 158px;
+            min-width: 158px;
+            max-width: 158px;
+            box-sizing: border-box;
+            padding: 4px 8px;
+            border: 1px solid rgba(192, 57, 43, 0.4);
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.75);
+            overflow: hidden;
+        }
         #pageTitle.page-title-with-lesson .it9an-player-lesson-title {
-            flex: 1;
-            min-width: 0;
-            max-width: 100%;
+            display: block;
+            width: 100%;
+            box-sizing: border-box;
+            margin: 0;
             color: var(--red);
             line-height: 1.25;
             font-size: 26px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            border-right: none !important;
+            padding-right: 0 !important;
+            margin-right: 0 !important;
+        }
+        @media (max-width: 400px) {
+            #pageTitle.page-title-with-lesson { max-width: calc(100vw - 108px); }
+            #pageTitle.page-title-with-lesson .it9an-player-lesson-title-wrap {
+                width: 128px;
+                min-width: 128px;
+                max-width: 128px;
+                padding: 3px 6px;
+            }
         }
         .menu-item-title.it9an-lesson-grid-title {
             width: 100%;
@@ -6279,7 +6306,7 @@
                     if (ptP) {
                         ptP.classList.remove('header-name-pin', 'page-title-lessons', 'page-title-notifications', 'page-title-with-lesson');
                         ptP.classList.add('page-title-with-lesson');
-                        const lessonPart = `<span class="title-text-maktaa lesson-title-text it9an-player-lesson-title" data-max-fs="26" data-min-fs="10">${lek.title}</span>`;
+                        const lessonPart = `<span class="it9an-player-lesson-title-wrap"><span class="title-text-maktaa lesson-title-text it9an-player-lesson-title" data-max-fs="26" data-min-fs="10">${lek.title}</span></span>`;
                         ptP.innerHTML = `<span class="title-text-maktaa verse-num-maktaa">المقطع ${currentLocalVers}</span>${lessonPart}`;
                         it9anScheduleLessonTitleFits();
                     }
@@ -6970,7 +6997,7 @@
             if (ptP) {
                 ptP.classList.remove('header-name-pin', 'page-title-lessons', 'page-title-notifications', 'page-title-with-lesson');
                 ptP.classList.add('page-title-with-lesson');
-                const lessonPart = `<span class="title-text-maktaa lesson-title-text it9an-player-lesson-title" data-max-fs="26" data-min-fs="10">${lek.title}</span>`;
+                const lessonPart = `<span class="it9an-player-lesson-title-wrap"><span class="title-text-maktaa lesson-title-text it9an-player-lesson-title" data-max-fs="26" data-min-fs="10">${lek.title}</span></span>`;
                 ptP.innerHTML = `<span class="title-text-maktaa verse-num-maktaa">المقطع ${localVersNum}</span>${lessonPart}`;
                 it9anScheduleLessonTitleFits();
             }
