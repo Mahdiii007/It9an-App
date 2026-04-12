@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="إتقان">
     <!-- Wird von scripts/bump-app-version.sh mit derselben version wie app-version.json gesetzt (synchroner Deploy-Check, kein fetch → zuverlässig in Safari/PWA). -->
-    <meta name="it9an-deploy-version" content="it9an-1776009815-local-34409-1700f9b">
+    <meta name="it9an-deploy-version" content="it9an-1776010443-local-35741-058f521">
     <link rel="manifest" href="manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap" rel="stylesheet">
     
@@ -89,10 +89,15 @@
         .header { 
             position: sticky; top: 0; z-index: 1000; 
             background: linear-gradient(to right, var(--primary), var(--primary-light));
-            padding: 10px 5px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); 
-            display: flex; justify-content: center; align-items: center; 
-            gap: 15px; height: 80px; border-bottom: 2px solid var(--gold);
+            padding: 10px 8px 10px 2px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); 
+            display: flex; justify-content: space-between; align-items: center; 
+            flex-direction: row; direction: ltr;
+            gap: 10px; height: 80px; border-bottom: 2px solid var(--gold);
             width: 100%; max-width: 100%; overflow-x: hidden;
+        }
+        .header-nav-cluster {
+            display: flex; align-items: center; gap: 6px;
+            flex-shrink: 0;
         }
         .header-btn {
             background: rgba(255,255,255,0.1); border: 1px solid var(--gold); color: var(--gold-light);
@@ -101,16 +106,40 @@
             box-sizing: border-box;
             flex-shrink: 0;
         }
-        /* «المرحلة» und «الدروس»: identische goldene Rahmen-Breite (schmaler als zuvor nur-Dروس); «المراحل» bleibt breiter */
-        #menuBtn, #lessonsBackBtn {
-            width: 118px;
-            min-width: 118px;
-            max-width: 118px;
-            padding: 8px 10px;
-            justify-content: center;
-            box-sizing: border-box;
+        /* المرحلة / المراحل / الدروس: gleiche Außenmaße, links am Rand; ☰ am goldenen Rand, arabische Beschriftung daneben */
+        .header-nav-cluster .header-nav-main-btn {
+            width: 108px;
+            min-width: 108px;
+            max-width: 108px;
+            height: 44px;
+            min-height: 44px;
+            max-height: 44px;
+            padding: 0 4px 0 2px;
+            justify-content: flex-start;
+            gap: 4px;
+            flex-direction: row;
+            direction: ltr;
+            font-size: 13px;
+            white-space: nowrap;
         }
-        .header-right-slot { margin-inline-end: auto; display: flex; align-items: center; flex-shrink: 0; gap: 8px; }
+        .header-nav-cluster .header-btn-hamburger {
+            flex-shrink: 0;
+            width: 1.15em;
+            text-align: center;
+            line-height: 1;
+            font-size: 1.1em;
+        }
+        .header-nav-cluster .header-btn-txt {
+            direction: rtl;
+            unicode-bidi: isolate;
+            flex: 1;
+            min-width: 0;
+            text-align: right;
+            overflow: hidden;
+            text-overflow: clip;
+        }
+        .header #pageTitle { direction: rtl; }
+        .header-right-slot { display: flex; align-items: center; flex-shrink: 0; gap: 8px; }
         .logout-icon-btn {
             background: rgba(255,255,255,0.15); border: 1px solid var(--gold); color: var(--gold-light);
             width: 44px; height: 44px; border-radius: 12px; cursor: pointer; font-size: 22px;
@@ -159,25 +188,29 @@
             width: min(400px, var(--it9an-player-pill-max-w, 260px));
             max-width: min(400px, var(--it9an-player-pill-max-w, 260px));
             min-width: 0;
-            padding: 12px 16px;
+            padding: 8px 16px;
+            height: 60px;
             min-height: 60px;
+            max-height: 60px;
             overflow: hidden;
         }
         #pageTitle.page-title-with-lesson .verse-num-maktaa {
             flex-shrink: 0;
             font-size: min(30px, 6.2vw);
-            line-height: 1.45;
+            line-height: 1.2;
+            max-height: 100%;
         }
         #pageTitle.page-title-with-lesson .it9an-player-lesson-title {
             flex: 1 1 0%;
             min-width: 0;
             color: var(--red);
-            line-height: 1.45;
+            line-height: 1.2;
             font-size: min(30px, 6.2vw);
             white-space: nowrap;
             overflow: hidden;
-            padding-top: 1px;
-            padding-bottom: 1px;
+            padding-top: 0;
+            padding-bottom: 0;
+            max-height: 100%;
             border-right: 1px solid #ddd;
             padding-right: 2px;
             margin-right: 0;
@@ -185,8 +218,10 @@
         @media (max-width: 400px) {
             #pageTitle.page-title-with-lesson {
                 gap: 2px;
-                padding: 11px 14px;
+                padding: 8px 14px;
+                height: 58px;
                 min-height: 58px;
+                max-height: 58px;
             }
         }
         .menu-item-title.it9an-lesson-grid-title {
@@ -1220,6 +1255,12 @@
     </div>
 
     <div class="header">
+        <div class="header-nav-cluster">
+            <button id="menuBtn" type="button" class="header-btn header-nav-main-btn" onclick="goToMenu()"><span class="header-btn-hamburger" aria-hidden="true">☰</span><span class="header-btn-txt">المرحلة</span></button>
+            <button id="stagesBackBtn" type="button" class="header-btn header-nav-main-btn" onclick="showStagesView()" style="display:none;"><span class="header-btn-hamburger" aria-hidden="true">☰</span><span class="header-btn-txt">المراحل</span></button>
+            <button id="lessonsBackBtn" type="button" class="header-btn header-nav-main-btn" onclick="showLessonsView()" style="display:none;"><span class="header-btn-hamburger" aria-hidden="true">☰</span><span class="header-btn-txt">الدروس</span></button>
+        </div>
+        <div id="pageTitle"></div>
         <div class="header-right-slot">
             <button id="logoutBtn" type="button" class="logout-icon-btn" onclick="doLogout()" title="تسجيل الخروج" style="display:none;">🚪</button>
             <div class="notif-container" onclick="showNotifications()">
@@ -1227,10 +1268,6 @@
                 <div id="notifBadge" class="notif-badge">0</div>
             </div>
         </div>
-        <button id="menuBtn" class="header-btn" onclick="goToMenu()">☰ المرحلة</button>
-        <button id="stagesBackBtn" class="header-btn" onclick="showStagesView()" style="display:none;">☰ المراحل</button>
-        <button id="lessonsBackBtn" class="header-btn" onclick="showLessonsView()" style="display:none;">☰ الدروس</button>
-        <div id="pageTitle"></div>
     </div>
 
     <div id="notifications-view">
