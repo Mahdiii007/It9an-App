@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="إتقان">
     <!-- Wird von scripts/bump-app-version.sh mit derselben version wie app-version.json gesetzt (synchroner Deploy-Check, kein fetch → zuverlässig in Safari/PWA). -->
-    <meta name="it9an-deploy-version" content="it9an-1776008241-local-30982-5b36040">
+    <meta name="it9an-deploy-version" content="it9an-1776008784-local-32112-425cb56">
     <link rel="manifest" href="manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap" rel="stylesheet">
     
@@ -99,6 +99,16 @@
             padding: 8px 15px; border-radius: 10px; cursor: pointer; font-size: 15px; font-family: 'Amiri';
             font-weight: bold; display: flex; align-items: center; gap: 5px; white-space: nowrap;
         }
+        /* Player: feste Breite — Pill wird per JS so begrenzt, dass 2px zum goldenen Rahmen bleiben */
+        #lessonsBackBtn {
+            flex: 0 0 130px;
+            width: 130px;
+            min-width: 130px;
+            max-width: 130px;
+            box-sizing: border-box;
+            justify-content: center;
+            padding-inline: 8px;
+        }
         .header-right-slot { margin-inline-end: auto; display: flex; align-items: center; flex-shrink: 0; gap: 8px; }
         .logout-icon-btn {
             background: rgba(255,255,255,0.15); border: 1px solid var(--gold); color: var(--gold-light);
@@ -136,7 +146,7 @@
         }
         .title-text-maktaa.verse-num-maktaa { border-right: none; padding-right: 0; margin-right: 0; }
         .title-text-maktaa.lesson-title-text { border-right: 2px solid #ddd; padding-right: 10px; margin-right: 5px; }
-        /* Player: Breite relativ zum Header (100%), nicht 100vw−großer Abzug — sonst sehr schmale Pill + Textüberlauf */
+        /* Player: Breite = min(400px, --it9an-player-pill-max-w); JS setzt max. Breite für 2px zum goldenen Rahmen der Header-Buttons (z. B. الدروس) */
         #pageTitle.page-title-with-lesson {
             align-items: center;
             justify-content: center;
@@ -145,8 +155,8 @@
             box-sizing: border-box;
             left: 50%;
             transform: translateX(-50%);
-            width: min(400px, calc(100% - 88px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)));
-            max-width: min(400px, calc(100% - 88px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)));
+            width: min(400px, var(--it9an-player-pill-max-w, 260px));
+            max-width: min(400px, var(--it9an-player-pill-max-w, 260px));
             min-width: 0;
             padding: 12px 16px;
             min-height: 60px;
@@ -173,17 +183,9 @@
         }
         @media (max-width: 400px) {
             #pageTitle.page-title-with-lesson {
-                width: min(360px, calc(100% - 76px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)));
-                max-width: min(360px, calc(100% - 76px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)));
                 gap: 2px;
                 padding: 11px 14px;
                 min-height: 58px;
-            }
-        }
-        @media (max-width: 340px) {
-            #pageTitle.page-title-with-lesson {
-                width: min(320px, calc(100% - 68px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)));
-                max-width: min(320px, calc(100% - 68px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)));
             }
         }
         .menu-item-title.it9an-lesson-grid-title {
@@ -2448,6 +2450,38 @@
             const maxPx = parseFloat(el.getAttribute('data-max-fs')) || 32;
             it9anShrinkFontToFitOneLine(el, maxPx, 10);
         }
+        /** Pill mittig: max. Breite so, dass zwischen goldenem Pill-Rand und goldenem Rahmen der Header-Buttons (z. B. الدروس) genau GAP_PX bleibt. */
+        function it9anUpdatePlayerPillMaxWidth() {
+            const pt = document.getElementById('pageTitle');
+            if (!pt) return;
+            if (!pt.classList.contains('page-title-with-lesson')) {
+                pt.style.removeProperty('--it9an-player-pill-max-w');
+                return;
+            }
+            const header = document.querySelector('.header');
+            if (!header) return;
+            const GAP_PX = 2;
+            const hr = header.getBoundingClientRect();
+            const centerX = hr.left + hr.width / 2;
+            let maxL = hr.left;
+            let minR = hr.right;
+            header.querySelectorAll(':scope > *').forEach(function(el) {
+                if (el.id === 'pageTitle') return;
+                if (!el.offsetParent) return;
+                const st = window.getComputedStyle(el);
+                if (st.display === 'none' || st.visibility === 'hidden') return;
+                const r = el.getBoundingClientRect();
+                if (r.width < 0.5 || r.height < 0.5) return;
+                if (r.left < centerX) maxL = Math.max(maxL, Math.min(r.right, centerX));
+                if (r.right > centerX) minR = Math.min(minR, Math.max(r.left, centerX));
+            });
+            const leftHalf = centerX - maxL - GAP_PX;
+            const rightHalf = minR - centerX - GAP_PX;
+            let maxW = Math.floor(2 * Math.min(leftHalf, rightHalf));
+            if (maxW < 80) maxW = 80;
+            if (maxW > 400) maxW = 400;
+            pt.style.setProperty('--it9an-player-pill-max-w', maxW + 'px');
+        }
         function it9anFitPlayerLessonTitle() {
             const pt = document.getElementById('pageTitle');
             const lessonEl = pt && pt.querySelector('.it9an-player-lesson-title');
@@ -2481,6 +2515,7 @@
         function it9anScheduleLessonTitleFits() {
             requestAnimationFrame(function() {
                 requestAnimationFrame(function() {
+                    it9anUpdatePlayerPillMaxWidth();
                     document.querySelectorAll('.it9an-lesson-grid-title').forEach(function(el) { it9anFitLessonGridTitle(el); });
                     it9anFitPlayerLessonTitle();
                     it9anEqualizeLessonCardHeights();
@@ -12701,7 +12736,7 @@
             }
             lbReturnSource = null; lbReturnToUid = null; lbReturnOffset = 0; lbReturnScrollToId = null; showView('menu-view'); renderMenu(); updateLbBackButton();
         } 
-        function showView(id) { document.getElementById('stages-view').style.display = 'none'; document.getElementById('menu-view').style.display = 'none'; document.getElementById('player-view').style.display = 'none'; document.getElementById('notifications-view').style.display = 'none'; document.getElementById('saved-list-view').style.display = 'none'; document.getElementById('lessons-view').style.display = 'none'; document.getElementById('admin-message-view').style.display = 'none'; const cn = document.getElementById('contact-admin-new-view'); if(cn) cn.style.display = 'none'; document.getElementById(id).style.display = (id === 'menu-view') ? 'grid' : 'block'; if (id !== 'player-view') { const ptRm = document.getElementById('pageTitle'); if (ptRm) ptRm.classList.remove('page-title-with-lesson'); } const logoutBtn = document.getElementById('logoutBtn'); if(logoutBtn) logoutBtn.style.display = 'none'; const menuBtn = document.getElementById('menuBtn'); if(menuBtn) menuBtn.style.display = (id === 'menu-view' || id === 'player-view') ? 'none' : 'flex'; const stagesBackBtn = document.getElementById('stagesBackBtn'); if(stagesBackBtn) stagesBackBtn.style.display = (id === 'menu-view') ? 'flex' : 'none'; const lessonsBackBtn = document.getElementById('lessonsBackBtn'); if(lessonsBackBtn) lessonsBackBtn.style.display = (id === 'player-view') ? 'flex' : 'none'; const uid = localStorage.getItem('it9an_uid'); const role = localStorage.getItem('it9an_role'); const notifContainer = document.querySelector('.notif-container'); if (notifContainer && uid !== 'admin_super') notifContainer.style.display = 'flex'; const skipScroll = (id === 'menu-view' && lbPendingRestore) || (id === 'player-view' && activePostFilter); if (!skipScroll) window.scrollTo({ top: 0, behavior: 'smooth' }); }
+        function showView(id) { document.getElementById('stages-view').style.display = 'none'; document.getElementById('menu-view').style.display = 'none'; document.getElementById('player-view').style.display = 'none'; document.getElementById('notifications-view').style.display = 'none'; document.getElementById('saved-list-view').style.display = 'none'; document.getElementById('lessons-view').style.display = 'none'; document.getElementById('admin-message-view').style.display = 'none'; const cn = document.getElementById('contact-admin-new-view'); if(cn) cn.style.display = 'none'; document.getElementById(id).style.display = (id === 'menu-view') ? 'grid' : 'block'; if (id !== 'player-view') { const ptRm = document.getElementById('pageTitle'); if (ptRm) { ptRm.classList.remove('page-title-with-lesson'); ptRm.style.removeProperty('--it9an-player-pill-max-w'); } } const logoutBtn = document.getElementById('logoutBtn'); if(logoutBtn) logoutBtn.style.display = 'none'; const menuBtn = document.getElementById('menuBtn'); if(menuBtn) menuBtn.style.display = (id === 'menu-view' || id === 'player-view') ? 'none' : 'flex'; const stagesBackBtn = document.getElementById('stagesBackBtn'); if(stagesBackBtn) stagesBackBtn.style.display = (id === 'menu-view') ? 'flex' : 'none'; const lessonsBackBtn = document.getElementById('lessonsBackBtn'); if(lessonsBackBtn) lessonsBackBtn.style.display = (id === 'player-view') ? 'flex' : 'none'; const uid = localStorage.getItem('it9an_uid'); const role = localStorage.getItem('it9an_role'); const notifContainer = document.querySelector('.notif-container'); if (notifContainer && uid !== 'admin_super') notifContainer.style.display = 'flex'; const skipScroll = (id === 'menu-view' && lbPendingRestore) || (id === 'player-view' && activePostFilter); if (!skipScroll) window.scrollTo({ top: 0, behavior: 'smooth' }); }
         
         window.rateStudentPost = async function(postId, verdict) {
             const uid = localStorage.getItem('it9an_uid');
