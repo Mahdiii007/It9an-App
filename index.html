@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="إتقان">
     <!-- Wird von scripts/bump-app-version.sh mit derselben version wie app-version.json gesetzt (synchroner Deploy-Check, kein fetch → zuverlässig in Safari/PWA). -->
-    <meta name="it9an-deploy-version" content="it9an-1776011803-local-38385-ff19fe8">
+    <meta name="it9an-deploy-version" content="it9an-1776012169-local-39222-8936000">
     <link rel="manifest" href="manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap" rel="stylesheet">
     
@@ -122,7 +122,23 @@
             direction: rtl;
             font-size: 13px;
             white-space: nowrap;
-            gap: 0;
+            gap: 3px;
+        }
+        .header-nav-cluster .header-nav-back-ico {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            width: 11px;
+            height: 11px;
+            color: inherit;
+            opacity: 0.92;
+        }
+        .header-nav-cluster .header-nav-back-ico svg {
+            display: block;
+        }
+        .header-nav-cluster .header-nav-main-label {
+            display: inline-block;
         }
         .header #pageTitle { direction: rtl; }
         .header-right-slot { display: flex; align-items: center; flex-shrink: 0; gap: 8px; }
@@ -182,15 +198,15 @@
         }
         #pageTitle.page-title-with-lesson .verse-num-maktaa {
             flex-shrink: 0;
-            font-size: min(30px, 6.2vw);
-            line-height: 1.35;
+            font-size: min(20px, 3.8vw);
+            line-height: 1.15;
         }
         #pageTitle.page-title-with-lesson .it9an-player-lesson-title {
             flex: 1 1 0%;
             min-width: 0;
             color: var(--red);
-            line-height: 1.35;
-            font-size: min(30px, 6.2vw);
+            line-height: 1.15;
+            font-size: min(20px, 3.8vw);
             white-space: nowrap;
             overflow: hidden;
             padding-top: 0;
@@ -1240,9 +1256,9 @@
 
     <div class="header">
         <div class="header-nav-cluster">
-            <button id="menuBtn" type="button" class="header-btn header-nav-main-btn" onclick="goToMenu()">المرحلة</button>
-            <button id="stagesBackBtn" type="button" class="header-btn header-nav-main-btn" onclick="showStagesView()" style="display:none;">المراحل</button>
-            <button id="lessonsBackBtn" type="button" class="header-btn header-nav-main-btn" onclick="showLessonsView()" style="display:none;">الدروس</button>
+            <button id="menuBtn" type="button" class="header-btn header-nav-main-btn" onclick="goToMenu()"><span class="header-nav-main-label">المرحلة</span><span class="header-nav-back-ico" aria-hidden="true"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></span></button>
+            <button id="stagesBackBtn" type="button" class="header-btn header-nav-main-btn" onclick="showStagesView()" style="display:none;"><span class="header-nav-main-label">المراحل</span><span class="header-nav-back-ico" aria-hidden="true"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></span></button>
+            <button id="lessonsBackBtn" type="button" class="header-btn header-nav-main-btn" onclick="showLessonsView()" style="display:none;"><span class="header-nav-main-label">الدروس</span><span class="header-nav-back-ico" aria-hidden="true"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></span></button>
         </div>
         <div id="pageTitle"></div>
         <div class="header-right-slot">
@@ -2512,12 +2528,12 @@
             lessonEl.style.removeProperty('font-size');
             if (verseEl) verseEl.style.removeProperty('font-size');
             if (!verseEl) {
-                const attrMax = parseFloat(lessonEl.getAttribute('data-max-fs')) || 30;
-                it9anShrinkFontToFitOneLine(lessonEl, Math.min(Math.max(attrMax, 20), 30), 5);
+                const attrMax = parseFloat(lessonEl.getAttribute('data-max-fs')) || 20;
+                it9anShrinkFontToFitOneLine(lessonEl, Math.min(Math.max(attrMax, 12), 20), 5);
                 return;
             }
-            const attrMax = parseFloat(lessonEl.getAttribute('data-max-fs')) || 30;
-            let fs = Math.min(Math.max(attrMax, 20), 30);
+            const attrMax = parseFloat(lessonEl.getAttribute('data-max-fs')) || 20;
+            let fs = Math.min(Math.max(attrMax, 12), 20);
             const MIN_FS = 5;
             verseEl.style.whiteSpace = 'nowrap';
             lessonEl.style.whiteSpace = 'nowrap';
@@ -2539,6 +2555,13 @@
             }
             guard = 0;
             while (guard < 400 && (pt.scrollWidth > pt.clientWidth + 1 || lessonEl.scrollWidth > lessonEl.clientWidth + 1) && fs > 3) {
+                fs -= 0.25;
+                verseEl.style.fontSize = fs + 'px';
+                lessonEl.style.fontSize = fs + 'px';
+                guard++;
+            }
+            guard = 0;
+            while (guard < 250 && pt.scrollHeight > pt.clientHeight + 1 && fs > 3) {
                 fs -= 0.25;
                 verseEl.style.fontSize = fs + 'px';
                 lessonEl.style.fontSize = fs + 'px';
@@ -6408,7 +6431,7 @@
                     if (ptP) {
                         ptP.classList.remove('header-name-pin', 'page-title-lessons', 'page-title-notifications', 'page-title-with-lesson');
                         ptP.classList.add('page-title-with-lesson');
-                        const lessonPart = `<span class="title-text-maktaa lesson-title-text it9an-player-lesson-title" data-max-fs="30">${lek.title}</span>`;
+                        const lessonPart = `<span class="title-text-maktaa lesson-title-text it9an-player-lesson-title" data-max-fs="20">${lek.title}</span>`;
                         ptP.innerHTML = `<span class="title-text-maktaa verse-num-maktaa">المقطع ${currentLocalVers}</span>${lessonPart}`;
                         it9anScheduleLessonTitleFits();
                     }
@@ -7098,7 +7121,7 @@
             if (ptP) {
                 ptP.classList.remove('header-name-pin', 'page-title-lessons', 'page-title-notifications', 'page-title-with-lesson');
                 ptP.classList.add('page-title-with-lesson');
-                const lessonPart = `<span class="title-text-maktaa lesson-title-text it9an-player-lesson-title" data-max-fs="30">${lek.title}</span>`;
+                const lessonPart = `<span class="title-text-maktaa lesson-title-text it9an-player-lesson-title" data-max-fs="20">${lek.title}</span>`;
                 ptP.innerHTML = `<span class="title-text-maktaa verse-num-maktaa">المقطع ${localVersNum}</span>${lessonPart}`;
                 it9anScheduleLessonTitleFits();
             }
