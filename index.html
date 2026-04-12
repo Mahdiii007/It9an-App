@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="إتقان">
     <!-- Wird von scripts/bump-app-version.sh mit derselben version wie app-version.json gesetzt (synchroner Deploy-Check, kein fetch → zuverlässig in Safari/PWA). -->
-    <meta name="it9an-deploy-version" content="it9an-1776006941-local-26956-7ff0a2b">
+    <meta name="it9an-deploy-version" content="it9an-1776007439-local-27981-355a828">
     <link rel="manifest" href="manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap" rel="stylesheet">
     
@@ -136,7 +136,7 @@
         }
         .title-text-maktaa.verse-num-maktaa { border-right: none; padding-right: 0; margin-right: 0; }
         .title-text-maktaa.lesson-title-text { border-right: 2px solid #ddd; padding-right: 10px; margin-right: 5px; }
-        /* Player: Pill mittig; Breite skaliert mit Viewport (Rand für «الدروس» + Glocke + safe-area) */
+        /* Player: Pill mittig. ~300px Viewport für «الدروس» (breit) + Glocke + flex-Gap + Schatten reservieren */
         #pageTitle.page-title-with-lesson {
             align-items: center;
             justify-content: center;
@@ -145,9 +145,8 @@
             box-sizing: border-box;
             left: 50%;
             transform: translateX(-50%);
-            --it9an-pill-side: clamp(44px, 16vw, 96px);
-            width: min(280px, calc(100vw - 2 * var(--it9an-pill-side) - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)));
-            max-width: min(280px, calc(100vw - 2 * var(--it9an-pill-side) - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)));
+            width: min(260px, max(48px, calc(100vw - 300px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px))));
+            max-width: min(260px, max(48px, calc(100vw - 300px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px))));
             min-width: 0;
             padding: 8px min(12px, 3vw);
             min-height: 52px;
@@ -170,7 +169,8 @@
         }
         @media (max-width: 400px) {
             #pageTitle.page-title-with-lesson {
-                --it9an-pill-side: clamp(48px, 18vw, 88px);
+                width: min(240px, max(44px, calc(100vw - 312px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px))));
+                max-width: min(240px, max(44px, calc(100vw - 312px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px))));
                 gap: 4px;
                 padding: 6px min(8px, 2.5vw);
                 min-height: 50px;
@@ -178,7 +178,8 @@
         }
         @media (max-width: 340px) {
             #pageTitle.page-title-with-lesson {
-                --it9an-pill-side: clamp(50px, 20vw, 82px);
+                width: min(200px, max(40px, calc(100vw - 320px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px))));
+                max-width: min(200px, max(40px, calc(100vw - 320px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px))));
             }
         }
         .menu-item-title.it9an-lesson-grid-title {
